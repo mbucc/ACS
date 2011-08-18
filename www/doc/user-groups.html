@@ -1,0 +1,143 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>User Groups</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>User Groups</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="http://photo.net/philg/">Philip Greenspun</a>
+
+<hr>
+
+<ul>
+<li>User-accessible directory:  <a href="/ug/">/ug/</a>
+<li>Site administrator directory:  <a href="/admin/ug/">/admin/ug/</a>
+<li>data model :  <a href="/doc/sql/display-sql.tcl?url=/doc/sql/user-groups.sql">/doc/sql/user-groups.sql</a>
+
+</ul>
+
+<h3>The Big Idea</h3>
+
+There are many applications of the ArsDigita Community System in which
+we need to lump users together.  If we accomplish that lumping with a
+common mechanism, then we can build common user and admin tools that
+don't have to be separately debugged for each installation.
+
+<h3>Data Model Tour</h3>
+
+These are the tables that hold user group information:
+
+<ul>
+<li><code>user_group_types</code>; one row for each different
+<em>type</em> of user group, e.g., at a university you'd have a row for
+the "committee" group type and a row for the "course" group type
+
+<li><code>user_group_type_fields</code>; one row for each field that we must
+keep for a user group type, e.g., for a university "course" group type
+there would probably be rows in this table for
+<code>semester</code>, <code>meeting_times</code>,
+<code>room_number</code>, <code>final_exam_p</code>
+
+<li><code>user_groups</code>; one row for each user group in a
+community.  At a university with 1000 courses per semester, 1000 rows
+would be added to this table every semester.  Note that these rows don't
+store too much info about the groups, beyond their names (e.g., "CS 101,
+Introduction to computer languages not used in industry"), whether the
+group has been approved by the site administrator, and whether new
+members must be approved.  
+
+<li><code>*_info</code>; one table for each user group type in a
+community, each table named "${group_type}_info" (e.g., "course_info" or
+"committee_info").  Each table will contain one row for each user group
+of that type.  So the <code>course_info</code> table would pick up 1000
+new rows each semester.  This is where the real information about a
+group, the columns defined in <code>user_group_type_fields</code> are
+kept.
+
+<p>
+
+<li><code>user_group_map</code>
+
+<p>
+
+<strong>before ACS 3.2:</strong> one row for each user in a group.
+For example, in a university with 1000 courses, 30 students per
+course, 30,000 rows would be added to this table each semester.  The
+<code>user_group_map</code> table also records a user's role in the
+group.
+
+<p>
+
+<strong>ACS 3.2 and later:</strong> one row per each role played by a
+user in a group.  For example, in a small company where one person
+plays both the CEO role and the CTO role, you would represent the
+company as a user group of type "company", and there would be two rows
+in <code>user_group_map</code> for that person, one with a value of
+"CEO" in the <code>role</code> column and the other with a value of
+"CTO".
+
+<p>
+
+<li><code>user_group_map_queue</code>; one row for each user who has
+applied for membership in a group but whose membership has yet to be
+approved
+
+</ul>
+
+<h3>System-defined Groups</h3>
+
+There are a bunch of places within the ArsDigita Community System where
+users need to be lumped together.  Sadly, some of these subsystems
+predate the users group module and use their own mapping tables.  
+
+<p>
+
+An example of something done consistently, however, is the recording of
+whether or not a user is a system administrator of this site (tested
+with the Tcl procedure <code>ad_administrator_p</code>).  There is a
+user group type of "system".  One group of this type is pre-defined:
+"administrators".
+
+
+
+<h3>Example Applications</h3>
+
+Cisco sets up an ArsDigita Community System to support customers who've
+purchased routers.  Cisco would create a user group type of "company"
+and then a user group of that type for each customer, e.g., "Hewlett
+Packard" would be a user group and all the hp.com users would be members
+of that group.  The grouping mechanism would let Cisco ask for "all
+trouble tickets opened by HP employees".  The grouping mechanism would
+let Cisco offer online prices with the HP discount to anyone logged in
+who was recorded as a member of the HP group.
+
+<p>
+
+A university running one big ACS would have user group types of
+"committee" and "course".  All the administrators on a committee would
+be in a user group of type "committeee".  All the students and teachers
+in a particular course would be lumped together in a user group and
+could have a private discussion group.  The teachers would have a
+different role within the user group and hence would have more access privileges.
+<h3>Group login</h3>
+
+<p>
+<h3>More Information</h3>
+
+<ul>
+<li><a href="permissions.html">Permission Package</a> documentation on
+how to use multi-role permissions feature of user groups.
+<li><a href="writing-a-module.html">Module Administration</a> documentation on
+how to administer system and admin modules of user groups.
+</ul>
+
+<p>
+
+<hr>
+<a href="http://photo.net/philg/"><address>philg@mit.edu</address></a>
+</body>
+</html>
+

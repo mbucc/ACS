@@ -1,0 +1,21 @@
+<%= [wp_help_header "Editing Styles"] %>
+
+Colors are specified using the usual red/green/blue scheme (familiar
+to anyone who's used Photoshop or written HTML code). Each component
+is a number from 0 to 255; the first component is red, the second is green, and the third is blue.
+If you prefer, you can just select a color from the pull-down menu which is
+close to the one that you envision, and then try mucking around with the
+resultant numbers.
+
+<p>You can select any of the images you've uploaded to use as the
+background for your slides.
+
+<h3>For Advanced Users</h3>
+
+<p>If you know <a href="http://www.w3.org/Style/CSS/">CSS (Cascading Style Sheets)</a>,
+you can key in (or cut and paste) some CSS code to be linked to your slides. (The
+colors and background image supplied on the top half of this page are incorporated
+only as attributes to the &lt;BODY&gt; tag, so any CSS settings you provide will
+override them for CSS-aware browsers.)
+
+<%=[wp_footer]%>

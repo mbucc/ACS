@@ -1,0 +1,300 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>ArsDigita Community System FAQ</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>ArsDigita Community System FAQ</h2>
+
+by <a href="http://teadams.com">Tracy Adams</a> (inspired by 
+<a href=http://www.alexium.com/wab/arsdigita.html>John Lowry's The ArsDigita Platform</a>)
+<hr>
+
+<ul>
+
+<li><a href=arsdigita-faq.html#free_db_enhancers>I have a site made of
+static html pages.  How can I add some collaboration features without
+setting up my own machine?</a>
+
+<li><a href=arsdigita-faq.html#infrastructure>I would like to use the ArsDigita Community System. How do I set up the basic infrastructure (Unix/Linux, Oracle, and AOLServer)?</a>
+
+<li> <a href=arsdigita-faq.html#architecture_install>I have a machine with Unix/Linux, Oracle and AOLServer installed.  How do  I install the ArsDigita Community System and the ArsDigita Server Architecture?</a>
+
+<li><a href=arsdigita-faq.html#acs_docs>Where can I find ArsDigita Community System documentation?</a>
+
+<li><a href=arsdigita-faq.html#bboard>I am stuck. Where can I ask a question?</a>
+
+<li> <a href=arsdigita-faq.html#teaching>What teaching and training is available? How can I sign up?</a>
+
+<li><a href=arsdigita-faq.html#resources>What resources are available for learning and reference?</a>
+
+<li> <a href=arsdigita-faq.html#ticket>Where do I make feature suggestions, 
+report bugs, and look for patches?</a>
+
+<li><a href=arsdigita-faq.html#isps>What ISPs and independent developers
+support the ArsDigita Community System?</a>
+
+<li><a href=arsdigita-faq.html#contribute>How can I contribute to the development of ArsDigita Community System?</a>
+
+<li> <a href=arsdigita-faq.html#company>Where can I learn about ArsDigita, the company?</a>
+
+<li> <a href=arsdigita-faq.html#employment>How can I work at ArsDigita?</a>
+</ul>
+
+<a name=free_db_enhancers>
+
+<h4>I have a site made of static html pages.  How can I add some
+collaboration features without setting up my own machine?</h4>
+
+Some of the basic ArsDigita Community System modules are
+available as free services.  Just sign up for on of them
+by filling out a form.  
+<ul>
+<li><a target=faq_example href=http://www.greenspun.com/spam/index.tcl>Spam</a> will allow you to maintain mailing lists
+<li><a  target=faq_example href=http://www.greenspun.com/bboard/>LUSENET</a> will run a discussion group for you
+<li><a  target=faq_example href=http://www.greenspun.com/boohoo/index.tcl>BooHoo link manager</a> will allow your users to post related links
+<li><a  target=faq_example href=http://www.greenspun.com/com/home.html>Loquacious</a> will allow your users to post comments
+<li><a  target=faq_example href=http://www.greenspun.com/click/>clickthrough.net</a> will track how many people  follow links from your site to sites that you recommend
+<li><a  target=faq_example href=http://uptime.arsdigita.com/uptime/>Uptime</a> will monitor your server and notify you when it is unreachable
+<li><a  target=faq_example href=http://arsdigita.com/voxpopuli/>Vox Populi</a> will allow you to add polls to your site
+<li><a  target=faq_example href=http://arsdigita.com/telegraph/>Telegraph</a> will allow forms on your site to send email
+</ul>
+
+</ul>
+
+See also: <a target=faq_example href=http://photo.net/wtr/collaboration.html>Adding collaboration to a Web Site</a> without buying or maintaining an RDBMS and <a target=faq_example href=http://www.greenspun.com>Free Services For Web Publishers</a>
+
+<a name=infrastructure>
+<h4>I would like to use the ArsDigita Community System. How do I set up the basic infrastructure?</h4>
+
+To use the ArsDigita Community System, you need a computer
+with Unix or Linux, Oracle, AOLServer and the Oracle driver for AOLServer
+installed.
+<p>
+Sean Yamamoto's 
+<a target=faq_example href="http://members.home.net/seanyama/linux/acs-on-linux.html">Building an RDBMS-backed Linux Web Server</a>
+provides the following guides for those taking the Linux (free) route:
+<ul>
+<li><a target=faq_example href="http://members.home.net/seanyama/linux/linux-achiever.html">Installing Red Hat Linux on a PC</a> - Version 5.2 for Intel</li>
+<li><a target=faq_example href="http://members.home.net/seanyama/linux/aolserver.html">Installing AOLserver web server software</a> - Version 2.3.3</li>
+<li><a target=faq_example href="http://members.home.net/seanyama/linux/oracle8.html">Installing Oracle8 database software</a> - Version 8.0.5 Standard Edition</li>
+<li><a target=faq_example href="http://members.home.net/seanyama/linux/aD-driver.html">Compiling and configuring the ArsDigita Oracle8 database driver for AOLserver</a> - Version 1.0.3</li>
+</ul>
+Nathan Wallace's guides:
+<ul>
+<li><a target=faq_example href=http://www.e-gineer.com/e-gineer/instructions/install-oracle805-on-redhat5x.phtml>Installing Oracle 8.0.5 on Red Hat Linux 5.x</a>
+<li><a target=faq_example href=http://www.e-gineer.com/e-gineer/instructions/install-aolserver233-on-redhat5x.phtml>Installing AOLserver 2.3.3 on Red Hat Linux 5.x</a>
+</ul>
+Other resources:
+<ul>
+<li><a target=faq_example href=http://jordan.fortwayne.com/oracle/index.html>Oracle 8.0.5 on RedHat Linux 6.1/6.0/5.2</a> (Fort Wayne Newspapers)
+<li><a target=faq_example href=http://technet.oracle.com/tech/linux/index.htm>Oracle 8i on RedHat Linux 6.1</a> (Oracle Technet, registration required)
+</ul>
+
+<a name=architecture_install>
+
+<h4>I have a machine with Unix/Linux, Oracle and AOLServer installed.  How do  I install the ArsDigita Community System and the ArsDigita Server Architecture?</h4>
+
+The <a target=faq_example href=http://photo.net/doc/architecture-install.html>ArsDigita Server Architecture Setup Instructions</a> will step you through installing
+the <a target=faq_example href=http://photo.net/wtr/thebook/community.html>ArsDigita Community System</a>
+and the <a target=faq_example href=http://photo.net/wtr/arsdigita-server-architecture.html>ArsDigita Server Architecture</a>
+<p>
+Along this process, you will use the following guides
+<ul>
+<li><a target=faq_example href=http://photo.net/doc/installation.html>ArsDigita Community System Installation</a>
+<li><a target=faq_example href=http://photo.net/doc/acceptance-test.html>ArsDigita Community System Acceptance Test</a>
+<li><a target=faq_example href=http://arsdigita.com/free-tools/keepalive.html>Keepalive Installation</a>
+<li><a target=faq_example href=http://uptime.arsdigita.com/uptime/about.tcl>Uptime Installation</a>
+<li><a target=faq_example href=http://photo.net/doc/glassroom.html>Glassroom Installation</a>
+<li><a target=faq_example href=http://arsdigita.com/free-tools/watchdog.html>WatchDog Installation</a>
+<li><a target=faq_example href=http://arsdigita.com/free-tools/reporte.html>Reporte Installation</a>
+<li><a target=faq_example href=http://photo.net/wtr/asa-audit.html>ArsDigita Server Architecture Audit</a>
+</ul>
+<p>
+When upgrading, you should <a target=faq_example href=http://photo.net/wtr/thebook/utilities.txt>grab the latest utilities.tcl</a> file.
+
+<a name=acs_docs>
+<h4>Where can I find ArsDigita Community System documentation?</h4>
+
+<ul>
+<li><a target=faq_example href=http://photo.net/doc/>ArsDigita Community System Documentation</a>
+<li><a target=faq_example href=http://photo.net/wtr/using-the-acs.html#getting>Getting the software</a>
+<li><a target=faq_example href=http://photo.net/wtr/thebook/community.html>Scalable Systems for Online Communities</a>
+<li><a target=faq_example href=http://photo.net/wtr/using-the-acs.html>Using the ArsDigita Community System</a>
+<li> <a  target=faq_example href=http://photo.net/doc/installation.html>ArsDigita Community System Installation</a>
+<li><a  target=faq_example href=http://photo.net/doc/developers.html>Developers Guide</a>
+<li><a  target=faq_example href=http://photo.net/doc/procs.tcl>Documented Procedures</a>
+<li><a  target=faq_example href=http://photo.net/doc/version-history.html>Version History</a>
+<li><a target=faq_example href=http://photo.net/ticket>Feature requests and bug reports</a>
+</ul>
+
+
+<a name=teaching>
+<h4>What teaching and training is available? How can I sign up?</h4>
+
+
+<ul>
+<li>The <a target=faq_example href=http://photo.net/teaching/one-day-web.html>One day web course</a> will be offered in several cities. (<a target=faq_example href=http://register.photo.net>Latest schedule and registration</a>)
+
+<li> <a target=faq_example
+href=http://photo.net/teaching/one-day-acs.html>ArsDigita Community
+System Conventions</a> are held quarterly in Cambridge and San
+Franscisco. (<a target=faq_example href=http://register.photo.net>Latest
+schedule and registration</a>)
+
+<li>We conduct <a target=inside_example href=http://photo.net/teaching/boot-camp.html>3-5 week boot camps</a> covering the core skills needed to install, configure and extend the ArsDigita Community System and the ArsDigita Server Architecture. These are available to people who:
+<ol>
+<li>are planning to do something for a non-profit organization
+<li>are willing to commit their time to  support or extend the ArsDigita 
+Community System and its community
+<li>are MIT students
+<li>are considering employment at ArsDigita
+</ol>
+If interested, please mail your application (reason you want to attend, resume, and plans
+for using ACS) to <a href=mailto:teadams@mit.edu>teadams@mit.edu</a>.
+
+<li><a target=faq_example href=http://photo.net/teaching/one-term-web.html>Software Engineering for Web Applications</a>
+is taught by ArsDigita at MIT and Caltech.  Students cover several problem sets and then complete
+a <a target=faq_example href=http://6916.lcs.mit.edu/project-gallery.html>gallery of student projects</a>. Materials for this course may be used at other Universities or for other programs at no charge.
+</ul>
+
+See also: <a target=faq_example href=http://photo.net/teaching/>Teaching</a>
+<a name=resources>
+<h4>What resources are available for learning and reference?</h3>
+
+Free teaching material from ArsDigita
+<ul>
+<li><a target=faq_example href="/wtr/thebook/">Philip and Alex's Guide to
+Web Publishing</a>
+
+<li><a target=faq_example  href="/sql/">SQL for Web Nerds</a> (tutorial for the SQL
+language; links into online Oracle docs for completeness)
+
+<li><a target=faq_example href="http://6916.lcs.mit.edu/manuals/tcl/">Tcl for Web Nerds</a>
+(tutorial for the Tcl language; in rough shape right now and you might
+consider using the Welch book (below))
+<li><a target=faq_example href=/doc/common-errors.html>Common errors</a> made by database backed web developers
+<li><a target=faq_example href=http://photo.net/wtr/oracle-tips.html>Tips for using Oracle</a> 
+<p>
+
+<li><a  target=faq_example href="http://photo.net/teaching/psets/ps1/ps1.adp">Problem Set 1</a> 
+(basic db-backed Web sites; AOLserver, Tcl, SQL) 
+<a target=faq_example href=http://photo.net/bboard/q-and-a.tcl?topic=Problem%20Set%201>Question and answer forum</a>
+
+<li><a  target=faq_example href="http://photo.net/teaching/psets/ps2/ps2.adp">Problem Set 2</a>  
+(extending the ArsDigita Community System, Web sites to support
+collaboration)
+<a target=faq_example href=http://photo.net/bboard/q-and-a.tcl?topic=Problem%20Set%202>Question and answer forum</a>
+
+<li><a  target=faq_example href="http://photo.net/teaching/psets/ps3/ps3.adp">Problem Set 3</a>
+(content management)
+<a target=faq_example href=http://photo.net/bboard/q-and-a.tcl?topic=Problem%20Set%203>Question and answer forum</a>
+
+<li>coming soon:  two more psets
+
+<li>coming soon:  project ideas 
+
+<p>
+
+<li><a target=faq_example href="http://photo.net/teaching/manuals/usermanual/">Using the
+LCS Web/db computing facility</a> (helps your sysadmin/dbadmin set up
+the server and then helps students get through the mechanics of logging
+in, connecting to Oracle, etc.)
+</ul>
+<p>
+Other online resources
+<ul>
+<li><a target=faq_example href=http://www.aolserver.com>AOLServer Documentation</a>
+<li><a target=faq_example href=http://hojohn.photo.net/ora8doc>Oracle Documentation</a>
+<li><a target=faq_example href=http://sdss.fnal.gov:8000/dss/doc/www/tcl/tcl.commands.html>Tcl Quick Reference Manual</a>
+</ul>
+<p>
+Recommended purchases
+<ul>
+
+<li><a  target=faq_example
+href="http://www.amazon.com/exec/obidos/ISBN=1565922603/photonetA/">Unix
+Power Tools</a> (helps students with the mechanics of the Unix shell and
+Emacs)
+
+<li><a  target=faq_example
+href="http://www.amazon.com/exec/obidos/ISBN=007882396X/photonetA/">
+Oracle 8: The Complete Reference</a> (more concise than the online
+Oracle docs)
+
+<li><a  target=faq_example
+ href="http://www.amazon.com/exec/obidos/ISBN=0136168302/photonetA/">Practical
+Programming in Tcl and Tk</a> (Brent Welch 1997; Prentice-Hall;)
+
+<li><a  target=faq_example
+href="http://www.amazon.com/exec/obidos/ISBN=0961392126/photonetA/">Visual
+Explanations : Images and Quantities, Evidence and Narrative</a> (Edward
+Tufte 1997; Graphics Press; order directly by calling (800) 822-2454) - general design principles
+
+
+</ul>
+<a name=bboard>
+<h4>I am stuck. Where can a ask a question?</h4>
+
+<ul>
+<li><a target=faq_example href=http://photo.net/bboard/q-and-a.tcl?topic=Problem%20Set%201>Problem set 1 questions</a>
+
+<li><a target=faq_example href=http://photo.net/bboard/q-and-a.tcl?topic=Problem%20Set%202>Problem set 2 questions</a>
+
+<li>
+<a target=faq_example href=http://photo.net/bboard/q-and-a.tcl?topic=Problem%20Set%203>Problem set 3 questions</a>
+
+<li><a target=faq_example href=http://photo.net/bboard/q-and-a.tcl?topic=web/db>Database backed web site </a> discussion forum
+
+</ul>
+
+
+<a name=ticket>
+<h4> Where do I make feature suggestions, report bugs, and look for code patches?</h4>
+
+Use our <a target=faq_example href=http://photo.net/ticket>online ticket tracking system</a> 
+(part of ACS).
+
+<a name=isps>
+<h4>What ISPs and independent developers
+support the ArsDigita Community System?</h4>
+
+(aside from ArsDigita.com)
+
+<ul>
+<li><a target=faq_example href=http://www.furfly.net>Furfly</a> 
+offers ACS-based services and hosting.
+
+<li><a target=faq_example href=http://www.alexium.com>John Lowry</a> has written a few modules.
+<li><a target=faq_example href=http://acs.lavsa.com/>Sebastian Skracic</a> has made an InterBase port
+</ul>
+
+We know that this list isn't complete; send email to Tracy to add
+yourself.
+
+<a name=contribute>
+<h4>How can I contribute to the development of the ArsDigita Community System</h4>
+
+Please contact <a href=mailto://teadams@mit.edu>teadams@mit.edu</a> if you would like to contribute. We need:
+<ul>
+<li>ACS buddies: Many interested users need a little help with the first installation and initial questions.
+
+<li>Module experts: We need experts for both existing and modules in development to suggest extensions, test new releases, write documentation and answers questions.
+
+<li>Module creators: <a target=faq_example href=http://www.alexium.com>John Lowry</a> has already created and publicized new modules.
+<li>Teachers: Use our <a href=arsdigita-faq.html#teaching>teaching materials</a> to teach your company, friends, or at a University.
+</ul>
+<a name=company>
+<h4>Where can I learn about ArsDigita, the company?</h4>
+See <a target=faq_example href=http://arsdigita.com>arsdigita.com</a>
+
+<a name=employment>
+<h4>How can I work at ArsDigita?</h4>
+See <a target=faq_example href=http://arsdigita.com/jobs.html>Job Openings</a>.
+</ul>
+
+<hr>
+<a href="http://teadams.com"><address>teadams@mit.edu</address></a>
+</body>
+</html>

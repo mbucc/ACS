@@ -1,0 +1,375 @@
+<html>
+<!--AD_DND-->
+<!--$Id: download.html,v 3.3.2.2 2000/04/12 09:01:29 ron Exp $-->
+<head>
+<title>Download</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Download</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="http://photo.net/philg/">Philip Greenspun</a>
+<br>
+implemented by <a href="mailto:ahmeds@mit.edu">Sarah Ahmed</a> and <a href="http://web.mit.edu/mobin/web">Usman Mobin</a>
+<hr>
+
+<ul>
+<li>User-accessible directory:  <a href="/download/">/download/</a>
+<li>Site administrator directory:  <a href="/admin/download/">/admin/download/</a>
+<li>Group admin pages:  <a href="/download/admin/">/download/admin/</a>
+<li>Data model:  <a href="/doc/sql/display-sql.tcl?url=/doc/sql/download.sql">/doc/sql/download.sql</a>
+<li>Tcl procs:  /tcl/download-defs.tcl 
+<li>Downloadable files:  /web/foobar/download/
+
+</ul>
+
+<h3>The Big Idea</h3>
+
+A publisher of reports or software would like to be able to ask "Who has
+downloaded any version of Bloatware 2000?" or to say "Spam everyone who
+downloaded Bloatware 2000 v2.3 and tell them to upgrade to the new
+exciting 3.0 version".  Note that implicit in the foregoing is that
+users must register before downloading.  A publisher might wish to
+charge for downloading or limit downloading to members of a group.
+
+<p>
+
+You'd think that much of this could be accomplished with our standard
+user-tracking stuff: <code>user_content_map</code> keeps track of which
+users have grabbed which files; the member value system can store
+charges for particular files (prices kept in the
+<code>static_pages</code> table).  Some problems with using these
+modules include the fact that it is tough to annotate or group files in
+<code>static_pages</code> and the member value system is really more
+intended for subscribing users who pay once/month
+
+<h3>The Medium-sized Idea</h3>
+
+For each file to download, we store
+
+<ul>
+<h4>in the <code>downloads</code> table</h4>
+
+ 
+<li>download_id (unique key for a  particular download)
+<li>download pretty name, e.g., "Bloatware 2000"
+<li>directory name, e.g., "bw2000" (valid name for a Unix directory;
+all versions of this download will be kept here)
+<li>group_id (is this download associated with a user group?)
+<li>a description of the item
+
+<h4>in the <code>download_versions</code> table</h4>
+<li>version_id (unique key for a particular version of a particular download)
+<li>download_id (same for all versions of a prticular download)
+<li>version (a number; larger is newer)
+<li>pseudo filename, e.g., "bloatware-2000.23.tar.gz" (what you want it to
+be saved as on the user's desktop)
+<li>release date (don't offer until midnight on this date)
+<li>status (promote, offer_if_asked, removed)
+
+
+</ul>
+
+<h4>Administration Setup</h4>
+<p>
+
+When the administrator decides to add a new downloadable file to 
+the system, first the download directory must be created.  In the 
+current version of the module, this takes the form of the "Add New
+Download" function on the admin pages.  Doing this function only
+creates the directory in which the downloadable files are stored.
+
+<p>
+
+Note that the directory into which the /download/ directory is placed
+(generally /web/server_name/) must be write accessible to nsadmin.
+This can either be accomplished by making the owner nsadmin or changing
+the permissions so that nsadmin has write privileges.  Either way, if
+nsadmin can't write to this directory, an error indicating that "Folder
+<directory_name> could not be created" will result.
+
+<p>
+
+Actually placing the files in that directory is a second and 
+seperate step.  To upload a file to the server, select the
+directory name from the admin screens and then choose "Upload
+New Version" command.  This allows the administrator to place
+a file on the server that is downloadable by users.
+
+<p>
+
+As a side note, if the intended use of the Download Module
+involves documents that can be opened by a program on the 
+receiving machine (e.g. files of type .jgp, .html, .doc,
+.pdf, etc.), then the AOLserver's .ini file (<em>not</em>
+the ACS .ini file)  must be modified
+to make AOLServer aware of these file types.  
+This entry in the .ini file takes the form:
+<pre>
+[ns/server/servername/mimetypes]
+.doc=application/msword
+.ppt=application/powerpoint
+.xls=application/excel
+</pre>
+
+<h4>User View</h4>
+
+<p>
+
+To regular users, the downloadable file is visible based on the 
+assigned name assigned when the download directory was created,
+combined with the version number.  This isn't always the most
+obvious presentation of download filename, and will likely be
+customized by applications that offer other than software
+releases.
+
+<p>
+
+Downloads with a status of "promote" are offered on the top-level
+/download/ page.  Downloads with a status of "offer_if_asked" are
+available on a drill-down page of "/download/one.tcl" where multiple
+versions of the same download may be offered.  Downloads with a status
+of "removed" are only shown to the site or group administrator who has
+the option of changing their status or looking at an old version.
+
+<p>
+
+Users can see all files available for download (even before registration). However, upon actual download request of a file, the system checks the user's registration status and the visibility  (e.g. "all", "registered_users", or "group_members") of the specific file and permits download accordingly (e.g. non_registered users are only allowed to anonymously download files with visibility="all", he is required to login otherwise). 
+
+<h4>Implementation</h4>
+
+<p>
+
+Files and rows are never removed  from the database/system.  If someone wants
+to upload a new copy of version 2.3 of Bloatware 2000, it gets a new
+<code>version_id</code> and the old row is updated with a status of
+"removed".
+
+<p>
+
+We keep a separate table of rules that will allow downloading.  The
+rules can take the following forms:
+
+<ul>
+<li>unregistered users can download any version of download_id 37
+<li>all registered users can download any version of download_id 37
+<li>all registered users can download v2.3 of download_id 37
+<li>members of user_group 2213 can download any version of download_id 37
+(user group membership can be made subject to approval)
+<li>users who have paid $X can download any version of download_id 37
+<li>users who have paid $X can download v2.3 of download_id 37
+<li>users who have paid $Y and who previously paid to download some
+other version of download_id 37 can download v2.3 of download_id 37
+
+</ul>
+
+<h3>Under the Hood</h3>
+
+The files to download are generally stored outside the Web server root
+in a configurable location (by default /web/yourservername/download/).
+We chose not to store the downloads in an Oracle BLOB column.
+Downloads are presumed to be large and may require several minutes to
+transmit to a user with a modem.  If we kept the files in a BLOB, we'd
+have to either copy the data first into a /tmp file or hold onto an
+Oracle connection for the entire download time.  For a typical site
+configured with 8 Oracle connections maximum, this would mean that 8
+simultaneous downloaders could wedge the service.
+
+<p>
+
+We keep metadata in an Oracle table and we use Oracle-generated keys as
+filenames so there is no risk of conflict in the event of concurrent
+updates of files to be downloaded (assuming there is indeed more than
+one site administrator).
+
+<p>
+
+The directory structure bears some mentioning.  An objective is to keep
+this browsable via Emacs and still have some idea of what is going on,
+i.e., one should not have to also look into Oracle to verify what
+versions of what downloads are available.
+
+<p>
+
+<ul>
+<li>/web/yourservicename/download/bw2000/378.file is some version of
+Bloatware 2000, published by the site owner, with version_id in the
+database of 378.  A corresponding file
+/web/foobar/download/bw2000/378.notes contains the latest information
+from Oracle, e.g., what version it is, what the document is called, the
+pseudo filename, etc.  A notes file is only for sysadmins to read.
+The module never makes any use of informaiton in a notes file.
+
+<li>/web/foobar/download/groups/78/8234.html is version 1.0 of 
+"How to turn your cubicle into an 8000-gallon marine fish tank", 
+a document published by user group #78 (subcommunity of saltwater
+aquarium lovers).  /web/foobar/download/groups/78/8234.notes 
+contains ancillary info.
+
+</ul>
+
+<p>
+
+Via clever use of ns_register_proc, analogous to the static file comment
+attachment system (see /tcl/ad-html.tcl), we present URLs to the user
+for final downloading that look like
+/download/files/378/bloatware-2000.tar.gz (/download/files/ trips off
+the ns_register_proc; after that the format is
+/**version_id**/**psuedo-filename**).  This will result in their browser
+defaulting them with a reasonable filename to "save as".
+
+<h3>Deep under the hood</h3>
+
+<pre>
+create sequence download_id_sequence start with 1;
+
+create table downloads (
+	download_id		integer primary key,
+	-- if scope=public, this is a download for the whole system
+        -- if scope=group, this is a download for/from a subcommunity
+        scope           varchar(20) not null,
+	-- will be NULL if scope=public 
+	group_id	references user_groups on delete cascade,
+	-- e.g., "Bloatware 2000"
+	download_name	varchar(100) not null,
+	directory_name	varchar(100) not null,
+	description		varchar(4000),
+	-- is the description in HTML or plain text (the default)
+	html_p			char(1) default 'f' check(html_p in ('t','f')),
+	creation_date		date default sysdate not null,
+	creation_user		not null references users(user_id),
+	creation_ip_address	varchar(50) not null,
+        -- state should be consistent
+	constraint download_scope_check check ((scope='group' and group_id is not null) 
+                                               or (scope='public'))
+);
+
+create index download_group_idx on downloads ( group_id );
+
+create sequence download_version_id_sequence start with 1;
+
+create table download_versions (
+	version_id	integer primary key,
+	download_id	not null references downloads on delete cascade,
+	-- when this can go live before the public
+	release_date	date not null,
+	pseudo_filename	varchar(100) not null,
+	-- might be the same for a series of .tar files, we'll serve
+	-- the one with the largest version_id
+	version		varchar(4000),
+	version_description	varchar(4000),
+	-- is the description in HTML or plain text (the default)
+	version_html_p		char(1) default 'f' check(version_html_p in ('t','f')),
+	status		varchar(30) check (status in ('promote', 'offer_if_asked', 'removed')),
+	creation_date		date default sysdate not null ,
+	creation_user		references users on delete set null,
+	creation_ip_address	varchar(50) not null
+);
+
+create sequence download_rule_id_sequence start with 1;
+
+create table download_rules (
+	rule_id		integer primary key,
+	-- one of the following will be not null
+	version_id	references download_versions on delete cascade,
+	download_id	references downloads on delete cascade,
+	visibility	varchar(30) check (visibility in ('all', 'registered_users', 'purchasers', 'group_members', 'previous_purchasers')),
+	-- price to purchase or upgrade, typically NULL
+	price		number,
+	-- currency code to feed to CyberCash or other credit card system
+	currency	varchar(3) default 'USD' references currency_codes ,
+	constraint download_version_null_check check ( download_id is not null or version_id is not null)
+);
+
+-- PL/SQL proc
+-- returns 't' if a user can download, 'f' if not 
+-- if supplied user_id is NULL, this is an unregistered user and we 
+-- look for rules accordingly
+
+create or replace function download_authorized_p (v_version_id IN integer, v_user_id IN integer)
+     return varchar2
+     IS 
+	v_visibility download_rules.visibility%TYPE;
+	v_group_id downloads.group_id%TYPE;
+	v_return_value varchar(30);
+     BEGIN
+	select visibility into v_visibility
+	from download_rules
+	where version_id = v_version_id;
+	
+	if v_visibility = 'all' 
+	then	
+		return 'authorized';
+	elsif v_visibility = 'group_members' then	
+
+		select group_id into v_group_id
+		from downloads d, download_versions dv
+		where dv.version_id = v_version_id
+		and dv.download_id = d.download_id;
+
+		select decode(count(*),0,'not_authorized','authorized') into v_return_value
+		from user_group_map where user_id = v_user_id 
+		and group_id = v_group_id;
+	
+		return v_return_value;		
+	else
+		select decode(count(*),0,'reg_required','authorized') into v_return_value
+		from users where user_id = v_user_id;
+		
+		return v_return_value;
+	end if; 
+
+     END download_authorized_p;
+/
+show errors
+
+-- history 
+
+create sequence download_log_id_sequence start with 1;
+
+create table download_log (
+	log_id		integer primary key,
+	version_id	not null references download_versions on delete cascade,
+	-- user_id should reference users, but that interferes with
+	-- downloadlog_user_delete_tr below.
+	user_id		references users on delete set null,
+	entry_date	date not null,
+	ip_address	varchar(50) not null,
+	-- keeps track of why people downloaded this
+	download_reasons varchar(4000)
+);
+
+</pre>
+
+<h3>Legal Transactions</h3>
+
+From the <a href="/admin/download/">admin</a> pages, the administrator can 
+
+<ul>
+<li>Add New Downloads
+<li>Upload New Versions
+<li>Add New Rules specific to a particular version/download 
+<li>Edit Download/Version specific data 
+<li>View Download History
+<li>Spam people who downloaded a specific download /version 
+<li>Remove a version / download both from the file storage and database 
+</ul>
+
+From the <a href="/download/">user</a> pages, the user can 
+
+<ul>
+<li>Download a specific version that he/she is allowed to download
+<li>Input reasons for download
+</ul>
+
+<h3>Future Improvements</h3>
+
+We have left the money stuff unimplemented in this version of the download module, although the data 
+model supports"purchaser"/ "previous purchaser" user visibility.
+It could be tied to a future version of the ecommerce module or be standalone.
+
+<hr>
+<a href="ahmeds@mit.edu"><address>ahmeds@mit.edu</address></a>
+</body>
+</html>

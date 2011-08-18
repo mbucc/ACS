@@ -1,0 +1,140 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>Email Handler</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+
+<h2>Email Handler</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="http://hqm.ne.mediaone.net">Henry Minsky</a>
+
+<hr>
+
+<ul>
+<li>User-accessible directory:  none
+<li>Site administrator directory: not currently available
+<li>data model :  <a href="/doc/sql/display-sql.tcl?url=/doc/sql/email-handler.sql">/doc/sql/email-handler.sql</a>
+
+<li>Tcl procs:  /tcl/email-handler.tcl
+<li>Perl procmail script:  <a href="queue-message.pl.txt">/bin/queue-message.pl</a>
+
+</ul>
+
+System dependencies:  you will be in a world of hurt unless you have
+Perl DBI/DBD installed (so that a Perl script on your computer can talk
+to Oracle) and a mailer configured to exec a procedure when mail arrives
+addressed to a particular alias.
+
+<h3>The Big Picture</h3>
+
+You can build a gateway for handling incoming email messages for your application
+using a perl-script called <code>queue-message.pl</code>. <code>queue-message.pl</code> will accept an incoming email message from the mailer and insert its contents into a queue
+table in the database. A procedure can be scheduled to sweep the queue at 
+some interval to process the messages.
+<p>
+<h3>Using the <code>queue-message.pl</code> script</h3>
+
+The script takes a list of command-line arguments, which tell it
+which database to connect to, and a classification tag for the message.
+<p>
+<pre>
+  usage: queue_message.pl db_datasrc db_user db_passwd destaddr
+
+  Inserts the data from stdin into a queue table.
+
+  Assumes the following table and sequence are defined in the db:
+
+    create table incoming_email_queue (
+	    id 		integer primary key,
+	    destaddr	varchar(256),
+	    content		clob,		-- the entire raw message content
+					    -- including all headers
+	    arrival_time	date
+    );
+
+    create sequence incoming_email_queue_sequence;
+
+</pre>
+
+The <code>destaddr</code> field is a string tag which you can assign
+to a message, so that the routine which sweeps the queue can distinguish where
+it came from. You might use this if you had several different mail recipient aliases
+on your system, which all accept messages and put the into the queue.
+<p>
+
+To configure your mailer, you must add a mailer alias which invokes 
+the script. For sendmail, this would be done in the aliases file. For qmail,
+you create a file in the <code>qmail/alias</code> directory with a name
+<code>.qmail-<i>your-alias-here</i></code>.
+ <p>
+Example: You are setting up an email handler for user feedback messages.
+<pre>
+.qmail-ticket-handler:
+|/web/yourwebserver/bin/queue-message.pl dbi:Oracle: yourdbuser yourdbpassword user_feedback
+</pre>
+
+The alias above specified that incoming messages will be piped to the perl script, which will connect to the specified database, and will insert the message with the tag "user_feedback".
+<p>
+
+
+Some guidelines: Try to sure that the <i>from</i> and <i>reply-to</i>
+headers on your outgoing message are <b>not</b> the same as your
+incoming mail handler alias. This will help prevent the possibility of
+nasty mailer loops, in the case where messages may bounce or be returned
+for some reason.
+
+<h3>Scheduled Procedures and Parsing Mail Messages</h3>
+
+The procmail Perl script doesn't do anything except fill 
+the <code>incoming_email_queue</code> Oracle table.  So
+the file <code>/tcl/email-queue.tcl</code> schedules
+the Tcl procedure <code> process_email_queue</code>
+to sweep the queue, and will dispatch on each message tag to a procedure
+which you specify in the email-handler section of ad.ini.
+
+<blockquote>
+<pre>
+[ns/server/photonet/acs/email-queue]
+QueueSweepInterval=300
+; what to do with a new message
+; format is tag|tcl_proc_to_invoke
+DispatchPair=na-support|ticket_process_message
+</pre>
+</blockquote>
+
+
+The example above specifies that tickets with the tag "na-support" will
+be passed to the procedure <code>ticket_process_message</code>.
+The Tcl procedure invoked by the dispatcher is passed two arguments: 
+a database connection,
+and the raw message text. It is up to you to parse or handle the message
+in any way you wish. After the call to your dispatch procedure, the message is
+deleted from the queue.
+
+<h3>Email Handling Utilities</h3>
+Some routines in <code>/tcl/email-utils.tcl</code> will help you
+parse the raw mail message contents in the db. 
+<dl>
+<dt><code>parse_email_message <i>message_body</i></code>
+<dd>returns an ns_set mapping each mail header to its value, as well as
+a key named <i>message_body</i> which contains the message body text.
+<dt> clean_up_html <i>html_text</i>
+<dd> Returns the html_text with all HTML escape characters quoted properly.
+</dl>
+
+<h3>Tips for Oracle 8i Achievers</h3>
+
+Oracle 8i (8.1.5 and later) includes a Java virtual machine.  You are
+thus able to load up a Java email parsing library that will take apart
+the messages in a queue very nicely (presumably more robustly than the
+Tcl kludges in email-utils.tcl).
+
+<hr>
+<a href="mailto:hqm@arsdigita.com">hqm@arsdigita.com</address></a>
+
+
+</body>
+</html>

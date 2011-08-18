@@ -1,0 +1,109 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>Webmasters Guide</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Webmasters Guide</h2>
+
+to the <a href="index.html">ArsDigita Community System</a>
+by <a href="http://photo.net/philg/">Philip Greenspun</a>
+
+<hr>
+
+This document contains instructions and pointers for the person who
+makes publishing decisions on a site backed by the ArsDigita Community
+System.
+
+<h3>Setting up your site</h3>
+
+First, decide which major modules of the ArsDigita Community System
+you're going to actually use.  For example, you might say 
+
+<ul>
+<li>yes, we'll use the /bboard discussion system
+<li>no, we're not going to have classified ads from /gc
+
+<li>yes, we're going to track all clickthroughs from our site to others
+
+<li>since we don't have banner ads, we're not going to use the banner ad
+server 
+
+<li>yes, we're going to use the member value system to bill people a
+subscription fee every month
+
+</ul>
+
+You can realize these decisions to some extent by using the forms in
+/admin/content-sections/ but also by editing any static .html files that
+you might have.
+
+<p>
+
+Second, decide how much moderation you want to do.  Generally, the
+ArsDigita Community System allows anything to be commentable.  For
+example, there are facilities to let users comment on a static .html
+file.  User A can post a news item and User B can comment on that news
+item.  Any time that users are able to contribute content, you can
+choose between three moderation policies:
+
+<ul>
+
+<li>open -- contribution goes live immediately; moderator may be
+notified via email; moderator can revoke approval or delete the
+contribution if he or she wishes.  
+
+<li>wait -- the software solicits contributions from readers but doesn't
+show those contributions to other readers until a moderator has approved
+them
+
+<li>closed -- the software does not solicit contributions from readers
+
+</ul>
+
+Note that these are configurable.  For example, in February 1999,
+http://photo.net/photo/ had an open policy for /bboard, a wait policy
+for top-level /news items, and an open policy for comments on approved
+news items.  For policy configuration, have your programmer edit your
+/parameters/ad.ini file and restart the Web server.
+
+<h3>Editing standard files</h3>
+
+
+Visit /www/global/ and edit the standard files that AOLserver (if
+properly configured) will send for server error messages, file not
+found, etc.  You might also want to take advantage of our predrafted
+copyright and privacy.adp pages (you will have to work these into your
+site).
+
+
+<h3>Maintenance</h3>
+
+Users hate dead links.  They will complain to you via email even if it
+isn't your fault so you want to make sure that you at least get rid of
+dead links in 
+
+<ol>
+<li>your static .html content
+<li>user-submitted related links
+</ol>
+
+The ArsDigita Community System contains automated tools to help you
+check both potential sources of dead links.  Every few weeks, run
+/admin/static/link-check.tcl to make sure that your static .html files
+don't contain embedded references to sites that no longer exist.  
+
+<p>
+
+For the user-submitted links, visit /admin/links/ and you'll find an
+automated sweeper that checks every user-submitted link.  If a link is
+unreachable on three successive tries (separated by at least 24 hours),
+the ArsDigita Community System will ignore it in the future (though you
+can still recover it from the database).
+
+
+<hr>
+<a href="http://photo.net/philg/"><address>philg@mit.edu</address></a>
+</body>
+</html>

@@ -1,0 +1,15 @@
+<%= [ad_header "Help for Homepage Maintenance"] %>
+
+<h2>Help</h2>
+
+for Homepage Maintenance Page
+
+<hr>
+
+<ul>
+
+<li>No help available at this time.
+</ul>
+
+
+<%= [ad_footer] %>

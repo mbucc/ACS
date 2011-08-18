@@ -1,0 +1,16 @@
+<%= [ad_header "About the Stolen Equipment Registry"] %>
+
+<h2>About</h2>
+
+the Stolen Equipment Registry
+
+<hr>
+
+The stolen equipment registry at photo.net is a place for crime
+victims to record serial numbers of cameras that they've had stolen.
+If you're offered used camera equipment, you can search by serial
+number to see if any items have been reported stolen by photo.net
+users.
+
+
+<%= [ad_footer] %>

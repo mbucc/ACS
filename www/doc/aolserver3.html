@@ -1,0 +1,103 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>Upgrading an ACS installation to AOLserver 3.0</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Upgrading an ACS installation to AOLserver 3.0</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="mailto:markd@arsdigita.com">Mark Dalrymple</a>
+
+<hr>
+
+<h3>Configuration Changes</h3>
+
+<blockquote>
+
+AOLserver 3 removed a lot of functionality from AOLserver 2.3.3 that
+ACS depends on.  We've either copied implementions from our AOLserver 2.3.3
+installation or reimplemented them from scratch.
+
+<p>
+
+You'll need to have <a href=???>000-aolserver-3-specific.tcl</a> in your
+tcl library, which is in <code>/tcl</code> in a typical ACS installation.
+
+<p>
+
+You'll also need to have the newer 2.0 or later version of the ArsDigita
+<a href="http://arsdigita.com/free-tools/oracle-driver.html">Oracle Driver</a>
+
+<p>
+
+Tcl page support is also needed.  You can either pick up 
+<a href="http://www.dqd.com/~mayoff/aolserver/">Rob Mayoff's
+Tcl page module</a>, which is a C-based add-on which includes caching
+of tcl pages, or the original <a href=???>file.tcl</a>.
+<i>??? Maybe just include file.tcl's guts in 000-aolserver-3-specific.tcl ???</i>
+
+</blockquote>
+
+
+<h3>Inittab Changes</h3>
+
+<blockquote>
+
+If you have more than one AOLserver process which has the same
+server name (e.g. photonet.ini has a server named photonet, and
+photonet-dev.ini also calls its server photonet), you need to 
+<strong>not</strong> use the <code>-k</code> (kill) option
+in inittab.  AOLserver 3 stores the process ID (pid) in 
+<code>log/nspid.servername</code>.  If there's two servers with
+the same server name, they'll end up trying to kill each other.
+(need more coherent explanation of why)
+
+</blockquote>
+
+
+
+<h3>.ini Changes</h3>
+
+<blockquote>
+
+
+To make ns_register_adptag work (which includes things like
+<code>&lt;codeexample&gt;</code> defined in
+<code>teaching-defs.tcl</code>) you'll need to have this configuration
+file entry:
+
+<blockquote><pre>
+[ns/server/photonet/adp/parsers]
+fancy=.adp
+</pre></blockquote>
+
+By default, AOLserver 3 uses the plain ADP parser which doesn't support
+things like streaming, the &lt;script&gt; tag, and registerested ADP
+tags.  The fancy parser adds these back in.
+
+<p>
+
+To make your log files roll in a Y2K compliant fashion, be sure you
+have a <code>rollfmt</code> which uses <code>%Y</code> (4 digit year)
+and not <code>%y</code> (2 digit year):
+
+<blockquote><pre>
+[ns/server/photonet/module/nslog]
+RollFmt=<strong>%Y</strong>-%m-%d-%H:%M
+</pre></blockquote>
+
+<p>
+
+You no longer need to suppy a <code>systemScope=on</code> entry in
+the <code>[ns/threads]</code> section.
+
+</blockquote>
+
+
+<hr>
+
+<a href=mailto:markd@arsdigita.com><address>markd@arsdigita.com</address></a>
+</body>
+</html>

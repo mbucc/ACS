@@ -1,0 +1,201 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>General Comments</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>General Comments</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="http://teadams.com">Tracy Adams</a>
+
+<hr>
+
+<ul>
+<li>User-accessible directory:  <a href="/general-comments/">/general-comments/</a>
+<li>Site administrator directory:  <a href="/admin/general-comments/">/admin/general-comments/</a>
+<li>data model:  subsection within 
+<a href="/doc/sql/display-sql.tcl?url=/doc/sql/general-comments.sql">/doc/sql/general-comments.sql</a>
+<li>TCL: /tcl/general-comments.tcl
+</ul>
+
+<h3>The Big Idea</h3>
+
+We can solicit comments (or reports) on any piece
+of information in the database.
+
+<h3>Under the Hood</h3>
+
+General comments are stored in one table. Comments
+refer to items with an id <code>on_what_id</code>
+in the table <code>on_which_table</code>.
+
+<blockquote>
+<pre>
+create table general_comments (
+	comment_id		integer primary key,
+	on_what_id		integer not null,
+	on_which_table		varchar(50),
+	one_line_item_desc	varchar(200) not null,
+	user_id			not null references users,
+	comment_date		date not null,
+	ip_address		varchar(50) not null,
+	modified_date		date not null,
+	content			clob,
+	-- is the content in HTML or plain text (the default)
+	html_p			char(1) default 'f' check(html_p in ('t','f')),
+	approved_p		char(1) default 't' check(approved_p in ('t','f'))
+	-- columns useful for attachments, column names
+	-- lifted from file-storage.sql and bboard.sql
+	-- this is where the actual content is stored
+	attachment		blob,
+	-- file name including extension but not path
+	client_file_name	varchar(500),
+	file_type		varchar(100),	-- this is a MIME type (e.g., image/jpeg)
+	file_extension		varchar(50), 	-- e.g., "jpg"
+	-- fields that only make sense if this is an image
+	caption			varchar(4000),
+	original_width		integer,
+	original_height		integer
+);
+</pre>
+</blockquote>
+
+<p>
+The module contains one core procedure, <a href="proc-one.tcl?proc_name=ad_general_comments_list">ad_general_comments_list</a>, that
+will show comments on an item and make appropriate 
+links to files in <code>/general-comments</code> 
+for recording and editing user comments. 
+<p>
+The arguments  to <code>ad_general_comments_list</code> are:<br>
+<ul>
+<li> db handle
+<li> table_name containing item 
+<li> id of the item
+<li> A pretty noun describing the item for the user interface.
+<li> The module name
+<li> The submodule name
+<li> A return_url (optional, the default will be the current URL)
+</ul>
+<p>
+</ul>
+
+
+<h3>Administration</h3>
+
+To support central administration of comments, we rely on a helper table
+defined in community-core.sql:
+
+<blockquote>
+<pre><code>
+create table table_acs_properties (
+             table_name      varchar(30) primary key,
+             section_name    varchar(100) not null,
+             user_url_stub   varchar(200) not null,
+             admin_url_stub  varchar(200) not null
+);
+</code></pre>
+</blockquote>
+
+As with <a href="site-wide-search.html">site-wide search</a> and the <a
+href="user-profiling.html">user profiling system</a>, this helper table
+enables us to make a single query and yet link comments over to the
+appropriate admin or user pages.  Another part of this system is the
+one-line item description column in the <code>general_comments</code>
+table.
+
+
+<h3>The Steps</h3>
+
+<p>
+Consider applying this package to a legacy ACS module such as the classified ad system (/gc/) to allow comments on each classified ad. Here are the steps:
+<ol>
+<li> If necessary, decide on the site-wide comment approval policy:
+<p>
+The DefaultCommentApprovalPolicy parameter in your 
+<code>/parameters/service_name.ini</code> 
+file is the default approval policy for the site.
+<blockquote>
+<pre>
+[ns/server/yourservicename/acs]
+...
+; open means stuff goes live immediately
+; wait means stuff waits for administrator to approve
+; closed means only administrator can post
+DefaultCommentApprovalPolicy=wait
+...
+</pre>
+</blockquote>
+<li> Decide on module specific parameters:
+<p>
+If you would like the publisher to control the use of comments
+in your module, add <code>SolicitCommentsP</code> to your module
+parameters.
+<p>
+If you would like to use a comment approval policy other than the
+site's default, add <code>CommentApprovalPolicy</code> to 
+your module parameters.
+<blockquote>
+<pre>
+[ns/server/yourservicename/acs/gc]
+; If SolicitCommentsP is missing for the module, the default is 1
+SolicitCommentsP=1
+; If CommentApprovalPolicy is missing for the module, the
+; default is the DefaulCommentApprovalPolicy in [ns/server/yourservicename/acs]
+; open means stuff goes live immediately
+; wait means stuff waits for administrator to approve
+; closed means only administrator can post
+CommentApprovalPolicy=open
+</pre>
+</blockquote>
+
+<li> Identify the file and location to display and solicit comments and insert a call to <code>ad_general_comments_list</code>. 
+<blockquote>
+<pre>
+ad_general_comments_list $db $classified_ad_id classified_ads $one_line gc
+</pre>
+</blockquote>
+
+Note that <code>ad_general_comments_list</code> checks in the module's
+parameters to see if comments are being solicited or not.
+
+<p>
+
+<li>If necessary, insert a row into <code>table_acs_properties</code>
+so that the admin pages will be up to date
+
+<li> Remember to delete any attached comments from the
+<code>general_comments</code> table when you delete any rows from your
+subsystem's table or write database triggers to do the deletions automatically.
+
+</ol>
+
+
+<h3>Attachments</h3>
+
+Users can attach arbitrary files to a comment, if the publisher has
+configured the general comments system to accept attachments:
+
+<blockquote>
+<pre><code>
+[ns/server/photonet-dev/acs/general-comments]
+; Whether or not we accept file uploads for general comments.
+AcceptAttachmentsP=1
+; Maximum attachment size in bytes. Leave empty for no limitation.
+MaxAttachmentSize=5000000
+AdminEditingOptionsInlineP=0
+; Images with widths less than this parameter will be displayed inline.
+InlineImageMaxWidth=512
+</code></pre>
+</blockquote>
+
+Smaller photos are displayed in-line.  Larger photos are displayed as
+links.  Files that aren't identified as photos by the system are simply
+made available for one-click download (with a MIME type based on the
+extension of the file originally uploaded).
+
+<hr>
+<a href="http://teadams.com/"><address>teadams@mit.edu</address></a>
+</body>
+</html>

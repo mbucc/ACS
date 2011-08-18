@@ -1,0 +1,63 @@
+<html>
+<head>
+<!--AD_DND-->
+<title>New Stuff Package</title>
+</head>
+<body bgcolor=#ffffff text=#000000>
+
+<h2>New Stuff Package</h2>
+
+part of the <a href=index.html>ArsDigita Community System</a> 
+by <a href="http://photo.net/philg/">Philip Greenspun</a>
+
+<hr>
+
+<ul>
+
+<li>User directory:  none (just one page at <a href="/shared/new-stuff.tcl">/shared/new-stuff.tcl</a>)
+<li>Admin directory:  none (just one page at <a href="/admin/new-stuff.tcl">/admin/new-stuff.tcl</a>)
+
+<li>data model:  none
+
+<li>procedures:  base in /tcl/ad-new-stuff.tcl; generally one per
+ACS module within each module's defs.tcl file
+
+</ul>
+
+I'm too lazy to write more docs so I'll just quote from the .tcl file:
+
+<pre>
+# the big idea here is to have a central facility to look at content
+# posted by users across the entire site.  This is useful for the site
+# administrator (might want to delete stuff).  This is useful for the 
+# surfing user (might want to click through to stuff).  This is useful
+# for generating email summaries.
+
+# one weird extra feature is that we have an argument to limit to new 
+# content posted by new users.  This is an aid to moderators.  Basically
+# the idea is that new content posted by a person who has been a community
+# member for a year is unlikely to require deletion.  But new content
+# posted by a brand new community member is very likely to require scrutiny
+# since the new user may not have picked up on the rules and customs
+# of the community.
+
+# (publishers who require approval before content goes live will want
+# to see old users' contributions highlighted as well since these need
+# to be approved quickly)
+
+# this system scales as modules are added to the ACS either by
+# ArsDigita or publishers.  The basic mechanism by which modules buy
+# into this system is to lappend a data structure to the ns_share
+# variable ad_new_stuff_module_list (a Tcl list)
+</pre>
+
+<hr>
+
+<address>
+<a href="http://photo.net/philg/">philg@mit.edu</a>
+</address>
+</body>
+</html>
+
+
+

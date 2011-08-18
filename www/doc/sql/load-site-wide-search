@@ -1,0 +1,15 @@
+#! /bin/sh
+
+# Usage: load-site-wide-search username password ctxsys-password 
+
+if [ $# != 3 ]; then
+    echo "usage: $0 username password ctxsys-password"
+    exit
+fi
+
+username=$1
+password=$2
+ctxsyspwd=$3
+
+sqlplus $username/$password @site-wide-search.sql $username $password $ctxsyspwd
+

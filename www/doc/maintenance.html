@@ -1,0 +1,59 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>Maintenance</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Maintenance</h2>
+
+of the <a href="index.html">ArsDigita Community System</a>
+by <a href="http://photo.net/philg/">Philip Greenspun</a>
+
+<hr>
+
+The most important thing to ensure in an ACS installation is that Oracle
+exports are being made.  In general, it is unwise to rely on full
+recovery of a damaged Oracle installation.  In theory, it is possible to
+recover Oracle if (1) the thing was set up correctly to begin with, and
+(2) you have an Oracle dba wizard around to bring the system back to
+life.  In practice, I don't feel comfortable unless I have a full export
+of my Oracle database made nightly (using the Oracle exp utility, as
+outlined in <a href="http://photo.net/wtr/thebook/">my book</a>).
+
+<p>
+
+So check on this!
+
+<p>
+
+Disaster recovery or just rebuilding your Oracle installation for any
+other reason (change of block size, moving everything to new disks)
+would then consist of the following steps:
+
+<ul>
+<li>put the ArsDigita Community System into read-only mode by editing
+/tcl/ad-read-only.tcl; all the pages in the system that accept user
+input are supposed to call ad_read_only_p before offering users a form.
+When ad_read_only_p is set to return 1, people will still be able to
+read whatever they want from an ACS installation but they won't be
+encouraged to contribute comments or bboard postings that would get lost
+when you "flip the switch" to the new Oracle installation
+
+<li>build a new Oracle installation
+
+<li>import the latest export file (.dmp) 
+
+<li>switch AOLserver to talk to the new Oracle installation
+
+<li>edit /tcl/ad-read-only.tcl to put the system back into normal mode
+
+
+
+</ul>
+
+
+<hr>
+<a href="http://photo.net/philg/"><address>philg@mit.edu</address></a>
+</body>
+</html>

@@ -1,0 +1,164 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>Abstract URL System</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Abstract URL System</h2>
+
+a layer underneath the <a href="index.html">ArsDigita Community System</a>
+by <a href="http://photo.net/philg/">Philip Greenspun</a> and <a href="mailto:jsalz@mit.edu">Jon Salz</a>
+
+<hr>
+
+<ul>
+<li>procedures: in tcl/ad-abstract-url.tcl
+</ul>
+
+<h3>The Problem</h3>
+
+The main engineering ideas behind the ArsDigita Community System are (1)
+data models, (2) sequences of URLs that lead up to transactions, and (3)
+the specifications for those transactions.
+
+<p>
+
+We need to increase the amount of abstraction in specifying
+the URLs.
+
+<p>
+
+Right now (February 2000), we happen to use AOLserver and one of the
+following kinds of pages:
+
+<ul>
+<li>a .html file
+<li>a .tcl file
+<li>a .adp template 
+<li>a .spec file that implies further evaluation of templates
+<li>a lot of files containing things like JPEGs or videos where there is
+no practical opportunity for interpretation by the server
+</ul>
+
+Think about it: when the SAP guys started up in 1972 they probably did a
+of of things for which they are now sorry.  In 30 years we will probably
+still have some vestiges of our data model and workflow.  But the
+specific languages and systems being used today will likely change.  In
+fact, we've already talked about building version fo the ACS that (a)
+run inside Oracle using their embedded Java Web server, (b) run with
+Microsoft Active Server Pages, (c) run inside Apache mod_perl.  If a
+publisher swaps out AOLserver for one of these other systems or if we,
+in an ACS version upgrade, swap in .spec templating for .tcl, why should
+the user have to update his bookmarks?
+
+<h3>The Solution</h3>
+
+We register a procedure that
+will, given a URL with no extension, dig around in the file system to
+find the right actual files to deliver/execute.  This is analogous to
+what AOLserver already does when it gets a directory name.  There is
+also an Apache module that does some of this (see 
+<a href="http://www.apache.org/docs/content-negotiation.html">http://www.apache.org/docs/content-negotiation.html</a>).  Here's an example of the
+algorithm:
+
+<ol>
+<li>is there a .spec file, indicating usage of the super-whizzy
+templating system?  If so, evaluate it.  If not, proceed to next step.
+
+<li>is there a .tcl file, indicating old-style code or code that will
+look for a .adp template?  If so, evaluate it.  If not, proceed to next
+step.
+
+<li>does the user's session indicate that he or she wants WML for a
+wireless device?  If so, try to find a .wml file and serve it.  If no
+session info or no .wml file, proceed to next step.
+
+<li>look for a .html file
+
+<li>look for a .txt file
+
+<li>look for a .jpeg
+
+<li>look for a .gif
+
+</ol>
+
+Right now we implement a subset of this.
+The current algorithm (sure to be enhanced in the near future as we
+add support for scoping and rethink templates) is as follows:
+
+<ol>
+<li>If the URL specifies a directory but doesn't have a trailing slash,
+append a slash to the URL and redirect (just like AOLserver would).
+<li>If the URL specifies a directory and does have a trailing slash,
+append "index" to the URL (so we'll search for an <tt>index.*</tt> file
+in the filesystem).
+<li>If the file corresponding to the requested URL exists (probably because the
+user provided the extension), just deliver the file.
+<li>Find a file in the file system with the provided URL as the root (i.e.,
+some file exists which is the URL plus some extension). Give precedence to
+extensions specified in the <tt>ExtensionPrecedence</tt> parameter in the
+<tt>abstract-url</tt> configuration section (in the order provided there).
+If such a file exists, deliver it.
+<li>The requested resource doesn't exist - return a 404 Not Found.
+</ol>
+
+We are likely to add some steps at the very beginning of this to perform
+scoping, e.g., check if the URL begins with a group name (and optional group type),
+and if so set scope variables in the environment and munge the URL accordingly.
+
+<p>Note that we perform a lookup even if a URL with an extension is
+provided. This is so we can eventually perform content negotation even within the
+content-type domain, e.g., serve up a document in French (<tt>foobar.html.fr</tt>)
+or the King's English (<tt>foobar.html.en.uk</tt>) as opposed to the
+default Yankeespeak (<tt>foobar.html</tt> or <tt>foobar.html.en.us</tt>) depending
+on the browser's <tt>Accept-Language</tt> setting.
+
+<p>Open questions:
+
+<ul>
+<li>Is there any value in abstracting URLs for big ugly binary files
+such as JPEG, video, PowerPoint, Word docs, etc.? (I think so - this
+enables us to change resource types more easily [i.e., replace GIFs with
+JPEGs or Word documents with HTML files], which is a primary goal of
+this system in the first place. Our ultimate goal should be the removal
+of <i>all</i> extensions from URLs throughout ACS. -JS)
+
+<li>Is it worth caching all of these file system probes? (My gut reaction
+is that it is not; caching will take place in the OS's file system layer anyway,
+and it would be tricky [although not <i>that</i> tricky] to properly support
+the addition/removal of files from the file system without explicitly flushing
+the caches. In any case, caching is not part of the current implementation
+although it could certainly be added in a future version. -JS)
+</ul>
+
+Minor Benefits:
+
+<ul>
+
+<li>Tim Berners-Lee will be happy; he doesn't like to see extensions in
+URLs
+ 
+<li>People who are language bigots and prefer (Perl|Java|Lisp|C) to Tcl
+will not be put off by the mere URLs
+
+</ul>
+
+
+
+
+
+<hr>
+
+<a href="http://photo.net/philg/"><address>philg@mit.edu</address></a>
+<a href="mailto:jsalz@mit.edu"><address>jsalz@mit.edu</address></a>
+</body>
+</html>
+
+
+
+
+
+
+

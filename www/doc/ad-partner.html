@@ -1,0 +1,212 @@
+  <html>
+<head>
+  <title>Partner Co-Branding</title> 
+</head>
+<body bgcolor=white>
+<h2>Partner Co-Branding</h2>
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="mailto:mbryzek@arsdigita.com">Michael Bryzek</a>
+
+<hr>
+
+<blockquote>
+
+
+
+<ul>
+<li>User-accessible directory:  None (It's transparent to users)
+<li>Site administrator directory:  <a href="/admin/partner/">/admin/partner/</a>
+<li>data model :  <a href="/doc/sql/display-sql.tcl?url=/doc/sql/ad-partner.sql">/doc/sql/ad-partner.sql</a>
+<li>Tcl procs:  /tcl/ad-partner.tcl
+</ul>
+
+<B>Public demonstrations: </b>
+  <ul>
+
+    <li> <a href=http://www.guidestar.org/gs/search>GuideStar Search</a>
+    <li> <a href=http://www.guidestar.org/aol/search>GuideStar Search</a>  (co-branded for AOL's <a href=http://www.helping.org>helping.org</a>)
+    <li> <a href=http://www.guidestar.org/schwab/search>GuideStar Search</a>  (co-branded for Schwab's <a href=http://www.schwabcharitable.org/>www.shwabcharitable.org</a>)
+
+  </ul>
+
+<h3>What is Co-Branding?</h3>
+Co-branding refers to the ability to make one page maintain full functionality while swapping in a
+new look-and-feel. Co-Branding must be easy to do - that is, we do not want to maintain duplicate
+files for every single co-brand partner... one file should be able to generate multiple look-and-feels
+with no modification to the single file.
+
+
+<h3>The Big Picture</h3>
+Many sites market their functionality to other websites - sometimes for money, but always to generate
+more traffic. A lot of the big sites on the web will only partner with your puny-in-comparison web
+service if you provide them with your site functionality but maintain the look-and-feel of their
+website. 
+<p>
+The brute force method to doing this is to use the <a href=style.html>ad-style</a> system and
+create a separate adp file for every single page you want to co-brand, and for every partner you
+want to support. This quickly gets out-of-hand if you support more than a couple partners and more
+than a couple pages.
+<p>
+This partner module lets you co-brand directories, as opposed to individual files, on a 
+partner-by-partner basis. And, once the files in a directory have been set-up to support co-branding,
+adding another partner takes almost no time at all (about 30 minutes to 4 hours depending on the 
+complexity of the new partner's html templates and the quality of their html). That's the point - in
+30 minutes, you can co-brand an entire directory for a new partner. If that directory contains 100 files,
+you've added templates to 100 files at a rate of 20 seconds per page - that's pretty efficient.
+<p>
+Co-branding works by separating a page into three components:
+<ol> 
+  <li> <b>The Header</b>: This refers to the top and left side of the page including, for example,
+       top graphics, left menu bars, etc.
+  <li> <b>Page Contents</b>: This refers to the actual contents of the page - the functionality, 
+       the features,
+       results of database queries etc. For co-branding to work with the ad-partner module, the
+       Page Contents must be shared by all partners (If you need custom page contents for individual 
+       pages, the <a href=style.html>ad-style</a> system is for you.
+  <li> <b>The Footer</b>: This refers to the bottom and right side of the page including.
+</ol>
+
+<h3>The Medium-Sized Picture</h3>
+For each directory that you want to cobrand, you add a new "partner" through the 
+<a href=/admin/partner/>Partner Manager</a>. Each partner has some default properties associated 
+with it, such as what fonts to use, what colors to use, etc. The most important property is the 
+Partner Cookie - ad-partner is cookie based. When you add a partner, you specify the name of the
+cookie you want to use to uniquely identify that partner. When the aolserver starts-up, it registers
+each of the partner-cookies to redirect requests for any url with starting with that cookie to a procedure
+that sets a user cookie (named ad_partner) and redirects to whatever page was specified after the cookie.
+
+<p>
+For example, with GuideStar.org, we have 3 partners:
+<ul>
+  <li> GuideStar (cookie=gs): <a href=http://www.guidestar.org/gs/search>http://www.guidestar.org/gs/search</a>
+  <li> AOL (cookie=aol): <a href=http://www.guidestar.org/aol/search>http://www.guidestar.org/aol/search</a>
+  <li> Schwab (cookie=schwab): <a href=http://www.guidestar.org/schwab/search>http://www.guidestar.org/schwab/search</a>
+</ul>
+Note that the final page no longer has the cookie in it! 
+
+<p>
+By using the cookie system, we avoid having to register procs or think about how we create links
+on our pages - it's all taken care of behind-the-scenes.
+
+<h3>Using ad-partner</h3>
+If your version of acs includes ad-partner, you'll need not configure anything to create your first
+co-branded page as ad-partner comes with a default profile set up for ArsDigita look and feel.
+In fact, the entire <a href=/admin/partner>/admin/partner</a> directory uses the partner system
+to generate it's own look and feel even though it is not necessary. (ad-partner frees you from ever 
+having to think about page headers and footers while you write your pages).
+<p> 
+To Create your first ad-partner page, simply put the following .tcl file anywhere in your file tree:
+<pre>
+ReturnHeaders
+set page_title "My first co-branded page"
+set context_bar [ad_context_bar [list "/index.tcl" "Home"] "Test Page"]
+ns_write "
+[ad_partner_header]
+I just wanted to see what it's like to work with ad-partner
+[ad_partner_footer]
+"
+</pre>
+And that's it! 
+
+<p><b>How this page is processed</b>
+<br>
+The call to ad_partner_header triggers the following sequence of events:
+<ol>
+  <li> We look at your current url and query the view ad_partner_header_procs to look
+       for tcl procedures that have been registered for that url. Note that we do not 
+       require a db handle to be passed as the db handle is only used if necessary.
+  <li> If we don't find any tcl procedures, we try the parent directory. Eventually we 
+       come to the root directory "/" for which ad-partner already registered two procedures
+       (Check the installation script for ad-partner)
+  <li> ad-partner memoizes the list of procedures to run for your current url to avoid hitting 
+       the database next time you request the same url.
+  <li> ad-partner runs the list of procedures, in the order specified (check out the Partner Manager
+       to see the order). These procedures simple call [ad_header $title] (note title is grabbed
+       from your calling environment) and append some additional html to the result.
+  <li> The html string is returned.
+</ol>
+We process the rest of the page as usual, and then reach the call to ad_partner_footer, which triggers
+the same sequence of events as for ad_partner_header, except we use the view ad_partner_footer_procs.
+
+<p>
+To co-brand an existing acs file with:
+<ol>
+  <li> Use the Partner Manager to register the tcl procedures to run for a given directory
+  <li> Replace ad_header with ad_partner_header
+  <li> Replace ad_footer with ad_partner_footer
+</ol>
+
+Note: There is another way to return co-branded pages, which I prefer:
+<pre>
+set page_title "My first co-branded page"
+set context_bar [ad_context_bar [list "/index.tcl" "Home"] "Test Page"]
+set page_body "I just wanted to see what it's like to work with ad-partner"
+ns_return 200 text/html [ad_partner_return_template]
+</pre>
+ad_partner_return_template simply looks for $page_body and then generates
+the appropriate page. This way of using the partner system has the added benefit that you can
+release your database handle(s) before returning any html (just be sure the page loads quickly 
+or else your users will look at a blank screen!).
+
+<h3>Under the hood</h3>
+
+<b>Parameters File:</b>
+<pre>
+[ns/server/vs/acs/partner]
+; what is the name of the default partner cookie?
+CookieDefault=ad
+; All the variables we want to collect  (Any variables added here
+; must still be manually added to the data model.)
+; Each line of Variable= contains a pipe separated pair of 
+; name_of_column in ad_partner | what to display on the add/edit forms
+Variable=partner_name|Partner Name
+Variable=partner_cookie|Partner Cookie
+Variable=default_font_face|Default Font Face
+Variable=default_font_color|Default Font Color
+Variable=title_font_face|Title Font Face
+Variable=title_font_color|Title Font Color
+</pre>
+
+Note that except for group_id, all variables should be listed in the parameters file.
+We separate group_id to make a nice select box on the UI to easily tie a set of partner
+parameters to a user_group.
+
+<p><b>Accessing variables defined in the Partner Manager</b>
+All the variables you create using the Partner Manager can be accessed in tcl with this call:
+<pre>
+[ad_partner_var name_of_column]
+</pre>
+ad_partner_var memoizes the result to make retrieving partner variables fast.
+<p>
+Because we use fonts so often, there are two helper procedures to make getting font definitions
+easy:
+<pre>
+proc_doc ad_partner_default_font { {props ""} } {Returns an html font tag with the default font face and default font color filled in from the partner database. If props is nonempty, it is simply included in the font statement} {
+
+    set html "&lt;font face=\"[ad_partner_var default_font_face]\" color=\"[ad_partner_var default_font_color]\""
+    if { ![empty_string_p $props] } {
+	append html " $props"
+    }
+    return "$html&gt;"
+}
+
+proc_doc ad_partner_title_font { {props ""} } {Returns an html font tag with the default font face and default font color filled in from the partner database. If props is nonempty, it is simply included in the font statement} {
+    set html "&lt;font face=\"[ad_partner_var title_font_face]\" color=\"[ad_partner_var title_font_color]\""
+    if { ![empty_string_p $props] } {
+	append html " $props"
+    }
+    return "$html&gt;"
+}
+
+</pre>
+
+I don't think there is anything particularly interesting about the 
+<a href=/doc/sql/display-sql.tcl?url=/doc/sql/ad-partner.sql>Data Model</a> so I've left it in it's own file.
+
+
+
+
+</blockquote>
+<hr size=1>
+<i>written by <a href=mailto:mbryzek@arsdigita.com>mbryzek@arsdigita.com</a> in January 2000</i>
+</body></html>

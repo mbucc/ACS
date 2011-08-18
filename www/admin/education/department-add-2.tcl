@@ -1,0 +1,208 @@
+#
+# /www/admin/education/department-add-2.tcl
+#
+# by randyg@arsdigita.com, aileen@mit.edu, January 2000
+#
+# this page allows the admin to add a new department to the system
+#
+
+ad_page_variables {
+    group_name
+    {department_number ""}
+    {external_homepage_url ""}
+    {mailing_address ""}
+    {phone_number ""}
+    {fax_number ""}
+    {inquiry_email ""}
+    {description ""}
+    {mission_statement ""}
+}
+
+
+# check and make sure we received all of the input we were supposed to
+
+set exception_text ""
+set exception_count 0
+
+# group_name is the only one that must be not null
+
+if {[empty_string_p $group_name]} {
+    append exception_text "<li> You must provide a name for the new department."
+    incr exception_count
+}
+
+
+
+# if an email is provided, make sure that it is of the correct for.
+
+if {[info exists inquiry_email] && ![empty_string_p $inquiry_email] && ![philg_email_valid_p $inquiry_email]} {
+    incr exception_count
+    append exception_text "<li>The inquiry email address that you typed doesn't look right to us.  Examples of valid email addresses are 
+<ul>
+<li>Alice1234@aol.com
+<li>joe_smith@hp.com
+<li>pierre@inria.fr
+</ul>
+"
+}
+
+
+# if a phone number is provided, check its form
+
+if {[info exists phone_number] && ![empty_string_p $phone_number] && ![edu_phone_number_p $phone_number]} {
+    incr exception_count
+    append exception_text "<li> The phone number you have entered is not in the correct form.  It must be of the form XXX-XXX-XXXX \n"
+}
+
+
+# if a fax nubmer is provided, check its form
+
+if {[info exists fax_number] && ![empty_string_p $fax_number] && ![edu_phone_number_p $fax_number]} {
+    incr exception_count
+    append exception_text "<li> The fax number you have entered is not in the correct form.  It must be of the form XXX-XXX-XXXX \n"
+}
+
+
+if {$exception_count > 0} {
+    ad_return_complaint $exception_count $exception_text
+    return
+}
+
+
+if {[string compare $external_homepage_url "http://"] == 0} {
+    set external_homepage_url ""
+}
+
+
+# so we don't get hit by duplicates if the user double-submits,
+# let's generate the group_id here
+
+set db [ns_db gethandle]
+
+set group_id [database_to_tcl_string $db "select user_group_sequence.nextval from dual"]
+
+
+
+set return_string "
+[ad_admin_header "[ad_system_name] Administration - Add a Department"]
+<h2>Confirm Department Information</h2>
+
+[ad_context_bar_ws [list "/admin/" "Admin Home"] [list "" "[ad_system_name] Administration"] "Add a Department"]
+
+<hr>
+<blockquote>
+
+<form method=post action=\"department-add-3.tcl\">
+
+[export_form_vars group_name department_number external_homepage_url mailing_address phone_number fax_number inquiry_email description mission_statement group_id]
+
+<table>
+
+<tr>
+<th align=left valign=top>
+Department Name
+</td>
+<td>
+$group_name
+</td>
+</tr>
+
+<tr>
+<th align=left valign=top>
+Department Number
+</td>
+<td>
+[edu_maybe_display_text $department_number]
+</td>
+</tr>
+
+<tr>
+<th align=left valign=top>
+External Homepage URL
+</td>
+<td>
+[edu_maybe_display_text $external_homepage_url]
+</td>
+</tr>
+
+<tr>
+<th align=left valign=top>
+Mailing Address
+</td>
+<td>
+[edu_maybe_display_text $mailing_address]
+</td>
+</tr>
+
+
+<tr>
+<th align=left valign=top>
+Phone Number
+</td>
+<td>
+[edu_maybe_display_text $phone_number]
+</td>
+</tr>
+
+<tr>
+<th align=left valign=top>
+Fax Number
+</td>
+<td>
+[edu_maybe_display_text $fax_number]
+</td>
+</tr>
+
+<tr>
+<th align=left valign=top>
+Inquiry Email Address
+</td>
+<td>
+[edu_maybe_display_text $inquiry_email]
+</td>
+</tr>
+
+
+<tr>
+<th align=left valign=top>
+Description
+</td>
+<td>
+[address_book_display_as_html $description]
+</td>
+</tr>
+
+
+<tr>
+<th align=left valign=top>
+Mission Statement
+</td>
+<td>
+[edu_maybe_display_text [address_book_display_as_html $mission_statement]]
+</td>
+</tr>
+
+<tr>
+<td colspan=2 align=center>
+<input type=submit value=\"Create Department\">
+</td>
+</tr>
+
+</table>
+
+</form>
+
+</blockquote>
+[ad_admin_footer]
+"
+
+ns_db releasehandle $db
+
+ns_return 200 text/html $return_string
+
+
+
+
+
+
+

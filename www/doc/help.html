@@ -1,0 +1,205 @@
+<html>
+<head>
+<title>Help System</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+
+<table>
+<tr>
+<td>
+<a href="http://photo.net/photo/pcd0834/helgumannen-60.tcl"><img HEIGHT=198 WIDTH=132 src="http://photo.net/photo/pcd0834/helgumannen-60.1.jpg" ALT="Old fishing hamlet of Helgumannen.  Faro, Gotland. Sweden"></a>
+
+
+<td>
+
+<h2>Help System</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="http://photo.net/philg/">Philip Greenspun</a>
+
+</tr>
+</table>
+
+<hr>
+
+<ul>
+<li>User directory: /help/
+<li>User directory (complete system guide): /help/guide/
+<li>Admin directory: /admin/help/
+<li>Admin directory (complete system guide): /admin/help/guide/
+<li>Data model: none (file system-based)
+<li>procedures (includes ADP tags): /tcl/help-defs.tcl
+</ul>
+
+<h3>The Big Idea</h3>
+
+We want a standard way of documenting a site for end-users.  We need
+
+<ul>
+
+<li>documentation for the whole site that gives a new user or
+administrator a high-level perspective of system capabilities
+
+<li>documentation of individual pages 
+
+<li>documentation of words or phrases 
+
+</ul>
+
+We want to achieve the following technical objectives:
+
+<ul>
+
+<li>we only have to change documentation style (e.g., background color,
+font design) in one place
+
+<li>a single documentation file can be authored in such a way that users
+with different levels of privilege or service will see only the relevant
+portion
+
+<li>documentation authors can continue to use familiar tools, e.g.,
+tools that are optimized for authoring HTML (perhaps with a few extra
+tags) 
+
+</ul>
+
+<h3>The Medium-sized Idea</h3>
+
+The high level documentation is in traditionally authored directories of
+HTML files, but we augment HTML with a set of additional tags to enforce
+site-wide style conventions (these will be a superset of the site-wide
+style tags used by online pages, as described in <a
+href="/doc/style.html">/doc/style.html</a>).  The augmentation also provides for tags
+that will switch on a section only if a user has selected a particular
+feature (for example, in a documentation production site, only users
+whose companies have elected "fancy workflow authorization" will see
+sections related to that).  Sometimes we augment HTML in order to
+provide greater convenience for the documentation authors, for example,
+we provide by default a <code>glossterm</code> tag that saves a doc author from
+having to hard-code in a link to the ACS glossary module: 
+<code>/glossary/one.tcl?term=film</code>.
+
+<p>
+
+The page-level documentation is stored in conventionally named files
+underneath the Web server root.  Support is provided for multi-lingual
+documentation.
+
+<p>
+
+The standard ACS /glossary module is used to provide word and phrase
+definitions.
+
+<h3>Under the hood</h3>
+
+We use ADP pages to create all documentation.  This allows us to register
+special tags using <code>ns_register_adptag</code>.  These special
+tags help enforce site-wide style conventions as well as providing a
+mechanism that will act as a switch for a particular section.  For
+instance, the code run by the special tag may check whether or not the
+user is a member of a particular user group.  If the user is in the
+group, then the procedure returns the string between the tags with the
+appropriate font and formating.  If the user is not in the group, then
+the procedure returns the empty string.
+
+<p>
+
+We place a call to <code>help_link</code> on every page that could
+potentially have a help file.  This procedure determines whether or
+not there actually is a help file associated with the given file.  If
+a help file exists, <code>help_link</code> returns a string containing
+a link to a page that will serve the requested help file.  If no help
+file exists then the empty string is returned.
+
+<p>
+
+We name all page-level help files with the same filename as the page
+that they document, with a .help extension.  For instance, if we have
+a URL named foo.tcl, the help file will be named foo.help.  If a
+multi-lingual help system is in place then the help file in english
+will be foo.en.help (the help file in french will be foo.fr.help,
+etc.).  Language encoding and the sorting out of user preferences are
+as described in <a href="/doc/style.html">/doc/style.html</a>.
+
+<p>
+
+These help files reside in a directory hierarchy mirroring that of the
+files that they document, rooted at a location specified by the
+HelpPageRoot parameter in the ns/server/servername/acs/help section of
+the server's auxiliary .ini file. This parameter specifies the root of
+the help file's directory hierarchy as a relative path from the server's
+page root, so HelpPageRoot=/help would specify that all help files lived
+under /web/servername/www/help. Leaving it blank specifies that the help
+page root is the same as the server's page root, so .help files reside
+in the same directories as their corresponding .tcl files.
+
+<p>
+
+.help files are registered to be interpreted as ADP files so that they
+can be viewed directly, in order to aid in their development.
+
+<h3>If you really love our ideas...</h3>
+
+If you really really love the photo.net/ACS style then you'll have kept
+the Yahoo-style context/navigation bars above the top HR in most of your
+scripts.  It seems to us that a natural companion to this is a help link
+just underneath the HR and to the far right of the page.  As long as
+we've got that, we might as well also include other options that are
+sort of outside the normal realm and flow of what a user might be doing
+with the page.  For example, an "administer" link could go there.
+
+<p>
+
+To faciliate this style of programming, we've defined
+<code>help_upper_right_menu</code> which takes an arbitrary number of
+optional args, each of which is a list of URL and anchor (similar to the
+<code>ad_context_bar</code> args).  These are extra options on the menu
+and they will be displayed in the order supplied, followed by a help
+link (if the .help file is found in the file system).
+
+
+
+<h3>The Steps</h3>
+
+<ul>
+
+<li>decide whether you want to go multi-lingual or not.
+
+<li>decide what types of things you would like to standardize.  Examples
+could be setting a specific, easily changable font or linking glossary terms
+to their definitions.
+
+<li>define a special tag for each type of item that should be standardized.
+
+<li>define a special tag for each type of content switch you would like
+to have (for instance, if you only want to show the workflow section to
+specific companies, you can wrap the workflow section in a
+<code>&lt;workflow&gt;</code> tag).
+
+<li>insert calls to <code>help_link</code> in your .tcl scripts and .adp
+templates
+
+</ul>
+
+<hr>
+
+<a href="http://photo.net/philg/"><address>philg@mit.edu</address></a>
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

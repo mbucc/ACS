@@ -1,0 +1,327 @@
+<html>
+<head>
+<!--AD_DND-->
+<title>Calendar Widget Package</title>
+</head>
+<body bgcolor=#ffffff text=#000000>
+
+<h2>Calendar Widget Package</h2>
+
+part of the <a href=index.html>ArsDigita Community System</a> 
+by <a href="http://www.haverkamp.com">Greg Haverkamp</a>
+
+<hr>
+
+<ul>
+
+<li>User directory:  none
+<li>Admin directory:  none
+
+<li>data model:  none
+
+<li>procedures:  all within /tcl/ad-calendar-widget.tcl
+
+</ul>
+
+This package helps you display calender-based data.
+It produces both large monthly calendars with daily details and small
+monthly "outline" calendars.  Make sure you update your
+<code>utilities.tcl</code> file 
+from <a href="http://photo.net/wtr/thebook/utilities.txt">http://photo.net/wtr/thebook/utilities.txt</a>.  This package relies upon the presence
+of <code>ad_proc</code> to give us Common Lisp-style keyword args.
+
+<p>
+
+When formatting hyperlinks from day numbers, Julian dates are used.  A Julian
+date is the number of days since 4712 B.C.  The benefit of using Julian dates
+is that they make it very easy to do calendar date calculations.  To make it
+easy to convert back to ANSI dates, the helper procedure 
+<code>calendar_convert_julian_to_ansi</code> is provided.  To obtain a 
+Julian date from Oracle, use <code>to_char</code> with a the 'J' format
+option.  For example, to obtain today's Julian date:
+
+  <blockquote>
+  <code><pre>
+  select to_char(sysdate, 'J') from dual
+  </pre></code>
+  </blockquote>
+
+<p>
+
+All of the color parameters are standard HTML colors.  You can specify
+either recognized color names, or you can use the more specific hex color
+values.  The names "white" and "black" are used in the code as defaults.
+However, you could use "#ffffff" or "#000000", respectively, if you prefer.
+
+<h3>Procedures:</h3>
+
+<ul>
+<li><code>calendar_basic_month</code>
+  <blockquote>
+  This is the basis of all of the other calendar types.  Use this if you want to produce a large calendar with daily details.
+  </blockquote>
+<li><code>calendar_small_month</code>
+  <blockquote>
+  Creates small, detail-free calendars.  It might be useful in
+  date-selection situations, or for general overview calendars.  This is used
+  as the basis for all of the other small-calendar procedures.
+  </blockquote>
+<li><code>calendar_prev_current_next</code>
+  <blockquote>
+  Creates a three-wide table of small calendars.  The left calendar is
+  the month prior to the passed-in date, the middle calendar is the month of
+  the supplied date, and the right calendar is the month following the 
+  passed in date.
+  </blockquote>
+<li><code>calendar_small_year</code>
+  <blockquote>
+  Forms a twelve-calendar display of twelve months, beginning the first
+  of the passed-in month.
+  </blockquote>
+<li><code>calendar_small_calendar_year</code>
+  <blockquote>
+  Forms a twelve-calendar display of the calendar year of the passed in
+  month.
+  </blockquote>
+</ul>
+
+<h3>Parameters:</h3>
+
+<ul>
+<li><code>calendar_details</code>
+  <blockquote>
+  This is an <code>ns_set</code> that holds the daily details for the
+  calendar.  Each key is the Julian date of the day, and the values are
+  strings representing the details.
+  <p>
+  You can add multiple values for each Julian date key. When the calendar is
+  rendered, it will fetch the values for all entries matching the appropriate
+  Julian date.
+  <p>
+  <i>Default</i>: no data
+  </blockquote>
+<li><code>date</code>
+  <blockquote>
+  A truncated ANSI format ('YYYY-MM-DD'), used to represent the desired 
+  reference date for each procedure.  It's actual use may vary by procedure.
+  <p>
+  <i>Default</i>: current database date (fetched via sysdate)
+  </blockquote>
+<li><code>days_of_week</code>
+  <blockquote>
+  A list specifying the day-of-week headings in the calendar.  This needs to
+  always start on Sunday.
+  <p>
+  <i>Defaults</i>: 
+    <ul>
+    <li><code>calendar_basic_month</code>: "Sunday Monday Tuesday Wednesay Thursday Friday Saturday"
+    <li>All small calendars: "S M T W T F S"
+    </ul>
+  </blockquote>
+<li><code>large_calendar_p</code>
+  <blockquote>
+  Specifies if this is a large (with daily details) or a small (no daily 
+  details) calendar.
+  <p>
+  <i>Defaults</i>:
+    <ul>
+    <li><code>calendar_basic_month</code>: 1
+    <li>All small calendars: 0
+    </ul>
+  </blockquote>
+<li><code>master_bgcolor</code>
+  <blockquote>
+  The background color of the entire calendar.
+  <p>
+  <i>Default</i>: "black"
+  </blockquote>
+<li><code>header_bgcolor</code>
+  <blockquote>
+  The background color of the master header (the month section of the 
+  calendar.)
+  <p>
+  <i>Default</i>: "black"
+  </blockquote>
+<li><code>header_text_color</code>
+  <blockquote>
+  The text color for the master header (the text used to display the month.)
+  <p>
+  <i>Default</i>: "white"
+  </blockquote>
+<li><code>header_text_size</code>
+  <blockquote>
+  The size of the month/year header, as passed to the "size" parameter of
+  an HTML font tag. 
+  <p>
+  <i>Defaults</i>:
+    <ul>
+    <li><code>calendar_basic_month</code>: "+2"
+    <li>All small calendars: "+1"
+    </ul>
+  </blockquote>
+<li><code>day_number_template</code>
+  <blockquote>
+  This template allows formatting or linking from the day number displayed
+  on the calendar.  Using the Tcl <code>subst</code> command, two variables
+  are substituted in the template.  The first is the Julian date of the appropriate
+  day.  The second is the day of the month.
+  <p>
+  For example, a <code>day_number_template</code> to show a relatively
+  plain, unlinked day number might look like:
+    <blockquote>
+    <code><pre>
+    &lt;!--$julian_date--&gt;&lt;font size=1&gt;$day_number&lt;/font&gt;
+    </pre></code>
+    </blockquote>
+  Here is an example from the ACS /bboard system:
+    <blockquote>
+    <code><pre>
+    &lt;a href=\"threads-one-day.tcl?topic=[ns_urlencode $topic]&julian_date=\$julian_date\"&gt;&lt;font size=-1&gt;\$day_number&lt;/font&gt;&lt;/a&gt;
+
+    </pre></code>
+    </blockquote>
+
+  <p>
+  <i>Default</i>: "&lt;!--%d--&gt;&lt;font size=1&gt;%d&lt;/font&gt;"
+  </blockquote>
+<li><code>day_header_size</code>
+  <blockquote>
+  The font size of the day header (the day of the week.)
+  <p>
+  <i>Default</i>:
+    <ul>
+    <li><code>calendar_basic_month</code>: 2
+    <li>All small calendars: 1
+    </ul>
+  </blockquote>
+<li><code>day_header_bgcolor</code>
+  <blockquote>
+  The background color of the day header row.
+  <p>
+  <i>Default</i>: "#666666" (this is a dark gray)
+  </blockquote>
+<li><code>calendar_width</code>
+  <blockquote>
+  The table width of calendar's master table.  Alternatives can be specified
+  either as a percentage of the page's width (e.g., -calendar_width "50%") or 
+  in absolute width (e.g., -calendar_width 100)
+  <p>
+  <i>Default</i>:
+    <ul>
+    <li><code>calendar_basic_month</code>: "100%"
+    <li>All small calendars: 0
+    </ul>
+  </blockquote>
+<li><code>day_bgcolor</code>
+  <blockquote>
+  The background color of each day cell.
+  <p>
+  <i>Default</i>: "#DDDDDD" (this is a light gray)
+  </blockquote>
+<li><code>day_text_color</code>
+  <blockquote>
+  The color of the days' details text.
+  <p>
+  <i>Default</i>: "white"
+  </blockquote>
+<li><code>empty_bgcolor</code>
+  <blockquote>
+  The background color to give empty cells (those before the first and after
+  the last days of the month.)
+  <p>
+  <i>Default</i>: "white"
+  </blockquote>
+<li><code>next_month_template</code>
+  <blockquote>
+  Use this to specify the hyperlink format to do a next-month link at the
+  bottom of a calendar.  This will be processed by <code>format</code>,
+  which will be inserting a string.
+  <p>
+  For example, to link to a page called <code>month-show.tcl</code> which
+  expects the variable <code>date</code>, you could use the following:
+    <blockquote>
+    <code><pre>
+    &lt;a href="month-show.tcl?date=$ansi_date"&gt;Next month&lt;/a&gt;
+    </pre></code>
+    </blockquote>
+  This will insert a date in ANSI format (first day of next month, e.g.,
+  1999-07-01 if you call it during display of a calendar for June 1999).
+  <p>
+  <i>Default</i>: ""
+  </blockquote>
+<li><code>prev_month_template</code>
+  <blockquote>
+  See <code>next_month_template</code>.  <code>$ansi_date</code> will be 
+  last day of previous month, e.g.,
+  1999-05-31 if you call it during display of a calendar for June 1999
+  <p>
+  <i>Default</i>: ""
+  </blockquote>
+<li><code>width</code>
+  <blockquote>
+  Used only by <code>calendar_small_year</code> and
+  <code>calendar_small_calendar_year</code>
+  <p>
+  Specifies the number of calendars-wide the displays are made.
+  <p>
+  <i>Default</i>: 2
+  </blockquote>
+</ul>
+
+<h3>Examples</h3>
+
+<ul>
+<li>Display this month, with details.  Previous and next month links send
+to <code>month-show.tcl</code>.
+  <blockquote>
+  Assuming the current month is June 1999, June 10, 1999 will show details.
+  June 10, 1999, is Julian date 2451340.
+  <code><pre>
+  set calendar_details [ns_set create calendar_details]
+  set day_details "&lt;font size=-1&gt;&lt;b&gt;Tasks&lt;/b&gt;&lt;ul&gt;&lt;li&gt;shower&lt;li&gt;shave&lt;/ul&gt;&lt;b&gt;Appointments&lt;/b&gt;&lt;br&gt;- See the Prez&lt;/font&gt;"
+  ns_set put $calendar_details "2451340" $day_details
+
+  set next_month_template "(&lt;a href=\"month-show.tcl?date=\$calendar_details\"&gt;next&lt;/a&gt;)"
+  set prev_month_template "(&lt;a href=\"month-show.tcl?date=\$calendar_details\"&gt;prev&lt;/a&gt;)"
+
+  ns_write "[calendar_basic_month -calendar_details $calendar_details -day_number_template $day_number_template -next_month_template $next_month_template -prev_month_template $prev_month_template]"
+  </pre></code>
+  </blockquote>
+<li>A small calendar of this month, with the days having aqua-marine as a
+background color.  (Aqua-marine has a hex value of 00FFFF.)
+  <blockquote>
+  <code><pre>
+  ns_write "[calendar_small_month -day_bgcolor "#00FFFF"]"
+  </pre></code>
+  </blockquote>
+<li>Last, this, and next months, using French days as the headers.
+  <blockquote>
+  <code><pre>
+  ns_write "[calendar_prev_current_next -days_of_week "D L M M J V S"]"
+  </pre></code>
+  </blockquote>
+<li>One year from the start of the current month using defaults, which will
+yield 6 rows by 2 columns.  
+  <blockquote>
+  <code><pre>
+  ns_write "[calendar_small_year]"
+  </pre></code>
+  </blockquote>
+<li>One year, starting 4/1/2000, 4 wide.
+  <blockquote>
+  <code><pre>
+  ns_write "[calendar_small_year -date "2000-04-01" -width 4 ]"
+  </pre></code>
+  </blockquote>
+</ul>
+
+<hr>
+
+<address>
+<a href="mailto:gregh@arsdigita.com">gregh@arsdigita.com</a>
+</address>
+</body>
+</html>
+
+
+

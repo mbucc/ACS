@@ -1,0 +1,7 @@
+User-agent: *
+Disallow: /philg/scripts/
+Disallow: /philg/scratch/
+Disallow: /ftpdir/
+Disallow: /samantha/slide-show.html
+Disallow: /samantha/plaintext/
+Disallow: /samantha/ps/

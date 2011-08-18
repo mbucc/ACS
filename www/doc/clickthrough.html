@@ -1,0 +1,81 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>Clickthrough</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Clickthrough</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="http://photo.net/philg/">Philip Greenspun</a>
+
+<hr>
+
+
+<ul>
+<li>User-accessible directory:  none
+<li>Site administrator directory:  <a href="/admin/click/">/admin/click/</a>
+<li>data model :  within <a
+href="sql/display-sql.tcl?url=/doc/sql/community-core.sql">/doc/sql/community-core.sql</a>
+<li>Tcl procs:  /tcl/ad-clickthrough.tcl
+</ul>
+
+
+Here's the data model (from <a
+href="sql/display-sql.tcl?url=/doc/sql/community-core.sql">/doc/sql/community-core.sql</a>):
+
+<blockquote>
+<pre><code>
+create table clickthrough_log (
+	local_url	varchar(400) not null,
+	foreign_url	varchar(300) not null,	-- full URL on the foreign server
+	entry_date	date,	-- we count referrals per day
+	click_count	integer default 0
+);
+</code></pre>
+</blockquote>
+
+Note that we key this table by the URL on our server rather than by a
+page ID.  Note further that this local URL does not include the
+beginning / (a legacy from the old days but I guess it is OK). This
+enables page authors to build pages without being aware of the internal
+<code>page_id</code> by which our system might know the comments or
+links associated with a page.  Here's what a link out reference looks
+like:
+
+<blockquote>
+<pre><code>
+&lt;a href="/ct/photo/where-to-buy.html?send_to=http://www.bhphotovideo.com/"&gt;B&H Photo&lt;/a&gt;
+</code></pre>
+</blockquote>
+
+This is a reference on the page <a
+href="http://photo.net/photo/where-to-buy.html">http://photo.net/photo/where-to-buy.html</a>,
+sending readers over to <a href="http://www.bhphotovideo.com/">http://www.bhphotovideo.com/</a>.
+
+<p>
+
+For legacy sites that used to log clickthroughs with my old system,
+there is a parameter in the ad.ini file that lets you specify a custom
+regular expression to permit old-style references that include a realm,
+e.g., 
+
+<blockquote>
+<pre><code>
+&lt;a href="/ct<font color=red>/philg</font>/photo/where-to-buy.html?send_to=http://www.bhphotovideo.com/"&gt;B&H Photo&lt;/a&gt;
+</code></pre>
+</blockquote>
+
+Here's the necessary magic from my ad.ini file:
+
+<blockquote>
+<pre><code>
+[ns/server/photonet/acs/click]
+CustomREGEXP=/ct/philg/(.+)$
+</code></pre>
+</blockquote>
+<hr>
+<a href="http://photo.net/philg/"><address>philg@mit.edu</address></a>
+</body>
+</html>

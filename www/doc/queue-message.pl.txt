@@ -1,0 +1,106 @@
+#!/usr/local/bin/perl
+#
+# Respond to incoming mail message on STDIN
+#
+# hqm@ai.mit.edu
+#
+# This script does the following:
+#
+sub usage () {
+    print '
+  usage: queue_message.pl db_datasrc db_user db_passwd destaddr
+
+  Inserts the data from stdin into a queue table.
+
+  Assumes the following table and sequence are defined in the db:
+
+    create table incoming_email_queue (
+	    id 		integer primary key,
+	    destaddr	varchar(256),
+	    content		clob,		-- the entire raw message content
+					    -- including all headers
+	    arrival_time	date
+    );
+
+    create sequence incoming_email_queue_sequence;
+
+';
+}
+
+use DBI;
+#use Mail::Address;
+
+################################################################
+# Global Definitions
+
+$db_datasrc        = shift;
+$db_user           = shift;
+$db_passwd         = shift;
+$destaddr          = shift;
+
+$DEBUG = 1;
+$debug_logfile = "/tmp/mailhandler-log.txt"; # 
+
+# Oracle access
+$ENV{'ORACLE_HOME'} = "/ora8/m01/app/oracle/product/8.1.5";
+$ENV{'ORACLE_BASE'} = "/ora8/m01/app/oracle";
+$ENV{'ORACLE_SID'} = "ora8";
+
+if (!defined $db_datasrc) {
+    $db_datasrc = 'dbi:Oracle:';
+}
+
+if (!defined $db_user) {
+    usage();
+    die("You must pass a db user in the command line");
+}
+
+if (!defined $db_passwd) {
+    usage();
+    die("You must pass a db passwd in the command line");
+}
+
+
+
+#################################################################
+## Snarf down incoming msg on STDIN
+#################################################################
+
+while (<>) {
+    $content .= $_; 
+}
+
+if ($DEBUG) {
+    open (LOG, ">>$debug_logfile");
+    debug("================================================================\n");
+    debug("Recevied content:\n$content\n");
+}
+
+# Open the database connection.
+$dbh = DBI->connect($db_datasrc, $db_user, $db_passwd)
+  || die "Couldn't connect to database";
+$dbh->{AutoCommit} = 1;
+# This is supposed to make it possible to write large CLOBs
+
+$dbh->{LongReadLen} = 2**20;   # 1 MB max message size 
+$dbh->{LongTruncOk} = 0;   
+
+
+debug("Status: inserting into email queue\n");
+$h = $dbh->prepare(qq[INSERT INTO incoming_email_queue (id, destaddr,  content, arrival_time) VALUES (incoming_email_queue_sequence.nextval, '$destaddr', ?, sysdate)]);
+
+
+if (!$h->execute($content)) {
+    die "Unable to open cursor:\n" . $dbh->errstr;
+}
+$h->finish;
+
+
+$dbh->disconnect;
+debug("[closing log]\n");
+if ($DEBUG) { close LOG; }
+
+sub debug () {
+    my ($msg) = @_;
+    print LOG $msg;
+}

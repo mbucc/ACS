@@ -1,0 +1,163 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>Content Tagging Package</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Content Tagging Package</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="http://photo.net/philg/">Philip Greenspun</a>
+
+<hr>
+
+<ul>
+<li>User directory:  none
+<li>Admin directory:  <a href="/admin/content-tagging/">/admin/content-tagging/</a>
+
+<li>data model:  
+<a href="/doc/sql/display-sql.tcl?url=/doc/sql/content-tagging.sql">/doc/sql/content-tagging.sql</a>
+
+<li>procedures:  /tcl/ad-content-tagging.tcl
+
+</ul>
+
+<h3>The Big Picture</h3>
+
+We want a standardized and efficient way of asking the following kinds
+of questions:
+
+<ul>
+<li>does this document or message contain R-rated words?
+
+<li>does this user-contributed message include photography-related words?
+
+</ul>
+
+Note that this is distinct from categorization of content as implemented
+in the <code>categories, site_wide_category_map</code>, and
+<code>users_interests</code> tables.  This package was original aimed at
+identifying content that includes naughty words.
+
+<h3>The Medium-sized Picture</h3>
+
+Any content on an ACS system can be tagged.  A tag is an integer, and
+its exact length in bits is the maximum size of a Tcl integer.  The tag
+is generated at the time that content is inserted into the
+database (or edited).  In the case of a document that contains 100,000
+words, tagging might be expensive.  So we want to do it once and then
+have many people use it.
+
+<p>
+
+If BowdlerizeP is set to 1 in the ad.ini file, we store a bowdlerized
+version of the content in a separate column, typically with the same
+name as the original column plus a suffix of <code>_bowdlerized</code>.
+For example, in the Chat system, we keep <code>msg</code> and
+<code>msg_bowdlerized</code>.  The <code>_bowdlerized</code> column will
+be NULL unless there was actually some naughtiness in the original.
+Each naughty word will have been replaced with the character string in
+BowdlerizeReplacementPattern ("***" by default).  So applications can
+query with something like
+<blockquote>
+<pre><code>
+select nvl(msg_bowdlerized, msg) as filtered_msg from chat
+</code></pre>
+</blockquote>
+
+<p>
+
+Each user in the community has a mask associated with his account,
+stored in the <code>content_mask</code> column of the
+<code>users_preferences</code> table.  This is an integer, whose maximum
+length is the same as that of the content tags.
+
+<p>
+
+When a user tries to look at a piece of content, his mask is bit-ANDed
+with the content's tag, and if the result is non-zero, further
+investigation is required before the user can see the content; in
+particular, the <code>adct_tag_mask_mismatch</code> procedure 
+is invoked to decide what to do.
+
+<h3>Standard Bits</h3>
+
+Standard interpretation of bits:
+
+<blockquote>
+<table cellpadding=5>
+<tr><th>Bit Pos<th>Interpretation</tr>
+<tr><td align=right>0<td align=right>PG-rated</tr>
+<tr><td align=right>1<td align=right>R-rated</tr>
+<tr><td align=right>2<td align=right>X-rated</tr>
+</table>
+</blockquote>
+
+Note that an X-rated word would carry a bit vector of "111" since it
+raises a problem in all three categories.
+
+<h3>Configuration Parameters</h3>
+
+<pre>
+; for the Naughty Package
+; (PG|R|X)LogP=1 logs the potentially offensive material
+; (PG|R|X)BounceP=1 prevents the offensive material from being posted at all
+; Note that in generally, you can't bounce only PG and X, but not R,
+; the scripts find the lowest allowed naughtiness to bounce or log.
+[ns/server/yourservername/acs/content-tagging]
+; person to notify if something needs attention
+Administrator=naughty-admin@yourserver.com
+; level to which to bowdlerize, P, PG, R, X 
+BowdlerizationLevel=G
+; log into naughty_events table 
+PGLogP=0
+RLogP=1
+XLogP=1
+; prevent this level of stuff from being posted at all 
+PGBounceP=0
+RBounceP=0
+XBounceP=1
+; send email to Administrator
+PGNotifyP=0
+RNotifyP=0
+XNotifyP=1
+CacheTimeout=120
+</pre>
+
+
+
+<h3>Data Model</h3>
+
+<pre><code>
+-- if upgrading from an older version of the ACS
+alter table users_preferences add content_mask integer;
+
+create table content_tags (
+    word               varchar(100) primary key,
+    tag		       integer not null,
+    creation_user      integer not null references users,
+    creation_date      date
+);
+
+-- for cases when users are posting naughty stuff 
+
+create table naughty_events (
+    table_name            varchar(30),
+    the_key               varchar(700),
+    offensive_text        clob,
+    creation_user         integer not null references users,
+    creation_date         date,
+    reviewed_p            char(1) default 'f' check (reviewed_p in ('t','f'))
+);
+
+create table naughty_table_to_url_map (
+    table_name      varchar(30) primary key,
+    url_stub        varchar(200) not null
+);      
+</code></pre>
+
+<hr>
+<a href="http://photo.net/philg/"><address>philg@mit.edu</address></a>
+</body>
+</html>

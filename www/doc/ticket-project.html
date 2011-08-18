@@ -1,0 +1,235 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>Remote project administration</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Remote project administration</h2>
+
+via a <a href="ticket.html">online ticket tracker</a>
+by <a href="http://teadams.com">Tracy Adams</a>
+
+<hr>
+
+<h3>The Big Picture</h3>
+
+We want a standard process for virtual project administration.
+
+
+<h3>The Medium Picture</h3>
+
+There are countless bug tracking systems. If fact, 
+most developers have either coded at least one themselves 
+or swear behind the feature set of one particular tool.
+Remember, however, it is the process behind the system 
+that is the key to success.
+<p>
+
+The need for structured communication heightens when clients 
+and developers do not work in the same location.
+Lack of a standard system is prone will result in a chaos caused by
+a pile of emails intertwined with various phone conversations no one 
+seems to recall in quite the same way...
+<p>
+<h3>The Cornerstone: Status</h3>
+
+The status of bug or issue determines who is in control.  
+Either the initiator or developer, but not both,
+is in responsible for issues in each state. 
+Typically, the initiator of most issues are the client.
+<p>
+<ul>
+<li><b>Status = "Need clarification" ---> Initiator's responsibility</b>
+<p>
+The developer is stuck and needs instruction from the client.
+The initiator should respond to issues and change the status to "open"
+so work can continue.
+<p>
+<li><b>Status = "Fixed waiting approval" ---> Initiator's responsibility</b>
+<p>
+The initiator has the final say in what is acceptable and therefore
+has the privilege of closing the issue.
+The ball is in the initiator's  court to either close the 
+issue or make a comment and reopen the issue.
+<p>
+
+<li><b>Status = "Open" ---> Developer's responsibility</b>
+<p>
+The developer is in charge of getting this issue done.  When the issue
+is fixed, the developer makes a note and sets the status to "fixed waiting approval".
+If the developer gets stuck, the developer makes a note and sets the status
+to "needs clarification".
+</ul>
+
+<h3>Case study</h3>
+
+<ol>
+<li> Client enters an issue: 
+<blockquote>
+<i>Message</i>: The edit comment page doesn't work right.<br>
+<i>Status</i>: <b>Open</b>
+</blockquote>
+<li> Developers assigned to the project receives an alert. The developer responds with a comment and changes the status:
+<blockquote>
+Comment: Please give a step-by-step outline describing what 
+you are experiencing.<br>
+<i>Status:</i> <b>Need Clarification</b>
+</blockquote>
+
+<li> Client receives an alert. Client adds a comment and changes the status.
+
+<blockquote>
+<i>Comment</i>: 
+I logged in as myself. I was on http://arsdigita.com/vision.html .
+I clicked on edit under my first comment. I changed the title from "I LUV
+this vision" to "I love this vision" and pressed Submit.  When I looked at the page with all the comments, the change was not there.<br>
+<i>Status</i>: <b>Open</b>
+</blockquote>
+
+<li> Developer receives an alert and fixes the issue. The developer adds a comment and a changes the status.
+<blockquote>
+<i>Comment</i>: I've edited /general-comments/edit-comment-2.tcl to update the comment
+title in the database.  You should now be able to run your example successfully.<br>
+<i>Status</i>: <b>Fixed waiting approval</b>
+</blockquote>
+
+<li> Client receives an alert and comes back to check. He decides that it is not quite right. Client adds a comment and changes the status.
+<blockquote>
+<i>Comment</i>:  Oh yeah, instead of saying "Submit", I'd like the button 
+on http://my-service.com/comments/edit-comment.tcl to say "Edit Comment".<br>
+<i>Status</i>: <b>Open</b>
+</blockquote>
+
+<li> Developer receives an alert and fixes the problem. Developer adds a comment and changes the status.
+
+<blockquote>
+<i>Comment</i>: I've edited /general-comments/edit-comment.tcl so that the button says "Edit Comment" instead of "Submit"<br>
+<i>Status</i>: <b>Fixed Waiting Approval</b>
+</blockquote>
+
+<li> Client receives an alert, checks, and  decides he is satisfied.  Client closes the issue.
+<blockquote>
+<i>Status</i>: <b>Closed</b>
+</blockquote>
+</ul>
+</ol>
+
+
+<h3>Useful habits</h3>
+
+<ul>
+<li> Use the ticket tracker for all assignments and discussions.
+Make projects to catalog different types of interactions such as "emergencies",
+"ongoing", "discussions", etc.  This will build up a central source of documentation as well tracking assignments.
+<p>
+<li> Be careful to assign appropriate users to each project so they will receive email alerts as people add issues and make comments.
+<p>
+<li> Use the ticket tracker as replacement to sending email to each other.  
+Entering or commenting on an issue will send alerts to the relevant people.
+<p>
+<li> Whenever you change a status, always enter a comment.  
+Note URLs that have changed and files you touched. 
+The project members will get alerted when there is something to view
+and will know what to look for.
+</ul>
+
+
+<h3>Enforcing the law</h3>
+
+This system only works if everyone uses it. 
+In the beginning of a project, make an  
+effort to teach clients and co-workers the process.
+<p>
+From time to time, the process will go astray.  You
+will get a solitary email with some tasks.  This is
+the time to reinforce proper use of the system.
+<p>
+You'll come to develop a style of your own to do this, but here are a few
+templates to get you started.
+
+<ul>
+<li> Philip Greenspun template:
+<blockquote>
+<pre>
+
+Is there any reason we are not using the 
+on-line collaboration system that we have been perfecting 
+since 1994?  "The Book" 
+(<a href="http://photo.net/wtr/thebook">Philip and Alex's Guide to Web Publishing</a>) 
+will give you an idea of  how ArsDigita operates in just 
+17 chapters.
+
+Philip
+up late cranking out my next book
+</pre>
+</blockquote>
+<li> Tracy Adams template:
+<blockquote>
+<pre>
+Please put this in the ticket tracker.
+
+Thank you,
+Tracy
+</pre>
+</blockquote>
+<li> Michael Yoon template:
+
+<blockquote>
+<pre>
+Thank you for writing. I am confirming that I have received 
+your email and I will investigate how  to fix this 
+issue. I am sorry I haven't executed what you need and 
+will try my best to rectify the situation.
+
+Perhaps I can suggest that we use the ticket tracking system
+that is set up your staff server.  I was thinking that this 
+would allow you to see and comment on any questions or 
+concerns you have about this issue at any time.
+
+I've added this issue to the system for you and made sure it
+appears as your entry. This will ensure you get  
+automatic email responses of any notes that are made.
+
+Just to be sure we are on the page, here is exactly what I did:
+<ul>
+<li> Going to http://your-servicename.com
+<li> Logged in
+<li> Clicked "ticket tracker administration" from the workspace
+<li> Clicking "add and issue"
+<li> Filled out the form with your instructions and hit submit
+</ul>
+
+Please take a look when you have a moment, and let me know if 
+you think the user interface is sufficiently clear. 
+Any suggestions on how to improve it are, of course, welcome.
+
+Hope this helps,
+Michael
+</pre>
+</blockquote>
+
+</ul>
+
+<h3>Testimonials</h3>
+
+<blockquote>
+<pre>
+"I live in the ticket tracker."
+  Atiasaya - GuideStar
+</pre>
+</blockquote>
+<blockquote>
+<pre>
+"I LOVE the ticket tracker."
+   Sheila - Infirmation <i>(personally posted 350
+   tickets in a 2 week period)</i>
+</pre>
+</blockquote>
+
+
+<hr>
+<a
+href="mailto:teadams@arsdigita.com"><address>teadams@arsdigita.com</a>
+</body>
+</html>

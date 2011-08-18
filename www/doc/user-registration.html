@@ -1,0 +1,196 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>User Registration and Access Control</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>User Registration and Access Control</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="http://teadams.com">Tracy Adams</a>
+
+<hr>
+
+<ul>
+<li>User directory:  /register
+<li>Admin directory:  <a href="/admin/ug/">/admin/users/</a> 
+<li>data model:  subsection within 
+<a href="/doc/sql/display-sql.tcl?url=/doc/sql/community-core.sql">/doc/sql/community-core.sql</a>
+
+<li>procedures:  within /tcl/ad-security.tcl and /tcl/ad-admin.tcl
+
+</ul>
+
+<h3>The Big Picture</h3>
+
+We want to let publishers decide how many hurdles and approvals a user
+must get through before being authorized to use the system.
+
+<h3>Medium Size Picture</h3>
+
+A typical public access web site might simply ask for your
+name and email to give you a unique identity and for user tracking.
+Sites concerned about personal misrepresentation will require an email verification
+step. Your active membership base will be in flux as leave and other you restrict. 
+For sensitive applications (ie - medical tracking systems), access 
+control becomes more serious. 
+Here, required options include approval systems, encrypting passwords in the
+database.  This module allows a site administrator to set up an
+access control system by choosing from a palette of options.
+<p>
+To simplify the user authentication, a finite state machine is used
+to control the user's state. Users with access to the system
+have a user_state of 'authorized'. 
+
+<h3>Registration Options</h3>
+
+<blockquote>
+<table border=1>
+<tr><th>Parameter</th><th>Definition</th></tr>
+
+<tr><td>NotifyAdminOfNewRegistrationsP</td><td>Administrator is notified of all new registrations</td></tr>
+
+<tr><td>NewRegistrationEmailAddress</td><td>Where to send administrator notifications of registration (defaults to SystemOwner)</td></tr>
+
+
+<tr><td>EmailRegistrationConfirmationToUserP</td><td>New user is sent an email confirmation</td></tr>
+
+<tr><td>RegistrationRequiresApprovalP</td><td>Administrator must approve before user is authorized</td></td>
+
+<tr><td>RegistrationRequiresEmailVerificationP</td><td>User must verify email before he/she is authorized</td></tr>
+
+
+<tr><td>RegistrationProvidesRandomPasswordP</td><td>System will generate a random password for the user</td></tr>
+
+<tr><td>EncryptPasswordsInDBP</td><td>Encrypt the passwords inside the database</td></tr>
+
+
+<tr><td>EmailForgottenPasswordP</td><td>Provide (and allow) an interface for the user to ask for forgotten password sent via email</td></tr>
+
+
+<tr><td>EmailRandomPasswordWhenForgottenP</td><td>If the user requests a password reminder, generate a random password</td></tr>
+
+
+<tr><td>EmailChangedPasswordP</td><td>If the admin changes the user's password, allow this to be sent to the user</td></tr>
+
+<tr><td>AllowPersistentLoginP</td><td>Give an option for persistent cookies to store login information</td></tr>
+
+<tr><td>PersistentLoginDefaultP</td><td>If persistent cookies are allowed, make it default on</td></tr>
+
+<tr><td>LastVisitCookiesEnabledP</td><td>Enable the cookie-backed tracking system</td></tr>
+
+<tr><td>LastVisitExpiration</td><td>Maximum visit length for session tracking</td></tr>
+
+<tr><td>NeedCookieChainP</td><td>Set a cookie on more than 1 hostname (i.e., is your site a typical "foobar.com" and "www.foobar.com" case)</td><td></tr>
+
+<tr><td>CookieChainFirstHostName=yourdomain.com</td><td>First domain name in the cookie chain</td></tr>
+<tr><td>CookieChainSecondHostName=www.yourdomain.com</td><td>Second domain name in the cookie chain</td></tr>
+</table>
+</blockquote>
+
+<h3>Registration Finite State Machine</h3>
+
+A user must be in the authorized state to have access to
+the system. Prior to approval, users must pass 
+"Need Email Verification" and "Need Admin Approval" tests.  
+Users may be "Rejected" at
+an stage prior to the "Authorized" state. 
+One a user is "Authorized", they may be "Deleted" or "Banned".
+"Deleted" users may self-activate.
+
+
+<blockquote>
+<pre>
+
+			Not a user
+		     	     |	
+		             V
+	           Need Email Verification          Rejected (via any
+	             Need Admin Approval             pre-authorization state)
+   			     |				
+   		   	     |  	                
+Need admin approval<--------- ------------->Need email verification 
+   |						        |
+   |                 		 			|
+   --------------------->Authorized<---------------------                       
+                             |
+        		     |		  
+ Banned------------><-------- ------><---------------Deleted
+</pre>
+</blockquote>
+
+Following ACS convention, states in the database are represented by
+lowercase tokens, sometimes with underscores:
+
+<blockquote>
+<pre><code>
+user_state		varchar(100) 
+  check(user_state in ('need_email_verification_and_admin_approv', 
+                       'need_admin_approv', 
+                       'need_email_verification', 
+                       'rejected', 
+                       'authorized', 
+		       'banned', 
+		       'deleted'))
+</code></pre>
+</blockquote>
+
+
+<h3>Restricting to authorized users</h3>
+
+
+The <code>users_active</code> view contains only authorized users:
+<blockquote>
+<pre>
+--- users who are not deleted or banned 
+--- (not that this does not have approval system)
+
+create or replace view users_active
+as select * from users 
+ where user_state = 'authorized';
+
+</pre>
+</blockquote>
+<p>
+
+The <code>users_spammable</code> view contains active users that 
+may be spammed:
+<blockquote>
+<pre>
+create or replace view users_spammable
+as select u.* from users u, users_preferences up
+ where u.user_id = up.user_id(+)
+ and (on_vacation_until is null or 
+      on_vacation_until < sysdate)
+ and user_state = 'authorized'
+ and (email_bouncing_p is null or email_bouncing_p = 'f')
+ and (dont_spam_me_p is null or dont_spam_me_p = 'f');
+</pre>
+</blockquote>
+
+The <code>users_alertable</code> view contains active users that 
+wish to receive alerts:
+<blockquote>
+<pre>
+create or replace view users_alertable
+as
+select * 
+ from users 
+ where (on_vacation_until is null or 
+        on_vacation_until < sysdate)
+ and user_state = 'authorized'
+ and (email_bouncing_p is null or email_bouncing_p = 'f');
+</pre>
+</blockquote>
+
+<h3>Future Improvements</h3>
+<ul>
+<li> Add options to force user to change password after x days.
+</ul>
+
+<hr>
+
+<a href="http://teadams.com"><address>teadams@mit.edu</address></a>
+</body>
+</html>

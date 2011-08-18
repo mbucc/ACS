@@ -1,0 +1,314 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>Events Module</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Events</h2>
+
+part of the <a href="/doc/index.html">ArsDigita Community System</a>
+by <a href="http://photo.net/philg/">Philip Greenspun</a> and Bryan Che
+
+<hr>
+
+<ul>
+<li>User-accessible directory:  <a href="/events/">/events/</a>
+<li>Administrator directory:  <a href="/events/admin/">/events/admin/</a>
+<li>data model :  <a href="/doc/sql/display-sql.tcl?url=/doc/sql/events.sql">/doc/sql/events.sql</a>
+<li>Tcl procs:  /tcl/events-defs.tcl 
+
+</ul>
+
+<h3>The Big Idea</h3>
+
+<p>
+Organizations often present events, such as a lecture series or a social
+gathering.  This software module gives organizations a way to register
+people for events online.
+
+
+<h3>The Medium-sized Idea</h3>
+
+<p>
+Organizations often have a number of set events which they like to
+repeat.  For example, a company may have a certain presentation which it
+makes over and over.  A photoraphy club may hold monthly outings.  A
+marathon race could occur annually.  Therefore, we organize events in
+the following way:
+
+<p>
+Each organization has a series of <i>activities</i> that it holds.  An
+<i>event</i> is a particular instance of an activity--it is the actual
+occurance of an activity.  Each event has an organizer and takes place
+in a physical location and during a certain time.  For example, a
+software company might hold a series of talks as activities:
+<table cellpadding=5>
+<tr align=left><th>Company Talks</th></table>
+<ul>
+ <li>Why you should think our software is the best
+ <li>Why you should do things our way
+ <li>Why the Government should leave us alone and let us innovate
+</ul>
+<p>
+That software company could then present these talks as lecture events:
+<p>
+<table cellpadding=5>
+<tr align=left>
+ <th>Talk (Activity)
+ <th>Lecture Speaker (Event organizer)
+ <th>Lecture Date
+<tr align=left>
+ <td>Why you should think our software is the best
+ <td>billy
+ <td>05-07-2000
+<tr align=left>
+ <td>Why you should think our software is the best
+ <td>stevie
+ <td>08-29-2000
+<tr align=left>
+ <td>Why the Government should leave us alone and let us innovate
+ <td>billy
+ <td>09-10-2000
+</table>
+
+<p>
+Organizations that organize their events using this convention may
+then fully administer and register those events online using this
+module.  
+
+<h3>The Fine-details</h3>
+
+<h4>Activities</h4>
+
+<p>
+An organization is not necessarily an entire company--it can be a
+company department or office or project or any other group of people.
+Therefore, activities are owned by ACS user groups.  Each user group
+represents an organization of people.  An activity also has a creator, a
+name, a description, and a flag indicating if it is available.  Finally,
+an activity can link to a url for more information:
+
+<pre>
+create table events_activities (
+	activity_id	integer primary key,
+	-- activities are owned by user groups
+	group_id	integer references user_groups,
+	user_id		integer references users,
+        creator_id      integer not null references users,
+	short_name	varchar(100) not null,
+	default_price   number default 0 not null,
+	currency	char(3) default 'USD',
+	description	clob,
+        -- Is this activity occurring? If not, we can't assign
+        -- any new events to it.
+        available_p	char(1) default 't' check (available_p in ('t', 'f')),
+        deleted_p	char(1) default 'f' check (deleted_p in ('t', 'f')),
+        detail_url 	varchar(256) -- URL for more details,
+);
+</pre>
+
+<h4>Events</h4>
+<p>
+For each event, we need to track its organizers, its location, and its
+time.  We define the organizers' roles and their responsibilities.  We
+also store extra information that might pertain to that specific event,
+such as refreshemnts or audio/visual information.  In addition, we store
+of which activity this event is an instance.
+
+<pre>
+create table events_events (
+        event_id              integer not null primary key,
+        activity_id	      integer not null references events_activities,
+	venue_id	      integer not null references events_venues,
+	-- the user group that is created for this event's registrants
+	group_id	      integer not null references user_groups,
+	creator_id	      integer not null references users,
+        -- HTML to be displayed after a successful order.
+        display_after         varchar(4000),
+        -- Date and time.
+        start_time            date not null,
+        end_time              date not null,
+	reg_deadline	      date not null,
+        -- An event may have been cancelled.
+        available_p	      char(1) default 't' check (available_p in ('t', 'f')),	
+        deleted_p	      char(1) default 'f' check (deleted_p in ('t', 'f')),
+        max_people	      number,
+	-- can someone cancel his registration?		
+	reg_cancellable_p     char(1) default 't' check (reg_cancellable_p in ('t', 'f')),
+	-- does a registration need approval to become finalized?
+	reg_needs_approval_p  char(1) default 'f' check (reg_needs_approval_p in ('t', 'f')),
+	-- notes for doing av setup
+	av_note		      clob,
+	-- notes for catering
+	refreshments_note     clob,
+	-- extra info about this event
+	additional_note	      clob,
+	-- besides the web, is there another way to register?
+	alternative_reg	      clob,
+        check (start_time < end_time),
+	check (reg_deadline <= start_time)
+);
+
+-- where the events occur
+create table events_venues (
+       venue_id		  integer primary key,
+       venue_name	  varchar(200) not null,
+       address1		  varchar(100),
+       address2		  varchar(100),
+       city		  varchar(100) not null,
+       usps_abbrev	  char(2),
+       postal_code	  varchar(20),
+       iso		  char(2) default 'us' references country_codes,
+       time_zone	  varchar(50),
+       needs_reserve_p	  char(1) default 'f' check (needs_reserve_p in ('t', 'f')),
+       max_people	  number,	
+       description	  clob
+);
+
+</pre>
+
+<p>
+This data model also contains extensions for selling admission to
+events, althought the tcl pages do not currently implement this feature.
+These extensions can tie in with the 
+<a href="/doc/ecommerce.html">ecommerce module</a>.  
+
+<pre>
+create table events_prices (
+    price_id            integer primary key,
+    event_id            integer not null references events_events,
+    -- e.g., "Developer", "Student"
+    description         varchar(100) not null,
+    -- we also store the price here too in case someone doesn't want
+    -- to use the ecommerce module but still wants to have prices
+    price		number not null,
+    -- This is for hooking up to ecommerce.	
+    -- Each product is a different price for this event.  For example,
+    -- student price and normal price products for an event.
+--  product_id          integer references ec_products,
+    -- prices may be different for early, normal, late, on-site
+    -- admission,
+    -- depending on the date
+    expire_date	      date not null,
+    available_date    date not null
+);
+
+</pre>
+
+<p>
+
+
+<h4>Organizers</h4> 
+
+Each event should have at least one organizer.  Organizer are the people
+responsible for various aspects of a particular event.  For example, a
+lecture's organizers might be its speaker, the person in charge of
+audio/visual equipment, and the person in charge of catering.
+
+<pre>
+create table events_organizers_map (
+       event_id		      integer not null references events_events,  
+       user_id		      integer not null references users,
+       role		      varchar(200) default 'organizer' not null,
+       responsibilities	      clob
+);
+</pre>
+
+<h4>Registrations</h4>
+For each person who registers for an event, we record a bunch of
+information.  This helps the organizations understand who is coming to
+their events and why.  It also helps the organization accomodate its
+attendees' needs and group them together.
+
+<p>
+We organize registrations in the following way: a <i>registration</i>
+represents a person who has expressed interest in attending the event.
+There is one registration for each person who wants to attend.
+Registrations can have different states.  For example, a registration
+may be wait-listed because there are already too many registrations for
+a particular event.  Or, a registration may be canceled.
+<p>
+An <i>order</i> is a set of registrations.  Typically, when a person
+registers himself for an event, he will create one order containing his
+single registration.  But, there may be an individual who wishes to
+register multiple people at once.  In that case, the individual would
+make one order containing multiple registrations.  Thus, this data
+model allows people to make multiple registrations.  The tcl pages do
+not yet implement this feature, though.
+
+<pre>
+create table events_orders (
+       order_id		integer not null primary key,
+--       ec_order_id	integer references ec_orders,
+       -- the person who made the order
+       user_id		integer not null references users,
+       paid_p		char(1) default null check (paid_p in ('t', 'f', null)),
+	payment_method	varchar(50),
+	confirmed_date	date,
+	price_charged	number,
+	-- the date this registration was refunded, if it was refunded
+	refunded_date	date,
+	price_refunded	number,	
+       	ip_address	varchar(50) not null
+);
+
+create table events_registrations(
+        -- Goes into table at confirmation time:
+	reg_id		integer not null primary key,
+	order_id	integer not null references events_orders,
+	price_id	integer not null references events_prices,
+	-- the person registered for this reg_id (may not be the person
+	-- who made the order)
+	user_id		integer not null references users,
+	-- reg_states: pending, shipped, canceled, refunded
+	--pending: waiting for approval
+	--shipped: registration all set 
+	--canceled: registration canceled
+	--waiting: registration is wait-listed
+	reg_state	varchar(50) not null check (reg_state in ('pending', 'shipped', 'canceled',  'waiting')),
+	-- when the registration was made
+	reg_date	date,
+	-- when the registration was shipped
+	shipped_date	date,
+	org		varchar(4000),
+	title_at_org	varchar(4000),
+	attending_reason  clob,
+	where_heard	varchar(4000),
+	-- does this person need a hotel?
+        need_hotel_p	char(1) default 'f' check (need_hotel_p in ('t', 'f')),
+	-- does this person need a rental car?
+        need_car_p	char(1) default 'f' check (need_car_p in ('t', 'f')),
+	-- does this person need airfare?
+	need_plane_p	char(1) default 'f' check (need_plane_p in ('t', 'f')),
+	comments	clob
+);
+
+</pre>
+
+<h3>Using Events</h3> 
+
+<p>
+With the events module, organizations can create, edit, and remove
+activities.  They can do the same to events and organizers.  Thus,
+organizations can fully describe and advertise any activity event
+online.
+
+<p>
+Organizations can also obtain information about who is coming to their
+events and spam those attendees.  They can review order histories to see
+how many people registered for a given event and why they came.  In
+addition, they can view order statistics by activity, month, date, and
+order state.  Finally, they can spam their own organizers to remind them
+about their upcoming events.
+
+<p>
+People coming to register online at a site using this module will be
+able to find upcoming activity events and sign up for them.
+
+<p>
+<hr>
+<address><a href="mailto:bryanche@arsdigita.com">bryanche@arsdigita.com</a></address>
+
+</body>
+</html>

@@ -1,0 +1,12 @@
+<%= [ad_scope_admin_page_top "Help for Add New Download page" "Help for Add New Download page" "Help"] %>
+
+<ul>
+
+<li> Download Name is the download pretty name, e.g. Bloatware 2000
+<li> Directory name is the name of the directory (e.g. bw2000) under which different versions of the file will be physically stored. For scope "public", this directory is created under default location /web/foobar/download/. For scope "group", this is created under /web/foobar/download/groups/$group_id/ 
+<li> Description (optional) contains detail description of this particular download. 
+
+</ul>
+
+
+<%= [ad_scope_admin_footer] %>

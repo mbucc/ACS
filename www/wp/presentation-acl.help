@@ -1,0 +1,29 @@
+<%= [wp_help_header "Authorization"] %>
+
+In WimpyPoint, users can have one of three levels of access to a presentation:
+
+<ul>
+  <li><b>View-only</b> - these users can view the presentation but
+can't make changes to it. If the presentation is public, all users
+can automatically view the presentaiton.
+  <li><b>Collaborator</b> - these users can view and make changes
+to the presentation (e.g., edit and delete slides, change the
+presentation's title, etc.). They can't delete the presentation or
+freeze the slide set, however.
+  <li><b>Owner</b> - these users can do whatever they want to the presentation
+(view or make changes to it, delete the entire presentation, freeze
+the slide set, etc.). Owners can also give other users permission
+to view the presentation, or to make other users collaborators or owners.
+</ul>
+
+This page allows you to grant users permission to view, collaborate on,
+or own the presentation. It displays a box for each of these privileges
+(omitting the view-only box if the presentation is public).
+To invite a person to view, collaborate on, or own the presentation,
+click the <i>Add One</i> button in one of the boxes. (Note that you
+can even add a person who hasn't registered with <%= [ad_system_name] %>.)
+You'll have the option to send the person whom you invite an E-mail
+containing a link which he or she can use to go directly to the
+presentation.
+
+<%=[wp_footer]%>

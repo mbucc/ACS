@@ -1,0 +1,8 @@
+<%= [ad_scope_admin_page_top "Help for View Versions" "Help for View Versions" "Help"] %>
+
+<ul>
+This page lists all versions of a specific download.
+<li> To view data/ report /edit information ( e.g. status) of a specific version , click on thethe chosen version.
+</ul>
+
+<%= [ad_scope_admin_footer] %>

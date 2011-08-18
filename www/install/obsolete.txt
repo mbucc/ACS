@@ -1,0 +1,19 @@
+#
+# /www/install/obsolete.txt
+#
+# michael@arsdigita.com, 2000-03-16
+#
+# Listing of files obsoleted by each release of the ACS,
+# to be deleted when upgrading.
+#
+# $Id: obsolete.txt,v 1.1.2.3 2000/03/17 21:09:29 michael Exp $
+#
+
+# ACS 3.2
+#
+/tcl/00-ad-utilities.tcl (replaced by /tcl/ad-utilities.tcl.preload)
+/tcl/ad-defs.tcl (replaced by /tcl/ad-defs.tcl.preload)
+/tcl/dp.tcl (replaced by /tcl/data-pipeline-defs.tcl)
+/tcl/ad-partner.tcl (replaced by /tcl/ad-partner-defs.tcl)
+/tcl/sql-book-defs.tcl (not part of ACS)
+/tcl/teaching-defs.tcl (not part of ACS)

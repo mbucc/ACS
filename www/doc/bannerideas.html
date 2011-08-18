@@ -1,0 +1,159 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>Banner Ideas</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Banner Ideas</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="http://photo.net/philg/">Philip Greenspun</a>
+
+<hr>
+
+<ul>
+<li>User-accessible directory:  <a href="/bannerideas/">/bannerideas/</a>
+<li>Site administrator directory:  <a href="/admin/bannerideas/">/admin/bannerideas/</a>
+<li>data model :  <a href="/doc/sql/display-sql.tcl?url=/doc/sql/bannerideas.sql">/doc/sql/bannerideas.sql</a>
+<li>Tcl procs:  /tcl/ad-bannerideas.tcl 
+
+</ul>
+
+<h3>The Big Idea</h3>
+
+A banner idea is something that you can place randomly on pages enticing
+readers to click to a different, potentially unrelated page.  How is
+that different from a banner ad?  A banner <em>idea</em> 
+
+<ul>
+
+<li>is typically programmed to appear at the bottom of a page, rather
+than at the top
+
+<li>has an arbitrarily long text introduction to the idea 
+
+<li>can carry a good-sized photo as an additional enticement
+
+</ul>
+
+Why use banner ideas?  If you have a bunch of users working themselves
+into a rut in a particular corner of your site, you can use banner ideas
+to show them the interesting content on other parts of the site.  For
+example, on photo.net, I use these to try to get people to go from 
+the boring classified system <a
+href="http://photo.net/gc/">http://photo.net/gc/</a>.
+
+<h3>Under the Hood</h3>
+
+As a developer, all that you have to do is call
+<code>bannerideas_random</code> and include the result in your page
+output.
+
+<p>
+
+Note that when a user clicks the "more" link from a banner idea, the
+click is logged in the <code>clickthroughs</code> column of the
+<code>bannerideas</code> table.
+
+<p>
+
+To save wear and tear on the database, the banner ideas are pulled from
+the database and cached in RAM for one hour (by default).
+
+<h3>The Future</h3>
+
+We keep a set of keywords associated with each banner idea.  Suppose
+that the banner ideas are being placed below a discussion forum thread.
+The right thing to do would be to look at the words used in the
+discussion and pick a banner idea that was related to the thread.  
+
+
+<h3>Sociology</h3>
+
+I built the banner ideas system in order to test my theory that human
+beings will accept, without complaint, an unlimited amount of
+commercialization.  That one can stuff flashing banner ads in every
+corner of a page and nobody will comment.  The other side of my theory
+was that unfamiliar ideas would drive people crazy.
+
+<p>
+
+I tested this theory by putting crass animated banner ads at the top of
+some pages in <a href="http://greenspun.com/bboard/">the LUSENET system
+at greenspun.com</a>.  I put banner ideas at the bottom of other pages
+and also put them into classified ads at photo.net.  The result?  Not a
+single complaint about the garish commercial-ish banner ads.  Huge
+volumes of email complaining about the ideas.  
+
+<p>
+
+Here's one from someone who has concluded that photo.net was started to
+be some sort of commercial trading post:
+
+<blockquote><pre>
+You're photo.net site is great, I have been using it for a long time and
+have bought/sold many many items. I also enjoy the equipment reviews and
+travel pics.
+
+Please take the following in a friendly manner, and as a request from
+someone who obviously thinks differently than yourself.
+
+Recently you began adding small "ads" at the bottom of other people's
+ads. Some of the ads you have posted are very offensive to me and I
+would greatly object to them appearing along with one of my ads. The two
+I saw today include references to a God that created man-man, man-woman,
+and woman-woman couples. To me it is blasphemy, and dangerous to a young
+mind, like my son's who I allow to peruse your site. The other ad seemed
+to promote anti-social behaviour, encouraging one to have fewer
+"transactions" with others.
+
+I love your site, but if these ads continue I will be forced to use
+other avenues such as ebay to enjoy my photo buying/selling habits. 
+
+Again, thanks for a great site, but let's keep it free from these very
+personal opinions....
+</pre></blockquote>
+
+(this author was referring to an excerpt from Aristophanes in
+<a href="http://photo.net/samantha/"><cite>Travels with Samantha</cite></a>
+and a reference to <a
+href="http://photo.net/philg/litigation/philosophy.html">my avoiding
+litigation article</a>)
+
+<p>
+
+Here's another one from a railroad group:
+
+<blockquote><pre>
+However, some members of our group feel that a portion of the material 
+being presented is a little too controversial to expose to people who 
+are expecting to see only railroad content.  We are not out to advocate 
+any positions one way or another, just talk about trains.  For example, 
+someone reported a message pointing to a militia Web page.  It's fine 
+with us that militia groups have Web sites, but we figure people visit 
+our site to take a time out from such weighty issues.  We would prefer 
+for people to locate those on their own.
+</pre></blockquote>
+
+This was provoked by a reference to <a
+href="http://photo.net/wtr/thebook/community.html">the community chapter
+of <cite>Philip and Alex's Guide to Web Publishing</cite></a>, which
+uses the Michigan Milita to make the point that most organizations spend
+most of their time on education, even if they wouldn't be thought of as
+primarily educational in nature.
+
+<p>
+
+I think my theory holds up.  A lot of folks can't stand unfamiliar
+ideas!  What I did not expect is how much difficulty many people have in
+reading comprehension.  The most virulent complaints were from people
+who had simply misunderstood the banner idea or the linked-to article.
+This can't be a matter simply of literacy because the same people were
+perfectly capable of writing a grammatical multi-paragraph complaint.
+
+
+<hr>
+<a href="http://photo.net/philg/"><address>philg@mit.edu</address></a>
+</body>
+</html>

@@ -1,0 +1,1444 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>Homepage</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Homepage</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="http://web.mit.edu/mobin/web">mobin</a>
+<br>
+<hr>
+
+<ul>
+<li>worldViewableContent:  <a href="/users/">/users/</a>
+<li>siteAdministratorDirectory:  <a href="/admin/users/">/admin/users/</a>
+<li>userHomepageMaintenance:  <a href="/homepage/">/homepage/</a>
+<li>dataModel:  <a href="/doc/sql/display-sql.tcl?url=/doc/sql/homepage.sql">/doc/sql/homepage.sql</a>
+<li>TclProcs:  /tcl/homepage-defs.tcl 
+<li>userContent:  /web/servername/users/ (determined by [ad_parameter ContentRoot users])
+</ul>
+
+<i>since ACS 3.1</i>
+
+<h3>0&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Introduction</h3>
+
+The homepage module is about users maintaining their homepages and
+publishing web content.
+<p>
+
+<b>0.1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Abilities</b>
+<p>
+
+The Homepage Module gives users of the site the ability to publish
+content on the world-wide-web. The users can create their own
+heirarchical directory structure to organize their content on the
+site. The not-so-advanced users and others who want to publish large
+amounts of content and wish to give their content a consistent look,
+can create special "managed content" directories in their file
+system. This would be useful for publishing content like books etc
+which require a considerable level of consistency between all the
+parts (chapters in the case of books) of the publication. This in no
+way hampers the endeavours of advanced html publishers who would like
+to maintain their own filesystem since they can choose not to use
+content managed directories and have full control over the look and
+feel of their web pages.
+<p>
+
+<b>0.2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Inabilities</b>
+<p>
+
+The homepage module does not let users to author server side scripts,
+althought users are free to use client side scripts in html using the
+<code>&lt;script&gt;</code> tag. The module does not provide users with a database
+handle and therefore cannot be used to author database backed
+webpages.
+<p>
+
+<h3>1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;User's Manual</h3>
+
+This section provides information regarding the use of the homepage
+module by the end users. Users have the facility to have their
+webpages on the system if the homepage module is enabled on their
+system. The users do not need to know html really, but they can learn
+sufficient html within five blinks of an eye by reading the lower
+parts of sections 1.1.4.2 and 1.1.4.5.1 of this document.
+<p>
+
+<b>1.1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Homepage Maintenance</b>
+<p>
+
+If the homepage module is enabled in your system, three links should
+appear in your workspace: "Homepage Maintenance", "Neighborhoods", and
+"User Homepages". The "Homepage Maintenance" link is for maintining
+you own homepage and mainting the content you publish. The
+"Neighbourhoods" page is for browsing through neighbourhoods and
+viewing their members or joining one of them. You can leave your
+neighbourhood by clicking on "leave it!" link on the neighbourhoods
+page (this link appears only when you are the member of a
+neighbourhood).
+<p>
+
+1.1.1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Neighbourhoods Page
+<p>
+The neighbourhoods page lets you browse through neighbourhoods. You
+can join a neighbourhood by clicking on the [join] button besides a
+neighbourhood's entry in the list. Similarly, the [members] button
+lets you view all the members of a neighbourhood. As a normal user,
+you cannot create, modify, delete, move, or rename neighbourhoods. An
+attempt at doing so will result only in a meaningless error message
+such as "Insufficient permission to perform requested database access
+in AddNeighborhood". The neighbourhoods page is located at
+/homepage/neighbourhoods.tcl. Alternatively, there is a link to it
+from your workspace.
+<p>
+
+1.1.2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;User Homepages
+<p>
+A list of the users who have initialized their webspace (webspace
+initialization is discussed in 1.1.3) can be seen at
+/homepage/all.tcl. There is a link to it, marked as "User Homepages",
+at your workspace.
+<p>
+
+1.1.3&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Webspace Initialization
+<p>
+
+This section discusses using the "homepage maintenance" option for the
+first time.
+<p>
+
+1.1.3.1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Root Directory Creation
+<p>
+You need to initialize your webspace before you can use the homepage
+module for the first time. When you attempt to go to the "Homepage
+Maintenance" page from your workspace or by visiting /homepage/, a
+message appears which reads "Your webspace has not been activated
+yet. Click here to set it up for the first time." Just click on "here"
+in the "... Click here to ..." and your webspace will be
+initialized. This process should take about a few hundred
+microseconds. In this process, the system creats a root directory for
+you and this is depicted by the consumption of some meagre amount of
+your quota space (typically 2,048 bytes). Once it is done, you can
+start maintaining your webpage if you already have a screen name set up.
+<p>
+
+1.1.3.2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Setting up a screen name
+<p>
+If you have initialized your webspace but do not have a screen name
+yet, the "homepage maintenance" page /homepage/ displays a message
+with reads "You have not set up a screen name as yet. Click here to
+set one up.". You can set up your screen name by clicking on the
+"here" or alternatively, you can set up your screen name by clicking
+on the "update" link in your "Basic Information" section in your
+workspace /pvt/home.tcl.
+<p>
+
+1.1.4&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Homepage Maintenance Page
+<p>
+The homepage maintenance page is at /homepage/. You use it to maintain
+your web content once your webspace has been initialized and you have
+set up a screen name for yourself.
+<p>
+
+1.1.4.1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Customizing your Maintenance and Public Pages
+<p>
+You can change the display settings of your maintenance page by
+clicking on the [display-settings] link in the lower right of the
+page. There are two types of settings: settings for public pages, and
+settings for maintenance pages. The settings will affect your public
+and maintenance pages respectively. Your public pages are the pages
+shown to the entire world and are available at
+http://yourdomain.com/users/your_screen_name. Your maintenance page is
+/homepage/, the page through which you maintain your webspace. You can
+also customize the way you view your files. The directory listing can
+be normal or hierarchical. This can be set using the [ normal view |
+tree view ] buttons at the upper right of the screen. By clicking on a
+directory, you browse its content (in the normal view), or you browse
+content rooted at it (in the tree view).
+<p>
+
+1.1.4.2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Creating Files
+<p>
+You can create files by clicking on the "create file" link. You will
+be prompted for the name, and an empty file with that name will be
+created. Mind however that to be able to invoke the editor on a file,
+it should have a .text, .html, .htm, .txt or anyother extension that
+represents a mime type of text/*. If you're unsure of what this means,
+just end the filename in .html if it's an html file or .text if it's a
+text file. If you do not know html then, for your own good, I advise
+you to learn it. It is a very good advice. Take it. Html is very very
+easy to learn. Meanwhile, you can just name your files ending with
+.text or just use the "publish content" option. It requires no
+knowledge of html. The created file is placed in the directory you are
+currently browsing. Html files have the following format:<br>
+<code>
+<code>&lt;html&gt;</code><br>
+<code>&lt;head&gt;</code><br>
+<code>&lt;title&gt;</code><i>title-goes-here</i><code>&lt;/title&gt;</code><br>
+<code>&lt;/head&gt;</code><br>
+<code>&lt;body&gt;</code><br>
+<br>
+<i>body-text-goes-here</i><br>
+<br>
+<code>&lt;/body&gt;</code><br> <code>&lt;/html&gt;</code><br> </code><br> To learn about the
+things you can do in the body text, read the lower half of section
+1.1.4.5.1 of this document
+
+<p>
+
+1.1.4.2.1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Index files and generated indices
+<p>
+If a web user requests a file from your webspace which is actually a
+directory, then the system generates a default index page for it. The
+format of the index page is such: your portrait (if you uploaded one
+following the links in your workspace) in the top right, your name as
+heading, and "webspace at your-system-name" as subheading. Then it
+displays a listing of files in the directory. If you do not wish to
+have a generated index, you can create an index file in that
+directory. By default filenames index.html, index.htm, and Default.htm
+will be treated by the system as index files and will be served when a
+directory is requested by the web browser. The presence of an index
+file makes it impossible for the web browser to lit the contents of
+that directory.
+<p>
+
+1.1.4.3&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Uploading Files
+<p>
+You can upload files from your local computer to your homepage
+webspace by clicking on the "upload file" link. You can either type
+the full filename on the local filesystem or press the browse button
+to browse your local filesystem to select the file you want to
+upload. Please mind your limited quota space before deciding on which
+files to upload.
+<p>
+
+1.1.4.4&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Creating Folders
+<p>
+Create folders using the "create folder" link. You are prompted for a
+folder name and a description. Choose a nice description for your
+folders as these descriptions are displayed alongside the folder name
+in the generated index pages which the world sees. You can remove,
+rename, or move folders by using the remove, rename, and move links
+respectively. A folder which is not empty cannot be deleted.
+<p>
+
+1.1.4.5&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Invoking the Content Manager
+<p>
+Click the "publish content" link to publish managed content on your
+site. You have to provide four parameters to the content manager: the
+content type, short name, full name, and subsections. Content type
+determines the type of your content. It can be anything from "book",
+"magazine", "newsletter", "encyclopedia", to anything you can come up
+with. The short name is a short name which describes the content. A
+specially marked folder with that name is created to store the
+content. The full name is the full name of your content. For example,
+if you're publishing your book then this ought to be the complete
+title of the book etcetra. In subsections, provide what one subsection
+of the content is called. For a book, this could be "chapter". If the
+content type is chapter, this could be "section". Please mind that you
+must provide a singular in this field.
+<p>
+
+1.1.4.5.1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Managing Content
+<p>
+I will illustrate this with an example. Suppose I click on "publish
+content" and create content of type "magazine", short name "mobmag",
+full name "Mobin's Foolish Magazine", and subsections "article". This
+tells the content manager that I wish to publish a magazine which is
+composed of articles (multiple level hierarcies in content is possible
+but not discussed here). The content manager creates a folder "mobmag"
+(which is marked as a a magazine). When I click on "mobmag" to browse
+its contents, I see one file in it already, "Introductory Text". You
+can only edit or remove this file. The web viewer sees the contents of
+this file on the main magazine page (in this case
+http://mydomain.com/users/mobin/mobmag/) above the table of
+contents. To add an article, click on the "add article" link. This
+adds an empty article which you can then edit. While creating
+articles, choose meaningful descriptions for them. You can use html in
+these files if you want. This gives you the ability to show uploaded
+photos i your web content. The contents of these files are pasted
+within larger html files when these are served so you should not use
+the <code>&lt;html&gt;</code>, <code>&lt;title&gt;</code>,
+<code>&lt;body&gt;</code> etcetra tags. Also, since these files are
+really html, you will need to escape <code>&lt</code>,
+<code>&gt</code>, and <code>&</code> with <code>&amp;lt</code>,
+<code>&amp;gt</code> and <code>&amp;amp</code> respectively if any of these are
+used as text. So you can enclose text within the
+<code>&lt;h2&gt;</code> and <code>&lt;/h2&gt;</code> to make it a
+second level heading, <code>&lt;b&gt;</code> and
+<code>&lt;/b&gt;</code> to make it bold, <code>&lt;i&gt;</code> and
+<code>&lt;/i&gt;</code> to make it italicised and more importantly,
+you can use something like <code>&lt;a href=http://<i>whatever
+address</i>&gt;</code><i>whatever link name</i><code>&lt;/a&gt;</code>
+to provide a link to any addess on the web. Also, you can have
+something like <code>&lt;img src=<i>picture-filename</i>&gt;</code> to
+display the picture which has the name <i>picture-filename</i>. This
+way you can upload picture files and then show them in your documents.
+<p>
+
+1.1.4.5.2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Deleting Managed Directories
+<p>
+Delete all files in a managed directory by using the remove links next
+to them and then go to the parent directory and then remove the
+managed directory.
+<p>
+
+<h4>1.2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Sitewide Administration</h4>
+
+Administration features are available even if the module is not
+enabled. Administration is tied into users administration
+/admin/users/ and administrators can additionally change a user's
+screen name, change user's quota space, or become a user. This last
+one, reminiscent of the unix command "su" is a very powerful
+feature. Administration comes in three flavours really: user
+administration, neighbourhood administration, and user content
+administration.
+<p>
+
+1.2.1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;User Administration
+<p>
+
+User administration is the same as has been before. Its directory is
+/admin/users/ However, the homepage module has introduced the concept
+of user quotas. Also, there had been a long felt need for screen names
+for users in ACS. With the homepage module, this need exceeded the
+threshold level and we incorporated them into the main ACS users
+table. The administration of screen names and user quotas is done via
+/admin/users/ Thus the homepage module doesn't really have a site wide
+administration directory of its own. Its administration is mainly done
+via /admin/users/
+<p>
+
+1.2.2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Neighbourhood Administration
+<p>
+
+Administration of neighbourhoods is done at
+/homepage/neighbourhoods.tcl. This page will hereby be referred to as
+the "neighbourhoods page". If the homepage module is enabled in your
+system, a link should appear to the neighbourhoods page at your
+workspace. The neighbourhoods page is essentially for browsing through
+neighbourhoods, viewing their members or even joining a
+neighbourhood. Additionally, site wide administrators can create
+neighbourhoods by pressing the [create-neighborhood] button above the
+neighbourhoods listing; remove neighbourhoods by pressing the [remove]
+button besides a neighbourhoods name; change neighbourhood hierarchy
+by pressing the [move] button and moving neighbourhoods around; or
+change the name or description of a neighbourhood by pressing the
+[rename] button besides a neighbourhood name. Administrators should
+mind the five hundred letter maximum limit on neighbourhood names and
+a four thousand letter limit on neighbourhood descriptions.
+<p>
+
+1.2.3&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;User Content Administration
+<p>
+
+Situations may arise where an administrator will need to remove user
+content or take other such actions etcetra. In such a situation, the
+administrator can go to /admin/users/, search for the appropriate user
+and click on the "become this user!" link. This allows the
+administrator to become any user he or she might need to. (Just like
+the unix "su" command which lets the root swith into other
+users). This means that now administrators can do anything that a user
+can do. Administrators could become other users previously (by
+forcibly changing their password and logging in as them) but this is a
+much cleaner and acceptable way of doing that. Ofcourse,
+administrators must not misuse this feature and should use it only to
+administer when other means are unavailable.
+<p>
+
+
+<h3>2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Technical Documentation</h3>
+
+This section describes the mechanics of the homepage module and
+concerns developers. Sections 2.1 to 2.4 discuss the different
+components of the module: User Quota Management, Filesystem and Access
+Management, Content Management, and Neighbourhood Management. Section
+2.5 talks about how we connect these four components together.
+<p>
+
+<h4>2.1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;User Quota Management</h4>
+
+Users of the system have a limited max quota for storing their web
+content and uploaded files. The default values for the quotas are
+determined by some of the variables in the ad.ini file.
+<p>
+<code>
+;&nbsp;Maximum&nbsp;quota&nbsp;for&nbsp;a&nbsp;'normal&nbsp;user'&nbsp;(a&nbsp;lesser&nbsp;mortal&nbsp;who&nbsp;&nbsp;is&nbsp;not&nbsp;the&nbsp;<br>
+;&nbsp;site&nbsp;wide&nbsp;administrator)&nbsp;of&nbsp;the&nbsp;site&nbsp;in&nbsp;mega-bytes.&nbsp;For&nbsp;example,&nbsp;a&nbsp;<br>
+;&nbsp;'20'&nbsp;corresponds&nbsp;to&nbsp;20,971,520&nbsp;bytes.&nbsp;Values&nbsp;need&nbsp;not&nbsp;be&nbsp;&nbsp;integer.&nbsp;<br>
+;&nbsp;Value&nbsp;is&nbsp;overridden&nbsp;for&nbsp;a&nbsp;&nbsp;particular&nbsp;user&nbsp;&nbsp;throught&nbsp;existence&nbsp;&nbsp;of&nbsp;<br>
+;&nbsp;entry&nbsp;in&nbsp;the&nbsp;users_special_quotas&nbsp;table.<br>
+NormalUserMaxQuota=5<br>
+<br>
+;&nbsp;Maximum&nbsp;quota&nbsp;for&nbsp;site&nbsp;wide&nbsp;administrators.&nbsp;&nbsp;Special&nbsp;quotas&nbsp;can&nbsp;be&nbsp;<br>
+;&nbsp;set&nbsp;by&nbsp;adding&nbsp;rows&nbsp;to&nbsp;&nbsp;the&nbsp;users_special_quotas&nbsp;table.&nbsp;&nbsp;This&nbsp;param<br>
+;&nbsp;will&nbsp;be&nbsp;used&nbsp;for&nbsp;a&nbsp;site&nbsp;wide&nbsp;administrator&nbsp;only&nbsp;when&nbsp;he/she&nbsp;doesnt<br>
+;&nbsp;have&nbsp;an&nbsp;entry&nbsp;in&nbsp;the&nbsp;users_special_quotas&nbsp;table.<br>
+PrivelegedUserMaxQuota=20<br>
+<br>
+;&nbsp;Space&nbsp;taken&nbsp;by&nbsp;a&nbsp;directory&nbsp;(in&nbsp;bytes).&nbsp;We&nbsp;need&nbsp;this&nbsp;so&nbsp;that&nbsp;a&nbsp;user&nbsp;<br>
+;&nbsp;cannot&nbsp;crash&nbsp;the&nbsp;system&nbsp;by&nbsp;creating&nbsp;millions&nbsp;of&nbsp;directories.&nbsp;&nbsp;This&nbsp;<br>
+;&nbsp;will&nbsp;ensure&nbsp;that&nbsp;a&nbsp;directory&nbsp;detracts&nbsp;from&nbsp;his/her&nbsp;quota.<br>
+DirectorySpaceRequirement=2048<br>
+</code>
+<p>
+
+NormalUserMaxQuota and PrivelegedUserMaxQuota are specified in
+megabytes... which means that a 5 for example, corresponds to a quota
+space of 5,242,880 bytes. DirectorySpaceRequirement determines the
+amount of bytes to detract from the user's available quota for every
+directory he or she creates. This is useful because directories do
+take up space on the filesystem and we do not want to give a user the
+license to harm our system by creating a few hundred thousand
+directories.
+<p> 
+
+Users can have special quotas if they have an entry in the
+users_special_quotas table:
+<p>
+<pre><code>
+-- users have their quotas specified by [ad_parameter PrivelegedUserMaxQuota 
+-- users] or [ad_parameter  NormalUserMaxQuota users]  depending on  whether 
+-- they are site wide administrators or not. However, some users might  have 
+-- special quotas which can be granted  by site  wide administrators.  These 
+-- quotas are recorded in the users_special_quotas table. If a  user has  an 
+-- entry in this table then the above mentioned parameter values are ignored 
+-- and instead max_quota is used as his/her quota space.
+
+create table users_special_quotas (
+	user_id			integer primary key references users,
+	max_quota		number not null,
+	modification_date	date default sysdate not null
+);
+</code></pre>
+<p>
+
+An entry in this table overrides the default quotas specified by the
+parameters. Special quotas can be assigned/removed only by site wide
+administrators using the users admin pages /admin/users/
+<p>
+This dichotomy of user quota values (special quotas in Oracle and
+default quotas in parameters) results in long sql queries when
+querying the database from Tcl files for remaining quota space for a
+user. For example:
+<p>
+<pre>
+select ((decode((select count(*) from
+                users_special_quotas
+                where user_id=$user_id),
+                0, [ad_parameter [ad_decode $admin_p \
+                         0 NormalUserMaxQuota \
+                         1 PrivelegedUserMaxQuota \
+                         NormalUserMaxQuota] users],
+                (select max_quota from
+                 users_special_quotas
+                 where user_id=$user_id))) * power(2,20)) -
+      ((select count(*) * [ad_parameter DirectorySpaceRequirement users]
+        from users_files
+        where directory_p='t'
+        and owner_id=$user_id) +
+       (select nvl(sum(file_size),0)
+        from users_files
+        where directory_p='f'
+        and owner_id=$user_id)) as quota_left
+from dual
+
+</pre>
+
+<p>
+Following is the PL/SQL code used in user quota management:
+<p>
+This function returns the maximum quota space available to the user. It takes in the user_id, the default quota for normal users, the default quota for abnormal users, and whether this user is abnormal or not.
+<pre>
+create or replace function hp_user_quota_max (userid IN integer, lesser_mortal_quota IN integer, higher_mortal_quota IN integer, higher_mortal_p IN integer)
+return integer
+IS
+	quota_max		integer;
+	special_count		integer;
+	return_value		integer;
+BEGIN
+	select count(*) into special_count
+	from users_special_quotas
+        where user_id=userid;
+
+	IF special_count = 0
+	THEN
+		IF higher_mortal_p = 0
+		THEN
+			select (lesser_mortal_quota * power(2,20)) 
+			into return_value
+			from dual;
+			return return_value;
+		ELSE
+			select (higher_mortal_quota * power(2,20)) 
+			into return_value
+			from dual;
+			return return_value;
+		END IF;
+	ELSE
+		select max_quota into quota_max
+		from users_special_quotas
+                where user_id=userid;
+		select (quota_max * power(2,20)) 
+		into return_value
+		from dual;
+		return return_value;
+	END IF;
+END;
+/
+show errors
+</pre>
+Same as above, only that it does not need to know whether the person is a normal user or not.
+<pre>
+create or replace function hp_user_quota_max_check_admin (userid IN integer, lesser_mortal_quota IN integer, higher_mortal_quota IN integer)
+return integer
+IS
+	quota_max		integer;
+	special_count		integer;
+	return_value		integer;
+	higher_mortal_p		integer;
+BEGIN
+	select count(*) into special_count
+	from users_special_quotas
+        where user_id=userid;
+
+	select count(*) into higher_mortal_p
+	from user_group_map ugm
+	where ugm.user_id = userid
+	and ugm.group_id = system_administrator_group_id;
+
+	IF special_count = 0
+	THEN
+		IF higher_mortal_p = 0
+		THEN
+			select (lesser_mortal_quota * power(2,20)) 
+			into return_value
+			from dual;
+			return return_value;
+		ELSE
+			select (higher_mortal_quota * power(2,20)) 
+			into return_value
+			from dual;
+			return return_value;
+		END IF;
+	ELSE
+		select max_quota into quota_max
+		from users_special_quotas
+                where user_id=userid;
+		select (quota_max * power(2,20)) 
+		into return_value
+		from dual;
+		return return_value;
+	END IF;
+END;
+/
+show errors
+</pre>
+This function tells us the amount of quota space used by a user (in bytes). It takes in the directory space requirement and the user id.
+<pre>
+create or replace function hp_user_quota_used (userid IN integer, dir_requirement IN integer)
+return integer
+IS
+	return_value		integer;
+	file_space		integer;
+	dir_space		integer;
+BEGIN
+	select (count(*) * dir_requirement) into dir_space 
+        from users_files
+        where directory_p='t'
+        and owner_id=userid;
+
+	select nvl(sum(file_size),0) into file_space
+        from users_files
+        where directory_p='f'
+        and owner_id=userid;
+
+	return_value := dir_space + file_space;
+
+	return return_value;
+END;
+/
+show errors
+</pre>
+This function tells us the amount of quota space available to a user (in bytes). It takes in the directory space requirement, the user id, default quotas, and 'normality' of the user.
+<pre>
+create or replace function hp_user_quota_left (userid IN integer, lesser_mortal_quota IN integer, higher_mortal_quota IN integer, higher_mortal_p IN integer, dir_requirement IN integer)
+return integer
+IS
+	return_value		integer;
+BEGIN
+	select (hp_user_quota_max(userid, lesser_mortal_quota, higher_mortal_quota, higher_mortal_p) - hp_user_quota_used(userid, dir_requirement))
+	into return_value
+	from dual;
+
+	return return_value;
+END;
+/
+show errors
+</pre>
+Same as above but does not need to know whether user is normal (non-admin) or not. 
+<pre>
+create or replace function hp_user_quota_left_check_admin (userid IN integer, lesser_mortal_quota IN integer, higher_mortal_quota IN integer, dir_requirement IN integer)
+return integer
+IS
+	return_value		integer;
+BEGIN
+	select (hp_user_quota_max_check_admin(userid, lesser_mortal_quota, higher_mortal_quota) - hp_user_quota_used(userid, dir_requirement))
+	into return_value
+	from dual;
+
+	return return_value;
+END;
+/
+show errors
+
+
+</pre>
+<p>
+<h4>2.2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Filesystem and Access Management</h4>
+
+User files are stored on the filesystem. They are not stored as BLOBs
+in Oracle. This is due to the fact that serving content from the
+database keeps the database handle engaged for the entire duration of
+the transmission (unless we come up with a way to first read the BLOB
+in a C structure and then serve the content after conveniently
+releasing the handle). Nevertheless, as I was saying, we store user
+content on the filesystem. The content is rooted at [ad_parameter
+ContentRoot users]:<br>
+<pre>
+; all user  web content will be rooted  under  this directory.  This
+; directory will be the root of  all the web content being published
+; by the users of the system.
+ContentRoot=/web/acsdev/users/
+</pre>
+Each user's personal content is rooted under [ad_parameter ContentRoot
+users]$user_id where $user_id is the user's unique id in the users
+table.
+<p>
+We do store meta data in the users_files table:<br>
+<pre>
+-- We use this sequence to assign values to file_id. The 
+-- reason for starting from 2 is that no file is special 
+-- enough to have file_id=1, or is there a file that is?
+
+create sequence users_file_id_seq start with 2;
+
+create table users_files (
+	file_id			integer primary key,
+	-- the maximum filesize in unix is 255 characters (starting from 1)
+	filename		varchar(255) not null,
+	directory_p		char(1) default 'f', 
+	constraint users_dir_ck check(directory_p in ('t','f')),
+	file_pretty_name	varchar(500) not null,
+	-- this is the number of bytes the files takes up on the file 
+	-- system. We will use these values to determine quota  usage 
+	-- except where directory_p is true. In that case, we'll  use 
+	-- [ad_parameter DirectorySpaceRequirement users] to see  the 
+	-- amount of quota space consumed by a directory. Thus, if we 
+	-- magically manage to change the file system,  we dont  have 
+	-- to update  file_size for  directories here  because it  is 
+	-- irrelevent.
+	managed_p		char(1) default 'f' check(managed_p in ('t','f')),
+	-- this column is used for files created by the content
+	-- publishing system which the user cannot rename or move
+	modifyable_p		char(1) default 't' check(modifyable_p in ('t','f')),
+	file_size		number not null,
+	content_type		references users_content_types,
+	-- points to the user_id of the user who owns this file.
+	owner_id		integer not null references users,
+	-- points to the file_id of the directory which contains 
+	-- this file. Useful for supporting hierarchical content 
+	-- structure.
+	parent_id		integer references users_files
+);
+
+create index users_files_idx1 on users_files(file_id, parent_id);
+
+create index users_files_idx2 on users_files(parent_id, file_id);
+
+create index users_files_idx3 on users_files(owner_id);
+
+</pre>
+Here is the PL/SQL code used for filesystem management (the
+filesystemManagement codeBlock is the largest PL/SQL codeblock in the
+homepage module:
+<br>
+This function returns the full filename (relative to the content root)
+of the file specified by the filesystem_node input. The
+filesystem_node is the file_id of the file in the users_files table.
+<pre>
+-- returned value is a filename that does not begin with a slash
+create or replace function hp_true_filename (filesystem_node IN integer)
+return varchar2
+IS
+	CURSOR name_cursor IS
+		select filename from users_files
+		where file_id=filesystem_node;
+	CURSOR parent_cursor IS
+		select parent_id from users_files
+		where file_id=filesystem_node;
+	fullname	varchar(500);
+	parentid	integer;
+BEGIN
+	OPEN parent_cursor;
+	OPEN name_cursor;
+	FETCH parent_cursor INTO parentid;
+	FETCH name_cursor INTO fullname;
+	CLOSE parent_cursor;
+	CLOSE name_cursor;
+	IF parentid is null
+	THEN 
+		return fullname;
+	ELSE
+		return CONCAT(hp_true_filename(parentid), CONCAT('/',fullname));
+	END IF;	
+END;
+/
+show errors
+</pre>
+This function takes in a filesystem node fsid and a user id u_id and
+returns 0 if the user has access permission to this file otherwise
+returns 1. Access management is abstracted out here so that we can
+change this function when changing our access management package.
+<pre>
+create or replace function hp_access_denied_p (fsid IN integer, u_id IN integer)
+return integer
+IS
+	CURSOR owner_cursor IS
+		select owner_id from users_files
+		where file_id=fsid;
+	owner_id	integer;
+BEGIN
+	OPEN owner_cursor;
+	FETCH owner_cursor INTO owner_id;
+	CLOSE owner_cursor;
+	IF owner_id = u_id
+	THEN
+		return 0;
+	ELSE
+		return 1;
+	END IF;
+END;
+/
+show errors
+</pre>
+Generates a unique sortkey for each file which gives us the ability to
+order files within branches of the tree view that CONNECT BY doesn't
+let us do.
+<pre>
+-- returned value is a varchar2 which is the sort key
+-- Uses the fact that the full filename of each file has
+-- to be unique.
+create or replace function hp_filesystem_node_sortkey_gen (filesystem_node IN integer)
+return varchar2
+IS
+	CURSOR plsql_is_stupid IS
+		select filename, 
+                       decode(directory_p,'t','0','1') as dp,
+                       parent_id 
+                from users_files
+		where file_id=filesystem_node;
+	fullname	varchar(500);
+	parentid	integer;
+	dir_p		varchar(1);
+	plsql_val	plsql_is_stupid%ROWTYPE;
+	discriminator	varchar(5);  -- useful for discriminating between files and directories
+BEGIN
+	OPEN plsql_is_stupid;
+	FETCH plsql_is_stupid into plsql_val;
+	dir_p := plsql_val.dp;
+	fullname := plsql_val.filename;
+	parentid := plsql_val.parent_id;
+
+	IF parentid is null
+	THEN 
+		return CONCAT(dir_p, fullname);
+	ELSE
+		return CONCAT(hp_filesystem_node_sortkey_gen(parentid), CONCAT('/', CONCAT(dir_p,fullname)));
+	END IF;	
+END;
+/
+show errors
+</pre>
+This function returns the full filename (relative to the user's root)
+of the file specified by the filesystem_node input. The
+filesystem_node is the file_id of the file in the users_files table.
+<pre>
+-- returns a filename beginning with a slash, unless the file is user's root
+create or replace function hp_user_relative_filename (filesystem_node IN integer)
+return varchar2
+IS
+	CURSOR name_cursor IS
+		select filename from users_files
+		where file_id=filesystem_node;
+	CURSOR parent_cursor IS
+		select parent_id from users_files
+		where file_id=filesystem_node;
+	fullname	varchar(500);
+	parentid	integer;
+BEGIN
+	OPEN parent_cursor;
+	OPEN name_cursor;
+	FETCH parent_cursor INTO parentid;
+	FETCH name_cursor INTO fullname;
+	CLOSE parent_cursor;
+	CLOSE name_cursor;
+	IF parentid is null
+	THEN 
+		return '';
+	ELSE
+		return CONCAT(hp_user_relative_filename(parentid) ,CONCAT('/',fullname));
+	END IF;	
+END;
+/
+show errors
+</pre>
+This function gives us the filesystem_node which corresponds to the
+root node of the user's webspace, the user being specified by the u_id
+input variable.
+<pre>
+create or replace function hp_get_filesystem_root_node (u_id IN integer)
+return integer
+IS
+	CURSOR root_cursor IS
+		select file_id from users_files
+	        where filename=u_id
+        	and parent_id is null
+	        and owner_id=u_id;
+	root_id		integer;
+BEGIN
+	OPEN root_cursor;
+	FETCH root_cursor INTO root_id;
+	CLOSE root_cursor;
+	return root_id;
+END;
+/
+show errors
+</pre>
+This function gives us the user_id of the user who owns the file
+represented by the filesystem node fsid input.
+<pre>
+create or replace function hp_get_filesystem_node_owner (fsid IN integer)
+return integer
+IS
+	CURSOR owner_cursor IS
+		select owner_id from users_files
+		where file_id=fsid;
+	owner_id	integer;
+BEGIN
+	OPEN owner_cursor;
+	FETCH owner_cursor INTO owner_id;
+	CLOSE owner_cursor;
+	return owner_id;
+END;
+/
+show errors
+</pre>
+This function returns us the number of children a filesystem node has.
+<pre>
+create or replace function hp_get_filesystem_child_count (fsid IN integer)
+return integer
+IS
+	CURSOR count_cursor IS
+		select count(*) from users_files
+		where parent_id=fsid;
+	counter		integer;
+BEGIN
+	OPEN count_cursor;
+	FETCH count_cursor INTO counter;
+	CLOSE count_cursor;
+	return counter;
+END;
+/
+show errors
+</pre>
+A very useful function which gives us the filesystem node represented
+by the filename which is relative to the file represented by the
+rootid input
+<pre>
+create or replace function hp_fs_node_from_rel_name (rootid IN integer, rel_name IN varchar2)
+return integer
+IS
+	slash_location		integer;
+	nodeid			integer;
+BEGIN
+	IF rel_name is null
+	THEN
+		return rootid;
+	ELSE
+		slash_location := INSTR(rel_name,'/');
+		IF slash_location = 0
+		THEN
+			select file_id into nodeid
+			from users_files
+			where parent_id=rootid
+			and filename=rel_name;
+			return nodeid;
+		ELSIF slash_location = 1
+		THEN
+			return hp_fs_node_from_rel_name(rootid, SUBSTR(rel_name,2));
+		ELSE
+			select file_id into nodeid
+			from users_files
+			where parent_id=rootid
+			and filename=SUBSTR(rel_name,1,slash_location-1);
+			return hp_fs_node_from_rel_name(nodeid,SUBSTR(rel_name,slash_location));
+		END IF;
+	END IF;
+END;
+/
+show errors
+
+</pre>
+<p>
+
+<h4>2.3&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Content Management</h4>
+
+The content manager which manages the look and feel of published
+content is described in sections 1.1.4.5 to 1.1.4.5.2 of this
+document. It creates a new specially marked directory for the content
+being published and each subsection is physically represented by a
+file on the filesystem underneath that directory. The file
+"Introductory Text" is automatically created when the content
+directory is created. These files can contain html-bodies and are
+edited using our standard text editor. People can publish sub-content
+from withing a specially managed directory to achieve hierarchical
+content publishing. The information on the content types for the
+directories is stored in the users_content_types table and the
+content_type column in users_files references
+users_content_types(type_id). Non-managed simple directories (folders)
+have a null pointer in their content_type column.
+
+<pre>
+create sequence users_type_id_seq start with 2;
+
+create table users_content_types (
+	type_id			integer primary key,
+	type_name		varchar(200) not null,
+	sub_type_name		varchar(200) not null,
+	owner_id		integer not null references users,
+	-- not used
+	sub_type		integer references users_content_types,
+	-- not used
+	super_type		integer references users_content_types
+);
+</pre>
+And here is the PL/SQL code used by the content management system:<br>
+This function takes in a filesystem_node and keeps on going up from
+that node and returns the content title of the top most managed
+content type.
+<pre>
+create or replace function hp_top_level_content_title (filesystem_node IN integer)
+return varchar2
+IS
+	CURSOR name_cursor IS
+		select file_pretty_name from users_files
+		where file_id=filesystem_node;
+	CURSOR parent_cursor IS
+		select parent_id from users_files
+		where file_id=filesystem_node;
+	CURSOR managed_p_cursor IS
+		select managed_p from users_files
+		where file_id=filesystem_node;
+	managedp		varchar(1);	
+	fullname		varchar(500);
+	parentid		integer;
+	parent_managedp 	varchar(1);
+BEGIN
+	OPEN parent_cursor;
+	OPEN name_cursor;
+	OPEN managed_p_cursor;
+	FETCH parent_cursor INTO parentid;
+	FETCH name_cursor INTO fullname;
+	FETCH managed_p_cursor INTO managedp;
+	CLOSE parent_cursor;
+	CLOSE name_cursor;
+	CLOSE managed_p_cursor;
+	IF parentid is null
+	THEN 
+		return fullname;
+	END IF;
+	IF managedp = 't'
+	THEN
+		select managed_p into parent_managedp
+		from users_files
+		where file_id=parentid;
+		
+		IF parent_managedp = 'f'
+		THEN
+			return fullname;
+		ELSE
+			return hp_top_level_content_title(parentid);
+		END IF;
+	ELSE
+		return fullname;
+	END IF;	
+END;
+/
+show errors
+</pre>
+This function takes in a filesystem_node and keeps on going up from
+that node and returns the filesystem node of the top most managed
+content type.
+<pre>
+create or replace function hp_top_level_content_node (filesystem_node IN integer)
+return varchar2
+IS
+	CURSOR parent_cursor IS
+		select parent_id from users_files
+		where file_id=filesystem_node;
+	CURSOR managed_p_cursor IS
+		select managed_p from users_files
+		where file_id=filesystem_node;
+	managedp		varchar(1);	
+	parentid		integer;
+	parent_managedp 	varchar(1);
+BEGIN
+	OPEN parent_cursor;
+	OPEN managed_p_cursor;
+	FETCH parent_cursor INTO parentid;
+	FETCH managed_p_cursor INTO managedp;
+	CLOSE parent_cursor;
+	CLOSE managed_p_cursor;
+	IF parentid is null
+	THEN 
+		return filesystem_node;
+	END IF;
+	IF managedp = 't'
+	THEN
+		select managed_p into parent_managedp
+		from users_files
+		where file_id=parentid;
+		
+		IF parent_managedp = 'f'
+		THEN
+			return filesystem_node;
+		ELSE
+			return hp_top_level_content_node(parentid);
+		END IF;
+	ELSE
+		return filesystem_node;
+	END IF;	
+END;
+/
+show errors
+</pre>
+This function takes in a filesystem_node and keeps on going up from
+that node and returns the title of the parent managed content type.
+<pre>
+create or replace function hp_onelevelup_content_title (filesystem_node IN integer)
+return varchar2
+IS
+	CURSOR name_cursor IS
+		select file_pretty_name from users_files
+		where file_id=filesystem_node;
+	CURSOR parent_cursor IS
+		select parent_id from users_files
+		where file_id=filesystem_node;
+	CURSOR managed_p_cursor IS
+		select managed_p from users_files
+		where file_id=filesystem_node;
+	CURSOR directory_p_cursor IS
+		select directory_p from users_files
+		where file_id=filesystem_node;
+	managedp		varchar(1);	
+	dirp			varchar(1);	
+	parentid		integer;
+	fullname		varchar(500);
+BEGIN
+	OPEN name_cursor;
+	OPEN parent_cursor;
+	OPEN managed_p_cursor;
+	OPEN directory_p_cursor;
+	FETCH parent_cursor INTO parentid;
+	FETCH managed_p_cursor INTO managedp;
+	FETCH directory_p_cursor INTO dirp;
+	FETCH name_cursor INTO fullname;
+	CLOSE parent_cursor;
+	CLOSE managed_p_cursor;
+	CLOSE directory_p_cursor;
+	CLOSE name_cursor;
+
+	IF parentid is null
+	THEN 
+		return fullname;
+	END IF;
+	IF managedp = 't'
+	THEN
+		IF dirp = 't'
+		THEN
+			return fullname;
+		ELSE
+			return hp_onelevelup_content_title(parentid);
+		END IF;
+	ELSE
+		return fullname;
+	END IF;	
+END;
+/
+show errors
+</pre>
+This function takes in a filesystem_node and keeps on going up from
+that node and returns the filesystem node of the parent managed
+content type.
+<pre>
+create or replace function hp_onelevelup_content_node (filesystem_node IN integer)
+return varchar2
+IS
+	CURSOR parent_cursor IS
+		select parent_id from users_files
+		where file_id=filesystem_node;
+	CURSOR managed_p_cursor IS
+		select managed_p from users_files
+		where file_id=filesystem_node;
+	CURSOR directory_p_cursor IS
+		select directory_p from users_files
+		where file_id=filesystem_node;
+	managedp		varchar(1);	
+	dirp			varchar(1);	
+	parentid		integer;
+BEGIN
+	OPEN parent_cursor;
+	OPEN managed_p_cursor;
+	OPEN directory_p_cursor;
+	FETCH parent_cursor INTO parentid;
+	FETCH managed_p_cursor INTO managedp;
+	FETCH directory_p_cursor INTO dirp;
+	CLOSE parent_cursor;
+	CLOSE managed_p_cursor;
+	CLOSE directory_p_cursor;
+	IF parentid is null
+	THEN 
+		return filesystem_node;
+	END IF;
+	IF managedp = 't'
+	THEN
+		IF dirp = 't'
+		THEN
+			return filesystem_node;
+		ELSE
+			return hp_onelevelup_content_node(parentid);
+		END IF;
+	ELSE
+		return filesystem_node;
+	END IF;	
+END;
+/
+show errors
+
+</pre>
+<h4>2.4&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Neighbourhood Management</h4>
+
+Neighbourhoods are created in a somewhat similar fashion to folders,
+only that they do not have anything to do with the physical
+filesystem. Neighbourhoods can have a hierarchical structure but
+cannot contain cycles in the hierarchy (just like the homepage
+filesystem). Neighbourhood information is stored in the
+users_neighborhoods table:<br>
+<pre>
+create sequence users_neighborhood_id_seq start with 2;
+
+create table users_neighborhoods (
+	neighborhood_id		integer primary key,
+	neighborhood_name	varchar(500) not null,
+	description		varchar(4000),
+	parent_id		integer references users_neighborhoods on delete cascade
+);
+</pre>
+
+A special "big kahuna" neighbourhood is always created to serve as the
+root node of the neighbourhood hierarchy. The name of this super
+parent neighbourhood is "Neighborhoods". It could be any name
+really. It could have any neighborhood_id really. But it must exist.
+<pre>
+-- the system is smart enough to adjust if the root neighborhood
+-- has a different neighborhood_id.
+insert into users_neighborhoods
+(neighborhood_id, 
+ neighborhood_name, 
+ description, 
+ parent_id)
+values (1, 
+ 'Neighborhoods', 
+ 'Neighborhood RootNode', 
+ null);
+</pre>
+
+The following PL/SQL functions are used by the neighbourhood
+management component:<br> This first function gives us the full name
+(with hierarchy) of the neighbourhood which has the neighborhood_id
+equal to the input value. An example of a return value could be
+something like "Neighborhoods : Music : Classic"
+
+<pre>
+create or replace function hp_true_neighborhood_name (neighborhood_node IN integer)
+return varchar2
+IS
+	CURSOR name_cursor IS
+		select neighborhood_name from users_neighborhoods
+		where neighborhood_id=neighborhood_node;
+	CURSOR parent_cursor IS
+		select parent_id from users_neighborhoods
+		where neighborhood_id=neighborhood_node;
+	fullname	varchar(500);
+	parentid	integer;
+BEGIN
+	OPEN parent_cursor;
+	OPEN name_cursor;
+	FETCH parent_cursor INTO parentid;
+	FETCH name_cursor INTO fullname;
+	CLOSE parent_cursor;
+	CLOSE name_cursor;
+	IF parentid is null
+	THEN 
+		return fullname;
+	ELSE
+		return CONCAT(hp_true_neighborhood_name(parentid), CONCAT(' : ',fullname));
+	END IF;	
+END;
+/
+show errors
+</pre>
+
+This function gives us the neighborhood_id of the big kahuna/top-level
+neighbourhood.
+
+<pre>
+create or replace function hp_get_neighborhood_root_node return integer
+IS
+	CURSOR root_cursor IS
+		select neighborhood_id 
+ 		from users_neighborhoods
+        	where parent_id is null;
+	root_id		integer;
+BEGIN
+	OPEN root_cursor;
+	FETCH root_cursor INTO root_id;
+	CLOSE root_cursor;
+	return root_id;
+END;
+/
+show errors
+</pre>
+
+Returns the name of the neighbourhood, except that it does not mention
+the root neighbourhood. An example of a return value could be "Music :
+Classic"
+
+<pre>
+create or replace function hp_relative_neighborhood_name (neighborhood_node IN integer)
+return varchar2
+IS
+	CURSOR name_cursor IS
+		select neighborhood_name from users_neighborhoods
+		where neighborhood_id=neighborhood_node;
+	CURSOR parent_cursor IS
+		select parent_id from users_neighborhoods
+		where neighborhood_id=neighborhood_node;
+	fullname	varchar(500);
+	parentid	integer;
+	root_node	integer;
+BEGIN
+	OPEN parent_cursor;
+	OPEN name_cursor;
+	FETCH parent_cursor INTO parentid;
+	FETCH name_cursor INTO fullname;
+	CLOSE parent_cursor;
+	CLOSE name_cursor;
+
+	select hp_get_neighborhood_root_node 
+	into root_node
+	from dual;
+
+	IF neighborhood_node = root_node
+	THEN
+		return '';
+	END IF;
+
+	IF parentid is null
+	THEN
+		return '';
+	END IF;
+
+	IF parentid = root_node
+	THEN 
+		return fullname;
+	ELSE
+		return CONCAT(hp_relative_neighborhood_name(parentid), CONCAT(' : ',fullname));
+	END IF;	
+END;
+/
+show errors
+</pre>
+Generates a sort key for the neighbourhoods which lets us
+alphabetically sort the neighbourhoods within brances of the
+hierarchical tree. This is something CONNECY BY doesn't let us do.
+<pre>
+-- generates a sort key for this neighbourhood. Can be used in 'connect by'
+-- with 'order by'.
+create or replace function hp_neighborhood_sortkey_gen (neighborhood_node IN integer)
+return varchar2
+IS
+	CURSOR name_cursor IS
+		select neighborhood_name from users_neighborhoods
+		where neighborhood_id=neighborhood_node;
+	CURSOR parent_cursor IS
+		select parent_id from users_neighborhoods
+		where neighborhood_id=neighborhood_node;
+	fullname	varchar(500);
+	parentid	integer;
+BEGIN
+	OPEN parent_cursor;
+	OPEN name_cursor;
+	FETCH parent_cursor INTO parentid;
+	FETCH name_cursor INTO fullname;
+	CLOSE parent_cursor;
+	CLOSE name_cursor;
+	IF parentid is null
+	THEN 
+		return '/';
+	ELSE
+		return CONCAT(hp_neighborhood_sortkey_gen(parentid), CONCAT('/',fullname));
+	END IF;	
+END;
+/
+show errors
+</pre>
+Gives us the branching factor underneath the neighbourhood represented
+by the input value.
+<pre>
+create or replace function hp_get_nh_child_count (neighborhoodid IN integer)
+return integer
+IS
+	CURSOR count_cursor IS
+		select count(*) from users_neighborhoods
+		where parent_id=neighborhoodid;
+	counter		integer;
+BEGIN
+	OPEN count_cursor;
+	FETCH count_cursor INTO counter;
+	CLOSE count_cursor;
+	return counter;
+END;
+/
+show errors
+</pre>
+A rather useful function which we use to prevent cycles in the
+neighbourhood structure. It takes in a source node and a target node
+and tells us whether we can reach target node starting from source
+node without backtracking above source node.
+<pre>
+create or replace function hp_neighborhood_in_subtree_p (source_node IN integer, target_node IN integer)
+return varchar2
+IS
+	CURSOR parent_cursor IS
+		select parent_id from users_neighborhoods
+		where neighborhood_id=target_node;
+	parentid	integer;
+BEGIN
+	OPEN parent_cursor;
+	FETCH parent_cursor INTO parentid;
+	CLOSE parent_cursor;
+	
+	IF source_node = target_node
+	THEN
+		return 't';
+	END IF;
+	
+	IF parentid is null
+	THEN 
+		return 'f';
+	ELSE
+		IF parentid = source_node
+		THEN
+			return 't';
+		ELSE
+			return hp_neighborhood_in_subtree_p(source_node, parentid);
+		END IF;
+	END IF;	
+END;
+/
+show errors
+</pre>
+
+<h4>2.5&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Putting it all together</h4>
+
+At the heart of the homepage module is the users_homepages table. This
+table contains information about each user's webspace and his/her
+homepage display settings. An entry in this table signifies that the
+user's webspace is initialized. Although, we use the existance of
+[ad_parameter ContentRoot]$user_id as a test for webspace
+initialization. This one should in theory serve equally well (The
+other test is better as it does not require a db handle) and because
+its truer, if there is such a word as truer.
+
+<pre>
+create table users_homepages (
+	user_id				primary key references users,
+	-- the background colour settings for user's public pages
+	bgcolor	 			varchar(40),
+	-- the text colour settings for user's public pages
+	textcolor			varchar(40),
+	-- the colour settings for unvisitied links in user's public pages
+	unvisited_link	  		varchar(40),
+	-- the colour settings for visitied links in user's public pages
+	visited_link	  		varchar(40),
+	-- the settings to determine whether the links are underlined or
+	-- not in user's public pages
+	link_text_decoration  		varchar(40),
+	-- the settings to determine whether the links are bold or
+	-- not in user's public pages. I have added this because I have
+	-- strong preference for bold links when they are not underlined.
+	link_font_weight		varchar(40),
+	-- font for user's public generated pages
+	font_type		  	varchar(40),
+	-- the background colour settings for user's maintenance pages
+	maint_bgcolor	 		varchar(40),
+	maint_textcolor			varchar(40),
+	maint_unvisited_link		varchar(40),
+	maint_visited_link	  	varchar(40),
+	maint_link_text_decoration  	varchar(40),
+	maint_link_font_weight		varchar(40),
+	maint_font_type			varchar(40),
+	neighborhood_id		        integer references users_neighborhoods on delete set null
+	-- feature_level		varchar(30),
+	-- constraint hp_feature_lvl_ck check(feature_level 'platinum', 'gold', 'silver'),
+	-- keywords			varchar(4000)
+
+);
+</pre>
+The neighborhod_id column is a reference to a neighbourhood to which
+this user has subscribed. A user can be subscribed to only 0 or 1
+neighbourhoods at one time.
+<p>
+
+<h4>2.6&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Features hiterto unsung</h4>
+
+Here we will mention those minuscule details which are not quite
+worthy of mention in the first place
+<p>
+2.6.1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;File Access Log
+<p>
+We log accesses to users files in the users_files_access_logs table:
+<pre>
+create sequence users_access_id_sequence start with 2;
+
+create table users_files_access_log (
+	access_id		integer primary key,
+	file_id			references users_files on delete set null,
+	relative_filename	varchar(500) not null,
+	owner_id		references users on delete cascade,
+	access_date		date not null,
+	ip_address		varchar(50) not null
+);
+</pre>
+We log accesses after we serve files from homepage-defs.tcl's hp_serve
+procedure.
+
+<hr>
+<a href="http://web.mit.edu/mobin/web"><address>mobin@mit.edu</address></a>
+</body>
+</html>

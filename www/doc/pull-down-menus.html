@@ -1,0 +1,126 @@
+<html>
+<!--AD_DND-->
+<!--$Id: pull-down-menus.html,v 3.1.2.2 2000/03/16 05:36:27 aure Exp $-->
+
+<head>
+<title>Pull Down Menu System</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Pull Down Menu System</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="http://aure.com/">Aurelius Prochazka</a>
+
+<hr>
+
+<ul>
+<li> User-accessible directory: N/A
+<li> Adminstration directory: <a href="/admin/pull-down-menus/">/admin/pull-down-menus/</a> (must use https://)
+<li> Utility Directory: /pull-down-menus/
+<li> data model: <a href="/doc/sql/pull-down-menus.sql">/doc/sql/pull-down-menus.sql</a>
+<li> procedures: /tcl/pull-down-menu-defs.tcl
+</ul>
+
+<h3> The Big Picture </h3>
+
+Designing navigation methods is an integral part of creating the
+information architecture for a web site.  It is one of the things that
+we usually have to write from scratch for each site we create using
+the ArsDigita Community System (ACS).  As of February, 2000 the ACS
+provides only two navigation tools, <a
+href=content-sections.html>content sections</a> and context bars.  <p>
+With this module you can define two traditional site navigation
+methods - the top navbar (e.g. <a
+href=http://ibm.com/>http://ibm.com/</a> or <a
+href=http://cyranosciences.com/>http://cyranosciences.com/</a>) and
+the left navbar (e.g. <a href=http://vg-8.com/>http://vg-8.com/</a>).
+There are benefits to both methods, so often a site will use a
+combination (<a href=http://amazon.com/>http://amazon.com/</a>).  <p>
+One of the most impressive looking pull down menu systems appears on
+the main page of <a href=http://www.career.caltech.edu/>Caltech's
+Career Development Center</a>, but it is java and can cause Netscape
+(esp. on Linux) to die.  Our system does just about as much as this
+does for a lot less overhead.
+
+<h3>Setting Up the Menus</h3>
+
+
+<pre>
+[ns/server/<i>yourservername</i>/acs/pdm]
+; Flag to display the administration menu bar
+MenuOnAdminPagesP=1
+; Flag to display the default menu bar on non-/admin pages
+MenuOnUserPagesP=0
+</pre>
+
+
+<h3>Our Data Model</h3>
+
+<pre>create table pdm_menus (
+	menu_id			integer primary key,
+	-- programmer friendly title used to call the menu
+	menu_key			varchar(20) unique not null,
+	-- is this the menu to show if no pdm_key is passed to ad_pdm?
+	default_p		char(1) default 'f' check (default_p in ('t','f')),
+	-- orientation of the menu, either "horizontal" or "vertical"
+	orientation		varchar(20) not null check (orientation in ('horizontal','vertical')),
+	-- distance from the left side of the display area
+	x_offset		integer not null,
+	-- distance from top of the display area
+	y_offset		integer not null,
+	-- dimensions of a single menu element
+	element_height		integer not null,
+	element_width		integer not null,
+	-- css-type style guides for the fonts in the menu
+	main_menu_font_style	varchar(4000),
+	sub_menu_font_style	varchar(4000),
+	sub_sub_menu_font_style varchar(4000),
+	-- main menu background images and background colors 
+	main_menu_bg_img_url	varchar(200),
+	main_menu_bg_color	varchar(12),
+	-- hl stands for "highlight" - these are what are shown when
+	-- someone mouses over the menu
+	main_menu_hl_img_url    varchar(200),
+	main_menu_hl_color	varchar(12),
+	-- background and color definitions for first level sub menu
+	sub_menu_bg_img_url	varchar(200),
+	sub_menu_bg_color	varchar(12),
+	sub_menu_hl_img_url	varchar(200),
+	sub_menu_hl_color	varchar(12),
+	-- background and color definitions for second level sub menu
+	sub_sub_menu_bg_img_url	varchar(200),
+	sub_sub_menu_bg_color	varchar(12),
+	sub_sub_menu_hl_img_url	varchar(200),
+	sub_sub_menu_hl_color	varchar(12)
+);
+
+create table pdm_menu_items (
+	item_id			integer primary key,
+	menu_id			references pdm_menus,
+	-- within one level, sort_key defines the order of the items
+	sort_key		varchar(50) not null,
+	-- text of the item to be displayed if no images are shown and
+	-- as alt text to the images
+	label			varchar(200) not null,
+	-- url may be null if this item is only used to store other items
+	url			varchar(500),
+	-- don't show certain elements to people who haven't registered
+	requires_registration_p char(1) default 'f' check (requires_registration_p in ('t','f'))
+);</pre>
+
+<h3> Limitations and known bugs</h3>
+
+Not currently compatible with versions of Netscape 3.0 or Internet Explorer 3.0 (or earlier).
+<p>
+Netscape does not correctly place form elements on layers.  THe best way to deal with this problem is to try to place the pull-down in a place where it won't interact much with forms.   For instance, the menu bar could be at the top of a header image and only ever overlay the header.
+
+<h3> Future enhancements</h3>
+
+Need to improve the side bar version and user and programming documentation.
+
+<hr>
+<a href="mailto:aure@arsdigita.com"><address>aure@arsdigita.com</address></a>
+</body>
+</html>
+ 

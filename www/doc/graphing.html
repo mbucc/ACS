@@ -1,0 +1,237 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>Graphing Package</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Graphing Package</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="http://eve.arsdigita.com/">Eve Andersson</a>
+
+<hr>
+
+This "package" only consists of one main procedure (and a couple little
+supporting procs and gifs) that creates bar charts in plain html with 1x1
+pixel gifs stretched to the right width and height.  It will work on any
+browser that supports tables (i.e., pretty much all of them).
+
+<p>
+
+This package relies on a few gifs being
+present in /graphics/graphing-package/.  It also relies on the
+presense of ad_proc and its helper procs in utilities.tcl.  Make sure
+you always have the latest version of utilities.tcl every time you
+upgrade the ACS! The graphing Tcl procedures are in /tcl/ad-graphing.tcl.
+
+<p>
+
+If you want to do fancier charts like x-y-scatter graphs or pie charts,
+you should probably buy/find/write a cgi program that generates gifs
+on the fly (a popular free example is Gnuplot, distributed from
+<a href="http://www.cs.dartmouth.edu/gnuplot_info.html">http://www.cs.dartmouth.edu/gnuplot_info.html</a>).  In my experience, trying to do these the plain html way
+is very slow and limited.
+
+<p>
+
+The bar chart procedure, <code>gr_sideways_bar_chart</code> returns
+an HTML fragment.  It has just one mandatory
+argument, although there are a number of optional arguments to beautify
+or improve your graphs.  Because there are so many optional arguments,
+the optional arguments are specified using flags (keyword arguments), like
+Unix commands, instead of positionally like most tcl procedures.
+<p>
+
+To run this command: 
+
+<blockquote>
+<code>gr_sideways_bar_chart <i>subcategory_category_and_value_list</i></code>
+</blockquote>
+
+<p>
+
+To use optional arguments, for instance <code>legend</code> and 
+<code>left_heading</code>: 
+
+<blockquote>
+<code>gr_sideways_bar_chart -legend <i>legend</i> -left_heading <i>left_heading</i> <i>subcategory_category_and_value_list</i></code>
+</blockquote>
+
+The arguments:
+
+<ol>
+
+<b><li><code>subcategory_category_and_value_list</code></b><br>
+This is the only mandatory argument.
+
+<p>
+To create a graph like this:
+
+<p>
+<blockquote>
+<pre>
+<b>Dogs</b>
+Samoyed    xxxxxxxxxxx 45%
+Black Lab  xxxx 20%
+Terrier    xxxxxxxxxxxxxxxxxxxx 66%
+<b>Cats</b>
+Calico     xxxxxxxx 39%
+Persian    xx 10%
+</pre>
+</blockquote>
+
+supply <code>subcategory_category_and_value_list</code> as a Tcl list of lists:
+
+<p>
+
+<blockquote>
+<code>
+<pre>
+[list [list "Samoyed" "Dogs" "45"] \
+      [list "Black Lab" "Dogs" "20"] \
+      [list "Terrier" "Dogs" "66"] \
+      [list "Calico" "Cats" "39"] \
+      [list "Persian" "Cats" "10"]]
+</pre>
+</code>
+</blockquote>
+
+</p>
+
+
+Dogs and Cats are the categories, Samoyed, Black Lab, Terrier, Calico, and
+Persian are subcategories, and all the numbers are values.  You can have multiple
+values per subcategory, in which case you should supply the values as a list:
+
+<blockquote>
+<code>[list [list "Samoyed" "Dog" [list "45" "65" "34"]] ...]</code>
+</blockquote>
+
+<p>
+
+There can be an optional fourth argument, which specifies a URL to
+link around the value displayed (if values are being displayed). If
+provided, this overrides the setting of <code>default_drilldown_url</code> below.
+
+<p>
+
+<b><li><code>legend</code></b><br>
+<code>legend</code> is a list of what the values refer to if there's more than one value
+per subcategory.
+
+<p>
+
+So, if you have created a graph with three values per subcategory:
+
+<blockquote>
+<pre>
+<b>Dogs</b>
+Samoyed   xxxxxxxxxxx 45%
+          ----------------------- 90%
+          ++++++++++++++++++ 70%
+Black Lab xxxx 20%
+          ------ 30%
+          ++++++++++++ 60%
+</pre>
+</blockquote>
+
+
+then create a legend like
+
+<blockquote>
+<code>[list "March" "April" "May (projected)"]</code>
+</blockquote>
+
+<p>
+
+<b><li><code>bar_color_list</code></b><br>
+There is a default list of colors with which the values will be displayed
+if there is more than one value per subcategory, but if those
+colors don't meet your design needs, go ahead and supply your own color list.
+
+<p>
+
+<b><li><code>display_values_p</b></code><br>
+By default, the values (like 60%) aren't displayed after the bars, but if you
+want them to be, set this to "t".
+
+<p>
+
+<b><li><code>display_scale_p</code></b><br>
+By default, there's a scale displayed at the top of the chart that goes from
+0% to 100%, but if you don't want that scale there, set <code>display_scale_p</code> to "f".
+It doesn't make sense to have the scale if the values that are being charted
+are not percentages.
+
+<p>
+
+<b><li><code>default_drilldown_url</code></b><br>
+If supplied, should be a URL to which the numeric value (if being displayed) will be linked.
+This variable will undergo variable expansion, so <code>$category</code>, <code>$subcategory</code>, 
+and <code>$value</code> may be referenced.
+
+<p>
+
+<b><li><code>non_percent_values_p</code></b><br>
+Set this to "t" if the numbers you're charting are not percentages.  Then
+this procedure will, instead of creating bars that are a fixed number times the
+value, display the values relative to each other (it will, in essence, pretend
+that the highest value within a category is 100%, and then display the other 
+values in that category relative to each other).
+
+<p>
+
+<b><li><code>min_left_column_width</code></b><br>
+If you are going to stack charts, set the <code>min_left_column_width</code> to be
+the same for each of them so that they will line up.
+Otherwise, the left column, which contains the categories and subcategories, probably
+won't be the same for successive charts.
+
+<p>
+
+<b><li><code>bar_height</code></b><br>
+By default, the height of each bar is 15 pixels.
+
+<p>
+
+<b><li><code>subcategory_spacing</code></b><br>
+By default, the spacing between each subcategory is 7 pixels.
+
+<p>
+
+<b><li><code>compare_non_percents_across_categories</code></b><br>
+This is only relevant if you are graphing values that are not percentages.
+Usually (as explained above for non_percent_values_p), the bars are drawn so that
+they are relative only to other bars in the same category.  This makes sense
+if one category has values like 900, 854, 942, and another totally unrelated
+category has values like 2.5, 3, 3.27.  You wouldn't want the bars in the second
+category to be drawn relative to the ones in the first category because they
+would be very small and, besides, they're not even related.  But, if the numbers
+ARE related across categories, then set <code>compare_non_percents_across_categories</code>
+to "t".
+
+<p>
+
+<b><li><code>left_heading</code></b><br>
+Stuff (text/pictures/whatever) that goes above the items on the left of
+the chart (i.e. above the categories and subcategories).
+
+<p>
+
+<b><li><code>right_heading</code></b><br>
+Stuff that goes above the items on the right of the chart (i.e. above the values).
+
+<p>
+
+<b><li><code>replace_null_subcategory_with_none_p</code></b><br>
+Set this to "t" to have "[none]" be displayed as the subcategory if the
+subcategory is the empty string.
+
+</ol>
+
+
+<hr>
+<a href="mailto:eveander@arsdigita.com"><address>eveander@arsdigita.com</address></a>
+</body>
+</html>

@@ -1,0 +1,86 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>Classifieds</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Classifieds</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="http://photo.net/philg/">Philip Greenspun</a>
+
+<hr>
+
+<ul>
+<li>User-accessible directory:  <a href="/gc/">/gc/</a>
+<li>Moderators' directory:  <a href="/gc/admin/">/gc/admin/</a>
+<li>Site administrator directory:  <a href="/admin/gc/">/admin/gc/</a>
+
+<li>data model :  <a href="/doc/sql/display-sql.tcl?url=/doc/sql/classifieds.sql">/doc/sql/classifieds.sql</a>
+<li>Tcl procs:  /tcl/gc-defs.tcl 
+
+</ul>
+
+<h3>The Big Idea</h3>
+
+The ArsDigita Community system contains the photo.net classified ads
+module, which has processed more than 100,000 ads since its inception in
+1996.  The module includes the following features:
+
+<ul>
+
+<li>multiple domains per ACS installation, e.g., photography and travel
+can cooexist
+
+<li>multiple categories per domain, extendable by user or by site
+administrator, depending on configuration
+
+<li>multiple moderators per domain 
+
+<li>auctioning available, configurable by site owner per domain and also
+by user per ad
+
+
+</ul>
+
+<h3>Publishing Decisions</h3>
+
+Via the ad.ini file, you can enforce a lot of publishing decisions,
+e.g., "don't allow anyone to mention eBay" or "how many bids does an ad
+have to get in order to be considered a hot auction?"
+
+<blockquote>
+<pre><code>
+[ns/server/yourservername/acs/gc]
+SystemName=Classifieds
+; SystemOwner=  (defaults to global system owner)
+PartialUrlStub=/gc/
+ProvideLocalSearchP=1
+ProvideEmailAlerts=1
+; send a reminder to people to edit or delete their ads?
+NagAdOwners=1
+HowManyRecentAdsToDisplay=5
+HotAuctionThreshold=2
+; some stuff to deal with annoying photo.net abusers
+; don't let people put the word "reduced" in subject line
+DisallowReducedInSubject=1
+DisallowExclamationPointInSubject=1
+DisallowAllUppercase=1
+DisalloweBay=1
+IncludeBannerIdeasP=1
+IndexPageDecorationTop=
+IndexPageDecorationSide=
+DomainTopDecorationTop=
+HotAuctionsDecoration=
+PlaceAdDecoration=
+PlaceAd2Decoration=
+EditAd2Decoration=
+AddAlertDecoration=
+</code></pre>
+</blockquote>
+
+<hr>
+<a href="http://photo.net/philg/"><address>philg@mit.edu</address></a>
+</body>
+</html>

@@ -1,0 +1,133 @@
+// MessageComposer.sqlj
+// part of the webmail ACS module
+// written by Jin Choi <jsc@arsdigita.com>
+// 2000-03-01
+
+
+// This class implements some static methods for composing MIME messages.
+
+
+package com.arsdigita.mail;
+
+import oracle.sql.*;
+import oracle.sqlj.runtime.Oracle;
+import java.sql.*;
+
+import java.io.*;
+import javax.mail.*;
+import javax.mail.internet.*;
+import java.util.*;
+import javax.activation.*;
+
+#sql iterator AttachmentsIter ( BLOB data, String content_type, String filename );
+#sql iterator HeadersIter ( String name, String value );
+
+
+public class MessageComposer {
+    
+    private static boolean runningOutsideOracleP = false;
+    protected static Session s = null;
+
+    // For debugging.
+    public static void main (String args[]) {
+	try {
+	    // set the default connection to the URL, user, and password
+	    // specified in your connect.properties file
+	    Oracle.connect(MessageParser.class, "connect.properties");
+	    System.out.println("Connected.");
+
+	    composeMimeMessage(1);
+	    
+	} catch (Exception e) { 
+	    System.err.println("Error running the example: " + e.getMessage());
+	    e.printStackTrace();
+	}
+	System.exit(1);
+    }
+
+
+    public static void composeMimeMessage(int msgId)
+	throws MessagingException, IOException, SQLException {
+	Vector parts = new Vector(); // vector of data handlers
+
+	CLOB bodyText = null;
+	CLOB composedMessage = null;
+#sql { select body into :bodyText from wm_outgoing_messages where outgoing_msg_id = :msgId };
+	
+	if (bodyText != null && bodyText.length() > 0) {
+	    ClobDataSource cds = new ClobDataSource(bodyText, "text/plain", null);
+	    parts.addElement(new DataHandler(cds));
+	}
+	
+	
+	AttachmentsIter attIter;
+#sql attIter = { select data, content_type, filename from wm_outgoing_message_parts where outgoing_msg_id = :msgId order by sort_order };
+	while (attIter.next()) {
+	    BlobDataSource bds = new BlobDataSource(attIter.data(), attIter.content_type(), attIter.filename());
+	    parts.addElement(new DataHandler(bds));
+	}
+	attIter.close();
+	
+	// Create new MimeMessage.
+	if (s == null) {
+	    Properties props = new Properties();
+	    s = Session.getDefaultInstance(props, null);
+	}
+	
+	MimeMessage msg = new MimeMessage(s);
+
+	// Add the headers.
+	HeadersIter hIter;
+#sql hIter = { select name, value from wm_outgoing_headers where outgoing_msg_id = :msgId order by sort_order };
+	while (hIter.next()) {
+	    msg.addHeader(hIter.name(), hIter.value());
+	}
+	hIter.close();
+
+	// Add the attachments.
+	addParts(msg, parts);
+
+	// Synchronize the headers to reflect the contents.
+	msg.saveChanges();
+
+	// Grab the CLOB we're going to stuff it in and write the composed message to it.
+#sql { update wm_outgoing_messages set composed_message = empty_clob() where outgoing_msg_id = :msgId };
+#sql { select composed_message into :composedMessage from wm_outgoing_messages where outgoing_msg_id = :msgId };
+
+	msg.writeTo(composedMessage.getAsciiOutputStream());
+    }
+
+    protected static void addParts(MimeMessage msg, Vector parts)
+	throws MessagingException, IOException {
+	
+	if (parts.size() == 0) {
+	    // This should never happen.
+	    return;
+	}
+
+	if (parts.size() > 1) {
+	    MimeMultipart msgMultiPart = new MimeMultipart();
+	    Enumeration e = parts.elements();
+	
+	    while (e.hasMoreElements()) {
+		DataHandler dh = (DataHandler) e.nextElement();
+		String filename = dh.getName();
+		MimeBodyPart bp = new MimeBodyPart();
+		bp.setDataHandler(dh);
+		if (filename != null) {
+		    bp.setFileName(dh.getName());
+		}
+		msgMultiPart.addBodyPart(bp);
+	    }
+	    msg.setContent(msgMultiPart);
+	} else {
+	    // There is only one element.
+	    DataHandler dh = (DataHandler) parts.elementAt(0);
+	    String filename = dh.getName();
+	    if (filename != null) {
+		msg.setFileName(dh.getName());
+	    }
+	    msg.setDataHandler(dh);
+	}
+    }
+}

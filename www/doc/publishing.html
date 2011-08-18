@@ -1,0 +1,136 @@
+<html>
+<head>
+<title>
+Dynamic Publishing System
+</title>
+</head>
+<body>
+
+<h2>
+Dynamic Publishing System
+</h2>
+
+part the <a href="/doc">ArsDigita Community System</a> 
+by <a href="mailto:karlg@arsdigita.com">Karl Goldstein</a>
+
+<hr>
+
+<h3>The Problem</h3>
+
+<p>The traditional way to create dynamic pages for AOLserver 
+is to write "pages that are really programs," mixing Tcl code, 
+database queries and HTML in a single file.  This approach is
+convenient under the following conditions:</p>
+
+<ul>
+<li>when all people working on the site have equal responsibility and
+ability to write code, create content, and design page layouts.
+<li>When a single presentation of the content is sufficient.
+</ul>
+
+<p>Alas, the world of web publishing is not so monotonic these days.
+Most web publishing teams are faced with the following dilemma(s):</p>
+
+<ul> 
+
+<li><p>The process of creating a site is no longer in the lone hands
+of a team of programmers.  Page templates are usually designed by
+graphic artists, UI experts, and their associated journeymen.
+Programmers must wire their code into the complex templates handed to
+them by the HTML authors, and then take responsibility for any later
+changes to the HTML that involves their code.  Content may be managed
+and contributed by separate teams of editors and authors.</p>
+
+<li><p>As the Web truly becomes World Wide, the need to present the
+same content in different ways is becoming increasingly important.
+This includes both publishing in different languages as well as
+publishing for different devices, such as cell phones and home
+internet appliances.</p>
+
+</ul>
+
+<p>The complexities of contemporary web publishing demand more
+attention to improving productivity and collaboration among all
+members of the team.  Programmers need the means to focus more on
+functionality, optimization and security and less on design work.
+Conversely, HTML authors need the freedom to make most design changes
+without programmer intervention.  Editors and authors need a way to
+contribute and manage the content that the pages present.  Site
+managers need the means to oversee the work of the entire team.</p>
+
+<h3>The System</h3>
+
+<p>The Dynamic Publishing System addresses these problems with an integrated
+suite of tools:</p>
+
+<ul> 
+
+<li><em>Dynamic templates</em> that allow for strict separation of
+code (Tcl and SQL) and layout (HTML).  Programmers specify the sources
+and variable names of dynamic data in a <em>data specification</em>
+file associated with each template file.  HTML authors then use a
+small number of special markup tags to include the specified data in
+the template.
+
+<li>A <em>form manager</em> to handle user data transactions with
+similar separation of code and layout.  Programmers specify the
+functional characteristics of a form in a <em>form specification</em>
+file.  Most form manager uses this information to handle most common
+programming tasks related to forms, including validation, populating
+button groups and select lists, setting of default values for update
+forms, and database interaction.  HTML authors use special markup
+tags to include the specified form widgets in a form template.
+
+<li>A <em>site manager</em> that allows the publisher to establish a
+hierarchical structure for a site, for the purpose of generating
+navigation controls and site maps.  The manager may also be used to
+assign common properties, such as master layout templates, resource
+directories, and group access permissions to entire branches of the
+site.
+
+<li>A <em>content manager</em> that supports distributed contribution
+and editorial control of static text and images in multiple languages.
+A site may have any number of <em>content sections</em>, each with its
+own group of authors who have permission to contribute content and
+editors who have permission to make changes and approvals for public
+release.
+
+<li>A <em>locale manager</em> to define the languages in which the
+site is published and allow for user selection of locale.
+
+<li>An <em>index manager</em> for assignment of keywords to content,
+pages, and entire sections of the site.  This information may then be
+used to create metadata and site indices, as well as track user
+interests.
+
+<li>A <em>file management</em> tool for controlled editing and
+uploading of text and image files.
+
+</ul>
+
+<h3>Status</h3>
+
+<p>The Dynamic Publishing System is currently being developed,
+documented and reviewed internally by ArsDigita.  It is publicly
+available for trial and inspection from its <a
+href="http://karl.arsdigita.com/projects/template">development
+site</a>.  The documentation still needs improvement but should be
+enough for you to get started.  Questions and feedback are
+welcome.</p>
+
+<p>Due to bugs and limitations in the current beta release of
+AOLserver 3.0, the system currently works only with AOLserver 2.3.3.
+After internal review is complete and AOLserver 3.0 is finally
+released, the goal is to include it in the standard ACS
+distribution.</p>
+
+<hr>
+
+<a href="mailto:karlg@arsdigita.com">karlg@arsdigita.com</a>
+
+
+
+
+
+
+

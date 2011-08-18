@@ -1,0 +1,18 @@
+#! /bin/sh
+
+# Usage: load-geo-tables username/password
+
+if [ $# != 1 ]; then
+    echo "usage: $0 username/password"
+    exit
+fi
+
+login=$1
+
+sqlplus $login < acs_geo_parents.sql
+
+for f in *.ctl; do
+    echo loading $f...
+    sqlldr userid=$login control=$f
+done
+

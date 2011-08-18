@@ -1,0 +1,178 @@
+<html>
+  <!--AD_DND-->
+  <head>
+    <title>/ticket system</title>
+  </head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>/ticket system</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="http://teadams.com">Tracy Adams</a>, 
+<a href=mailto:hqm@arsdigita.com>Henry Minsky</a>, 
+<a href=mailto:davis@arsdigita.com>Jeff Davis</a>
+
+<hr>
+
+<ul>
+<li>User-accessible directory:  <a href="/ticket/">/ticket/</a>
+<li>Ticket system administration directory:  <a href="/ticket/admin/">/ticket/admin/</a>
+<li>Site administrator directory:  <a
+href="/admin/ticket/">/admin/ticket/</a> <em>(empty)</em>
+<li>data model :  <a href="/doc/sql/display-sql.tcl?url=/doc/sql/ticket.sql">/doc/sql/ticket.sql</a>
+<li><a href=ticket-project.html>Remote project administration</a> using this module
+</ul>
+
+<h3>The big picture</h3>
+Software occasionally has bugs.  The ticket system is designed to 
+to record and track tasks, bugs, and feature requests.  The intent 
+is to have clearly defined responsibilities for tickets in every state
+and to have auto-notification capabilities which ensure 
+that no ticket slips through the cracks. 
+
+<h3>The medium picture</h3>
+The new version is much more configurable and intended to support
+centralized tracking of multiple projects. Also, there are a number
+of new features to facilitate recording higher quality data on 
+web development projects in particular.  There is an interface
+into the ticket tracker which allows creating a link on each page
+for submitting a ticket which will record the user-agent, originating
+URL, and originating query.  
+<p>
+Additionally, there are two ticket entry modes: "feedback," which
+hides all the complexity of the ticket tracker, and "full," which
+allows all fields to be set.  Feedback mode is suitable for a feedback 
+link in the footer of user oriented pages (and will also record 
+user-agent and other data). 
+<p>
+To see the feedback entry mode and the enhanced information tracking visit 
+the "Feedback" link in the top right of the Administration screen.
+
+<h3>User Model</h3>
+Project and Feature areas are owned by groups.  Tickets can only be
+assigned to users who are members of the owning group of the Feature Area.
+Tickets can be private to projects or to Feature Areas (depending 
+on whether the "Public" flag is set) and will only be visible if the
+user is a member of either the owning group of the project or feature area.
+This restriction may also be applied on a per ticket basis.
+<p>
+Ticket Administration is carried out by members of the group <code>Ticket Admin Staff</code>,
+whose responsibilities include creating new projects and feature areas,
+project permissioning, and default ticket assignments per
+project/feature area. Adding a user to the <code>Ticket Admin Staff</code> group (group type 
+<code>Administration</code>) gives the user full access to all tickets 
+and ticket system administration capabilities.
+<p>
+
+<h3>Creating a Project</h3> 
+
+<ul>
+<li> Create the necessary feature areas for the project via "create new
+feature area" in the admin screen. <blockquote><em>note that feature areas can 
+be assigned to multiple projects so that it is not necessary to create 
+multiple "System Administration" feature areas unless the staffing 
+for System Administration was different between projects.</em></blockquote>
+<li> Create the project and assign an owning group.
+<ul>
+<li> Chose short and long titles.  Short titles are typically used in
+    tables while long titles are in reports and select boxes.  These 
+    can be changed later without impacting pre-existing tickets.
+<li> The current "version" string is stored with each ticket when it
+    is created.
+<li> Choose the "code set" that defines the all the ticket state codes 
+    (severity, cause, status, etc.)  In a base install there will 
+    only be one "code set" and currently there is no admin 
+    interface for defining new code sets and the "ad" code set 
+    defines the standard set used within ArsDigita.
+<li> Decide whether the tickets should be public (visible to any
+    registered user) or only to project members.
+<li> You may enter a long textual description of the project which 
+    will be displayed with the project on the new ticket creation
+    screen.
+<li> You then can assign feature areas explicitly or just use the same 
+    set as another project.
+<li> Finally you may enter a new ticket template to guide user's data
+    entry.  For example, for a development project this might be
+    something like:
+    <blockquote><pre>
+PROBLEM STATEMENT:
+
+STEPS TO REPRODUCE:
+
+FOUND IN VERSIONS:
+
+</pre>
+</blockquote>
+</ul>
+<li> Assign users to the owning group of the project and to the owning 
+groups of the assigned feature areas (note that for small teams these can actually be the same group).
+<li> Set default ticket assignments via "view feature areas" for the
+newly created project.
+</ul>
+<p>
+Note that you can also create a project as a "copy" of another
+project.  This is useful since you can create a "template project"
+with a set of feature areas such as System Administration, Admin,
+Automated testing reports, documentation, etc. preassigned.
+<p>
+You can also create a feature area and assign it to all the same
+projects as a pre-existing feature area.
+
+<h3>New features in 3.1</h3>
+User visible:
+<ul>
+<li> Per user persistent customizations ("Settings" at top right in <a href="/ticket/">/ticket</a>)
+<li> Customizable table display and sorting.
+<li> Much "flatter" organization.  Most functions now directly
+accessible from top level /ticket/ screen.
+<li> Meaningful sorting on all "coded" columns (severity, Status,
+Type, etc).  Sorts are now "stable."  
+<li> Scored "quick search"
+<li> Tickets comments now displayed on "/shared/community-member.tcl" page.
+<li> Tickets now "Alertable" with alert management via standard screens.
+<li> You can cancel/approve your own tickets.
+<li> Email notifications are much more informative.
+<li> index.tcl state is perserved in the context bar.
+<li> Per project named "milestones" supported for deadlines.
+</ul>
+Administrative: 
+<ul>
+<li> Tickets can be copied (not necessarily a good thing!)
+<li> Projects and feature areas can be copied.
+<li> Standard group management tools will work.
+<li> Comments and new tickets now show up in New Stuff with links for administration.
+</ul>
+Non user-visible: 
+<ul>
+<li> Much more "standard ACS" since it uses general-comments, normal 
+ auditing, and groups.
+<li> Cleaner data model with most things "data-driven."
+</ul>
+
+
+<h3>Missing features of the old version</h3>
+Some features of the original ticket tracker are currently 
+broken or missing:
+<ul>
+<li> Email support -- in progress (with enhanced ticket 
+    dispatching via an adressee -> project/feature area mapping table).
+<li> No Past-due notification emails.
+<li> Cross referencing now simple ID# entry rather than the "search"
+    driven interface from the old version.
+</ul>
+
+<h3>Things to come</h3>
+<ul> 
+<li> Integration with the intranet module.
+<li> Better tools to facilitate project management.
+<li> Tools for rolling tickets to new projects (Sharenet 5.6 -&gt;
+   Sharenet 5.7 for example).
+</ul>
+
+<hr>
+
+<a href="mailto:teadams@arsdigita.com"><address>teadams@arsdigita.com</a>, 
+<a href="mailto:hqm@arsdigita.com">hqm@arsdigita.com</a>
+<a href="mailto:davis@arsdigita.com">davis@arsdigita.com</address></a>
+</body>
+</html>

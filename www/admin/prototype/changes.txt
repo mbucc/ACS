@@ -1,0 +1,45 @@
+Changes to the original code made by David Rodriguez (dvr@arsdigita.com).
+   (Note: Some of the line numbers below are no longer 
+   accurate since I changed the code).
+
+1) Modified returncode.tcl and returncodeall.tcl to create 
+directories if they don't exist before saving code.
+
+2) I think line 595 in tableinfo-3.tcl was unneeded. It printed
+a "" to the screen. Commented out the line  {ns_write \""}
+
+3) solicit_info would say "Please enter the the prompt text..." 
+(notice the two copies of "the"). Fixed.
+
+4) There were some TEXTAREAS with empty space between <TEXTAREA> and 
+</TEXTAREA>. Removed those.
+
+5) In code_for_textbox, a small textbox (SIZE=10) wouldn't be enclosed
+with <TD>'s. Fixed.
+
+6) Add an extra space after the # in the list of needed variables.
+Fixed line 351, 759, 572, 632 in tableinfo3.tcl
+
+7) modified a bunch of the code so it would have spaces where we 
+want the (so the resulting HTML would look nicer)
+
+8) Modified returncode.tcl and returncodeall.tcl to overwrite
+any files in the way.
+
+9) Changed the $backlink stuff. Now uses the Yahoo-style navbar.
+
+10) created a proc max_col_length that queries the database
+to determine the maximum allowed length for a column. We use
+this information to set the MAXLENGTH of any INPUT TYPE=TEXT ..
+box. Used in handle_textbox and code_for_textbox. Added some upvar's
+in other procs so these functions can get access to $table_name
+
+11) on add-2.tcl and edit-2.tcl, added pieces of code
+that checks to see if variables are too long. I don't know
+how to determine if the variable coming in is coming from a TEXTAREA,
+so I check the maximum length of the column, and if it's longer
+than 200, assume that it's coming from a textarea, and therefore
+needs to be checked.
+
+12) Killed the form at the top of tableinfo-3.tcl that led
+to the edit pages. Wasn't needed.

@@ -1,0 +1,211 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>Permission Package</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Permission Package</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="http://teadams.com">Tracy Adams</a>
+
+<hr>
+
+<ul>
+<li>User directory:  none
+<li>Admin directory:  everything is done in the existing user group directory
+<a href="/admin/ug/">/admin/ug/</a> (this package builds on 
+<a href="user-groups.html">user groups</a>)
+
+<li>data model:  subsection within 
+<a href="/doc/sql/display-sql.tcl?url=/doc/sql/user-groups.sql">/doc/sql/user-groups.sql</a>
+
+<li>procedures:  mostly within /tcl/ad-user-groups.tcl
+
+</ul>
+
+<h3>The Big Picture</h3>
+
+We want a standardized way of asking "Is user x allowed to do y?"
+
+<h3>The Medium-sized Picture</h3>
+
+We define a table 
+
+<blockquote>
+<pre>
+create table administration_info (
+ 	group_id	integer not null references user_groups,
+	module		varchar(300) not null,
+	submodule	varchar(300),
+	unique(module, submodule, group_id)
+);
+</pre>
+</blockquote>
+
+This allows us to associate a user group with administration of a
+particular section of a site.  In general, these user groups will have a
+group type of "administration".  The extra columns for a user group of
+this type are "module" and "submodule".
+
+<p>
+
+The other key feature of this software package is a set of Tcl
+procedures that developers can call to find out of a user has
+appropriate permissions.  These procedures may elect to cache.
+For example, we expect pages to call <code>ad_permission_p</code> to
+find out whether a user is authorized to perform a particular action.
+
+<blockquote>
+<pre>
+create table user_group_action_role_map (
+	group_id     	integer not null references user_groups,
+	role		varchar(200) not null,
+	action		varchar(200) not null,
+	creation_date        date not null,	
+	creation_user        integer not null references users,
+	creation_ip_address  varchar(200) not null,
+	primary key (group_id, role, action) );
+</pre>
+</blockquote>
+
+<h3>Definitions</h3>
+
+<ul>
+
+<li><b>Site-wide administrator:</b> A person with access to the
+site-wide (/admin) pages. These pages are generally password-protected
+with AOLserver and users access these pages with https.  Some pages
+underneath /admin demand that the user be logged in, but we've been
+sloppy about requiring administration group membership for this user.
+
+<li><b>Group administrator:</b> A person with the role of
+"administrator" in a user group has the power to approve or reject
+applications by others for group membership.  Group administrators 
+implicitly have all the authority of users with any other role in the
+group.
+
+<li><b>Content administrators:</b>  A person with some role in a user
+group associated with a module (or module/submodule combination).
+
+
+</ul>
+
+<h3>The Steps</h3>
+
+Consider applying this package to a legacy ACS module such as the
+classified ad system (/gc/).  Here are the steps:
+
+<ul>
+
+<li>decide whether we are going to permission the entire system or elect
+content administrators on a per-domain basis (assume that we decide to
+go per-domain)
+
+<li>decide whether you need basic or multi-role permissions; in the
+"basic" case, everyone in the administration group with the roles of
+either "all" or "administrator" will have privileges according to 
+<code>ad_permission_p</code>.  In the multi-role case, 
+<code>ad_permission_p</code> will explore the 
+<code>user_group_action_role_map</code> table to find out whether 
+a user with a particular role can perform the specified action.  (assume
+that we decide to use the basic system)
+
+<li>create administration groups for each existing classified ad domain,
+using <code>ad_administration_group_add</code> or its PL/SQL
+counterpart.
+
+<li>insert a call to <code>ad_administration_group_add</code> in the
+code that creates a new classified ad domain
+
+<li>insert calls to <code>ad_permission_p</code> anywhere in the /gc/
+pages that you want to check authorizations
+
+<li>visit the /admin/ug/ pages to assign users to the created
+administration groups
+
+</ul>
+
+
+<h3>Apply the permissions package to modules that already have user
+groups</h3>
+
+If you already have a user group associated with your module, you do not
+have to create a group of type "administration"; you can use the
+lower-level generic helper procedures below.
+
+<h3>Multi-Role</h3>
+
+For some applications, roles of <i>"administrator"</i> and <i>"all"</i>
+are not sufficient.  For example, we've used this package in a system
+that keeps electronic medical records.  We needed to restrict access to
+various pages depending on the user's role in the hospital.  Some users
+were allowed access to full patient records, while others were only
+allowed to enter demographic information.
+
+<p>
+
+You specify multi-role permissions when you create a group with <a
+href="proc-one.tcl?proc_name=ad_administration_group_add">ad_administration_group_add</a>
+or by toggle the multi-role perms column in
+/admin/ug/group.tcl.  A group of any type, i.e., even one that isn't
+"administration" can be the basis of a multi-role permission scheme.
+
+<p>
+
+Once multi-role perms are enabled, the /admin/ug/group.tcl page will
+sprout some new user interface.  The basic idea is that you add roles
+and actions until you're looking at a matrix of which roles are
+authorized to perform which actions.  You could also fill this matrix
+programmatically by calling the procedures 
+ <a
+href="proc-one.tcl?proc_name=ad_administration_group_role_add">ad_administration_group_role_add</a>, 
+<a href="proc-one.tcl?proc_name=ad_administration_group_action_add">ad_administration_group_action_add</a>,
+<a
+href="proc-one.tcl?proc_name=ad_administration_group_action_role_map">ad_administration_group_action_role_map</a>.
+
+
+<h3>Administration group type procedures</h3>
+
+Groups of type administration can be identified 
+by their module and submodule.
+
+<ul>
+<li> To answer <i>"Is user x allowed to do y?"</i>   <a href="proc-one.tcl?proc_name=ad_permission_p">ad_permission_p</a>
+<li> To see if a user is in the group:  <a href="proc-one.tcl?proc_name=ad_administration_group_member">ad_administration_group_member</a>
+<li> Create a group of type administration: <a href="proc-one.tcl?proc_name=ad_administration_group_add">ad_administration_group_add</a> or the pls-sql procedure administration_group_add
+<li> To grant a user a role in an administration group:  <a href="proc-one.tcl?proc_name=ad_administration_group_user_add">ad_administration_group_user_add</a>
+<li> To add a role to an administration group:  <a href="proc-one.tcl?proc_name=ad_administration_group_role_add">ad_administration_group_role_add</a>
+<li> To add an action to an administration group: <a href="proc-one.tcl?proc_name=ad_administration_group_action_add">ad_administration_group_action_add</a>
+<li> To allow users with a role to execute an action: <a href="proc-one.tcl?proc_name=ad_administration_group_action_role_map">ad_administration_group_action_role_map</a>
+<li> To retrieve a group_id from an adminsitration group's module and submodule:   <a href="proc-one.tcl?proc_name=ad_administration_group_id">ad_administration_group_id</a>
+</ul>
+
+<h3>Generic procedures</h3>
+
+Group_id will identify any group, regardless of type. Both basic and
+multi-role permission schemes will work.
+
+<ul>
+<li> To answer  <i>"Is user x allowed to do y?"</i> <a href="proc-one.tcl?proc_name=ad_permission_p">ad_permission_p</a>
+<li> To see if a user is in the group:   <a href="proc-one.tcl?proc_name=ad_user_group_member">ad_user_group_member</a>
+<li> To answer <i>"Is the user an administrator of this group?"</i>  <a href="proc-one.tcl?proc_name=ad_user_group_authorized_admin">ad_user_group_authorized_admin</a>
+
+<li> To answer <i>"Is the user an administrator of this group? (or a
+site-wide administrator with uber-user privileges)"</i>  
+<a href="proc-one.tcl?proc_name=ad_user_group_authorized_admin_or_site_admin">ad_user_group_authorized_admin_or_site_admin</a>
+
+
+<li> To retrieve a group_id from an adminsitration group's module and submodule:   <a href="proc-one.tcl?proc_name=ad_administration_group_id">ad_administration_group_id</a>
+<li> To add an user group: <a href="proc-one.tcl?proc_name=ad_user_group_add">ad_user_group_add</a> 
+<li> To grant a user a role:  <a href="proc-one.tcl?proc_name=ad_user_group_user_add">ad_user_group_user_add</a>
+<li> To add a role:  <a href="proc-one.tcl?proc_name=ad_user_group_role_add">ad_user_group_role_add</a>
+<li> To add an action: <a href="proc-one.tcl?proc_name=ad_user_group_action_add">ad_user_group_action_add</a>
+<li> To allow users with a role to execute an action: <a href="proc-one.tcl?proc_name=ad_user_group_action_role_map">ad_user_group_action_role_map</a>
+</ul>
+
+<hr>
+<a href="http://teadams.com"><address>teadams@mit.edu</address></a>
+</body>
+</html>

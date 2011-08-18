@@ -1,0 +1,86 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>/adserver system</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>/adserver system</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="http://photo.net/philg/">Philip Greenspun</a>
+
+<hr>
+
+<ul>
+<li>User-accessible directory:  none 
+<li>Site administrator directory:  <a href="/admin/adserver/">/admin/adserver/</a>
+<li>data model :  <a href="/doc/sql/display-sql.tcl?url=/doc/sql/adserver.sql">/doc/sql/adserver.sql</a>
+
+</ul>
+
+
+Remember that the underlying rationale for the ad server is set forth in
+<a href="http://photo.net/wtr/thebook/community.html">Chapter 3 of "the
+book"</a>.
+
+<P>
+
+GIF or JPEG files for ads are stored in /ads.   References look like 
+
+<blockquote>
+<pre>
+&lt;a href="/adserver/adhref.tcl?adv_key=pfizer"&gt;
+&lt;img src="/adserver/adimg.tcl?adv_key=pfizer"&gt;
+&lt;/a&gt;
+</pre>
+</blockquote>
+
+<p>
+
+If the ad server gets confused, it tries to always serve up something to
+fill the space.  It looks for <code>[ad_parameters DefaultAd
+adserver]</code> and <code>[ad_parameters DefaultTargetUrl adserver]</code>.
+If it can't find those, it notifies the site administrator to define
+them.
+
+<p>
+
+The major feature of the adserver not covered by the book is that there
+is a notion of ad groups.  For example, if there are four ads that you'd
+like a user to see in sequence, you can make them part of a group and
+then make all the pages in a section of a site reference that group.  
+The page need only call <code>adv_ad_from_group</code> with the
+<code>group_key</code> as an argument and it will get back a reference
+to the next appropriate ad from that group.
+
+
+<blockquote>
+<pre>
+-- this is for publishers who want to rotate ads within a group
+
+create table adv_groups (
+	group_key	varchar(30) not null primary key,
+	pretty_name	varchar(50)
+);
+
+-- these will rotate in the order spec'd (ascending, e.g., 0, 1, 2...) 
+-- unless rotation_order is always NULL or is the same integer
+-- in which case the order will be determined by however Oracle feels like
+-- giving us the rows
+
+create table adv_group_map (
+	group_key	not null references adv_groups,
+	adv_key		not null references advs,
+	rotation_order	integer,
+	primary key (group_key,adv_key)
+);
+</pre>
+</blockquote>
+
+
+
+<hr>
+<a href="http://photo.net/philg/"><address>philg@mit.edu</address></a>
+</body>
+</html>

@@ -1,0 +1,131 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>Module Review Guidelines</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+
+<h2>How to Review a Module</h2>
+
+of the <a href="">Arsdigita Community System</a> 
+by <a href="http://aure.com/">Aurelius Prochazka</a>
+and <a href="http://michael.yoon.org/">Michael Yoon</a>
+<hr>
+
+The ArsDigita Community System has gone through considerable changes
+over the course of its existence.  Design and coding rules that were
+once thought to be set in stone have changed, and modules must be
+reviewed on a regular basis to keep quality high, rather than only
+when the module is first introduced.
+
+<p>
+
+Another reason why the ACS code base is not as consistent as we would
+like is that our programming standards have been propagated through a
+largely oral tradition. Collecting material from <a
+href="developers">the Developers Guide</a> (which is the closest thing
+we have to a standards document but also contains higher-level
+information about user interface design and information design) and
+other publications (e.g., Ron Henderson's <a
+href="http://ron.arsdigita.com/toolkit/acs-development.html">ACS
+Development</a> page), we have now started to publish our standards at
+<a href="/doc/standards">/doc/standards</a> (an <a
+href="abstract-url">abstract URL</a>) so that no one will have to
+waste any more time wondering, "So what's the official way to do X?"
+
+<p>
+
+Read the standards, and, whether or not, they coincide exactly with
+your personal style, please adhere to them. If you disagree with a
+standard for substantive reasons, then don't silently dissent; rather,
+raise the issue so that -- assuming your argument is persuasive -- the
+standard will be changed for the better.
+
+<h3>Coverage</h3>
+
+A full review will cover all of the following:
+
+<ul>
+<li> /doc/<em>module</em>.html - this file should warn the code reviewer
+if there is anything tricky about the system at all
+<li> /doc/sql/<em>module</em>.sql
+<li> /tcl/<em>module</em>-defs.tcl
+<li> user pages in /<em>module</em>/
+<li> site-wide administrator pages in /admin/<em>module</em>/
+<li> module administrator pages in /<em>module</em>/admin/
+</ul>
+
+<h3>Goals</h3>
+
+The overarching goal is to produce high-quality software. Consistency,
+correctness, and efficiency are recognized dimensions of software
+quality. We strive to achieve all of these goals by taking the
+following concrete steps:
+
+<ol>
+<li> Standardize:
+
+<ul>
+<li> <a href="standards#file_naming">file naming</a> if possible (be
+careful not to break links)
+
+<li> the <a href="standards#file_header">header</a> of each file
+
+<li> each <a href="standards#tcl_library_file">Tcl library file</a>
+
+<li> the <a href="standards#page_input">input specification and
+validation of each page</a>
+
+<li> the <a href="standards#page_construction">construction of each
+page</a>
+
+</ul>
+
+<p>
+
+<li> Identify bugs (the <a href="common-errors">common errors</a> list
+is a good resource for accomplishing this goal)
+
+<p>
+
+<li> Identify potential improvements (optimization, modularity, user
+interface, etc.)
+
+<p>
+
+<li> <b>TEST, TEST, TEST</b> - reading code and documentation alone is
+not enough to do an effective code review; you need to see the module
+in action, so perform the appropriate <a
+href="acceptance-test">Acceptance Test</a> and enhance it if it does
+not achieve full coverage of the module's feature set. In the short
+term, we will need to be exploring more sophisticated testing methods
+(automated testing, load testing).
+
+</ol>
+
+<h3>Output</h3>
+
+There should be a concrete artifact from every module review, i.e., a
+list of actionable items for the module owner to complete. Once this
+list has been provided to him/her, the module owner should publish a
+plan for completing the list by a set deadline (this plan need not be
+complicated; if the list is short and simple, an email saying "I'll
+get these done today" is probably sufficient).
+
+<p>
+
+As for what form the list of review items should take, there is no
+standard yet. In the past, email has been the <i>de facto</i>
+standard, but email is bad for a lot of reasons. The <a
+href="http://www.arsdigita.com/ticket/?project_id=128">ACS Ticket
+Tracker</a> is a natural candidate for fulfilling this function. For
+now, use your best judgment; just be sure (one way or another) to get
+it in writing.
+
+<hr>
+
+<a href="http://aure.com/"><address>aure@arsdigita.com</address></a>
+
+</body>
+</html>

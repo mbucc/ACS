@@ -1,0 +1,63 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>Data Warehouse Subsystem</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Data Warehouse Subsystem</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="http://photo.net/philg/">Philip Greenspun</a>
+
+<hr>
+
+Most of the real work in building a data warehouse is constructing a
+dimensional data model and copying information from your online
+transaction processing (OLTP) data model into the dimensional model.
+This software won't help you with that.  Although I hope to some day
+write about this, for now I will simply refer you to Ralph Kimball's <a
+href="http://www.amazon.com/exec/obidos/ISBN=0471153370/photonetA/"><cite>The
+Data Warehouse Toolkit</cite></a>.
+
+<p>
+
+What this subsystem is designed to do is provide a reasonable user
+interface to ad hoc querying of a single table.  If you have multiple
+tables that need to be JOINed, you could either extend this software a
+bit or build a view that does the JOIN.  If you have a truly large
+database (gigabytes), you might find that performance isn't acceptable.
+In that case, what you need to do is 
+
+<ul>
+<li>get your data into a dimensional model
+<li>build a view that joins the fact table to the dimensions and
+contains everything a user might want to group by, restrict by, or
+aggregate
+<li>see if you can't browbeat your RDBMS into optimizing queries into
+this view so that it doesn't mess with tables that are irrelevant to a
+particular query
+</ul>
+
+Once you've gotten your data into a dimensional model (one fact table
+plus a bunch of dimension tables), the data warehousing module of the
+ACS can help you.  It is also potentially useful if you just want to
+provide ad-hoc query capabilities for a big table that happens to exist
+in your production database.
+
+<p>
+
+The assumption is that this module will keep you from having to buy,
+install, and maintain Seagate Crystal Reports (a truly painful-to-use
+product).
+
+<h3>Installation</h3>
+
+You will almost surely want to go into /tcl/dw-defs.tcl and change
+<code>dw_table_name</code> to return either the right table or view for
+this system or something that depends on which user is logged in.
+
+<hr>
+<a href="http://photo.net/philg/"><address>philg@mit.edu</address></a>
+</body>
+</html>

@@ -1,0 +1,135 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>/bboard system</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>/bboard system</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="http://photo.net/philg/">Philip Greenspun</a>
+
+<hr>
+
+<ul>
+<li>User directory:  <a href="/bboard/">/bboard/</a>
+<li>Admin directory:  message deletion, etc., is handling by
+admin-*.html scripts within the user directory; heavy duty stuff such as
+creating a new bboard or adding a maintainer is done at
+<a href="/admin/bboard/">/admin/bboard/</a>
+
+<li>data model :  <a href="/doc/sql/display-sql.tcl?url=/doc/sql/bboard.sql">/doc/sql/bboard.sql</a>
+
+
+</ul>
+
+The discussion software supports the following kinds of user interfaces,
+all of which query and insert to the same <code>bboard</code> table.
+Currently the system supports:
+
+<ul>
+<li>Q&A format, developed for the <a
+href="http://photo.net/photo/">photo.net</a> site and one of the most
+refined interfaces
+
+<li>Editorial-commentary format, developed for <a
+href="http://cognet.mit.edu/">cognet.mit.edu</a>.  This is suitable for
+when the publisher has longish thought-provoking editorials.  Readers
+then submit commentary on this.  A big advantage of this format is that
+the user interface isn't festooned with the words "question" and
+"answer". 
+
+<li>US-geospatial format, developed for <a
+href="http://scorecard.org">scorecard.org</a>.  This allows messages to
+be tagged with a zip code, county, or state.  So you can look at
+discussion nation-wide, in a region, or limited to a zip code.
+
+<li>original threads interface.  This is a lot like USENET and it
+doesn't scale very well as the discussion accumulates threads.
+
+</ul>
+
+<h3>File upload</h3>
+
+Users can upload one file in association with any message.  This was
+developed to facilitate photo uploading.  There is only one extra table
+defined for 
+
+<blockquote>
+<pre><code>
+create sequence bboard_upload_id_sequence;
+
+create table bboard_uploaded_files (
+	bboard_upload_id	integer primary key,
+	msg_id			not null references bboard,
+	file_type		varchar(100),	-- e.g., "photo"
+	file_extension		varchar(50), 	-- e.g., "jpg"
+	-- can be useful when deciding whether to present all of something
+	n_bytes			integer,
+	-- generally the filename will be "*msg_id*-*upload_id*.extension"
+	-- where the extension was the originally provided (so 
+	-- that ns_guesstype will work)
+	filename_stub		varchar(200) not null,
+	-- fields that only make sense if this is an image
+	caption			varchar(4000),
+	-- will be null if the photo was small to begin with
+	thumbnail_stub		varchar(200),
+	original_width		integer,
+	original_height		integer
+);
+</code></pre>
+</blockquote>
+
+<h3>Permissions Model</h3>
+
+[The bboard module was upgraded around time of version 2.1 to use the
+comon ACS user/groups administrative API]
+
+<p>
+
+Goal: To allow per-group bboards, and to use the new ACS permissions
+system to control user and administrative access to the bboards.
+
+<p>
+Each bboard topic is now associated with an administrative group,
+created using ad_administration_group_add, with "bboard" as the module
+and the topic_id as the sub-module. Any users who have been added to
+the corresponding administration group by
+ad_administration_group_user_add will have administrative access to
+the topic. They can access the bboard/admin-xxx pages, and moderate
+discussions on the topic.
+
+<h4>Public and Private Bboards</h4>
+
+There is a new read and write permissions model for topics. A topic
+has "read-access" and "write-access" permissions.
+
+<pre>
+Read-access := any | public | group
+
+ any    :=  topic may be viewed by any user of the system
+ public :=  topic may only be view by a registered user of the system
+ group  :=  topic may only be viewed by members of the topic's group(s)
+
+Write-access :=  public | group
+
+ public := any registered user may post a message or reply
+ group  := only members of the topic's group(s) may post or reply to messages
+
+</pre>
+
+<!-- Added by Branimir -->
+<h4>Urgent requests</h4>
+<ul>
+ <li>data model: an additional column <tt>urgent_p</tt> which says if 
+the posting is urgent or not
+ <li>parameters: <tt>UrgentMessageEnabledP=<i>[0|1]</i></tt>, <tt>DaysConsideredUrgent=<i>number-of-days</i></tt> in
+the <tt>bboard</tt> section of the config file.
+
+</ul>
+
+<hr>
+<a href="http://photo.net/philg/"><address>philg@mit.edu</address></a>
+</body>
+</html>

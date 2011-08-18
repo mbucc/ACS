@@ -1,0 +1,56 @@
+<html>
+<head>
+<!--AD_DND-->
+<title>Custom Software added to this installation</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Custom Software</h2>
+
+added to this installation of the ArsDigita Community System
+
+<hr>
+
+Major new systems, especially those that are highly specific to a site
+and that will never be part of the ArsDigita Community System, should be
+documented here.  Particular attention should be paid to describing the
+hooks into and out of the core ACS software.  This will make it easier
+to upgrade the site to a newer version of the ACS software. For detailed
+guide on how to write an ACS module, take a look at 
+<a href=writing-a-module.html>writing-a-module.html</a>.
+
+<p>
+
+Here's how you add a standalone module to the ACS:
+
+<ul>
+<li>put the SQL data model in /doc/sql/module-name.sql
+<li>put an HTML file explaining how to configure and use the module in
+/doc/module-name.html
+<li>put the user scripts in /module-name/
+<li>put the module administrator scripts in /module-name/admin/
+<li>put the site-wide administrator scripts in /admin/module-name/
+
+<li>put commonly called procedures in the private tcl directory
+(/web/yourdomain/tcl) as module-name-defs.tcl
+
+<li>if your module results in content being posted to the site,
+write a procedure to interface to the <a href="new-stuff.html">new
+stuff</a> system and put it in your defs.tcl file, along with some
+in-line code to add it to the ns_share'd variable 
+<code>ad_new_stuff_module_list</code>
+
+<li>write a procedure to interface to the
+/tcl/ad-user-contributions-summary.tcl system (similar to the new stuff
+system but for stuff you want to show up on the
+/shared/community-member.tcl 
+and /admin/users/one.tcl pages)
+
+
+<li>add a note in this file saying that you've done these things 
+</ul>
+
+
+
+</body>
+</html>

@@ -1,0 +1,19 @@
+<%= [ad_header "Help for Edit Display Settings"] %>
+
+<h2>Help</h2>
+
+for the Section Navigation page
+
+<hr>
+<blockquote>
+<p>
+You can use the links on this page to add/remove section navigation links.
+The names on the left are content_section names from which links to other sections are defined. Existing links from a section arev listed right below the section name. 
+<ul>
+<li>To add new links to other sections, click on the "add link". 
+<li>To remove existing links, click on the "remove link" right next to it. 
+</ul>
+<p>
+</blockquote>
+
+<%= [ad_footer] %>

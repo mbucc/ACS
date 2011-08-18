@@ -1,0 +1,237 @@
+<html>
+<!--AD_DND-->
+<!--$Id: press.html,v 3.1 2000/02/20 09:40:11 ron Exp $-->
+<head>
+<title>Press</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Press</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="mailto:ron@arsdigita.com">Ron Henderson</a>
+
+<hr>
+
+<ul>
+<li>User-accessible directory:  <a href="/press/">/press/</a>
+<li>Site administrator directory:  <a href="/admin/press/">/admin/press/</a>
+<li>Group admin pages:  <a href="/press/admin/">/press/admin/</a>
+<li>data model:
+<a href="/doc/sql/display-sql.tcl?url=/doc/sql/press.sql">/doc/sql/press.sql</a>
+<li>Tcl procs:  /tcl/press-defs.tcl 
+</ul>
+
+<h3>The Big Picture</h3>
+
+<p>Most Web services and all corporate sites have a "foobar.com in the
+news" page.  This page lists, chronologically, articles in newspapers,
+magazines, etc. where the site or company is featured.  This is a
+little bit different from the <a href=news.html>news</a> module in
+that the publisher is mostly linking off to other publications and not
+trying to disseminate news him or herself.
+
+<p>
+
+Examples:
+
+<ul>
+<!--
+<li><a
+href="http://arsdigita.com/press.html">http://arsdigita.com/press.html</a>
+-->
+<li><a
+href="http://www.scorecard.org/about/about-press.tcl">http://www.scorecard.org/about/about-press.tcl</a>
+<li><a href="http://www.valinux.com/news/news.php3">http://www.valinux.com/news/news.php3</a>
+
+
+</ul>
+
+<p>The system supports site-wide press coverage (appropriate when one
+ACS installation is being used for a company) and subcommunity press
+coverage, e.g. for a service like arfdigita.org where many
+organizations are using the same ACS.  Anyone who has the
+administrator role in a user group can edit the press coverage for
+that group.
+
+<h3>Press Coverage Templates</h3>
+
+<p>The module provides a flexible template system to support the wide
+range of formats needed for different sites and types of press
+coverage.  A press item contains the followings bits of
+information:</p>
+
+<ul>
+<li>publication_name
+<li>publication_date
+<li>article_title
+<li>article_pages
+<li>abstract
+</ul>
+
+<p>A site administrator can define named templates to control how
+these pieces of information are displayed. The templates are written
+as ADP fragments using the variables listed above.  For example, the
+system default template might format a press item as follows:
+
+<p><blockquote>
+<pre>
+&lt;dl&gt;&lt;b&gt;<%=$publication_name%>&lt;/b&gt; - &lt;%=$article_name%&gt; (&lt;%=$article_pages&gt;)
+&lt;dd&gt;(&lt;%=$publication_date%&gt;) - "&lt;%=$abstract&gt;"&lt;/dd&gt;&lt;/dl&gt;
+</pre>
+</blockquote></p>
+
+<p>This template would be expanded into:</p>
+
+<blockquote>
+<dl> 
+<b>Dog's Life</b> - Planet of the Dogs (pp 50-52)
+<dd>January 1, 2100 - "They used to say that every dog has his
+day. Little did humans know that the collapse of their society at the
+beginning of this millenium would give rise to a new golden age of
+canine rule."</dd> 
+</dl>
+</blockquote>
+
+<p>Hyperlinks to external publications and articles are inserted
+automatically and optionally tracked using the <a
+href=/doc/clickthrough.html>clickthrough</a> module.</p> 
+
+<h3>Under the Hood</h3>
+
+<p>The data model for press coverage is quite simple:
+
+<blockquote>
+<pre><code>
+create sequence press_id_sequence start with 1;
+
+create table press (
+	press_id		integer primary key,
+	-- if scope=public, this is press coverage for the whole system
+        -- if scope=group, this is press coverage for a subcommunity
+        scope			varchar(20) not null,
+	-- will be NULL if scope=public 
+	group_id		references user_groups,
+	-- determine how the item is formatted
+	template_id		references press_templates,
+	-- if true, keep the item active after it would normally expire. 
+	important_p		char(1) default 'f' check (important_p in ('t','f')),
+	-- the name of the publication, e.g. New York Times
+	publication_name	varchar(100) not null,
+	-- the home page of the publication, e.g., http://www.nytimes.com
+	publication_link	varchar(200),
+	-- we use this for sorting
+	publication_date	date not null,
+	-- this will override publication_date where we need to say "Oct-Nov 1998 issue"
+	-- but will typically be NULL
+	publication_date_desc	varchar(100),
+	-- might be null if the entire publication is about the site or company
+	article_title		varchar(100),
+	-- if the article is Web-available
+	article_link		varchar(200),
+	-- optional page reference, e.g. page 100
+	article_pages		varchar(100),
+	-- quote from or summary of article
+	abstract		varchar(4000),
+	-- is the abstract in HTML or plain text (the default)
+	html_p			char(1) default 'f' check (html_p in ('t','f')),
+	creation_date		date not null,
+	creation_user		not null references users(user_id),
+	creation_ip_address	varchar(50) not null
+);
+</code></pre>
+</blockquote>
+
+<p>The data model for press coverage templates is equally straightforward:
+
+<blockquote>
+<pre><code>
+create sequence press_template_id_sequence start with 2;
+
+create table press_templates (
+	template_id		integer primary key,
+	-- we use this to select the template
+	template_name		varchar(100) not null,
+	-- the adp code fraqment
+	template_adp		varchar(4000) not null
+);
+
+</pre></code>
+</blockquote>
+
+<p>Note that <code>template_id=1</code> is reserved for the site-wide
+default template.</p>
+
+<h3>Legal Transactions</h3>
+
+<p>From the Site Administration pages at <a
+href=/admin/press/>/admin/press/</a> the site-wide administrator can do
+the following:</p>
+
+<ul>
+<li>Create a new press template: insert a new row into the
+table press_templates
+<li>Edit the properties of a press template: update a row in
+press_templates
+<li>Delete an unused press template: delete a row in
+press_templates
+</ul> 
+
+<p>From the Maintainers admin pages at <a
+href=/press/admin/>/press/admin/</a> the press coverage maintainers
+can:</p>
+
+<ul>
+<li>Add new press coverage: insert a new row in press
+<li>Edit existing press coverage: update a row in press
+<li>Delete press coverage: remove a row from press
+</ul>
+
+<p>You can change the site-wide behavior by setting the following parameters:
+
+<blockquote>
+<pre><code>
+[ns/server/service/acs/press]
+; maximum number of press items to display on the press coverage page
+DisplayMax=10
+; number of days a press item remains active
+ActiveDays=60
+; do we use clickthrough tracking from the press coverage page?
+ClickthroughP = 1
+</code></pre>
+</blockquote>
+
+<h3>Limitations</h3>
+
+<p>The expiration behavior of press coverage is strange.  Once an item
+surpasses the site-wide maximum number of active days and expires, the
+only way to turn it back on is to set the important_p flag and have it
+displayed permanently.  It would make more sense to define a
+per-press-item expiration date.
+
+<p>Any administrator can create public press coverage (the limitation
+is that this cannot be restricted).  
+
+<h3>Future Improvements</h3>
+
+<ul>
+<li>Expiration date for individual headlines
+<li>Separation of public and private (group only) headlines
+<li>Ability to display headlines based on publication name or a
+keyword search of title and abstract. 
+</ul>
+
+<hr>
+<a href="mailto:ron@arsdigita.com"><address>ron@arsdigita.com</address></a>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+

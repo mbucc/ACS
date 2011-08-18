@@ -1,0 +1,193 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>General Links</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>General Links</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href=mailto:dh@arsdigita.com>dh@arsdigita.com</a> and <a href=mailto:tzumainn@arsdigita.com>tzumainn@arsdigita.com</a>
+
+<hr>
+
+<ul>
+<li>User-accessible directory:  <a href="/general-links/">/general-links/</a>
+<li>Site administrator directory:  <a href="/admin/general-links/">/admin/general-links/</a>
+<li>data model: <a href="/doc/sql/display-sql.tcl?url=/doc/sql/general-links.sql">/doc/sql/general-links.sql</a>
+<li>TCL: /tcl/general-links.tcl
+</ul>
+
+<h3>The Big Idea</h3>
+
+This module serves two related purposes: Display/Maintains categorized links on at a single location (hot list),  Solicit links to associate with any piece
+of information in the database.  <p>
+Users may rate links on the hot list (a scale of 0 to 10), and this rating may be used in display of the links. 
+
+<h3>The Medium Sized Idea</h3>
+
+A simple breakdown of the possible actions:
+
+<ul>
+<h4><u>Hot List</u></h4>
+<li>Users can view a categorized list of all the links
+<li>Users can give the links ratings
+<li>Users can suggest links to the Hot List
+<P>
+<li>Administrators can approve/reject links
+<li>Administrators can create categories
+<li>Administrators can edit/delete/recategorize links
+<h4><u>Associated Links</u></h4>
+<li>Users can view links associated with an item in the database
+<li>Users can suggest a new link and to be associated to an item in the database (the user will also be asked to classify this link as it will also be suggested to the Hot List automaticaly)
+<P>
+<li>Administrators can approve/reject new links associations
+<li>Administrators can edit/delete link associations
+</ul>
+
+<h3>Under the Hood</h3>
+
+General links are stored in one table <code>general_links</code>, with their properties (title, description, etc);  the associations between items in the database are stored in a mapping table <code>general_link_db_map</code>; and the user's rating are keep in the table <code>general_link_user_ratings</code>.
+<P>
+As in the <a href="/doc/general-comments.html">general-comments</a> module,
+references to items in the database via id <code>on_what_id</code>
+in the table <code>on_which_table</code>.
+
+<blockquote>
+<pre>
+create sequence general_link_id_sequence start with 1;
+
+create table general_links (
+	link_id                 integer primary key,
+	url                     varchar(300) not null,
+	link_title              varchar(100) not null,
+	link_description        varchar(4000),
+	-- meta tags defined by HTML at the URL
+	meta_description        varchar(4000),
+	meta_keywords           varchar(4000),
+	-- when was this submitted?
+	creation_time	    	    date default sysdate not null,
+	creation_user		    not null references users(user_id),
+	creation_ip_address	    varchar(20) not null,
+	last_modified		    date,
+	last_modifiying_user	    references users(user_id),
+	-- last time this got checked
+	last_checked_date       date,
+	last_live_date          date,
+	last_approved           date,
+	-- has the link been approved? ( note that this is different from
+	-- the approved_p in the table wite_wide_link_map ) 
+	approved_p              char(1) default 't' check(approved_p in ('t','f'))
+);
+
+create sequence general_link_map_id start with 1;
+
+-- This table associates urls with any item in the database
+
+create table site_wide_link_map (
+	map_id          integer primary key,
+	link_id                 not null references general_links,
+	-- the table is this url associated with 
+	on_which_table          varchar(30) not null,
+	-- the row in *on_which_table* the url is associated with
+	on_what_id              integer not null,
+	-- a description of what the url is associated with
+	one_line_item_desc      varchar(200) not null,
+	-- who made the association
+	creation_time	    	    date default sysdate not null,
+	creation_user		    not null references users(user_id),
+	creation_ip_address	    varchar(20) not null,
+	last_modified		    date,
+	last_modifiying_user	    references users(user_id),
+	-- has the link association  been approved ?
+	approved_p              char(1) check(approved_p in ('t','f')) not null
+);
+
+-- We want users to be able to rate links
+-- These ratings could be used in the display of the links
+-- eg, ordering within category by rating, or displaying 
+-- fav. links for people in a given group..
+
+create table general_link_user_ratings (
+	user_id         not null references users,
+ 	link_id         not null references general_links,
+	-- a user may give a url a rating between 0 and 10
+	rating          integer not null check(rating between 0 and 10 ),
+	-- require that the user/url rating is unique
+	primary key(link_id, user_id) 
+);
+</pre>
+</blockquote>
+
+<p>
+The module contains one core procedure, <a href="proc-one.tcl?proc_name=ad_general_links_list">ad_general_links_list</a> (based on ad_general_comments_list), that
+will show links associated with an item in the database and make appropriate 
+links to files in <code>/general-links</code> and  
+for recording and editing links.
+<p>
+The arguments  to <code>ad_general_links_list</code> are:<br>
+<ul>
+<li> db handle
+<li> table_name containing item 
+<li> id of the item
+<li> A pretty noun describing the item for the user interface.
+<li> The module name
+<li> The submodule name
+<li> A return_url (optional, the default will be the current URL)
+</ul>
+<p>
+</ul>
+
+Default approval policy is toggled by the DefaultLinkApprovalPolicy parameter.
+<p>
+If AllowGeneralLinksSuggestionsP is set to 1, then a user will be able to suggest links from /general-links/ index page.
+<p>
+In addition, by toggling GeneralLinksClickthroughP, one can toggle on/off the ability to keep track of link clickthroughs.  These statistics are stored in a table defined in community-core.sql:
+
+<blockquote>
+<pre><code>
+create table clickthrough_log (
+        local_url       varchar(400) not null,
+        foreign_url     varchar(300) not null,  -- full URL on the foreign server
+        entry_date      date,   -- we count referrals per day
+        click_count     integer default 0,
+        primary key (local_url, foreign_url, entry_date)
+);
+</pre></code>
+</blockquote>
+
+The links are marked by setting local_url to ad_link_<i>linkid</i>.
+
+
+<h3>Administration</h3>
+
+To support central administration of links, we rely on a helper table
+defined in community-core.sql:
+
+<blockquote>
+<pre><code>
+create table table_acs_properties (
+             table_name      varchar(30) primary key,
+             section_name    varchar(100) not null,
+             user_url_stub   varchar(200) not null,
+             admin_url_stub  varchar(200) not null
+);
+</code></pre>
+</blockquote>
+
+As with <a href="site-wide-search.html">site-wide search</a> and the <a
+href="user-profiling.html">user profiling system</a>, this helper table
+enables us to make a single query and yet connect links over to the
+appropriate admin or user pages.  Another part of this system is the
+one-line item description column in the <code>general_links</code>
+table.
+<p>
+For the purpose of the "hot list" page, links are put in different categories (one link could be placed in more than one category) by means of the tables <code>categories</code> and <code>category_heirarchy</code> found discussed in the <a href="/doc/user-profiling.html">/doc/user-profiling.html</a>. 
+
+
+
+<hr>
+<a href=mailto:dh@arsdigita.com>dh@arsdigita.com</a>
+</body>
+</html>

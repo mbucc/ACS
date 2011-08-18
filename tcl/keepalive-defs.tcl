@@ -1,0 +1,1 @@
+ns_share -init {set keepalive_monitor_list [list] } keepalive_monitor_list

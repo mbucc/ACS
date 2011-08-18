@@ -1,0 +1,124 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>Neighbor to Neighbor system</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Neighbor to Neighbor system</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="http://photo.net/philg/">Philip Greenspun</a>
+
+<hr>
+
+<ul>
+<li> User-accessible directory: <a href="/neighbor/">/neighbor/</a>
+<li> Site adminstrator directory: <a href="/admin/neighbor/">/admin/neighbor/</a> (must use https://)
+<li> data model: <a href="/doc/sql/display-sql.tcl?url=/doc/sql/neighbor.sql">/doc/sql/neighbor.sql</a>
+<li> procedures: /tcl/neighbor-defs.tcl
+</ul>
+
+
+The original idea, going back to 1995, of the Neighbor to Neighbor
+system was a repository of user experience with various kinds of
+merchants.  I should be able to visit the service at
+http://photo.net/photo/ and say "I bought a camera via mail from Joe
+Smith and it arrived when promised and in the stated condition."  I
+should be able to come back a month later and edit the posting and say
+"Ooops..  actually the camera had a subtle hidden flaw."
+
+<p>
+
+At the time, it seemed like a very different application from threaded
+discussion.  In practice, the bboard system grew much more flexible and
+users of the Neighbor service really seemed to need some kind of
+grouping/threading of items.
+
+<p>
+
+So why do we still have separate systems?  I think that organizing by
+merchants and knowing that people are talking about transactions is
+going to be valuable in the long run.  These are specializations that
+would really uglify the bboard code and /bboard section of the ad.ini
+parameters file.  
+
+<p>
+
+The current code makes good use of the <code>about</code> column
+in the <code>neighbor_to_neighbor</code> table.  This would typically be
+filled with a merchant name, e.g., "B&H Photo".  In theory, the code can
+do much more than this. 
+
+<P>
+
+The original idea was to have several sites running on the same db
+server (so there was a <code>domain</code> column).  Then each site
+would have several neighbor services, e.g., my personal site could have
+a "photographic" category and a "Web servers" category.  Within each
+category there would be subcategories, e.g., "Camera Shops" for
+"photographic".
+
+<P>
+
+Like all comprehensive ambitious systems designed and operated by stupid
+people, neighbor to neighbor never really blossomed.  I ended up using
+it at http://photo.net/photo/ with a hardwired domain and a hardwired
+primary category.  I don't want to break links from all over the
+Internet so I can't really change this now.  Thus there will have to be
+a default primary_category in the ad.ini file.
+
+<P>
+
+Another thing that should be added is good support for regionalism.  It
+might be useful to have recommendations of roofing contractors but these
+have to be broken up by state.  There is a <code>region</code> column in
+the data model but I haven't really done anything with the code to
+support it.
+
+<p>
+
+Interesting anecdote: in mid-1999, four years after this software was
+built, a company called <a
+href="http://www.epinions.com">epinions.com</a> in California raised
+$millions in venture capital to do the same thing as <a
+href="http://photo.net/neighbor/">http://photo.net/neighbor/</a>!
+
+<h3>Configuration</h3>
+
+Here's the section from the ad.ini file:
+
+<blockquote>
+<pre><code>
+[ns/server/yourservername/acs/neighbor]
+; SystemName=Yourdomain Neighbor to Neighbor Service
+; SystemOwner= something different (if desired) from SystemOwner above
+; HostAdministrator=something different from system-wide
+; if you're only going to run one little category, and
+; for backward compatibility for photo.net
+; this is a category_id referencing the n_to_n_primary_categories
+; table
+DefaultPrimaryCategory=1
+; if someone can't think of more than one; affects links from opc.tcl
+OnlyOnePrimaryCategoryP=0
+; do we offer users a full-text search box
+ProvideLocalSearchP=1
+; do we use Oracle's Context option (only works if 
+; ProvideLocalSearchP=1)
+UseContext=0
+; do we use standalone PLS search system
+UsePLS=0
+; do we use AltaVista (only works if ProvideLocalSearchP=0
+; and if the site's content is exposed to AltaVista)
+LinktoAltaVista=0
+SolicitCommentsP=1
+CommentApprovalPolicy=wait
+</code></pre>
+</blockquote>
+
+
+
+<hr>
+<a href="http://photo.net/philg/"><address>philg@mit.edu</address></a>
+</body>
+</html>

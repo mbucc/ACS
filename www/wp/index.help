@@ -1,0 +1,139 @@
+<%= [wp_help_header "About WimpyPoint"] %>
+
+<h3><a name="big-picture">WimpyPoint: The Basic Idea</a></h3>
+
+WimpyPoint is a replacement for desktop bloatware such
+as <a href="http://www.webho.com/WealthClock">Microsoft</a>
+PowerPoint.  You can build a slide presentation in
+WimpyPoint from any Web browser anywhere in the world.
+WimpyPoint will hold onto your presentation in a
+professional maintained and backed up relational database management
+system (Oracle 8).  You can forget your laptop.  You can drop your
+laptop.  You will still be able to give your presentation anywhere in
+the world that you can find a Web browser.
+
+<P>
+
+More interestingly, WimpyPoint lets you work with
+colleagues.  From your desk at MIT, you can authorize a friend at
+Stanford to edit your presentation, the two of you can work together
+until you're satisfied, and then you can both go into a conference
+room at Hewlett-Packard Laboratories and give your talk from our
+server.  
+
+<P>
+
+(Naturally this assumes that our machine is up and running and the
+various Internet backbones are operating properly.  We strive for
+maximum reliability but nobody can achieve 100% uptime for any
+Internet service.  If your career absolutely positively depends on a
+presentation, we recommend using the Print button on your Web browser
+to make a hardcopy of your slides.
+<i>A useful (free) tool for printing a WimpyPoint presentation is 
+<a href="http://clickthrough.photo.net/ct/philg/wtr/thebook/index.html?send_to=http://www.hp.com/pond/wps/index.html">Hewlett-Packard
+Web PrintSmart</a></i>).
+
+<P>
+
+More questions? See
+<a href="http://photo.net/wtr/thebook/">Philip and Alex's
+Guide to Web Publishing</a>.
+
+<h3>WimpyPoint Main Page</h3>
+
+Welcome to WimpyPoint! From this screen, WimpyPoint's index page, you
+can locate a presentation to view or edit. There
+are a lot of presentations in WimpyPoint (<%
+set db [ns_db gethandle]
+ns_puts [database_to_tcl_string $db "select count(*) from wp_presentations"]
+ns_db releasehandle $db
+%> at last count), you probably don't want to see a list of all of them -
+the sliders at the top of the
+screen let you select
+
+<ul>
+  <li>whether you want to see presentations created in the past week,
+two weeks, or month, or all presentations since the beginning of time
+(i.e., early 1998).
+  <li>whether you want to see only your own presentations (presentations which you have created
+or are <a href="#collaboration">collaborating on</a>), or presentations created by anyone at all. This slider only
+shows up if have an account on <%= [ad_system_name] %> and are logged in.
+</ul>
+
+To show a presentation, click its title. To edit a presentation (assuming
+that you created it or are a collaborator), click the <i>edit</i> link
+next to its listing.
+
+<p>You can follow the links under <i>Options</i> to
+<ul>
+  <li>create a new presentation (available only if you're logged in),
+  <li>list WimpyPoint users, so that you can see a list of all presentations
+created by a particular person,
+  <li>search for a string or concept in an existing presentation, or
+  <li>view/create/edit <a href="#styles">styles</a> which can be used to
+prettify presentations.
+</ul>
+
+<h3>Some Basic WimpyPoint Concepts</h3>
+
+<h4><a name="collaboration">Collaboration</a></h4>
+
+We don't want to let people edit other people's presentations willy-nilly
+(lest you walk into an important meeting only to find your work replaced by a
+<a href="http://photo.net/photo/pcd4229/alex-rope-13.4.jpg">dirty picture</a>),
+but we certainly want to let users work with other collaboratively (that's the
+whole point, right?). WimpyPoint allows authors to specify exactly who is
+allowed to view and work on their presentations (for more info,
+check out the help screens later once you've started working on your own
+presentation).
+
+<h4><a name="styles">Styles</a></h4>
+
+Black on white with red/blue/purple links and a 12-point serif font looks OK, but
+it gets boring after a while (and may not suit some people's needs). For
+this reason, we let you select styles to use when viewing presentations.
+(You can change the style used to view a presentation by clicking the
+<i>Change Style</i> link in the lower-right corner on a presentation's
+table of contents.)
+Styles can change pages' background and color scheme, and even more if
+you know how to write <a href="http://www.w3.org/Style/CSS/">CSS (Cascading Style Sheets)</a>
+code.
+
+<p>If you're a registered user of <%= [ad_system_name] %>, you can even
+upload your own styles - follow the <i>Edit one of your styles</i> link on the main page.)
+
+<h3>Credits</h3>
+
+WimpyPoint was originally designed and programmed by <a
+href="http://photo.net/philg/">Philip Greenspun</a> and <a
+href="http://www.coordination.com/krish/">Krish Menon</a>,
+using the
+<a href="http://www.arsdigita.com">ArsDigita</a> suite of tools and
+infrastructure.
+It was substantially rewritten and integrated into ACS by
+<a href="mailto:jsalz@mit.edu">Jon Salz</a>
+as a term project for MIT's <a href="http://6916.lcs.mit.edu">6.916: 
+Software Engineering of Innovative Web Services</a> class.
+</a>
+
+<p>
+
+WimpyPoint is a free service made possible by traditional
+Internet good citizenship.
+
+<p>
+
+WimpyPoint is implemented in <a
+href="http://photo.net/wtr/thebook/server.html#naviserver">AOLserver Tcl
+scripts</a> that talk to an <a
+href="http://www.oracle.com">Oracle 8 relational database
+management system</a>.
+
+<p>
+
+The rationale for building WimpyPoint is set forth in
+Chapter 1 of <a href="http://photo.net/wtr/thebook/">Philip and Alex's
+Guide to Web Publishing</a>, the later chapters of which explain the
+lessons we've learned from building about 70 services like this.
+
+<%=[wp_footer]%>

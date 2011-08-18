@@ -1,0 +1,18 @@
+<%= [ad_scope_admin_page_top "Help for Download Administration" "Help for Download Administration" "Help"] %>
+
+<ul>
+
+<li>To add a new downloadable file, e.g. Bloatware 2000, click on
+the "Add New Download" link. <br>  
+This will create a new directory, e.g. bw2000, under the default location
+/web/foobar/download/ for scope "public", and under
+/web/foobar/download/groups/$group_id/ for scope "group".
+Different versions of Bloatware 2000 will be saved in this directory. 
+
+<li>Click on a specific download to upload different versions, add new
+download rules, edit information related to the download, view all
+versions of the download and view download report. 
+
+</ul>
+
+<%= [ad_scope_admin_footer] %>

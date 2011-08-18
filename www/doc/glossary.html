@@ -1,0 +1,49 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>Glossary System</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Glossary</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="mailto:jsc@arsdigita.com">Jin Choi</a> 
+and <a href="mailto:rgvdh@arsdigita.com/">Robert van der Heide</a>
+
+<hr>
+
+<ul>
+<li> User-accessible directory: <a href="/glossary/">/glossary/</a>
+<li> Administration directory: <a href="/admin/glossary/">
+/admin/glossary/</a> (must use https://)
+<li> data model: <a href="/doc/sql/glossary.sql">/doc/sql/glossary.sql</a>
+</ul>
+
+<h3> The Big Idea </h3>
+
+Your site content may use technical, specialized or unfamiliar terminology.  
+You can create an on-site dictionary for users to refer to when they run into 
+a term they don't know.<p>
+
+<h3> Parameters</h3>
+By editing the glossary section of your site's .ini file, you can control 
+how terms are added to your glossary.
+<ul><li>
+If you want site staff to have total responsibility for adding and controlling
+all glossary content, set <code>ApprovalPolicy=closed</code>.
+<li>If you want to let users suggest terms, but keep control over what the 
+final result looks like, set  <code>ApprovalPolicy=wait</code>.  Only site 
+staff can edit the suggested definitions, 
+and only site staff can make them visible on the 
+site.
+<li>If you want to let users freely add and maintain entries, 
+set  <code>ApprovalPolicy=open</code>.  When a users adds a term it will 
+immediately show up on your site.  Users can edit definitions they entered
+themselves, and site staff can still edit the entire glossary.
+</ul>
+<hr>
+<a href="mailto:rgvdh@arsdigita.com"><address>rgvdh@arsdigita.com</address></a>
+</body>
+</html>
+ 

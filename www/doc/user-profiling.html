@@ -1,0 +1,403 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>User Profiling</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>User Profiling</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="http://photo.net/philg/">Philip Greenspun</a>, <a href="http://teadams.com/">Tracy Adams</a>, and <a href="http://michael.yoon.org/">Michael Yoon</a>
+
+<hr>
+
+<ul>
+<li>User directory:  <a href="/mailing-list/">/mailing-list/</a>
+<li>Admin directory:  <a href="/admin/categories/">/admin/categories/</a> 
+<li>data model:  subsection within 
+<a href="/doc/sql/display-sql.tcl?url=/doc/sql/community-core.sql">/doc/sql/community-core.sql</a>
+
+<li>procedures:  within /tcl/ad-user-profiling.tcl and /tcl/ad-categories.tcl
+<li>Related modules: <a href="site-wide-search.html">site-wide search</a>
+
+</ul>
+
+<h3>The Categories Themselves</h3>
+
+The profiling system provides an unlimited number of dimensions along
+which to place a user's interest.  Each dimension is represented
+in the following table:
+
+<blockquote>
+<pre><code>
+create table categories (
+	category_id	integer not null primary key,
+	category	varchar(50) not null,
+	category_description    varchar(4000),
+	-- e.g., for a travel site, 'country', or 'activity' 
+	-- could also be 'language'
+	category_type	varchar(50),
+	-- language probably would weight higher than activity 
+	profiling_weight	number default 1 check(profiling_weight >= 0),
+	enabled_p	char(1) default 't' check(enabled_p in ('t','f')),
+	mailing_list_info	varchar(4000)
+);
+</code></pre>
+</blockquote>
+
+Note that this is the same table that holds the dimensions for
+classifying content on a site.  If this were not so, it would be
+painful to match up users and content.
+
+<p>
+
+The <code>category_type</code> column bears mentioning.  It isn't used
+for score computation but only for user interface when querying the user
+or giving options for the site administrator.  The
+<code>profiling_weight</code> column may be used to disable scoring
+along a certain dimension or to make language preference much more
+important than other preferences.
+
+<p>
+
+The <code>mailing_list_info</code> column is used by the software
+underneath /mailing-list/.  It can contain information such as "We
+expect to send you email once every month if you sign up."  The
+<code>category_description</code> can be used in other places where a
+user simply wants clarification about a category.
+
+<h4>Optional Hierarchy</h4>
+
+Suppose that the flat <code>category_type</code> system doesn't work for
+you.  You are running a travel site and want to present the "Appalachian
+Trail" category to folks who have selected one of the states through
+which the AT runs (Georgia, Tennessee, North Carolina, Virginia, West
+Virginia, Maryland, Pennsylvania, New Jersey, New York, Connecticut,
+Massachusetts, Vermont, New Hampshire, Maine).
+
+<p>
+
+You represent this hierarchy with the following table:
+
+<blockquote>
+<pre><code>
+create table category_hierarchy (
+   parent_category_id     integer references categories,
+   child_category_id      integer regerences categories
+   unique (parent_category_id, child_category_id)
+);
+</code></pre>
+</blockquote>
+
+Notice that this isn't a strict hierarchy; a category can have more than
+one parent.  Also notice that we use UNIQUE rather than PRIMARY KEY.
+That is because we signify the top-level hierarchies with a NULL
+<code>parent_category_id</code> column.
+
+<h3>Mapping content to categories</h3>
+
+Similar to the approach taken in the site_wide_search and
+general_comments module, one table stores all the mappings of content to
+categories.  These content items will be in stored in disparate Oracle
+tables.  Note that this replaces some older tables such as
+<code>static_categories</code> (mapped static pages to categories). 
+
+<blockquote>
+<pre><code>
+create sequence site_wide_cat_map_id_seq;
+
+create table site_wide_category_map (
+             map_id                  integer primary key,
+	     category_id             not null references categories,
+	     -- We are mapping a category in the categories table
+	     -- to another row in the database.  Which table contains
+	     -- the row?
+             on_which_table          varchar(30) not null,
+	     -- What is the primary key of the item we are mapping to?
+	     -- With the bboard this is a varchar so we can't make this
+	     -- and integer
+             on_what_id              varchar(500) not null,
+	     mapping_date	     date not null,
+	     -- how strong is this relationship?
+	     -- (we can even map anti-relationships with negative numbers)
+	     mapping_weight          integer default 5 
+				     check(mapping_weight between -10 and 10),
+	     -- A short description of the item we are mapping
+	     -- this enables us to avoid joining with every table
+	     -- in the ACS when looking for the most relevant content 
+	     -- to a users' interests
+	     -- (maintain one_line_item_desc with triggers.)
+             one_line_item_desc      varchar(200) not null,
+	     mapping_comment         varchar(200),
+	     -- only map a category to an item once
+             unique(category_id, on_which_table, on_what_id)
+);
+</code></pre>
+</blockquote>
+
+To build user and admin interfaces when querying
+<code>site_wide_category_map</code>, we use the central
+<code>table_acs_properties</code>, which is shared by side-wide index
+and the general comments facility.
+
+<blockquote>
+<pre><code>
+create table table_acs_properties (
+             table_name      varchar(30) primary key,
+             section_name    varchar(100) not null,
+             user_url_stub   varchar(200) not null,
+             admin_url_stub  varchar(200) not null
+);
+</code></pre>
+</blockquote>
+
+Here is an example entry for the <code>bboard</code> table:
+
+<ul>
+<li><code>table_name</code> - bboard
+<li><code>section_name</code> - Discussion Forums
+<li><code>user_url_stub</code> - /bboard/q-and-a-fetch-msg.tcl?msg_id=
+<li><code>admin_url</code> - /bboard/admin-q-and-a-fetch-msg.tcl?msg_id=
+</ul>
+
+You're probably thinking that it would be nice to have
+<code>table_name</code> reference the Oracle data dictionary view
+<code>user_tables</code> but this doesn't seem to work.
+
+<p>
+
+To build admin pages for inserting, updating, and deleting data in the
+<code>site_wide_category_map</code> table, you can use the Tcl procs:
+
+<ul>
+<li><code>ad_categorization_widget</code>
+<li><code>ad_categorize_row</code>
+</ul>
+
+<h4><code>ad_categorization_widget</code></h4>
+
+Call <code>ad_categorization_widget</code> within an HTML form to
+create a user interface for categorizing a specific row in the
+database. It returns a selection widget that contains options for each
+category; already mapped categories are pre-selected, and, for each
+category, the <code>category_type</code> (if one exists) is included
+in parentheses. If a category hierarchy is defined, then indentation
+makes it visually apparent.
+
+<p>
+
+Suppose that you're running a restaurant-rating site like <a
+href="http://zagat.com/">ZAGAT.COM</a> and you want to categorize
+restaurants geographically. The <code>ad_categorization_widget</code>
+for a restaurant with multiple locations like Nobuyuki Matsuhisa's
+excellent <a
+href="http://newyork.citysearch.com/E/V/NYCNY/0003/34/66/">Nobu</a>
+would look something like this:
+
+<blockquote>
+
+<form>
+<select multiple>
+<option>Europe (Continent)
+<option>&nbsp;&nbsp;UK (Country)
+<option selected>&nbsp;&nbsp;&nbsp;&nbsp;London (City)
+<option>North America (Continent)
+<option>&nbsp;&nbsp;USA (Country)
+<option>&nbsp;&nbsp;&nbsp;&nbsp;California (State)
+<option selected>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Los Angeles (City)
+<option>&nbsp;&nbsp;&nbsp;&nbsp;New York (State)
+<option selected>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;New York (City)
+</select>
+</form>
+
+</blockquote>
+
+<code>ad_categorization_widget</code> takes the following parameters:
+
+<ul>
+<li><code>db</code>: a database handle
+
+<li><code>which_table</code> and <code>what_id</code>: together,
+these two parameters identify the specific row in the database
+
+<li><code>name</code>: value for the <code>name</code> attribute of
+the <code>&lt;select&gt;</code> tag; "category_id_list" by default
+
+<li><code>multiple_p</code>: if true (which is the default), then the
+widget will allow multiple selections
+
+<li><code>size</code>: the number of visible rows in the widget; if
+omitted, then the size of the widget will be the number of categories
+</ul>
+
+<code>ad_categorization_widget</code> is declared with
+<code>ad_proc</code> so you must call it with named arguments, e.g.:
+
+<blockquote>
+<code>
+ad_categorization_widget -db $db -which_table "restaurants" -what_id 123
+</code>
+</blockquote>
+
+<h4><code>ad_categorize_row</code></h4>
+
+Given a specific row in the database (identified by the
+<code>which_table</code> and <code>what_id</code> parameters) and the
+list of categories to which that row should be mapped (the
+<code>category_id_list</code> parameter),
+<code>ad_categorize_row</code> will update
+<code>site_wide_category_map</code> appropriately, inserting any new
+mappings and deleting any previously existing mappings to categories
+that are not in <code>category_id_list</code>. Thus, if
+<code>category_id_list</code> is empty, then all mappings to the row
+will be deleted.
+
+<p>
+
+In addition to <code>which_table</code>, <code>what_id</code>, and
+<code>category_id_list</code>, <code>ad_categorize_row</code> also
+takes the following parameters:
+
+<ul>
+<li><code>db</code>: a database handle
+
+<li><code>one_line_item_desc</code>: see the description of the
+corresponding column in <code>site_wide_category_map</code> above
+
+<li><code>mapping_weight</code>: see the description of the
+corresponding column in <code>site_wide_category_map</code> above;
+<em>optional</em>
+
+<li><code>mapping_comment</code>: see the description of the
+corresponding column in <code>site_wide_category_map</code> above;
+<em>optional</em>
+</ul>
+
+Like <code>ad_categorization_widget</code>, you must call
+<code>ad_categorize_row</code> with named arguments, e.g.:
+
+<blockquote>
+<pre>
+set category_id_list [<a href="/doc/proc-one.tcl?proc_name=util_GetCheckboxValues">util_GetCheckboxValues</a> [ns_conn form] "category_id_list"]
+if { $category_id_list != 0 } {
+     ad_categorize_row -db $db -which_table "restaurants" -what_id 123 \
+          -category_id_list $category_id_list -one_line_item_desc "Nobu"
+}
+</pre>
+</blockquote>
+
+Note that <code>ad_categorize_row</code> will use the same
+<code>mapping_weight</code> (as well as
+<code>one_line_item_desc</code> and <code>mapping_comment</code>) for
+all the categories in <code>category_id_list</code>, so you will need
+to call it multiple times if you have differently weighted mappings.
+
+<p>
+
+For instance, suppose you want to categorize a travel article about
+surfing near Santa Cruz with a <code>mapping_weight</code> of 10 for
+"Surfing" (because its great pictures and stories will be very
+interesting to all surfers, even if the reader is nowhere near
+California) but a <code>mapping_weight</code> of 2 for "Santa Cruz,
+CA" (because the average tourist will not find it interesting, not to
+mention the fact that it's only <strong>near</strong> Santa Cruz, not
+<strong>in</strong> Santa Cruz). You will have to call
+<code>ad_categorize_row</code> twice:
+
+<blockquote>
+<pre>
+ad_categorize_row -db $db -which_table "travel_articles" -what_id 456 \
+     -category_id_list <em>surfing_category_id</em> -mapping_weight 10 \
+     -one_line_item_desc "Surfin' Near Santa Cruz"
+
+ad_categorize_row -db $db -which_table "travel_articles" -what_id 456 \
+     -category_id_list <em>Santa_Cruz_CA_category_id</em> -mapping_weight 2 \
+     -one_line_item_desc "Surfin' Near Santa Cruz"
+</pre>
+</blockquote>
+
+<h3>Recording User Interests</h3>
+
+For a specific user, the level of interest (or lack thereof) is recorded
+in
+
+<blockquote>
+<pre><code>
+create table users_interests (
+	user_id		integer not null references users,
+	category_id	integer not null references categories,
+	-- 0 is same as NULL; -10 is "hate this kind of stuff"; 
+	-- 5 is "said I liked it", 10 is "love this kind of stuff"
+	interest_level	integer default 5 check(interest_level between -10 and 10),
+	interest_date	date,
+	unique(user_id, category_id)
+);
+</code></pre>
+</blockquote>
+
+As the comment above notes, the default behavior when a user signs up
+for a mailing list or whatever is to assign an interest level of 5.
+This means "moderately interested".  If we ever find out that a user
+doesn't like something, we can record that with a negative
+<code>interest_level</code>.
+
+<h3>Putting It All Together (Example Queries)</h3>
+
+A query to produce links to the most relevant content (to a particular
+user's interests) on the site in descending order:
+
+<blockquote>
+<pre><code>
+select one_line_item_description, user_url_stub, section_name
+from site_wide_category_map, categories, users_interests, table_acs_properties
+where users_interests.user_id = $user_id
+  and categories.category_id = users_interests.category_id
+  and site_wide_category_map.category_id = categories.category_id 
+  and site_wide_category_map.table_name = table_acs_properties.table_name
+group by one_line_item_description, user_url_stub, section_name
+order by (sum(categories.profiling_weight * users_interests.interest_level)) desc
+</code></pre>
+</blockquote>
+
+Combining keyword and categorical searches:
+
+<blockquote>
+<pre><code>
+select 
+    the_key, 
+    sum(search_score)+sum(category_score) as total_score, 
+    section_name, 
+    user_url_stub, 
+    one_line_description 
+from (select 
+        site_wide_index.one_line_description, 
+        site_wide_index.the_key,
+        site_wide_index.table_name, 
+        score(10) as search_score, 
+        0 as category_score
+      from site_wide_index
+      where (contains(indexed_stuff,'about($user_entered_query)',10) > 0) 
+      union
+      select 
+        site_wide_category_map.one_line_item_desc, 
+        on_what_id,
+        on_which_table, 
+        0 as search_score, 
+        sum(profiling_weight) as category_score
+      from site_wide_category_map, categories
+      where site_wide_category_map.category_id in ('[join $category_id_list "','"]')
+      and site_wide_category_map.category_id = categories.category_id
+      group by on_what_id, one_line_item_desc, on_which_table
+    ) site_wide, table_acs_properties
+where site_wide.table_name = table_acs_properties.table_name
+group by the_key, one_line_description, section_name, user_url_stub
+order by total_score desc
+</code></pre>
+</blockquote>
+
+
+<hr>
+<a href="http://photo.net/philg/"><address>philg@mit.edu</address></a>
+</body>
+</html>

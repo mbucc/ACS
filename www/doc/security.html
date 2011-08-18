@@ -1,0 +1,230 @@
+<html>
+
+<head>
+<title>Security in ACS</title>
+</head>
+
+<body bgcolor=white text=black>
+
+<h2>Security in ACS</h2>
+
+by <a href="mailto:jsc@arsdigita.com">Jin Choi</a>
+
+<hr>
+
+<h3>Chrooted AOLserver</h3>
+
+In order to limit the amount of damage someone exploiting a security
+hole in ACS can do, it is possible to run AOLserver in a chroot
+environment (see <a
+href="http://www.aolserver.com/documentation/3.0/admin/sec-ch2.htm#8704">http://www.aolserver.com/documentation/3.0/admin/sec-ch2.htm#8704</a>). The
+tricky part to doing this is setting up a root directory that will let
+the Oracle driver find all the files it needs to work.
+
+<h3>Setting up the chroot directory</h2>
+
+In order to keep things simple, we'll use the server directory as the
+new root (let's call it <code>/home/aolserver</code>). We need to recreate
+a few system directories and populate them:
+
+<pre>
+cd /home/aolserver
+mkdir bin dev etc tmp usr var
+
+# Create some device files necessary for Oracle.
+# (The following is Solaris specific.)
+cd dev
+mknod kmem c 13 1
+mknod mem c 13 0
+mknod zero c 13 12
+chmod a+w zero
+
+# Copy necessary files to /etc.
+cd ../etc
+cp /etc/group /etc/hosts /etc/nsswitch.conf /etc/resolv.conf /etc/netconfig .
+grep nsadmin /etc/passwd > passwd
+
+# Create a symlink as /home/aolserver, so we don't have to edit all our
+# .ini files.
+cd ..
+mkdir home
+ln -s . home/aolserver
+
+# Make tmp directory world writable.
+chmod 1777 tmp 
+mkdir var/tmp
+chmod 1777 var/tmp
+
+# Copy rm to bin.
+cp /bin/rm bin
+
+# Copy unzip to usr/bin.
+mkdir usr/bin
+cp /usr/bin/unzip usr/bin
+
+# Copy shared libraries to usr.
+mkdir usr/lib
+cp /usr/lib/*.a /usr/lib/*.so.* usr/lib
+
+# If using the ecommerce module with ImageMagick to do image resizing,
+# copy ImageMagick files if available.
+mkdirhier usr/local/bin
+mkdirhier usr/local/lib
+cp /usr/local/bin/convert usr/local/bin
+cp /usr/local/lib/ImageMagick* usr/local/lib
+
+# Copy timezone files.
+mkdirhier usr/share/lib
+cp -r /usr/share/lib/zoneinfo usr/share/lib
+
+# The page root must also be within the chroot environment.
+mkdir web
+mv /web/servername /home/aolserver/web
+ln -s /home/aolserver/web/servername /web/servername
+
+# Copy necessary Oracle files to new root.
+mkdirhier /home/aolserver$ORACLE_HOME
+cd /home/aolserver$ORACLE_HOME
+(cd $ORACLE_HOME; tar cf - bin dbs lib network ocommon rdbms) | tar xvf -
+</pre>
+
+<h3>Setting up Oracle</h3>
+
+Unfortunately, when running Oracle in dedicated server mode, each
+client process starts up its own server process which requires direct
+access to the data files. This will obviously not work in a chroot
+environment unless all the Oracle data files are contained within the
+chroot directory. This is not desirable and generally not possible.
+
+<p>
+
+One workaround for this is to connect to Oracle through a TCP
+connection. This is by far the easiest to set up. The downside is that
+there is some performance loss going through TCP instead of using IPC.
+To do this, edit <code>$ORACLE_HOME/network/admin/listener.ora</code>
+to add a TCP listener and
+<code>$ORACLE_HOME/network/admin/tnsnames.ora</code> to add a network
+alias for that listener (see the <a
+href="http://oradoc.photo.net/ora81/DOC/network.815/a67440/toc.htm">Net8
+Administrator's Guide</a>, or just use netasst). Then have AOLserver
+use it by putting the network alias as the <code>Datasource</code>
+entry for the connection pool in your server's .ini file.
+
+<p>
+
+If you insist on using IPC, you must configure the database to run in
+multi-threaded server (MTS) mode. Configuring MTS mode can be somewhat
+tricky (see <a
+href="http://oradoc.photo.net/ora81/DOC/server.815/a67772/manproc.htm#1369">this
+doc</a>). In brief, you must:
+<ul>
+
+<li>add the following to your initSID.ora file:
+<pre>
+# Configure MTS for IPC connections and start up one server.
+mts_dispatchers = "(PROTOCOL = IPC)(DISP=1)(mul=OFF)(pool=OFF)(PRES=TTC)"
+mts_max_dispatchers = 5
+mts_servers = 1
+mts_max_servers = 20
+</pre>
+
+<li>Make sure there is an IPC listener configured in listener.ora:
+<pre>
+LISTENER =
+  (DESCRIPTION_LIST =
+    (DESCRIPTION =
+      (ADDRESS = (PROTOCOL = IPC)(KEY = EXTPROC))
+    )
+  )
+
+SID_LIST_LISTENER =
+  (SID_LIST =
+    (SID_DESC = 
+      (SID_NAME = PLSExtProc) 
+      (ORACLE_HOME = /ora8/m01/app/oracle/product/8.1.6) 
+      (PROGRAM = extproc) 
+    ) 
+    (SID_DESC = 
+      (GLOBAL_DBNAME = ora8) 
+      (ORACLE_HOME = /ora8/m01/app/oracle/product/8.1.6) 
+      (SID_NAME = ora8) 
+    ) 
+  )
+</pre>
+
+<li>add a network alias to tnsnames.ora:
+<pre>
+ORA8_IPC =
+  (DESCRIPTION =
+    (ADDRESS_LIST =
+      (ADDRESS = (PROTOCOL = IPC)(KEY = EXTPROC))
+    )
+    (CONNECT_DATA =
+      (SERVICE_NAME = ora8)
+      (SRVR = SHARED)
+    )
+  )
+</pre>
+
+<li>and use that network alias as the datasource in your server's .ini file.
+</ul>
+
+<p>
+
+To put Oracle into MTS mode, you must now restart the Oracle
+server. The listener should be started before the server so that the
+server can register itself properly with the listener. To verify that
+Oracle is in MTS mode, connect to Oracle using "sqlplus
+username/password@ora8_ipc" (substitute the network alias you put in
+tnsnames.ora for ora8_ipc), and run this SQL statement: <code>select
+username, program, server from v$session where
+audsid=userenv('sessionid');</code>. It should return "SHARED" in the
+SERVER column. If it says "DEDICATED" instead, your server is not in
+MTS mode.
+
+<p>
+
+One last problem with running ACS in a chrooted environment is that
+Oracle uses Unix domain socket files for IPC that are created in
+/var/tmp/.oracle. We must replace /var/tmp/.oracle with a symlink to a
+directory underneath the chroot directory. This must only be done with
+Oracle shut down!
+
+<pre>
+cd /home/aolserver
+mkdir var/tmp/.oracle
+chown oracle var/tmp/.oracle
+chmod 777 var/tmp/.oracle
+# Make sure Oracle is not running before you do this next step!
+rm -r /var/tmp/.oracle
+ln -s /home/aolserver/var/tmp/.oracle /var/tmp/.oracle
+</pre>
+
+<p>
+
+A caveat about specifying directories in .ini files: every path must
+be relative to the chroot directory (e.g., /home/nsadmin/foo/bar ->
+/foo/bar), <i>except</i> for AuxConfigdir, which must be an absolute
+path.
+
+<h3>Running AOLserver</h3>
+
+Run AOLserver using <code>/home/aolserver/bin/nsd-oracle -ikc
+/home/aolserver/servername.ini -r /home/aolserver</code> from inittab.
+
+
+<h3>Disk Issues</h3>
+
+Chrooting a server requires that everything related to the running of
+AOLserver reside under a single directory. This may cause problems
+with disk space, since what before was split up onto two directories
+(the server root and the page root) now must go under the same
+directory. One workaround is to mount a separate disk as
+/home/aolserver/web and symlink it to /web.
+
+<hr>
+<address><a href="mailto:jsc.arsdigita.com">jsc@arsdigita.com</a></address>
+
+</body>
+</html>
+

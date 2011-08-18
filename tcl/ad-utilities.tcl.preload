@@ -1,0 +1,3475 @@
+# /tcl/ad-utilities.tcl.preload
+#
+# This file provides a variety of utilities (originally written by
+# philg@mit.edu a long time ago) as well as some compatibility
+# functions to handle differences between AOLserver 2.x and 
+# AOLserver 3.x.
+#
+# Author: ron@arsdigita.com, February 2000
+# 
+# $Id: ad-utilities.tcl.preload,v 3.13.2.4 2000/04/28 15:08:16 carsten Exp $
+
+# Let's define the nsv arrays out here, so we can call nsv_exists
+# on their keys without checking to see if it already exists.
+# we create the array by setting a bogus key.
+
+nsv_set proc_source_file . ""
+
+proc proc_doc {name args doc_string body} {
+    # let's define the procedure first
+    proc $name $args $body
+    nsv_set proc_doc $name $doc_string
+    # generate a log message for multiply defined scripts
+    if {[nsv_exists proc_source_file $name]
+        && [string compare [nsv_get proc_source_file $name] [info script]] != 0} {
+        ns_log Notice "Multiple definition of $name in [nsv_get proc_source_file $name] and [info script]"
+    }
+    nsv_set proc_source_file $name [info script]
+}
+
+proc proc_source_file_full_path {proc_name} {
+    if ![nsv_exists proc_source_file $proc_name] {
+	return ""
+    } else {
+	set tentative_path [nsv_get proc_source_file $proc_name]
+	regsub -all {/\./} $tentative_path {/} result
+	return $result
+    }
+}
+
+proc_doc util_report_library_entry {{extra_message ""}} "Should be called at beginning of private Tcl library files so that it is easy to see in the error log whether or not private Tcl library files contain errors." {
+    set tentative_path [info script]
+    regsub -all {/\./} $tentative_path {/} scrubbed_path
+    if { [string compare $extra_message ""] == 0 } {
+	set message "Loading $scrubbed_path"
+    } else {
+	set message "Loading $scrubbed_path; $extra_message"
+    }
+    ns_log Notice $message
+}
+
+util_report_library_entry
+
+# stuff to process the data that comes 
+# back from the users
+
+# if the form looked like
+# <input type=text name=yow> and <input type=text name=bar> 
+# then after you run this function you'll have Tcl vars 
+# $foo and $bar set to whatever the user typed in the form
+
+# this uses the initially nauseating but ultimately delicious
+# Tcl system function "uplevel" that lets a subroutine bash
+# the environment and local vars of its caller.  It ain't Common Lisp...
+
+proc set_form_variables {{error_if_not_found_p 1}} {
+    if { $error_if_not_found_p == 1} {
+	uplevel { if { [ns_getform] == "" } {
+	    ns_returnerror 500 "Missing form data"
+	    return
+	}
+       }
+     } else {
+	 uplevel { if { [ns_getform] == "" } {
+	     # we're not supposed to barf at the user but we want to return
+	     # from this subroutine anyway because otherwise we'd get an error
+	     return
+	 }
+     }
+  }
+
+    # at this point we know that the form is legal
+    
+    uplevel {
+	set form [ns_getform] 
+	set form_size [ns_set size $form]
+	set form_counter_i 0
+	while {$form_counter_i<$form_size} {
+	    set [ns_set key $form $form_counter_i] [ns_set value $form $form_counter_i]
+	    incr form_counter_i
+	}
+    }
+}
+
+proc DoubleApos {string} {
+    regsub -all ' "$string" '' result
+    return $result
+}
+
+# if the user types "O'Malley" and you try to insert that into an SQL
+# database, you will lose big time because the single quote is magic
+# in SQL and the insert has to look like 'O''Malley'.  This function
+# also trims white space off the ends of the user-typed data.
+
+# if the form looked like
+# <input type=text name=yow> and <input type=text name=bar> 
+# then after you run this function you'll have Tcl vars 
+# $QQfoo and $QQbar set to whatever the user typed in the form
+# plus an extra single quote in front of the user's single quotes
+# and maybe some missing white space
+
+proc set_form_variables_string_trim_DoubleAposQQ {} {
+    uplevel {
+	set form [ns_getform] 
+	if {$form == ""} {
+	    ns_returnerror 500 "Missing form data"
+	    return;
+	}
+	set form_size [ns_set size $form]
+	set form_counter_i 0
+	while {$form_counter_i<$form_size} {
+	    set QQ[ns_set key $form $form_counter_i] [DoubleApos [string trim [ns_set value $form $form_counter_i]]]
+	    incr form_counter_i
+	}
+    }
+}
+
+# this one does both the regular and the QQ
+
+proc set_the_usual_form_variables {{error_if_not_found_p 1}} {
+    if { [ns_getform] == "" } {
+	if $error_if_not_found_p {
+	    uplevel { 
+		ns_returnerror 500 "Missing form data"
+		return
+	    }
+	} else {
+	    return
+	}
+    }
+    uplevel {
+	set form [ns_getform] 
+	set form_size [ns_set size $form]
+	set form_counter_i 0
+	while {$form_counter_i<$form_size} {
+	    set [ns_set key $form $form_counter_i] [ns_set value $form $form_counter_i]
+	    set QQ[ns_set key $form $form_counter_i] [DoubleApos [string trim [ns_set value $form $form_counter_i]]]
+	    incr form_counter_i
+	}
+    }
+}
+
+proc set_form_variables_string_trim_DoubleApos {} {
+    uplevel {
+	set form [ns_getform] 
+	if {$form == ""} {
+	    ns_returnerror 500 "Missing form data"
+	    return;
+	}
+	set form_size [ns_set size $form]
+	set form_counter_i 0
+	while {$form_counter_i<$form_size} {
+	    set [ns_set key $form $form_counter_i] [DoubleApos [string trim [ns_set value $form $form_counter_i]]]
+	    incr form_counter_i
+	}
+    }
+}
+
+
+proc set_form_variables_string_trim {} {
+    uplevel {
+	set form [ns_getform] 
+	if {$form == ""} {
+	    ns_returnerror 500 "Missing form data"
+	    return;
+	}
+	set form_size [ns_set size $form]
+	set form_counter_i 0
+	while {$form_counter_i<$form_size} {
+	    set [ns_set key $form $form_counter_i] [string trim [ns_set value $form $form_counter_i]]
+	    incr form_counter_i
+	}
+    }
+}
+
+# debugging kludges
+
+proc NsSettoTclString {set_id} {
+    set result ""
+    for {set i 0} {$i<[ns_set size $set_id]} {incr i} {
+	append result "[ns_set key $set_id $i] : [ns_set value $set_id $i]\n"
+    }
+    return $result
+}
+
+proc get_referrer {} {
+    return [ns_set get [ns_conn headers] Referer]
+}
+
+proc post_args_to_query_string {} {
+    set arg_form [ns_getform]
+    if {$arg_form!=""} {
+	set form_counter_i 0
+	while {$form_counter_i<[ns_set size $arg_form]} {
+	    append query_return "[ns_set key $arg_form $form_counter_i]=[ns_urlencode [ns_set value $arg_form $form_counter_i]]&"
+	    incr form_counter_i
+	}
+	set query_return [string trim $query_return &]
+    }
+}    
+
+proc get_referrer_and_query_string {} {
+    if {[ns_conn method]!="GET"} {
+	set query_return [post_args_to_query_string]
+	return "[get_referrer]?${query_return}"
+    } else {
+	return [get_referrer]
+    }
+}
+
+# a philg hack for getting all the values from a set of checkboxes
+# returns 0 if none are checked, a Tcl list with the values otherwise 
+# terence change: specify default return if none checked
+proc_doc util_GetCheckboxValues {form checkbox_name {default_return 0}} "For getting all the boxes from a set of checkboxes in a form.  This procedure takes the complete ns_conn form and returns a list of checkbox values.  It returns 0 if none are found (or some other default return value if specified)." {
+
+    set i 0
+    set size [ns_set size $form]
+
+    while {$i<$size} {
+
+	if { [ns_set key $form $i] == $checkbox_name} {
+
+	    # LIST_TO_RETURN will be created if it doesn't exist
+
+	    lappend list_to_return [ns_set value $form $i]
+
+	}
+	incr i
+    }
+
+    #if no list, you can specify a default return
+    #default default is 0
+
+    if { [info exists list_to_return] } { return $list_to_return } else {return $default_return}
+
+}
+
+# a legacy name that is deprecated
+proc nmc_GetCheckboxValues {form checkbox_name {default_return 0}} {
+    return [util_GetCheckboxValues $form $checkbox_name $default_return]
+}
+
+
+##
+#  Database-related code
+##
+
+proc nmc_GetNewIDNumber {id_name db} {
+
+    ns_db dml $db "begin transaction;"
+    ns_db dml $db "update id_numbers set $id_name = $id_name + 1;"
+    set id_number [ns_set value\
+	    [ns_db 1row $db "select unique $id_name from id_numbers;"] 0]
+    ns_db dml $db "end transaction;"
+
+    return $id_number
+
+}
+
+
+# if you do a 
+#   set selection [ns_db 1row $db "select foo,bar from my_table where key=37"]
+#   set_variables_after_query
+# then you will find that the Tcl vars $foo and $bar are set to whatever
+# the database returned.  If you don't like these var names, you can say
+#   set selection [ns_db 1row $db "select count(*) as n_rows from my_table"]
+#   set_variables_after_query
+# and you will find the Tcl var $n_rows set
+
+# You can also use this in a multi-row loop
+#   set selection [ns_db select $db "select *,upper(email) from mailing_list order by upper(email)"]
+#   while { [ns_db getrow $db $selection] } {
+#        set_variables_after_query
+#         ... your code here ...
+#   }
+# then the appropriate vars will be set during your loop
+
+#
+# CAVEAT NERDOR:  you MUST use the variable name "selection"
+# 
+
+#
+# we pick long names for the counter and limit vars
+# because we don't want them to conflict with names of
+# database columns or in parent programs
+#
+
+proc set_variables_after_query {} {
+    uplevel {
+	    set set_variables_after_query_i 0
+	    set set_variables_after_query_limit [ns_set size $selection]
+	    while {$set_variables_after_query_i<$set_variables_after_query_limit} {
+		set [ns_set key $selection $set_variables_after_query_i] [ns_set value $selection $set_variables_after_query_i]
+		incr set_variables_after_query_i
+	    }
+    }
+}
+
+# as above, but you must use sub_selection
+
+proc set_variables_after_subquery {} {
+    uplevel {
+	    set set_variables_after_query_i 0
+	    set set_variables_after_query_limit [ns_set size $sub_selection]
+	    while {$set_variables_after_query_i<$set_variables_after_query_limit} {
+		set [ns_set key $sub_selection $set_variables_after_query_i] [ns_set value $sub_selection $set_variables_after_query_i]
+		incr set_variables_after_query_i
+	    }
+    }
+}
+
+#same as philg's but you can:
+#1. specify the name of the "selection" variable
+#2. append a prefix to all the named variables
+
+proc set_variables_after_query_not_selection {selection_variable {name_prefix ""}} {
+    set set_variables_after_query_i 0
+    set set_variables_after_query_limit [ns_set size $selection_variable]
+    while {$set_variables_after_query_i<$set_variables_after_query_limit} {
+        # NB backslash squarebracket needed since mismatched {} would otherwise mess up value stmt.
+	uplevel "
+	set ${name_prefix}[ns_set key $selection_variable $set_variables_after_query_i] \[ns_set value $selection_variable $set_variables_after_query_i]
+	"
+	incr set_variables_after_query_i
+    }
+}
+
+# takes a query like "select unique short_name from products where product_id = 45"
+# and returns the result (only works when you are after a single row/column
+# intersection)
+
+proc database_to_tcl_string {db sql} {
+
+    set selection [ns_db 1row $db $sql]
+
+    return [ns_set value $selection 0]
+
+}
+
+proc database_to_tcl_string_or_null {db sql {null_value ""}} {
+    set selection [ns_db 0or1row $db $sql]
+    if { $selection != "" } {
+	return [ns_set value $selection 0]
+    } else {
+	# didn't get anything from the database
+	return $null_value
+    }
+}
+
+#for commands like set full_name  ["select first_name, last_name..."]
+
+proc database_cols_to_tcl_string {db sql} {
+    set string_to_return ""	
+    set selection [ns_db 1row $db $sql]
+    set size [ns_set size $selection]
+    set i 0
+    while {$i<$size} {
+	append string_to_return " [ns_set value $selection $i]"
+        incr i
+    }
+    return [string trim $string_to_return]
+}
+
+proc_doc database_to_tcl_list {db sql} {takes a query like "select product_id from foobar" and returns all the ids as a Tcl list} {
+    set selection [ns_db select $db $sql]
+    set list_to_return [list]
+    while {[ns_db getrow $db $selection]} {
+	lappend list_to_return [ns_set value $selection 0]
+    }
+    return $list_to_return
+}
+
+proc_doc database_to_tcl_list_list {db sql} "Returns a list of Tcl lists, with each sublist containing the columns returned by the database; if no rows are returned by the database, returns the empty list (empty string in Tcl 7.x and 8.x)" {
+    set selection [ns_db select $db $sql]
+    set list_to_return [list]
+    while {[ns_db getrow $db $selection]} {
+	set row_list ""
+	set size [ns_set size $selection]
+	set i 0
+	while {$i<$size} {
+	    lappend row_list [ns_set value $selection $i]
+	    incr i
+	}
+	lappend list_to_return $row_list
+    }
+    return $list_to_return
+}
+
+proc_doc database_1row_to_tcl_list {db sql} "Returns the column values from one row in the database as a Tcl list.  If there isn't exactly one row from this query, throws an error." {
+    set selection [ns_db 1row $db $sql]
+    set list_to_return [list]
+    set size [ns_set size $selection]
+    set counter 0
+    while {$counter<$size} {
+	lappend list_to_return [ns_set value $selection $counter]
+	incr counter
+    }
+    return $list_to_return
+}
+
+
+proc_doc ad_dbclick_check_dml { db table_name id_column_name generated_id return_url insert_sql } "
+this proc is used for pages using double click protection. table_name is table_name for which we are checking whether the double click occured. id_column_name is the name of the id table column. generated_id is the generated id, which is supposed to have been generated on the previous page. return_url is url to which this procedure will return redirect in the case of successful insertion in the database. insert_sql is the sql insert statement. if data is ok this procedure will insert data into the database in a double click safe manner and will returnredirect to the page specified by return_url. if database insert fails, this procedure will return a sensible error message to the user." {
+    if [catch { 
+	ns_db dml $db $insert_sql
+    } errmsg] {
+	# Oracle choked on the insert
+	
+	# detect double click
+	set selection [ns_db 0or1row $db "
+	select 1
+	from $table_name
+	where $id_column_name='[DoubleApos $generated_id]'"]
+	
+	if { ![empty_string_p $selection] } {
+	    # it's a double click, so just redirect the user to the index page
+	    ns_returnredirect $return_url
+	    return
+	}
+	
+	ns_log Error "[info script] choked. Oracle returned error:  $errmsg"
+
+	ad_return_error "Error in insert" "
+	We were unable to do your insert in the database. 
+	Here is the error that was returned:
+	<p>
+	<blockquote>
+	<pre>
+	$errmsg
+	</pre>
+	</blockquote>"
+	return
+    }
+
+    ns_returnredirect $return_url
+    return
+}
+
+proc nmc_IllustraDatetoPrettyDate {sql_date} {
+
+    regexp {(.*)-(.*)-(.*)$} $sql_date match year month day
+
+    set allthemonths {January February March April May June July August September October November December}
+
+    # we have to trim the leading zero because Tcl has such a 
+    # brain damaged model of numbers and decided that "09-1"
+    # was "8.0"
+
+    set trimmed_month [string trimleft $month 0]
+    set pretty_month [lindex $allthemonths [expr $trimmed_month - 1]]
+
+    return "$pretty_month $day, $year"
+
+}
+
+proc util_IllustraDatetoPrettyDate {sql_date} {
+
+    regexp {(.*)-(.*)-(.*)$} $sql_date match year month day
+
+    set allthemonths {January February March April May June July August September October November December}
+
+    # we have to trim the leading zero because Tcl has such a 
+    # brain damaged model of numbers and decided that "09-1"
+    # was "8.0"
+
+    set trimmed_month [string trimleft $month 0]
+    set pretty_month [lindex $allthemonths [expr $trimmed_month - 1]]
+
+    return "$pretty_month $day, $year"
+
+}
+
+# this is the preferred one to use
+
+proc_doc util_AnsiDatetoPrettyDate {sql_date} "Converts 1998-09-05 to September 5, 1998" {
+    if ![regexp {(.*)-(.*)-(.*)$} $sql_date match year month day] {
+	return ""
+    } else {
+	set allthemonths {January February March April May June July August September October November December}
+
+	# we have to trim the leading zero because Tcl has such a 
+	# brain damaged model of numbers and decided that "09-1"
+	# was "8.0"
+
+	set trimmed_month [string trimleft $month 0]
+	set pretty_month [lindex $allthemonths [expr $trimmed_month - 1]]
+
+	set trimmed_day [string trimleft $day 0]
+
+	return "$pretty_month $trimmed_day, $year"
+    }
+}
+
+# from the new-utilities.tcl file
+
+proc remove_nulls_from_ns_set {old_set_id} {
+
+    set new_set_id [ns_set new "no_nulls$old_set_id"]
+
+    for {set i 0} {$i<[ns_set size $old_set_id]} {incr i} {
+	if { [ns_set value $old_set_id $i] != "" } {
+
+	    ns_set put $new_set_id [ns_set key $old_set_id $i] [ns_set value $old_set_id $i]
+
+	}
+
+    }
+
+    return $new_set_id
+
+}
+
+proc merge_form_with_ns_set {form set_id} {
+
+    for {set i 0} {$i<[ns_set size $set_id]} {incr i} {
+	set form [ns_formvalueput $form [ns_set key $set_id $i] [ns_set value $set_id $i]]
+    }
+
+    return $form
+
+}
+
+proc merge_form_with_query {form db query} {
+
+    set set_id [ns_db 0or1row $db $query]
+
+    if { $set_id != "" } {
+
+	for {set i 0} {$i<[ns_set size $set_id]} {incr i} {
+	    set form [ns_formvalueput $form [ns_set key $set_id $i] [ns_set value $set_id $i]]
+	}
+
+    }
+
+    return $form
+
+}
+
+
+proc bt_mergepiece {htmlpiece values} {
+    # HTMLPIECE is a form usually; VALUES is an ns_set
+
+    # NEW VERSION DONE BY BEN ADIDA (ben@mit.edu)
+    # Last modification (ben@mit.edu) on Jan ?? 1998
+    # added support for dates in the date_entry_widget.
+    #
+    # modification (ben@mit.edu) on Jan 12th, 1998
+    # when the val of an option tag is "", things screwed up
+    # FIXED.
+    #
+    # This used to count the number of vars already introduced
+    # in the form (see remaining num_vars statements), so as 
+    # to end early. However, for some unknown reason, this cut off a number 
+    # of forms. So now, this processes every tag in the HTML form.
+
+    set newhtml ""
+    
+    set html_piece_ben $htmlpiece
+
+    set num_vars 0
+
+    for {set i 0} {$i<[ns_set size $values]} {incr i} {
+	if {[ns_set key $values $i] != ""} {
+	    set database_values([ns_set key $values $i]) [philg_quote_double_quotes [ns_set value $values $i]]
+	    incr num_vars
+	} 
+    }
+
+    set vv {[Vv][Aa][Ll][Uu][Ee]}     ; # Sorta obvious
+    set nn {[Nn][Aa][Mm][Ee]}         ; # This is too
+    set qq {"([^"]*)"}                ; # Matches what's in quotes
+    set pp {([^ ]*)}                  ; # Matches a word (mind yer pp and qq)
+
+    set slist {}
+    
+    set count 0
+
+    while {1} {
+
+	incr count
+	set start_point [string first < $html_piece_ben]
+	if {$start_point==-1} {
+	    append newhtml $html_piece_ben
+	    break;
+	}
+	if {$start_point>0} {
+	    append newhtml [string range $html_piece_ben 0 [expr $start_point - 1]]
+	}
+	set end_point [string first > $html_piece_ben]
+	if {$end_point==-1} break
+	incr start_point
+	incr end_point -1
+	set tag [string range $html_piece_ben $start_point $end_point]
+	incr end_point 2
+	set html_piece_ben [string range $html_piece_ben $end_point end]
+	set CAPTAG [string toupper $tag]
+
+	set first_white [string first " " $CAPTAG]
+	set first_word [string range $CAPTAG 0 [expr $first_white - 1]]
+	
+	switch -regexp $CAPTAG {
+	    
+	    {^INPUT} {
+		if {[regexp {TYPE[ ]*=[ ]*("IMAGE"|"SUBMIT"|"RESET"|IMAGE|SUBMIT|RESET)} $CAPTAG]} {
+		    
+		    ###
+		    #   Ignore these
+		    ###
+		    
+		    append newhtml <$tag>
+		    
+		} elseif {[regexp {TYPE[ ]*=[ ]*("CHECKBOX"|CHECKBOX)} $CAPTAG]} {
+		    # philg and jesse added optional whitespace 8/9/97
+		    ## If it's a CHECKBOX, we cycle through
+		    #  all the possible ns_set pair to see if it should
+		    ## end up CHECKED or not.
+		    
+		    if {[regexp "$nn=$qq" $tag m nam]} {}\
+			    elseif {[regexp "$nn=$pp" $tag m nam]} {}\
+			    else {set nam ""}
+		    
+		    if {[regexp "$vv=$qq" $tag m val]} {}\
+			    elseif {[regexp "$vv=$pp" $tag m val]} {}\
+			    else {set val ""}
+		    
+		    regsub -all {[Cc][Hh][Ee][Cc][Kk][Ee][Dd]} $tag {} tag
+		    
+		    # support for multiple check boxes provided by michael cleverly
+		    if {[info exists database_values($nam)]} {
+			if {[ns_set unique $values $nam]} {
+			    if {$database_values($nam) == $val} {
+				append tag " checked"
+				incr num_vars -1
+			    }
+			} else {
+			    for {set i [ns_set find $values $nam]} {$i < [ns_set size $values]} {incr i} {
+				if {[ns_set key $values $i] == $nam && [philg_quote_double_quotes [ns_set value $values $i]] == $val} {
+				    append tag " checked"
+				    incr num_vars -1
+				    break
+				}
+			    }
+			}
+		    }
+
+		    append newhtml <$tag>
+		    
+		} elseif {[regexp {TYPE[ ]*=[ ]*("RADIO"|RADIO)} $CAPTAG]} {
+		    
+		    ## If it's a RADIO, we remove all the other
+		    #  choices beyond the first to keep from having
+		    ## more than one CHECKED
+		    
+		    if {[regexp "$nn=$qq" $tag m nam]} {}\
+			    elseif {[regexp "$nn=$pp" $tag m nam]} {}\
+			    else {set nam ""}
+		    
+		    if {[regexp "$vv=$qq" $tag m val]} {}\
+			    elseif {[regexp "$vv=$pp" $tag m val]} {}\
+			    else {set val ""}
+		    
+		    #Modified by Ben Adida (ben@mit.edu) so that
+		    # the checked tags are eliminated only if something
+		    # is in the database. 
+		    
+		    if {[info exists database_values($nam)]} {
+			regsub -all {[Cc][Hh][Ee][Cc][Kk][Ee][Dd]} $tag {} tag
+			if {$database_values($nam)==$val} {
+			    append tag " checked"
+			    incr num_vars -1
+			}
+		    }
+		    
+		    append newhtml <$tag>
+		    
+		} else {
+		    
+		    ## If it's an INPUT TYPE that hasn't been covered
+		    #  (text, password, hidden, other (defaults to text))
+		    ## then we add/replace the VALUE tag
+		    
+		    if {[regexp "$nn=$qq" $tag m nam]} {}\
+			    elseif {[regexp "$nn=$pp" $tag m nam]} {}\
+			    else {set nam ""}
+
+		    set nam [ns_urldecode $nam]
+
+		    if {[info exists database_values($nam)]} {
+			regsub -all "$vv=$qq" $tag {} tag
+			regsub -all "$vv=$pp" $tag {} tag
+			append tag " value=\"$database_values($nam)\""
+			incr num_vars -1
+		    } else {
+			if {[regexp {ColValue.([^.]*).([^ ]*)} $tag all nam type]} {
+			    set nam [ns_urldecode $nam]
+			    set typ ""
+			    if {[string match $type "day"]} {
+				set typ "day"
+			    }
+			    if {[string match $type "year"]} {
+				set typ "year"
+			    }
+			    if {$typ != ""} {
+				if {[info exists database_values($nam)]} {
+				    regsub -all "$vv=$qq" $tag {} tag
+				    regsub -all "$vv=$pp" $tag {} tag
+				    append tag " value=\"[ns_parsesqldate $typ $database_values($nam)]\""
+				}
+			    }
+			    #append tag "><nam=$nam type=$type typ=$typ" 
+			}
+		    }
+		    append newhtml <$tag>
+		}
+	    }
+	    
+	    {^TEXTAREA} {
+		
+		###
+		#   Fill in the middle of this tag
+		###
+		
+		if {[regexp "$nn=$qq" $tag m nam]} {}\
+			elseif {[regexp "$nn=$pp" $tag m nam]} {}\
+			else {set nam ""}
+		
+		if {[info exists database_values($nam)]} {
+		    while {![regexp {^<( *)/[Tt][Ee][Xx][Tt][Aa][Rr][Ee][Aa]} $html_piece_ben]} {
+			regexp {^.[^<]*(.*)} $html_piece_ben m html_piece_ben
+		    }
+		    append newhtml <$tag>$database_values($nam)
+		    incr num_vars -1
+		} else {
+		    append newhtml <$tag>
+		}
+	    }
+	    
+	    {^SELECT} {
+		
+		###
+		#   Set the snam flag, and perhaps smul, too
+		###
+		
+		set smul [regexp "MULTIPLE" $CAPTAG]
+		
+		set sflg 1
+		
+		set select_date 0
+		
+		if {[regexp "$nn=$qq" $tag m snam]} {}\
+			elseif {[regexp "$nn=$pp" $tag m snam]} {}\
+			else {set snam ""}
+
+		set snam [ns_urldecode $snam]
+
+		# In case it's a date
+		if {[regexp {ColValue.([^.]*).month} $snam all real_snam]} {
+		    if {[info exists database_values($real_snam)]} {
+			set snam $real_snam
+			set select_date 1
+		    }
+		}
+		
+		lappend slist $snam
+		
+		append newhtml <$tag>
+	    }
+	    
+	    {^OPTION} {
+		
+		###
+		#   Find the value for this
+		###
+		
+		if {$snam != ""} {
+		    
+		    if {[lsearch -exact $slist $snam] != -1} {regsub -all {[Ss][Ee][Ll][Ee][Cc][Tt][Ee][Dd]} $tag {} tag}
+		    
+		    if {[regexp "$vv *= *$qq" $tag m opt]} {}\
+			    elseif {[regexp "$vv *= *$pp" $tag m opt]} {}\
+			    else {
+			if {[info exists opt]} {
+			    unset opt
+		    }   }
+		    # at this point we've figured out what the default from the form was
+		    # and put it in $opt (if the default was spec'd inside the OPTION tag
+		    # just in case it wasn't, we're going to look for it in the 
+		    # human-readable part
+		    regexp {^([^<]*)(.*)} $html_piece_ben m txt html_piece_ben
+		    if {![info exists opt]} {
+			set val [string trim $txt]
+		    } else {
+			set val $opt
+		    }
+		    
+		    if {[info exists database_values($snam)]} {
+			# If we're dealing with a date
+			if {$select_date == 1} {
+			    set db_val [ns_parsesqldate month $database_values($snam)]
+			} else {
+			    set db_val $database_values($snam)
+			}
+
+			if {
+			    ($smul || $sflg) &&
+			    [string match $db_val $val]
+			} then {
+			    append tag " selected"
+			    incr num_vars -1
+			    set sflg 0
+			}
+		    }
+		}
+		append newhtml <$tag>$txt
+	    }
+	    
+	    {^/SELECT} {
+		    
+		###
+		#   Do we need to add to the end?
+		###
+		
+		set txt ""
+		
+		if {$snam != ""} {
+		    if {[info exists database_values($snam)] && $sflg} {
+			append txt "<option selected>$database_values($snam)"
+			incr num_vars -1
+			if {!$smul} {set snam ""}
+		    }
+		}
+		
+		append newhtml $txt<$tag>
+	    }
+	    
+	    {default} {
+		append newhtml <$tag>
+	    }
+	}
+	
+    }
+    return $newhtml
+}
+
+
+
+# database stuff
+
+
+proc_doc GetColumnNames {db table} "returns a list with the column names of the table" {
+    #returns a list with the column names of the table
+    set size [ns_column count $db $table]
+    set i 0
+    set column_names ""
+    while {$i<$size} {
+	lappend column_names [ns_column name $db $table $i]
+	incr i
+    }
+    return $column_names;
+}
+
+proc util_GetNewIDNumber {id_name db} {
+
+    ns_db dml $db "begin transaction;"
+    ns_db dml $db "update id_numbers set $id_name = $id_name + 1;"
+    set id_number [ns_set value\
+	    [ns_db 1row $db "select unique $id_name from id_numbers;"] 0]
+    ns_db dml $db "end transaction;"
+
+    return $id_number
+
+}
+
+proc util_prepare_update {db table_name primary_key_name primary_key_value form} {
+
+    set form_size [ns_set size $form]
+    set form_counter_i 0
+    set column_list [GetColumnNames $db $table_name]
+    while {$form_counter_i<$form_size} {
+
+	set form_var_name [ns_set key $form $form_counter_i]
+	set value [string trim [ns_set value $form $form_counter_i]]
+	if { ($form_var_name != $primary_key_name) && ([lsearch $column_list $form_var_name] != -1) } {
+
+	    set column_type [ns_column type $db $table_name $form_var_name]
+
+	    # we use the NaviServer built-in function quoted_value
+	    # which is part of the nsdb tcl module (util.tcl)
+
+	    #Added this to allow dates and such to call things
+	    #like "current_date"--this is kludgy and should be
+	    #fleshed out
+
+	    if {[regexp {date|time} $column_type]&&[regexp -nocase {current} $value]} {
+		set quoted_value $value
+	    } else {
+		set quoted_value [ns_dbquotevalue $value $column_type]
+	    }
+
+	    lappend the_sets "$form_var_name = $quoted_value"
+
+
+	}
+
+	incr form_counter_i
+    }
+
+    set primary_key_type [ns_column type $db $table_name $primary_key_name]
+
+    return "update $table_name\nset [join $the_sets ",\n"] \n where $primary_key_name = [ns_dbquotevalue $primary_key_value $primary_key_type]"
+    
+}
+
+proc util_prepare_update_multi_key {db table_name primary_key_name_list primary_key_value_list form} {
+
+    set form_size [ns_set size $form]
+    set form_counter_i 0
+    while {$form_counter_i<$form_size} {
+
+	set form_var_name [ns_set key $form $form_counter_i]
+	set value [string trim [ns_set value $form $form_counter_i]]
+
+	if { [lsearch -exact $primary_key_name_list $form_var_name] == -1 } {
+
+	    # this is not one of the keys
+
+	    set column_type [ns_column type $db $table_name $form_var_name]
+
+	    # we use the NaviServer built-in function quoted_value
+	    # which is part of the nsdb tcl module (util.tcl)
+
+	    set quoted_value [ns_dbquotevalue $value $column_type]
+
+	    lappend the_sets "$form_var_name = $quoted_value"
+
+
+	}
+
+	incr form_counter_i
+    }
+
+    for {set i 0} {$i<[llength $primary_key_name_list]} {incr i} {
+
+	set this_key_name [lindex $primary_key_name_list $i]
+	set this_key_value [lindex $primary_key_value_list $i]
+	set this_key_type [ns_column type $db $table_name $this_key_name]
+
+	lappend key_eqns "$this_key_name = [ns_dbquotevalue $this_key_value $this_key_type]"
+
+    }
+
+    return "update $table_name\nset [join $the_sets ",\n"] \n where [join $key_eqns " AND "]"
+    
+}
+
+proc util_prepare_insert {db table_name primary_key_name primary_key_value form} {
+
+    set form_size [ns_set size $form]
+    set form_counter_i 0
+    while {$form_counter_i<$form_size} {
+
+	set form_var_name [ns_set key $form $form_counter_i]
+	set value [string trim [ns_set value $form $form_counter_i]]
+
+	if { $form_var_name != $primary_key_name } {
+
+	    set column_type [ns_column type $db $table_name $form_var_name]
+
+	    # we use the NaviServer built-in function quoted_value
+	    # which is part of the nsdb tcl module (util.tcl)
+
+	    set quoted_value [ns_dbquotevalue $value $column_type]
+
+	    lappend the_names $form_var_name
+	    lappend the_vals $quoted_value
+
+
+	}
+
+	incr form_counter_i
+    }
+
+    set primary_key_type [ns_column type $db $table_name $primary_key_name]
+
+    return "insert into $table_name\n($primary_key_name,[join $the_names ","]) \n values ([ns_dbquotevalue $primary_key_value $primary_key_type],[join $the_vals ","])"
+    
+}
+
+proc util_prepare_insert_string_trim {db table_name primary_key_name primary_key_value form} {
+
+    set form_size [ns_set size $form]
+    set form_counter_i 0
+    while {$form_counter_i<$form_size} {
+
+	set form_var_name [ns_set key $form $form_counter_i]
+	set value [string trim [ns_set value $form $form_counter_i]]
+
+	if { $form_var_name != $primary_key_name } {
+
+	    set column_type [ns_column type $db $table_name $form_var_name]
+
+	    # we use the NaviServer built-in function quoted_value
+	    # which is part of the nsdb tcl module (util.tcl)
+
+	    set quoted_value [ns_dbquotevalue $value $column_type]
+
+	    lappend the_names $form_var_name
+	    lappend the_vals $quoted_value
+
+
+	}
+
+	incr form_counter_i
+    }
+
+    set primary_key_type [ns_column type $db $table_name $primary_key_name]
+
+    return "insert into $table_name\n($primary_key_name,[join $the_names ","]) \n values ([ns_dbquotevalue $primary_key_value $primary_key_type],[join $the_vals ","])"
+    
+}
+
+proc util_prepare_insert_no_primary_key {db table_name form} {
+
+    set form_size [ns_set size $form]
+    set form_counter_i 0
+    while {$form_counter_i<$form_size} {
+
+	set form_var_name [ns_set key $form $form_counter_i]
+	set value [string trim [ns_set value $form $form_counter_i]]
+
+	set column_type [ns_column type $db $table_name $form_var_name]
+
+	# we use the NaviServer built-in function quoted_value
+	# which is part of the nsdb tcl module (util.tcl)
+
+	set quoted_value [ns_dbquotevalue $value $column_type]
+
+	lappend the_names $form_var_name
+	lappend the_vals $quoted_value
+
+	incr form_counter_i
+    }
+
+
+    return "insert into $table_name\n([join $the_names ","]) \n values ([join $the_vals ","])"
+    
+}
+
+proc util_PrettySex {m_or_f { default "default" }} {
+    if { $m_or_f == "M" || $m_or_f == "m" } {
+	return "Male"
+    } elseif { $m_or_f == "F" || $m_or_f == "f" } {
+	return "Female"
+    } else {
+	# Note that we can't compare default to the empty string as in 
+	# many cases, we are going want the default to be the empty
+	# string
+	if { [string compare $default "default"] == 0 } {
+	    return "Unknown (\"$m_or_f\")"
+	} else {
+	    return $default
+	}
+    }
+}
+
+proc util_PrettySexManWoman {m_or_f { default "default"} } {
+    if { $m_or_f == "M" || $m_or_f == "m" } {
+	return "Man"
+    } elseif { $m_or_f == "F" || $m_or_f == "f" } {
+	return "Woman"
+    } else {
+	# Note that we can't compare default to the empty string as in 
+	# many cases, we are going want the default to be the empty
+	# string
+	if { [string compare $default "default"] == 0 } {
+	    return "Person of Unknown Sex"
+	} else {
+	    return $default
+	}
+    }
+}
+
+proc util_PrettyBoolean {t_or_f { default  "default" } } {
+    if { $t_or_f == "t" || $t_or_f == "T" } {
+	return "Yes"
+    } elseif { $t_or_f == "f" || $t_or_f == "F" } {
+	return "No"
+    } else {
+	# Note that we can't compare default to the empty string as in 
+	# many cases, we are going want the default to be the empty
+	# string
+	if { [string compare $default "default"] == 0 } {
+	    return "Unknown (\"$t_or_f\")"
+	} else {
+	    return $default
+	}
+    }
+}
+
+
+proc_doc util_PrettyTclBoolean {zero_or_one} "Turns a 1 (or anything else that makes a Tcl IF happy) into Yes; anything else into No" {
+    if $zero_or_one {
+	return "Yes"
+    } else {
+	return "No"
+    }
+}
+
+# Pre-declare the cache arrays used in util_memoize.
+nsv_set util_memoize_cache_value . ""
+nsv_set util_memoize_cache_timestamp . ""
+
+proc_doc util_memoize {tcl_statement {oldest_acceptable_value_in_seconds ""}} "Returns the result of evaluating the Tcl statement argument and then remembers that value in a cache; the memory persists for the specified number of seconds (or until the server is restarted if the second argument is not supplied) or until someone calls util_memoize_flush with the same Tcl statement.  Note that this procedure should be used with care because it calls the eval built-in procedure (and therefore an unscrupulous user could  " {
+
+    # we look up the statement in the cache to see if it has already
+    # been eval'd.  The statement itself is the key
+
+    if { ![nsv_exists util_memoize_cache_value $tcl_statement] || ( ![empty_string_p $oldest_acceptable_value_in_seconds] && ([expr [nsv_get util_memoize_cache_timestamp $tcl_statement] + $oldest_acceptable_value_in_seconds] < [ns_time]) )} {
+
+	# not in the cache already OR the caller spec'd an expiration
+	# time and our cached value is too old
+
+	set statement_value [eval $tcl_statement]
+	nsv_set util_memoize_cache_value $tcl_statement $statement_value
+	# store the time in seconds since 1970
+	nsv_set util_memoize_cache_timestamp $tcl_statement [ns_time]
+    }
+
+    return [nsv_get util_memoize_cache_value $tcl_statement]
+}
+
+proc_doc util_memoize_seed {tcl_statement value {oldest_acceptable_value_in_seconds ""}} "Seeds the memoize catch with a particular value. If clustering is enabled, flushes cached values from peers in the cluster." {
+    server_cluster_httpget_from_peers "/SYSTEM/flush-memoized-statement.tcl?statement=[ns_urlencode $tcl_statement]"
+    nsv_set util_memoize_cache_value $tcl_statement $value
+    # store the time in seconds since 1970
+    nsv_set util_memoize_cache_timestamp $tcl_statement [ns_time]
+}
+
+# flush the cache
+
+proc_doc util_memoize_flush_local {tcl_statement} "Flush the cached value only on the local server. In general you will want to use util_memoize_flush instead of this!" {
+    if [nsv_exists util_memoize_cache_value $tcl_statement] {
+	nsv_unset util_memoize_cache_value $tcl_statement
+    }
+    if [nsv_exists util_memoize_cache_timestamp $tcl_statement] {
+	nsv_unset util_memoize_cache_timestamp $tcl_statement
+    }
+}
+
+proc_doc util_memoize_flush {tcl_statement} "Flush the cached value (established with util_memoize associated with the argument). If clustering is enabled, flushes cached values from peers in the cluster." {
+    server_cluster_httpget_from_peers "/SYSTEM/flush-memoized-statement.tcl?statement=[ns_urlencode $tcl_statement]"
+    util_memoize_flush_local $tcl_statement
+}
+
+proc_doc util_memoize_value_cached_p {tcl_statement {oldest_acceptable_value_in_seconds ""}} "Returns 1 if there is a cached value for this Tcl expression.  If a second argument is supplied, only returns 1 if the cached value isn't too old." {
+
+    # we look up the statement in the cache to see if it has already
+    # been eval'd.  The statement itself is the key
+
+    if { ![nsv_exists util_memoize_cache_value $tcl_statement] || ( ![empty_string_p $oldest_acceptable_value_in_seconds] && ([expr [nsv_get util_memoize_cache_timestamp $tcl_statement] + $oldest_acceptable_value_in_seconds] < [ns_time]) )} {
+	return 0
+    } else {
+	return 1
+    }    
+}
+
+
+proc current_year {db} {
+    util_memoize "current_year_internal $db"
+}
+
+proc current_year_internal {db} {
+
+    database_to_tcl_string $db "return extract(year from current_date)"
+
+}
+
+proc philg_server_default_pool {} {
+    set server_name [ns_info server]
+    append config_path "ns\\server\\" $server_name "\\db"
+    set default_pool [ns_config $config_path DefaultPool]
+    return $default_pool
+}
+
+# this is typically called like this...
+# philg_urldecode_form_variable [ns_getform]
+# and it is called for effect, not value
+# we use it if we've urlencoded something for a hidden
+# variable (e.g., to escape the string quotes) in a form
+
+proc philg_urldecode_form_variable {form variable_name} {
+    set old_value [ns_set get $form $variable_name]
+    set new_value [ns_urldecode $old_value]
+    # one has to delete the old value first, otherwise
+    # you just get two values for the same key in the ns_set
+    ns_set delkey $form $variable_name
+    ns_set put $form $variable_name $new_value
+}
+
+proc util_convert_plaintext_to_html {raw_string} {
+    if { [regexp -nocase {<p>} $raw_string] || [regexp -nocase {<br>} $raw_string] } {
+	# user was already trying to do this as HTML
+	return $raw_string
+    } else {
+	# quote <, >, and &
+	set clean_for_html [ns_quotehtml $raw_string]
+	# turn CRLFCRLF into <P>
+	if { [regsub -all "\015\012\015\012" $clean_for_html "\n\n<p>\n\n" clean_for_html] == 0 } {
+	    # try LFLF
+	    if { [regsub -all "\012\012" $clean_for_html "\n\n<p><p>\n\n" clean_for_html] == 0 } {
+		# try CRCR
+		regsub -all "\015\015" $clean_for_html "\n\n<p><p>\n\n" clean_for_html
+	    }
+	}
+	return $clean_for_html
+    }
+}
+
+proc_doc util_maybe_convert_to_html {raw_string html_p} "very useful for info pulled from the news, neighbor, events subsystems."  {
+    if { $html_p == "t" } {
+	return $raw_string
+    } else {
+	return [util_convert_plaintext_to_html $raw_string]
+    }
+}
+
+
+# turn " into &quot; before using strings inside hidden vars
+# patched on May 31, 1999 by philg to also quote >, <, and &
+# fixed a bug in /bboard/confirm
+
+proc philg_quote_double_quotes {arg} {
+    # we have to do & first or we'll hose ourselves with the ones lower down
+    regsub -all & $arg \\&amp\; arg
+    regsub -all \" $arg \\&quot\; arg
+    regsub -all < $arg \\&lt\; arg
+    regsub -all > $arg \\&gt\; arg
+    return $arg
+}
+
+# stuff that will let us do what ns_striphtml does but a little better
+
+proc_doc util_striphtml {html} {Returns a best-guess plain text version of an HTML fragment.  Better than ns_striphtml because it doesn't replace & g t ; and & l t ; with empty string.} {
+    return [util_expand_entities [util_remove_html_tags $html]]
+}
+
+proc util_remove_html_tags {html} {
+   regsub -all {<[^>]*>} $html {} html
+   return $html
+}
+
+proc util_expand_entities {html} {
+   regsub -all {&lt;} $html {<} html
+   regsub -all {&gt;} $html {>} html
+   regsub -all {&quot;} $html {"} html
+   regsub -all {&amp;} $html {\&} html
+   return $html
+}
+
+proc util_GetUserAgentHeader {} {
+    set header [ns_conn headers]
+
+    # note that this MUST be case-insensitive search (iget)
+    # due to a NaviServer bug -- philg 2/1/96
+
+    set userag [ns_set iget $header "USER-AGENT"]
+    return $userag
+}
+
+proc msie_p {} {
+    return [regexp -nocase {msie} [util_GetUserAgentHeader]]
+}
+
+proc submit_button_if_msie_p {} {
+    if { [msie_p] } {
+	return "<input type=submit>"
+    } else {
+	return ""
+    }
+}
+
+proc randomInit {seed} {
+    nsv_set rand ia 9301
+    nsv_set rand ic 49297
+    nsv_set rand im 233280
+    nsv_set rand seed $seed
+}
+
+# initialize the random number generator
+
+randomInit [ns_time]
+
+proc random {} {
+    nsv_set rand seed [expr ([nsv_get rand seed] * [nsv_get rand ia] + [nsv_get rand ic]) % [nsv_get rand im]]
+    return [expr [nsv_get rand seed]/double([nsv_get rand im])]
+}
+
+proc randomRange {range} {
+    return [expr int([random] * $range)]
+}
+
+proc capitalize {word} {
+    if {$word != ""} {
+	set newword ""
+	if [regexp {[^ ]* [^ ]*} $word] {
+	    set words [split $word]
+	    foreach part $words {
+		set newword "$newword [capitalize $part]"
+	    }
+	} else {
+	    regexp {^(.)(.*)$} $word match firstchar rest
+	    set newword [string toupper $firstchar]$rest
+	}
+	return [string trim $newword]
+    }
+    return $word
+}
+
+proc html_select_options {options {select_option ""}} {
+    #this is html to be placed into a select tag
+    set select_options ""
+    foreach option $options {
+	if { [lsearch $select_option $option] != -1 } {
+	    append select_options "<option selected>$option\n"
+	} else {
+	    append select_options "<option>$option\n"
+	}
+    }
+    return $select_options
+}
+
+proc db_html_select_options {db query {select_option ""}} {
+    #this is html to be placed into a select tag
+    set select_options ""
+    set options [database_to_tcl_list $db $query]
+    foreach option $options {
+	if { [string compare $option $select_option] == 0 } {
+	    append select_options "<option selected>$option\n"
+	} else {
+	    append select_options "<option>$option\n"
+	}
+    }
+    return $select_options
+}
+
+proc html_select_value_options {options {select_option ""} {value_index 0} {option_index 1}} {
+    #this is html to be placed into a select tag
+    #when value!=option, set the index of the return list
+    #from the db query. selected option must match value
+
+    set select_options ""
+    foreach option $options {
+	if { [lsearch $select_option [lindex $option $value_index]] != -1 } {
+	    append select_options "<option value=\"[philg_quote_double_quotes [lindex $option $value_index]]\" selected>[lindex $option $option_index]\n"
+	} else {
+	    append select_options "<option value=\"[philg_quote_double_quotes [lindex $option $value_index]]\">[lindex $option $option_index]\n"
+	}
+    }
+    return $select_options
+}
+
+proc db_html_select_value_options {db query {select_option ""} {value_index 0} {option_index 1}} {
+    #this is html to be placed into a select tag
+    #when value!=option, set the index of the return list
+    #from the db query. selected option must match value
+
+    set select_options ""
+    set options [database_to_tcl_list_list $db $query]
+    foreach option $options {
+	if { [lsearch $select_option [lindex $option $value_index]] != -1 } {
+	    append select_options "<option value=\"[philg_quote_double_quotes [lindex $option $value_index]]\" selected>[lindex $option $option_index]\n"
+	} else {
+	    append select_options "<option value=\"[philg_quote_double_quotes [lindex $option $value_index]]\">[lindex $option $option_index]\n"
+	}
+    }
+    return $select_options
+}
+
+# new philg kludges
+
+# produces a safe-for-browsers hidden variable, i.e., one where
+# " has been replaced by &quot; 
+
+proc philg_hidden_input {name value} {
+    return "<input type=hidden name=\"$name\" value=\"[philg_quote_double_quotes $value]\">"
+}
+
+# this REGEXP was very kindly contributed by Jeff Friedl, author of 
+# _Mastering Regular Expressions_ (O'Reilly 1997)
+proc_doc philg_email_valid_p {query_email} "Returns 1 if an email address has more or less the correct form" {
+    return [regexp "^\[^@\t ]+@\[^@.\t]+(\\.\[^@.\n ]+)+$" $query_email]
+}
+
+proc_doc philg_url_valid_p {query_url} "Returns 1 if a URL has more or less the correct form." {
+    return [regexp {http://.+} $query_url]
+}
+
+# just checking it for format, not semantics
+
+proc philg_date_valid_p {query_date} {
+    return [regexp {[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]} $query_date]
+}
+# Return a string of hidden input fields for a form to pass along any
+# of the parameters in args if they exist in the current environment.
+#  -- jsc@arsdigita.com
+
+# usage:  [export_form_vars foo bar baz]
+
+proc export_form_vars args {
+    set hidden ""
+    foreach var $args {
+	upvar 1 $var value
+	if { [info exists value] } {
+            append hidden "<input type=hidden name=$var value=\"[philg_quote_double_quotes $value]\">\n"
+        }
+    }
+    return $hidden
+}
+
+proc export_entire_form {} {
+    set hidden ""
+    set the_form [ns_getform]
+    for {set i 0} {$i<[ns_set size $the_form]} {incr i} {
+	set varname [ns_set key $the_form $i]
+	set varvalue [ns_set value $the_form $i]
+	append hidden "<input type=hidden name=\"$varname\" value=\"[philg_quote_double_quotes $varvalue]\">\n"
+    }
+    return $hidden
+}
+
+
+proc_doc export_ns_set_vars {{format "url"} {exclusion_list ""}  {setid ""}} "Returns all the params in an ns_set with the exception of those in exclusion_list. If no setid is provide, ns_getform is used. If format = url, a url parameter string will be returned. If format = form, a block of hidden form fragments will be returned."  {
+
+    if [empty_string_p $setid] {
+	set setid [ns_getform]
+    }
+
+    set return_list [list]
+    if ![empty_string_p $setid] {
+        set set_size [ns_set size $setid]
+        set set_counter_i 0
+        while { $set_counter_i<$set_size } {
+            set name [ns_set key $setid $set_counter_i]
+            set value [ns_set value $setid $set_counter_i]
+            if {[lsearch $exclusion_list $name] == -1 && ![empty_string_p $name]} {
+                if {$format == "url"} {
+                    lappend return_list "$name=[ns_urlencode $value]"
+                } else {
+                    lappend return_list " name=$name value=\"[philg_quote_double_quotes $value]\""
+                }
+            }
+            incr set_counter_i
+        }
+    }
+    if {$format == "url"} {
+        return [join $return_list "&"]
+    } else {
+        return "<input type=hidden [join $return_list ">\n <input type=hidden "] >"
+    }
+}
+
+
+# Return a URL parameter string passing along all the parameters 
+# given to it as arguments, if they exist in the current environment. 
+# -- jsc@arsdigita.com 
+proc_doc export_url_vars args "Returns a string of key=value pairs suitable for inclusion in a URL; you can pass it any number of variables as arguments.  If any are defined in the caller's environment, they are included.  See also export_entire_form_as_url_vars" { 
+    set params {} 
+    foreach var $args { 
+	upvar 1 $var value 
+	if { [info exists value] } {
+            lappend params "$var=[ns_urlencode $value]" 
+        } 
+    } 
+    return [join $params "&"] 
+} 
+ 
+proc_doc export_entire_form_as_url_vars {{vars_to_passthrough ""}} "Returns a URL parameter string of name-value pairs of all the form parameters passed to this page. If vars_to_passthrough is given, it should be a list of parameter names that will be the only ones passed through." {
+    set params [list]
+    set the_form [ns_getform]
+    for {set i 0} {$i<[ns_set size $the_form]} {incr i} {
+	set varname [ns_set key $the_form $i]
+	set varvalue [ns_set value $the_form $i]
+	if { $vars_to_passthrough == "" || ([lsearch -exact $vars_to_passthrough $varname] != -1) } {
+	    lappend params "$varname=[ns_urlencode $varvalue]" 
+	}
+    }
+    return [join $params "&"]
+}
+
+
+# we use this to shut off spam scheduling and such 
+# it asks the question "is this just a development server"?
+
+# we write DevelopmentServer=1 into the server portion of the .ini file
+
+# [ns/server/philg]
+# DevelopmentServer=1
+
+
+proc philg_development_p {} {
+    set config_param [ns_config "ns/server/[ns_info server]" DevelopmentServer]
+    if { $config_param == 1 } {
+	return 1
+    } else {
+	return 0
+    }
+}
+
+proc philg_keywords_match {keywords string_to_search} {
+    # turn keywords into space-separated things
+    # replace one or more commads with a space
+    regsub -all {,+} $keywords " " keywords_no_commas
+    set keyword_list [split $keywords_no_commas " "]
+    set found_p 0
+    foreach word $keyword_list {
+	# turns out that "" is never found in a search, so we
+	# don't really have to special case $word == ""
+	if { $word != "" && [string first [string toupper $word] [string toupper $string_to_search]] != -1 } {
+	    # found it!
+	    set found_p 1
+	}
+    }
+    return $found_p
+}
+
+proc_doc philg_keywords_score {keywords string_to_search} "Takes space-separated keywords and returns 0 if none are found or a count of how many matched.  If a keyword occurs twice then it is weighted 2." {
+    # turn keywords into space-separated things
+    # replace one or more commads with a space
+    regsub -all {,+} $keywords " " keywords_no_commas
+    set keyword_list [split $keywords_no_commas " "]
+    set score 0
+    foreach word $keyword_list {
+	# turns out that "" is never found in a search, so we
+	# don't really have to special case $word == ""
+	if { $word != "" && [string first [string toupper $word] [string toupper $string_to_search]] != -1 } {
+	    # found at least one!
+	    if { [string first [string toupper $word] [string toupper $string_to_search]] == [string last [string toupper $word] [string toupper $string_to_search]] } {
+		# only one occurrence
+		incr score
+	    } else {
+		# more than one, count as 2 (like AltaVista)
+		incr score 2
+	    }
+	}
+    }
+    return $score
+}
+
+# usage: 
+#   suppose the variable is called "expiration_date"
+#   put "[philg_dateentrywidget expiration_date]" in your form
+#     and it will expand into lots of weird generated var names
+#   put ns_dbformvalue [ns_getform] expiration_date date expiration_date
+#     and whatever the user typed will be set in $expiration_date
+
+proc philg_dateentrywidget {column {default_date "1940-11-03"}} {
+    ns_share NS
+
+    set output "<SELECT name=ColValue.[ns_urlencode $column].month>\n"
+    for {set i 0} {$i < 12} {incr i} {
+	append output "<OPTION> [lindex $NS(months) $i]\n"
+    }
+
+    append output \
+"</SELECT>&nbsp;<INPUT NAME=ColValue.[ns_urlencode $column].day\
+TYPE=text SIZE=3 MAXLENGTH=2>&nbsp;<INPUT NAME=ColValue.[ns_urlencode $column].year\
+TYPE=text SIZE=5 MAXLENGTH=4>"
+
+    return [ns_dbformvalueput $output $column date $default_date]
+}
+
+proc philg_dateentrywidget_default_to_today {column} {
+    set today [lindex [split [ns_localsqltimestamp] " "] 0]
+    return [philg_dateentrywidget $column $today]
+}
+
+# Perform the dml statements in sql_list in a transaction.
+# Aborts the transaction and returns an error message if
+# an error occurred for any of the statements, otherwise
+# returns null string. -jsc
+proc do_dml_transactions {db sql_list} {
+    ns_db dml $db "begin transaction"
+    foreach stmt $sql_list {
+        if [catch {ns_db dml $db $stmt} errmsg] {
+            ns_db dml $db "abort transaction"
+            return $errmsg
+        }
+    }
+    ns_db dml $db "end transaction"
+    return ""
+}
+
+# Perform body within a database transaction.
+# Execute on_error if there was some error caught
+# within body, with errmsg bound.
+# This procedure will clobber errmsg in the caller.
+# -jsc
+proc with_transaction {db body on_error} {
+    upvar errmsg errmsg
+    global errorInfo errorCode
+    if [catch {ns_db dml $db "begin transaction"
+               uplevel $body
+               ns_db dml $db "end transaction"} errmsg] {
+        ns_db dml $db "abort transaction"
+        set code [catch {uplevel $on_error} string]
+        # Return out of the caller appropriately.
+        if { $code == 1 } {
+            return -code error -errorinfo $errorInfo -errorcode $errorCode $string
+        } elseif { $code == 2 } {
+            return -code return $string
+        } elseif { $code == 3 } {
+            return -code break
+	} elseif { $code == 4 } {
+	    return -code continue
+        } elseif { $code > 4 } {
+            return -code $code $string
+        }
+    }        
+}
+
+proc with_catch {error_var body on_error} { 
+    upvar 1 $error_var $error_var 
+    global errorInfo errorCode 
+    if [catch { uplevel $body } $error_var] { 
+        set code [catch {uplevel $on_error} string] 
+        # Return out of the caller appropriately. 
+        if { $code == 1 } { 
+            return -code error -errorinfo $errorInfo -errorcode $errorCode $string 
+        } elseif { $code == 2 } { 
+            return -code return $string 
+        } elseif { $code == 3 } { 
+            return -code break
+	} elseif { $code == 4 } {
+	    return -code continue
+        } elseif { $code > 4 } { 
+            return -code $code $string 
+        } 
+    }         
+} 
+
+proc_doc empty_string_p {query_string} "returns 1 if a string is empty; this is better than using == because it won't fail on long strings of numbers" {
+    if { [string compare $query_string ""] == 0 } {
+	return 1
+    } else {
+	return 0
+    }
+}
+
+proc_doc string_contains_p {small_string big_string} {Returns 1 if the BIG_STRING contains the SMALL_STRING, 0 otherwise; syntactic sugar for string first != -1} {
+    if { [string first $small_string $big_string] == -1 } {
+	return 0
+    } else {
+	return 1
+    }
+}
+
+# -- philg had this at Primehost
+
+# take a string and wrap it to 80 columns max this does not justify
+# text, only insert line breaks
+
+proc_doc wrap_string {input {threshold 80}} "wraps a string to be no wider than 80 columns by inserting line breaks" {
+    set result_rows [list]
+    set start_of_line_index 0
+    while 1 {
+	set this_line [string range $input $start_of_line_index [expr $start_of_line_index + $threshold - 1]]
+	if { $this_line == "" } {
+	    return [join $result_rows "\n"]
+	}
+	set first_new_line_pos [string first "\n" $this_line]
+	if { $first_new_line_pos != -1 } {
+	    # there is a newline
+	    lappend result_rows [string range $input $start_of_line_index [expr $start_of_line_index + $first_new_line_pos - 1]]
+	    set start_of_line_index [expr $start_of_line_index + $first_new_line_pos + 1]
+	    continue
+	}
+	if { [expr $start_of_line_index + $threshold + 1] >= [string length $input] } {
+	    # we're on the last line and it is < threshold so just return it
+		lappend result_rows $this_line
+		return [join $result_rows "\n"]
+	}
+	set last_space_pos [string last " " $this_line]
+	if { $last_space_pos == -1 } {
+	    # no space found!  Try the first space in the whole rest of the string
+	    set $last_space_pos [string first " " [string range $input $start_of_line_index end]]
+	    if { $last_space_pos == -1 } {
+		# didn't find any more spaces, append the whole thing as a line
+		lappend result_rows [string range $input $start_of_line_index end]
+		return [join $result_rows "\n"]
+	    }
+	}
+	# OK, we have a last space pos of some sort
+	set real_index_of_space [expr $start_of_line_index + $last_space_pos]
+	lappend result_rows [string range $input $start_of_line_index [expr $real_index_of_space - 1]]
+	set start_of_line_index [expr $start_of_line_index + $last_space_pos + 1]
+    }
+}
+
+proc remove_whitespace {input_string} {
+    if [regsub -all "\[\015\012\t \]" $input_string "" output_string] {
+	return $output_string 
+    } else {
+	return $input_string
+    }
+}
+
+proc util_just_the_digits {input_string} {
+    if [regsub -all {[^0-9]} $input_string "" output_string] {
+	return $output_string 
+    } else {
+	return $input_string
+    }
+}
+
+# sort of the opposite (for phone numbers, takes
+# 6172538574 and turns it into "(617) 253-8574")
+
+proc philg_format_phone_number {just_the_digits} {
+    if { [string length $just_the_digits] != 10 } {
+	return $just_the_digits
+    } else {
+	return "([string range $just_the_digits 0 2]) [string range $just_the_digits 3 5]-[string range $just_the_digits 6 9]"
+    }
+}
+
+# putting commas into numbers (thank you, Michael Bryzek)
+
+proc_doc util_commify_number { num } {Returns the number with commas inserted where appropriate. Number can be positive or negative and can have a decimal point. e.g. -1465.98 => -1,465.98} {
+    while { 1 } {
+	# Regular Expression taken from mastering regular expressions
+	# matches optional leading negative sign plus any
+	# other 3 digits, starting from end
+	if { ![regsub -- {^(-?[0-9]+)([0-9][0-9][0-9])} $num {\1,\2} num] } {
+	    break
+	}
+    }
+    return $num
+}
+
+# for limiting a string to 4000 characters because the Oracle SQL
+# parser is so stupid and can only handle a string literal that long
+
+proc util_limit_to_4000_chars {input_string} {
+    return [string range $input_string 0 3999]
+}
+
+
+proc leap_year_p {year} {
+    expr ( $year % 4 == 0 ) && ( ( $year % 100 != 0 ) || ( $year % 400 == 0 ) )
+}
+
+proc_doc ad_proc args {
+    Use just like proc, but first argument must be a named argument description.
+    A named argument description is a list of flag/default value pairs:
+    {-arg1 arg1default -arg2 arg2default}
+
+    By jsc@arsdigita.com
+
+    Now supports default arguments and varargs ("args").
+    Now supports the -prefix switch to have all argument variable names prefixed by a string,
+    e.g.,
+
+    ad_proc -prefix T my_proc { { -foo bar } arg1 arg2 } {
+        ns_write "foo is $Tfoo<br>\n"
+        ns_write "arg1 is $Targ1<br>\n"
+        ns_write "arg2 is $Targ2<br>\n"
+    }
+
+    This is useful when you don't want set_variables_after_query hosing arguments (e.g., ad_table).            
+} {
+    if { [lindex $args 0] == "-prefix" } {
+	set prefix [lindex $args 1]
+	set args [lrange $args 2 end]
+    } else {
+	set prefix ""
+    }
+
+    set proc_name [lindex $args 0]
+    set ad_args [lindex $args 1]
+
+    nsv_set ad_proc_args $proc_name $ad_args
+
+    generate_argument_parser $proc_name $ad_args $prefix
+
+    # Four argument version indicates use of proc_doc instead of proc.
+    if { [llength $args] == 4 } {
+        set doc_string [lindex $args 2]
+        set body [lindex $args 3]
+        proc_doc $proc_name args $doc_string "arg_parser_for_$proc_name \$args\n$body"
+    } else {
+        set body [lindex $args 2]
+        proc $proc_name args "arg_parser_for_$proc_name \$args\n$body"
+    }
+}
+
+# Helper function, acts like perl shift:
+# Return value of first element and remove it from the list.
+proc shift {list_name} {
+    upvar 1 $list_name list_to_shift
+    set first_arg_p 1
+    set first_arg ""
+    set rest ""
+
+    foreach element $list_to_shift {
+        if { $first_arg_p } {
+            set first_arg $element
+            set first_arg_p 0
+        } else {
+            lappend rest $element
+        }
+    }
+    set list_to_shift $rest
+    return $first_arg
+}
+
+# Helper function: If its argument does not start with "{", surround
+# it with a pair of braces.
+proc format_as_list {some_list} {
+    if { [string index $some_list 0] == "\{" } {
+        return $some_list
+    } else {
+        return "{$some_list}"
+    }
+}
+
+
+# Given the name of a procedure and an argument description,
+# creates a procedure named arg_parser_for_{procedure_name} that
+# takes an argument list, parses it according to the description,
+# and sets the parameters in the argument list as variables in
+# its caller's environment. Named values are set to the value they
+# are called with, or to the default given in the argument description.
+proc generate_argument_parser {proc_name argdesc prefix} {
+    # First argument is named argument description; others are
+    # regular arguments.
+    set named_args_desc [shift argdesc]
+    if { [lindex $argdesc end] == "args" } {
+	set argdesc [lrange $argdesc 0 [expr { [llength $argdesc] - 2 }]]
+	set vararg 1
+        set too_many_arguments_clause "lappend extra_args \$arg ; continue"
+    } else {
+	set vararg 0
+        set too_many_arguments_clause "error \"called \\\"$proc_name\\\" with too many arguments\""
+    }
+    set rest ""
+    foreach arg $argdesc {
+	lappend rest [lindex $arg 0]
+    }
+    set named_arg_length [llength $named_args_desc]
+
+    # Use the named argument description to generate two hunks of tcl,
+    # one for initially setting defaults for all the named arguments,
+    # and another one which will handle those arguments in a switch
+    # statement.
+    set flag_clauses ""
+    set defaults_setting_clauses ""
+
+    for {set i 0} {$i < $named_arg_length} {incr i} {
+        set flag [lindex $named_args_desc $i]
+        set named_arg [string range $flag 1 end]
+        incr i
+        set flag_value [lindex $named_args_desc $i]
+
+        append defaults_setting_clauses "
+            upvar 1 $prefix$named_arg $named_arg
+            set $named_arg \"$flag_value\"
+        "
+
+        append flag_clauses "
+                        $flag {
+                            incr i
+                            upvar 1 $prefix$named_arg $named_arg
+                            set $named_arg \[lindex \$arglist \$i\]
+                            continue
+                        }
+"
+    }
+
+    set default_count 0
+    foreach arg $argdesc {
+	if { [llength $arg] < 1 || [llength $arg] > 2 } {
+	    error "Invalid argument declaration"
+	}
+	if { [llength $arg] == 2 } {
+	    if { [lindex $arg 0] == "args" } {
+		error "\"args\" may not have any defaults"
+	    }
+	    incr default_count
+	    append defaults_setting_clauses "
+                upvar 1 $prefix[lindex $arg 0] [lindex $arg 0]
+                set [lindex $arg 0] [list [lindex $arg 1]]
+            "
+	} else {
+	    if { $arg != "args" && $default_count != 0 } {
+		error "Once a default is specified, all subsequent arguments must have defaults"
+	    }
+	}
+    }
+
+    if $vararg {
+	append defaults_setting_clauses "
+	    upvar \"${prefix}args\" extra_args
+	    set extra_args {}
+"
+    }
+
+    # Generate the Tcl for creating the argument parser procedure.
+    set evalstr "proc arg_parser_for_$proc_name arglist {
+        set regular_arg_names [format_as_list $rest]
+        set regular_arg_index 0
+        set regular_arg_length \[llength \$regular_arg_names\]
+        set parsing_named_args_p 1
+
+$defaults_setting_clauses
+
+        set arg_length \[llength \$arglist\]
+        for {set i 0} {\$i < \$arg_length} {incr i} {
+            set arg \[lindex \$arglist \$i\]
+
+            if \$parsing_named_args_p {
+                if { \[string index \$arg 0\] == \"-\" } {
+                    switch -- \$arg {
+                        \"--\" {
+                            set parsing_named_args_p 0
+                            continue
+                        }
+$flag_clauses
+                        default {
+                            error \"Unrecognized argument \$arg\"
+                        }
+                    }
+                } else {
+                    set parsing_named_args_p 0
+                }
+            }
+
+            if { !\$parsing_named_args_p } {
+                if { \$regular_arg_index == \$regular_arg_length } {
+                    $too_many_arguments_clause
+                }
+                set regular_arg_name \[lindex \[lindex \$regular_arg_names \$regular_arg_index\] 0\]
+                incr regular_arg_index
+                upvar \"$prefix\$regular_arg_name\" \$regular_arg_name
+                set \$regular_arg_name \$arg
+            }
+        }
+        if { \$regular_arg_index < \$regular_arg_length - $default_count } {
+            error \"too few arguments given for \\\"$proc_name\\\": arg_index is \$regular_arg_index; length is \$regular_arg_length\"
+        }
+    }
+"
+    eval $evalstr
+}
+
+proc_doc util_search_list_of_lists {list_of_lists query_string {sublist_element_pos 0}} "Returns position of sublist that contains QUERY_STRING at SUBLIST_ELEMENT_POS." {
+    set sublist_index 0
+    foreach sublist $list_of_lists {
+	set comparison_element [lindex $sublist $sublist_element_pos]
+	if { [string compare $query_string $comparison_element] == 0 } {
+	    return $sublist_index
+	}
+	incr sublist_index
+    }
+    # didn't find it
+    return -1
+}
+
+# --- network stuff 
+
+proc_doc util_get_http_status {url {use_get_p 1} {timeout 30}} "Returns the HTTP status code, e.g., 200 for a normal response or 500 for an error, of a URL.  By default this uses the GET method instead of HEAD since not all servers will respond properly to a HEAD request even when the URL is perfectly valid.  Note that this means AOLserver may be sucking down a lot of bits that it doesn't need." { 
+    if $use_get_p {
+	set http [ns_httpopen GET $url "" $timeout] 
+    } else {
+	set http [ns_httpopen HEAD $url "" $timeout] 
+    }
+    # philg changed these to close BOTH rfd and wfd
+    set rfd [lindex $http 0] 
+    set wfd [lindex $http 1] 
+    close $rfd
+    close $wfd
+    set headers [lindex $http 2] 
+    set response [ns_set name $headers] 
+    set status [lindex $response 1] 
+    ns_set free $headers
+    return $status
+}
+
+proc_doc util_link_responding_p {url {list_of_bad_codes "404"}} "Returns 1 if the URL is responding (generally we think that anything other than 404 (not found) is okay)." {
+    if [catch { set status [util_get_http_status $url] } errmsg] {
+	# got an error; definitely not valid
+	return 0
+    } else {
+	# we got the page but it might have been a 404 or something
+	if { [lsearch $list_of_bad_codes $status] != -1 } {
+	    return 0
+	} else {
+	    return 1
+	}
+    }
+}
+
+# system by Tracy Adams (teadams@arsdigita.com) to permit AOLserver to POST 
+# to another Web server; sort of like ns_httpget
+
+proc_doc util_httpopen {method url {rqset ""} {timeout 30} {http_referer ""}} "Like ns_httpopen but works for POST as well; called by util_httppost" {
+    
+	if ![string match http://* $url] {
+		return -code error "Invalid url \"$url\":  _httpopen only supports HTTP"
+	}
+	set url [split $url /]
+	set hp [split [lindex $url 2] :]
+	set host [lindex $hp 0]
+	set port [lindex $hp 1]
+	if [string match $port ""] {set port 80}
+	set uri /[join [lrange $url 3 end] /]
+	set fds [ns_sockopen -nonblock $host $port]
+	set rfd [lindex $fds 0]
+	set wfd [lindex $fds 1]
+	if [catch {
+		_http_puts $timeout $wfd "$method $uri HTTP/1.0\r"
+		if {$rqset != ""} {
+			for {set i 0} {$i < [ns_set size $rqset]} {incr i} {
+				_http_puts $timeout $wfd \
+					"[ns_set key $rqset $i]: [ns_set value $rqset $i]\r"
+			}
+		} else {
+			_http_puts $timeout $wfd \
+				"Accept: */*\r"
+
+		    	_http_puts $timeout $wfd "User-Agent: Mozilla/1.01 \[en\] (Win95; I)\r"    
+		    	_http_puts $timeout $wfd "Referer: $http_referer \r"    
+	}
+
+    } errMsg] {
+		global errorInfo
+		#close $wfd
+		#close $rfd
+		if [info exists rpset] {ns_set free $rpset}
+		return -1
+	}
+	return [list $rfd $wfd ""]
+    
+}
+
+
+# httppost; give it a URL and a string with formvars, and it 
+# returns the page as a Tcl string
+# formvars are the posted variables in the following form: 
+#        arg1=value1&arg2=value2
+
+# in the event of an error or timeout, -1 is returned
+
+proc_doc util_httppost {url formvars {timeout 30} {depth 0} {http_referer ""}} "Returns the result of POSTing to another Web server or -1 if there is an error or timeout.  formvars should be in the form \"arg1=value1&arg2=value2\"" {
+    if [catch {
+	if {[incr depth] > 10} {
+		return -code error "util_httppost:  Recursive redirection:  $url"
+	}
+	set http [util_httpopen POST $url "" $timeout $http_referer]
+	set rfd [lindex $http 0]
+	set wfd [lindex $http 1]
+
+	#headers necesary for a post and the form variables
+
+	_http_puts $timeout $wfd "Content-type: application/x-www-form-urlencoded \r"
+	_http_puts $timeout $wfd "Content-length: [string length $formvars]\r"
+	_http_puts $timeout $wfd \r
+	_http_puts $timeout $wfd "$formvars\r"
+	flush $wfd
+	close $wfd
+
+	set rpset [ns_set new [_http_gets $timeout $rfd]]
+		while 1 {
+			set line [_http_gets $timeout $rfd]
+			if ![string length $line] break
+			ns_parseheader $rpset $line
+		}
+
+
+
+	set headers $rpset
+	set response [ns_set name $headers]
+	set status [lindex $response 1]
+	if {$status == 302} {
+		set location [ns_set iget $headers location]
+		if {$location != ""} {
+			ns_set free $headers
+			close $rfd
+			return [ns_httpget $location $timeout $depth]
+		}
+	}
+	set length [ns_set iget $headers content-length]
+	if [string match "" $length] {set length -1}
+	set err [catch {
+		while 1 {
+			set buf [_http_read $timeout $rfd $length]
+			append page $buf
+			if [string match "" $buf] break
+			if {$length > 0} {
+				incr length -[string length $buf]
+				if {$length <= 0} break
+			}
+		}
+	} errMsg]
+	ns_set free $headers
+	close $rfd
+	if $err {
+		global errorInfo
+		return -code error -errorinfo $errorInfo $errMsg
+	}
+    } errmgs ] {return -1}
+	return $page
+}
+
+
+proc_doc util_report_successful_library_load {{extra_message ""}} "Should be called at end of private Tcl library files so that it is easy to see in the error log whether or not private Tcl library files contain errors." {
+    set tentative_path [info script]
+    regsub -all {/\./} $tentative_path {/} scrubbed_path
+    if { [string compare $extra_message ""] == 0 } {
+	set message "Done... $scrubbed_path"
+    } else {
+	set message "Done... $scrubbed_path; $extra_message"
+    }
+    ns_log Notice $message
+}
+
+proc_doc exists_and_not_null { varname } {Returns 1 if the variable name exists in the caller's environment and is not the empty string.} {
+    upvar 1 $varname var 
+    return [expr { [info exists var] && ![empty_string_p $var] }] 
+} 
+
+
+proc_doc util_decode args {
+    like decode in sql
+    Takes the place of an if (or switch) statement -- convenient because it's
+    compact and you don't have to break out of an ns_write if you're in one.
+    args: same order as in sql: first the unknown value, then any number of
+    pairs denoting "if the unknown value is equal to first element of pair,
+    then return second element", then if the unknown value is not equal to any
+    of the first elements, return the last arg
+} {
+    set args_length [llength $args]
+    set unknown_value [lindex $args 0]
+    
+    # we want to skip the first & last values of args
+    set counter 1
+    while { $counter < [expr $args_length -2] } {
+	if { [string compare $unknown_value [lindex $args $counter]] == 0 } {
+	    return [lindex $args [expr $counter + 1]]
+	}
+	set counter [expr $counter + 2]
+    }
+    return [lindex $args [expr $args_length -1]]
+}
+
+proc_doc util_httpget {url {headers ""} {timeout 30} {depth 0}} "Just like ns_httpget, but first optional argument is an ns_set of headers to send during the fetch." {
+    if {[incr depth] > 10} {
+	return -code error "util_httpget:  Recursive redirection:  $url"
+    }
+    set http [ns_httpopen GET $url $headers $timeout]
+    set rfd [lindex $http 0]
+    close [lindex $http 1]
+    set headers [lindex $http 2]
+    set response [ns_set name $headers]
+    set status [lindex $response 1]
+    if {$status == 302} {
+	set location [ns_set iget $headers location]
+	if {$location != ""} {
+	    ns_set free $headers
+	    close $rfd
+	    return [ns_httpget $location $timeout $depth]
+	}
+    }
+    set length [ns_set iget $headers content-length]
+    if [string match "" $length] {set length -1}
+    set err [catch {
+	while 1 {
+	    set buf [_http_read $timeout $rfd $length]
+	    append page $buf
+	    if [string match "" $buf] break
+	    if {$length > 0} {
+		incr length -[string length $buf]
+		if {$length <= 0} break
+	    }
+	}
+    } errMsg]
+    ns_set free $headers
+    close $rfd
+    if $err {
+	global errorInfo
+	return -code error -errorinfo $errorInfo $errMsg
+    }
+    return $page
+}
+
+# some procs to make it easier to deal with CSV files (reading and writing)
+# added by philg@mit.edu on October 30, 1999
+
+proc_doc util_escape_quotes_for_csv {string} "Returns its argument with double quote replaced by backslash double quote" {
+    regsub -all {"} $string {\"}  result
+    return $result
+}
+
+proc_doc set_csv_variables_after_query {} {You can call this after an ns_db getrow or ns_db 1row to set local Tcl variables to values from the database.  You get $foo, $EQfoo (the same thing but with double quotes escaped), and $QEQQ (same thing as $EQfoo but with double quotes around the entire she-bang).} {
+    uplevel {
+	    set set_variables_after_query_i 0
+	    set set_variables_after_query_limit [ns_set size $selection]
+	    while {$set_variables_after_query_i<$set_variables_after_query_limit} {
+		set [ns_set key $selection $set_variables_after_query_i] [ns_set value $selection $set_variables_after_query_i]
+		set EQ[ns_set key $selection $set_variables_after_query_i] [util_escape_quotes_for_csv [string trim [ns_set value $selection $set_variables_after_query_i]]]
+		set QEQQ[ns_set key $selection $set_variables_after_query_i] "\"[util_escape_quotes_for_csv [string trim [ns_set value $selection $set_variables_after_query_i]]]\""
+		incr set_variables_after_query_i
+	    }
+    }
+}
+
+#"
+
+proc_doc ad_page_variables {variable_specs} {
+<pre>
+Current syntax:
+
+    ad_page_variables {var_spec1 [varspec2] ... }
+
+    This proc handles translating form inputs into Tcl variables, and checking
+    to see that the correct set of inputs was supplied.  Note that this is mostly a
+    check on the proper programming of a set of pages.
+
+Here are the recognized var_specs:
+
+    variable				; means it's required and not null
+    {variable default-value}
+      Optional, with default value.  If the value is supplied but is null, and the
+      default-value is present, that value is used.
+    {variable -multiple-list}
+      The value of the Tcl variable will be a list containing all of the
+      values (in order) supplied for that form variable.  Particularly useful
+      for collecting checkboxes or select multiples.
+      Note that if required or optional variables are specified more than once, the
+      first (leftmost) value is used, and the rest are ignored.
+    {variable -array}
+      This syntax supports the idiom of supplying multiple form variables of the
+      same name but ending with a "_[0-9]", e.g., foo_1, foo_2.... Each value will be
+      stored in the array variable variable with the index being whatever follows the
+      underscore.
+
+There is an optional third element in the var_spec.  If it is "QQ", "qq", or
+some variant, a variable named "QQvariable" will be created and given the
+same value, but with single quotes escaped suitable for handing to SQL.
+
+Other elements of the var_spec are ignored, so a documentation string
+describing the variable can be supplied.
+
+Note that the default value form will become the value form in a "set"
+
+Note that the default values are filled in from left to right, and can depend on
+values of variables to their left:
+ad_page_variables {
+    file
+    {start 0}
+    {end {[expr $start + 20]}}
+}
+</pre>
+} {
+    set exception_list [list]
+    set form [ns_getform]
+    if { $form != "" } {
+	set form_size [ns_set size $form]
+	set form_counter_i 0
+
+	# first pass -- go through all the variables supplied in the form
+	while {$form_counter_i<$form_size} {
+	    set variable [ns_set key $form $form_counter_i]
+	    set found "not"
+	    # find the matching variable spec, if any
+	    foreach variable_spec $variable_specs {
+		if { [llength $variable_spec] >= 2 } {
+		    switch -- [lindex $variable_spec 1] {
+			-multiple-list {
+			    if { [lindex $variable_spec 0] == $variable } {
+				# variable gets a list of all the values
+				upvar 1 $variable var
+				lappend var [ns_set value $form $form_counter_i]
+				set found "done"
+				break
+			    }
+			}
+			-array {
+			    set varname [lindex $variable_spec 0]
+			    set pattern "($varname)_(.+)"
+			    if { [regexp $pattern $variable match array index] } {
+				if { ![empty_string_p $array] } {
+				    upvar 1 $array arr
+				    set arr($index) [ns_set value $form $form_counter_i]
+				}
+				set found "done"
+				break
+			    }
+			}
+			default {
+			    if { [lindex $variable_spec 0] == $variable } {
+				set found "set"
+				break
+			    }
+			}
+		    }
+		} elseif { $variable_spec == $variable } {
+		    set found "set"
+		    break
+		}
+	    }
+	    if { $found == "set" } {
+		upvar 1 $variable var
+		if { ![info exists var] } {
+		    # take the leftmost value, if there are multiple ones
+		    set var [ns_set value $form $form_counter_i]
+		}
+	    }
+	    incr form_counter_i
+	}
+    }
+
+    # now make a pass over each variable spec, making sure everything required is there
+    # and doing defaulting for unsupplied things that aren't required
+    foreach variable_spec $variable_specs {
+	set variable [lindex $variable_spec 0]
+	upvar 1 $variable var
+
+	if { [llength $variable_spec] >= 2 } {
+	    if { ![info exists var] } {
+		set default_value_or_flag [lindex $variable_spec 1]
+		
+		switch -- $default_value_or_flag {
+		    -array {
+			# don't set anything
+		    }
+		    -multiple-list {
+			set var [list]
+		    }
+		    default {
+			# Needs to be set.
+			uplevel [list eval set $variable "\[subst [list $default_value_or_flag]\]"]
+			# This used to be:
+			#
+			#   uplevel [list eval [list set $variable "$default_value_or_flag"]]
+			#
+			# But it wasn't properly performing substitutions.
+		    }
+		}
+	    }
+
+	    # no longer needed because we QQ everything by default now
+	    #	    # if there is a QQ or qq or any variant after the var_spec,
+	    #	    # make a "QQ" variable
+	    #	    if { [regexp {^[Qq][Qq]$} [lindex $variable_spec 2]] && [info exists var] } {
+	    #		upvar QQ$variable QQvar
+	    #		set QQvar [DoubleApos $var]
+	    #	    }
+
+	} else {
+	    if { ![info exists var] } {
+		lappend exception_list "\"$variable\" required but not supplied"
+	    }
+	}
+
+        # modified by rhs@mit.edu on 1/31/2000
+	# to QQ everything by default (but not arrays)
+        if {[info exists var] && ![array exists var]} {
+	    upvar QQ$variable QQvar
+	    set QQvar [DoubleApos $var]
+	}
+
+    }
+
+    set n_exceptions [llength $exception_list]
+    # this is an error in the HTML form
+    if { $n_exceptions == 1 } {
+	ns_returnerror 500 [lindex $exception_list 0]
+	return -code return
+    } elseif { $n_exceptions > 1 } {
+	ns_returnerror 500 "<li>[join $exception_list "\n<li>"]\n"
+	return -code return
+    }
+}
+
+proc_doc page_validation {args} {
+    This proc allows page arg, etc. validation.  It accepts a bunch of
+    code blocks.  Each one is executed, and any error signalled is
+    appended to the list of exceptions.
+    Note that you can customize the complaint page to match the design of your site,
+    by changing the proc called to do the complaining:
+    it's [ad_parameter ComplainProc "" ad_return_complaint]
+
+    The division of labor between ad_page_variables and page_validation 
+    is that ad_page_variables
+    handles programming errors, and does simple defaulting, so that the rest of
+    the Tcl code doesn't have to worry about testing [info exists ...] everywhere.
+    page_validation checks for errors in user input.  For virtually all such tests,
+    there is no distinction between "unsupplied" and "null string input".
+
+    Note that errors are signalled using the Tcl "error" function.  This allows
+    nesting of procs which do the validation tests.  In addition, validation
+    functions can return useful values, such as trimmed or otherwise munged
+    versions of the input.
+} {
+    if { [info exists {%%exception_list}] } {
+	error "Something's wrong"
+    }
+    # have to put this in the caller's frame, so that sub_page_validation can see it
+    # that's because the "uplevel" used to evaluate the code blocks hides this frame
+    upvar {%%exception_list} {%%exception_list}
+    set {%%exception_list} [list]
+    foreach validation_block $args {
+	if { [catch {uplevel $validation_block} errmsg] } {
+	    lappend {%%exception_list} $errmsg
+	}
+    }
+    set exception_list ${%%exception_list}
+    unset {%%exception_list}
+    set n_exceptions [llength $exception_list]
+    if { $n_exceptions != 0 } {
+	set complain_proc [ad_parameter ComplainProc "" ad_return_complaint]
+	if { $n_exceptions == 1 } {
+	    $complain_proc $n_exceptions [lindex $exception_list 0]
+	} else {
+	    $complain_proc $n_exceptions "<li>[join $exception_list "\n<li>"]\n"
+	}
+	return -code return
+    }
+}
+
+proc_doc sub_page_validation {args} {
+    Use this inside a page_validation block which needs to check more than one thing.
+    Put this around each part that might signal an error.
+} {
+    # to allow this to be at any level, we search up the stack for {%%exception_list}
+    set depth [info level]
+    for {set level 1} {$level <= $depth} {incr level} {
+	upvar $level {%%exception_list} {%%exception_list}
+	if { [info exists {%%exception_list}] } {
+	    break
+	}
+    }
+    if { ![info exists {%%exception_list}] } {
+	error "sub_page_validation not inside page_validation"
+    }
+    foreach validation_block $args {
+	if { [catch {uplevel $validation_block} errmsg] } {
+	    lappend {%%exception_list} $errmsg
+	}
+    }
+}
+
+proc_doc validate_integer {field_name string} "Throws an error if the string isn't a decimal integer; otherwise strips any leading zeros (so this won't work for octals) and returns the result." {
+    if { ![regexp {^[0-9]+$} $string] } {
+	error "The entry for $field_name, \"$string\" is not an integer"
+    }
+    # trim leading zeros, so as not to confuse Tcl
+    set string [string trimleft $string "0"]
+    if { [empty_string_p $string] } {
+	# but not all of the zeros
+	return "0"
+    }
+    return $string
+}
+
+proc_doc validate_zip_code {field_name db zip_string country_code} "Given a string, signals an error if it's not a legal zip code" {
+    if { $country_code == "" || [string toupper $country_code] == "US" } {
+	if { [regexp {^[0-9][0-9][0-9][0-9][0-9](-[0-9][0-9][0-9][0-9])?$} $zip_string] } {
+	    set zip_5 [string range $zip_string 0 4]
+	    set selection [ns_db 0or1row $db "select 1 from dual where exists
+(select 1 from zip_codes where zip_code like '$zip_5%')"]
+            if { $selection == "" } {
+		error "The entry for $field_name, \"$zip_string\" is not a recognized zip code"
+	    }
+	} else {
+	    error "The entry for $field_name, \"$zip_string\" does not look like a zip code"
+	}
+    } else {
+	if { $zip_string != "" } {
+	    error "Zip code is not needed outside the US"
+	}
+    }
+    return $zip_string
+}
+
+proc_doc validate_ad_dateentrywidget {field_name column form {allow_null 0}} {
+} {
+    set col [ns_urlencode $column]
+    set day [ns_set get $form "ColValue.$col.day"]
+    ns_set update $form "ColValue.$col.day" [string trimleft $day "0"]
+    set month [ns_set get $form "ColValue.$col.month"]
+    set year [ns_set get $form "ColValue.$col.year"]
+
+    # check that either all elements are blank
+    # date value is formated correctly for ns_dbformvalue
+    if { [empty_string_p "$day$month$year"] } {
+	if { $allow_null == 0 } {
+	    error "$field_name must be supplied"
+	} else {
+	    return ""
+	}
+    } elseif { ![empty_string_p $year] && [string length $year] != 4 } {
+	error "The year must contain 4 digits."
+    } elseif { [catch  { ns_dbformvalue $form $column date date } errmsg ] } {
+	error "The entry for $field_name had a problem:  $errmsg."
+    }
+
+    return $date
+}
+
+
+
+proc_doc util_WriteWithExtraOutputHeaders {headers_so_far {first_part_of_page ""}} "Takes in a string of headers to write to an HTTP connection, terminated by a newline.  Checks \[ns_conn outputheaders\] and adds those headers if appropriate.  Adds two newlines at the end and writes out to the connection.  May optionally be used to write the first part of the page as well (saves a packet)" {
+    set set_headers_i 0
+    set set_headers_limit [ns_set size [ns_conn outputheaders]]
+    while {$set_headers_i < $set_headers_limit} {
+	append headers_so_far "[ns_set key [ns_conn outputheaders] $set_headers_i]: [ns_set value [ns_conn outputheaders] $set_headers_i]\n"
+	incr set_headers_i
+    }
+    append entire_string_to_write $headers_so_far "\n" $first_part_of_page
+    ns_write $entire_string_to_write
+}
+
+
+# we use this when we want to send out just the headers 
+# and then do incremental ns_writes.  This way the user
+# doesn't have to wait like if you used a single ns_return
+
+proc ReturnHeaders {{content_type text/html}} {
+    set all_the_headers "HTTP/1.0 200 OK
+MIME-Version: 1.0
+Content-Type: $content_type\n"
+     util_WriteWithExtraOutputHeaders $all_the_headers
+}
+
+
+# All the following ReturnHeaders versions are obsolete;
+# just set [ns_conn outputheaders].
+
+proc ReturnHeadersNoCache {{content_type text/html}} {
+
+    ns_write "HTTP/1.0 200 OK
+MIME-Version: 1.0
+Content-Type: $content_type
+pragma: no-cache
+
+"
+
+}
+
+
+proc ReturnHeadersWithCookie {cookie_content {content_type text/html}} {
+
+    ns_write "HTTP/1.0 200 OK
+MIME-Version: 1.0
+Content-Type: $content_type
+Set-Cookie:  $cookie_content
+
+"
+
+}
+
+proc ReturnHeadersWithCookieNoCache {cookie_content {content_type text/html}} {
+
+    ns_write "HTTP/1.0 200 OK
+MIME-Version: 1.0
+Content-Type: $content_type
+Set-Cookie:  $cookie_content
+pragma: no-cache
+
+"
+
+}
+
+
+proc_doc ad_return_top_of_page {first_part_of_page {content_type text/html}} "Returns HTTP headers plus the top of the user-ivisible page.  Saves a TCP packet (and therefore some overhead) compared to using ReturnHeaders and an ns_write." {
+    set all_the_headers "HTTP/1.0 200 OK
+MIME-Version: 1.0
+Content-Type: $content_type\n"
+     util_WriteWithExtraOutputHeaders $all_the_headers $first_part_of_page
+}
+
+
+
+proc_doc apply {func arglist} {
+    Evaluates the first argument with ARGLIST as its arguments, in the
+    environment of its caller. Analogous to the Lisp function of the same name.
+} {
+    set func_and_args [concat $func $arglist]
+    return [uplevel $func_and_args]
+}
+
+proc_doc safe_eval args {
+    Version of eval that checks its arguments for brackets that may be
+used to execute unsafe code.
+} {
+    foreach arg $args {
+	if { [regexp {[\[;]} $arg] } {
+	    return -code error "Unsafe argument to safe_eval: $arg"
+	}
+    }
+    return [apply uplevel $args]
+}
+
+proc_doc lmap {list proc_name} {Applies proc_name to each item of the list, appending the result of each call to a new list that is the return value.} {
+    set lmap [list]
+    foreach item $list {
+	lappend lmap [safe_eval $proc_name $item]
+    }
+    return $lmap
+}
+
+# if this hairy proc doesn't work, complain to davis@arsdigita.com
+proc_doc util_close_html_tags {html_fragment {break_soft 0} {break_hard 0}} {
+    Given an HTML fragment, this procedure will close any tags that
+    have been left open.  The optional arguments let you specify that
+    the fragment is to be truncated to a certain number of displayable 
+    characters.  After break_soft, it truncates and closes open tags unless 
+    you're within non-breaking tags (e.g., Af).  After break_hard displayable
+    characters, the procedure simply truncates and closes any open HTML tags
+    that might have resulted from the truncation.
+    <p>
+    Note that the internal syntax table dictates which tags are non-breaking.
+    The syntax table has codes:
+    <ul>
+    <li>  nobr --  treat tag as nonbreaking.
+    <li>  discard -- throws away everything until the corresponding close tag.
+    <li>  remove -- nuke this tag and its closing tag but leave contents.
+    <li>  close -- close this tag if left open.
+    </ul>
+} {
+    set frag $html_fragment 
+
+    set syn(A) nobr
+    set syn(ADDRESS) nobr
+    set syn(NOBR) nobr
+    #
+    set syn(FORM) discard
+    set syn(TABLE) discard
+    #
+    set syn(BLINK) remove 
+    #
+    set syn(FONT) close
+    set syn(B) close
+    set syn(BIG) close
+    set syn(I) close
+    set syn(S) close
+    set syn(SMALL) close
+    set syn(STRIKE) close
+    set syn(SUB) close
+    set syn(SUP) close
+    set syn(TT) close
+    set syn(U) close
+    set syn(ABBR) close
+    set syn(ACRONYM) close
+    set syn(CITE) close
+    set syn(CODE) close
+    set syn(DEL) close
+    set syn(DFN) close
+    set syn(EM) close
+    set syn(INS) close
+    set syn(KBD) close
+    set syn(SAMP) close
+    set syn(STRONG) close
+    set syn(VAR) close
+    set syn(DIR) close
+    set syn(DL) close
+    set syn(MENU) close
+    set syn(OL) close
+    set syn(UL) close
+    set syn(H1) close
+    set syn(H2) close
+    set syn(H3) close
+    set syn(H4) close
+    set syn(H5) close
+    set syn(H6) close
+    set syn(BDO) close
+    set syn(BLOCKQUOTE) close
+    set syn(CENTER) close
+    set syn(DIV) close
+    set syn(PRE) close
+    set syn(Q) close
+    set syn(SPAN) close
+
+    set out {} 
+    set out_len 0
+
+    # counts how deep we are nested in nonbreaking tags, tracks the nobr point
+    # and what the nobr string length would be
+    set nobr 0
+    set nobr_out_point 0
+    set nobr_tagptr 0
+    set nobr_len 0
+
+    set discard 0
+
+    set tagptr -1
+
+    # first thing we do is chop off any trailing unclosed tag 
+    # since when we substr blobs this sometimes happens
+    
+    # this should in theory cut any tags which have been cut open.
+    while {[regexp {(.*)<[^>]*$} $frag match frag]} {}
+
+    while { "$frag" != "" } {
+        # here we attempt to cut the string into "pretag<TAG TAGBODY>posttag"
+        # and build the output list.
+
+        if {![regexp "(\[^<]*)(<\[ \t]*(/?)(\[^ \t>]+)(\[^>]*)>)?(.*)" $frag match pretag fulltag close tag tagbody frag]} {
+            # should never get here since above will match anything.
+            # puts "NO MATCH: should never happen! frag=$frag"
+            append out $frag 
+            set frag {}
+        } else {
+            # puts "\n\nmatch=$match\n pretag=$pretag\n fulltag=$fulltag\n close=$close\n tag=$tag\n tagbody=$tagbody\nfrag=$frag\n\n"
+            if { ! $discard } {
+                # figure out if we can break with the pretag chunk 
+                if { $break_soft } {
+                    if {! $nobr && [expr [string length $pretag] + $out_len] > $break_soft } {
+                        # first chop pretag to the right length
+                        set pretag [string range $pretag 0 [expr $break_soft - $out_len]]
+                        # clip the last word
+                        regsub "\[^ \t\n\r]*$" $pretag {} pretag
+                        append out [string range $pretag 0 $break_soft]
+                        break
+                    } elseif { $nobr &&  [expr [string length $pretag] + $out_len] > $break_hard } {
+                        # we are in a nonbreaking tag and are past the hard break
+                        # so chop back to the point we got the nobr tag...
+                        set tagptr $nobr_tagptr 
+                        if { $nobr_out_point > 0 } { 
+                            set out [string range $out 0 [expr $nobr_out_point - 1]]
+                        } else { 
+                            # here maybe we should decide if we should keep the tag anyway 
+                            # if zero length result would be the result...
+                            set out {}
+                        }
+                        break
+                    } 
+                }
+                
+                # tack on pretag
+                append out $pretag
+                incr out_len [string length $pretag]
+            }
+            
+            # now deal with the tag if we got one...
+            if  { $tag == "" } { 
+                # if the tag is empty we might have one of the bad matched that are not eating 
+                # any of the string so check for them 
+                if {[string length $match] == [string length $frag]} { 
+                    append out $frag
+                    set frag {}
+                }
+            } else {
+                set tag [string toupper $tag]            
+                if { ![info exists syn($tag)]} {
+                    # if we don't have an entry in our syntax table just tack it on 
+                    # and hope for the best.
+                    if { ! $discard } {
+                        append  out $fulltag
+                    }
+                } else {
+                    if { $close != "/" } {
+                        # new tag 
+                        # "remove" tags are just ignored here
+                        # discard tags 
+                        if { $discard } { 
+                            if { $syn($tag) == "discard" } {
+                                incr discard 
+                                incr tagptr 
+                                set tagstack($tagptr) $tag
+                            }
+                        } else {
+                            switch $syn($tag) {
+                                nobr { 
+                                    if { ! $nobr } {
+                                        set nobr_out_point [string length $out]
+                                        set nobr_tagptr $tagptr
+                                        set nobr_len $out_len
+                                    }
+                                    incr nobr
+                                    incr tagptr 
+                                    set tagstack($tagptr) $tag
+                                    append out $fulltag
+                                }
+                                discard { 
+                                    incr discard 
+                                    incr tagptr 
+                                    set tagstack($tagptr) $tag
+                                }
+                                close {                                 
+                                    incr tagptr 
+                                    set tagstack($tagptr) $tag
+                                    append out $fulltag
+                                }
+                            }
+                        }
+                    } else { 
+                        # we got a close tag
+                        if { $discard } { 
+                            # if we are in discard mode only watch for 
+                            # closes to discarded tags
+                            if { $syn($tag) == "discard"} {
+                                if {$tagptr > -1} {
+                                    if { $tag != $tagstack($tagptr) } {
+                                        #puts "/$tag without $tag"
+                                    } else {
+                                        incr tagptr -1
+                                        incr discard -1
+                                    }
+                                }
+                            }
+                        } else {
+                            if { $syn($tag) != "remove"} {
+                                # if tag is a remove tag we just ignore it...
+                                if {$tagptr > -1} {
+                                    if {$tag != $tagstack($tagptr) } {
+                                        # puts "/$tag without $tag"
+                                    } else {
+                                        incr tagptr -1
+                                        if { $syn($tag) == "nobr"} {
+                                            incr nobr -1
+                                        } 
+                                        append out $fulltag
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    # on exit of the look either we parsed it all or we truncated. 
+    # we should now walk the stack and close any open tags.
+
+    for {set i $tagptr} { $i > -1 } {incr i -1} { 
+        # append out "<!-- autoclose --> </$tagstack($i)>"
+        append out "</$tagstack($i)>"
+    }
+    
+    return $out
+}
+
+
+ad_proc util_dbq {
+    { 
+        -null_is_null_p f
+    }
+    vars
+} {
+    Given a list of variable names this routine 
+    creates variables named DBQvariable_name which can be used in 
+    sql insert and update statements.  
+    <p>
+    If -null_is_null_p is t then we return the string "null" unquoted
+    so that "update foo set var = $DBQvar where ..." will do what we want 
+    if we default var to "null".
+} {
+    foreach var $vars {
+	upvar 1 $var val
+        if [info exists val] {
+            if { $null_is_null_p == "t" 
+                 && $val == {null} } {
+                uplevel [list set DBQ$var {null}]
+            } else {
+                uplevel [list set DBQ$var "'[DoubleApos [string trim $val]]'"]
+            }
+        }
+    }
+}
+
+proc_doc ad_decode { args } "this procedure is analogus to sql decode procedure. first parameter is the value we want to decode. this parameter is followed by a list of pairs where first element in the pair is convert from value and second element is convert to value. last value is default value, which will be returned in the case convert from values matches the given value to be decoded" {
+    set num_args [llength $args]
+    set input_value [lindex $args 0]
+
+    set counter 1
+
+    while { $counter < [expr $num_args - 2] } {
+	lappend from_list [lindex $args $counter]
+	incr counter
+	lappend to_list [lindex $args $counter]
+	incr counter
+    }
+
+    set default_value [lindex $args $counter]
+
+    if { $counter < 2 } {
+	return $default_value
+    }
+
+    set index [lsearch -exact $from_list $input_value]
+    
+    if { $index < 0 } {
+	return $default_value
+    } else {
+	return [lindex $to_list $index]
+    }
+}
+
+proc_doc ad_urlencode { string } "same as ad_urlencode except that dash and underscore are left unencoded." {
+    set encoded_string [ns_urlencode $string]
+    regsub -all {%2d} $encoded_string {-} encoded_string
+    regsub -all {%5f} $encoded_string {_} ad_encoded_string
+    return $ad_encoded_string
+}
+
+ad_proc ad_get_cookie {
+    { -include_set_cookies t }
+    name { default "" }
+} { "Returns the value of a cookie, or $default if none exists." } {
+    if { $include_set_cookies == "t" } {
+	set headers [ns_conn outputheaders]
+	for { set i 0 } { $i < [ns_set size $headers] } { incr i } {
+	    if { ![string compare [string tolower [ns_set key $headers $i]] "set-cookie"] && \
+		    [regexp "^$name=(\[^;\]+)" [ns_set value $headers $i] "" "value"] } {
+		return $value
+	    }
+	}
+    }
+
+    set headers [ns_conn headers]
+    set cookie [ns_set iget $headers Cookie]
+    if { [regexp "$name=(\[^;\]+)" $cookie match value] } {
+	return $value
+    }
+
+    return $default
+}
+
+ad_proc ad_set_cookie {
+    {
+	-replace f
+	-secure f
+	-expires ""
+	-max_age ""
+	-domain ""
+	-path "/"
+    }
+    name value
+} { Sets a cookie. } {
+    set headers [ns_conn outputheaders]
+    if { $replace != "f" } {
+	# Try to find an already-set cookie named $name.
+	for { set i 0 } { $i < [ns_set size $headers] } { incr i } {
+	    if { ![string compare [string tolower [ns_set key $headers $i]] "set-cookie"] && \
+		    [regexp "^$name=" [ns_set value $headers $i]] } {
+		ns_set delete $headers $i
+		break
+	    }
+	}
+    }
+
+    set cookie "$name=$value"
+
+    if { $path != "" } {
+	append cookie "; Path=$path"
+    }
+
+    if { ![string compare [string tolower $expires] "never"] } {
+	append cookie "; Expires=Fri, 01-Jan-2010 01:00:00 GMT"
+    } elseif { $expires != "" } {
+	append cookie "; Expires=$expires"
+    }
+
+    if { $max_age != "" } {
+	append cookie "; Max-Age=$max_age"
+    }
+
+    if { $domain != "" } {
+	append cookie "; Domain=$domain"
+    }
+
+    if { $secure != "f" } {
+	append cookie "; Secure"
+    }
+
+    ns_set put $headers "Set-Cookie" $cookie
+}
+
+# Helper procedure for sortable_table.
+# column_list is a list of column names optionally followed by " desc".
+# Returns a new list with sort_column as the first element, followed
+# by the columns in column_list excluding any beginning with sort_column.
+proc sortable_table_new_sort_order {column_list sort_column} {
+    set new_order [list $sort_column]
+
+    # Relies on string representation of lists. [lindex "colname desc" 0]
+    # returns just "colname".
+    set just_the_sort_column [lindex $sort_column 0]
+    foreach col $column_list {
+	if { [lindex $col 0] != $just_the_sort_column } {
+	    lappend new_order $col
+	}
+    }
+    return $new_order
+}
+
+
+proc_doc sortable_table {db select_string display_spec vars_to_export sort_var current_sort_order {table_length ""} {extra_table_parameters ""} {stripe_color_list ""} {max_results ""} {header_font_params ""} {row_font_params ""}} {Procedure to format a database query as a table that can be sorted by clicking on the headers.
+Arguments are:
+<ul>
+<li>db: database handle
+<li>select_string: SQL statement that selects all columns that will be displayed in the table.
+<li>display_spec: a "display specification" that consists of a list of column specs. Column specs are lists with the following elements:
+<ol>
+<li>primary column name (name of column which determines sorting for this table column)
+<li>header (header to display for this column)
+<li>display string (optional; if provided, a string with variable references to column names that will be interpolated for each row)
+<li>default sort order (optional; really used to say when something needs to sort "desc" by default instead of "asc")</li>
+<li>column width (optional).</li>
+</ol>
+<li>vars_to_export: an ns_set of variables to re-export to the current page. Generally, [ns_conn form]
+<li>sort_var: a variable name which stores the sorting information for this table. You can use different sort_vars for multiple sortable tables in the same page.
+<li>current_sort_order: a list of column names that determine the current sorting order. Each element is either a column name that can be optionally followed by " desc" to specify descending order. Generally, just the current value of $sort_var.
+<li>table_length (optional): where to insert table breaks. Leaving unspecified or empty specifies no table breaks.
+<li>extra_table_parameters: Any extra parameters to go in the &lt;table&gt; tag
+<li>stripe_color_list: a list of color specifications for table striping. If specified, should specify at least two, unless a single color is desired for every row.
+<li>max_results (optional): Indicates to truncate table after so many results are retreived.
+<li>header_font_params (optional): Sets the font attributes for the headers.
+<li>row_font_params (optional): Sets the font attributes for any old row.
+</ul>} {
+    # Run the SQL
+    set order_clause ""
+    if { ![empty_string_p $current_sort_order] } {
+	set order_clause " order by [join $current_sort_order ","]"
+    }
+    
+    set selection [ns_db select $db "$select_string$order_clause"]
+
+    # Start generating the table HTML.
+    set table_start "<table $extra_table_parameters>\n" 
+    set table_html ""
+    
+    set primary_sort_column [lindex $current_sort_order 0]
+
+    # Put in the headers.
+    set headers "<tr>"
+    foreach col_desc $display_spec {
+
+	# skip any blank columns
+	if { [llength $col_desc] < 1 } { continue }
+
+	set primary_column_name [lindex $col_desc 0]
+
+	# set the default sort order
+	set primary_column_sort ""
+	if { [llength $col_desc] > 3 } {
+	    set primary_column_sort "[lindex $col_desc 3]"
+	}
+
+	set column_header [lindex $col_desc 1]
+
+	# Calculate the href for the header link.
+	set this_url [ns_conn url]
+	set exported_vars [export_ns_set_vars "url" $sort_var $vars_to_export]
+	if { ![empty_string_p $exported_vars] } {
+	    append exported_vars "&"
+	}
+	
+	set just_the_sort_column [lindex $primary_sort_column 0]
+	set sort_icon ""
+	if { $primary_column_name == $just_the_sort_column } {
+	    # This is the column that is being sorted on. Need to reverse
+	    # the direction of the sort by appending or removing " desc".
+
+	    # Relies on the fact that indexing past the end of a list
+	    # is not an error, just returns the empty string.
+	    # We're treating a string as a list here, since we know that
+	    # $primary_sort_column will be a plain column name, or a 
+	    # column name followed by " desc".
+	    if { [lindex $primary_sort_column 1] == "desc" } {
+		append exported_vars "$sort_var=[ns_urlencode [sortable_table_new_sort_order $current_sort_order $just_the_sort_column]]"
+		set sort_icon "<img border=0 src=\"/graphics/up.gif\">"
+	    } else {
+		append exported_vars "$sort_var=[ns_urlencode [sortable_table_new_sort_order $current_sort_order "$just_the_sort_column desc"]]"
+		set sort_icon "<img border=0 src=\"/graphics/down.gif\">"
+	    }
+	} else {
+	    # Clicked on some other column.
+	    append exported_vars "$sort_var=[ns_urlencode [sortable_table_new_sort_order $current_sort_order "$primary_column_name $primary_column_sort"]]"
+	}
+
+	if { [empty_string_p "[lindex $col_desc 4]"] } {
+	    append headers "<th>"
+	} else {
+	    append headers "<th width=\"[lindex $col_desc 4]\">"
+	}
+
+	append headers "<a href=\"$this_url?$exported_vars\"><font face=\"helvetica,verdana,arial\" $header_font_params>$column_header</font>$sort_icon</th>"
+
+    }
+
+    append headers "</tr>\n"
+
+    # Do the data rows.
+    set i 0
+    set color_index 0
+    set n_colors [llength $stripe_color_list]
+    set n_results 0
+
+    while { [ns_db getrow $db $selection] } {
+	set_variables_after_query
+
+	# check to see if we have reached our max results limit
+	if { [exists_and_not_null max_results] } {
+	    if { $n_results >= $max_results } { break }
+	    incr n_results
+	}
+
+	# Handle table breaks.
+	if { $i == 0 } {
+	    append table_html "$table_start$headers"
+	} elseif { ![empty_string_p $table_length] } {
+	    if { $i % $table_length == 0 } {
+		append table_html "</table>\n$table_start$headers"
+		set i 0
+	    }
+	}
+
+	# Handle row striping.
+	if { ![empty_string_p $stripe_color_list] } {
+	    append table_html "<tr bgcolor=\"[lindex $stripe_color_list $color_index]\">"
+	    set color_index [expr ($color_index + 1) % $n_colors]
+	} else {
+	    append table_html "<tr>"
+	}
+
+	# Handle each display column.
+	foreach col_desc $display_spec {
+
+	    # skip any blank columns
+	    if { [llength $col_desc] < 1 } { continue }
+
+	    set primary_column_name [lindex $col_desc 0]
+	    set col_display [lindex $col_desc 2]
+	    
+	    if { [empty_string_p $col_display] } {
+		# Just use the sort column as the value.
+		set col_display "\$$primary_column_name"
+	    }
+
+	    # Insert &nbsp; for empty rows to avoid empty cells.
+	    set value [subst $col_display]
+	    if { [empty_string_p $value] } {
+		set value "&nbsp;"
+	    }
+
+	    append table_html "<td><font face=\"helvetica,verdana,arial\" $row_font_params>$value</font></td>"
+	}
+
+	append table_html "</tr>\n"
+	incr i
+    }
+
+    ns_db flush $db
+
+    if { ![empty_string_p $table_html] } {
+        append table_html "</table>"
+    }
+
+    return $table_html
+}
+
+proc ad_handle_filter { conn why } {
+    foreach f [nsv_get ad_filters "[ns_conn method],$why" ] {
+	if { [string match [lindex $f 3] [ns_conn url]] } {
+	    set errno [catch {
+		set proc [lindex $f 4]
+		set args [lindex $f 5]
+		set debug [lindex $f 6]
+		set proc_args [info args $proc]
+		set proc_argcount [llength $proc_args]
+		if { [lindex $proc_args [expr { [llength $proc_args] - 2 }]] == "args" } {
+		    set args [list $args]
+		}
+		set actual_argcount [llength $args]
+
+		if { $debug == "t" } {
+		    ns_log "Notice" "Executing filter $proc for [ns_conn method] [ns_conn url]..."
+		}
+
+		if { $actual_argcount >= 3 || $proc_argcount - $actual_argcount == 2 } {
+		    # Procedure has conn and why.
+		    set result [eval $proc [concat [list $conn] $args [list $why]]]
+		} elseif { $proc_argcount - $actual_argcount == 1 } {
+		    # Procedure has why.
+		    set result [eval $proc [concat $args [list $why]]]
+		} else {
+		    set result [eval $proc $args]
+		}
+		
+		if { $debug == "t" } {
+		    ns_log "Notice" "Done executing filter $proc."
+		}
+
+		if { $result == "filter_break" } {
+		    set return "filter_break"
+		} elseif { $result == "filter_return" } {
+		    set return "filter_return"
+		} elseif { $result != "filter_ok" } {
+		    ns_log "Filter" "Invalid result \"$result\" from filter $proc: should be filter_ok, filter_break, or filter_return"
+		    if { [lindex $f 7] == "t" } {
+			error "Critical filter $proc failed."
+		    }
+		}
+	    } errmsg]
+            if { $errno } {
+		ns_log "Error" "Filter $proc returned error #$errno: $errmsg"
+		if { [lindex $f 7] == "t" } {
+		    error "Critical filter $proc failed."
+		}
+	    }
+	}
+	if { [info exists return] } {
+	    return $return
+	}
+    }
+
+    return "filter_ok"
+}
+
+# Make sure the ad_filters array exists
+nsv_set ad_filters . ""
+
+ad_proc ad_register_filter {
+    {
+	-debug f
+        -priority 10000
+	-critical f
+    }
+    kind method path proc args
+} { Registers a filter (see ns_register_filter for syntax). Priority is an integer; lower numbers indicate higher priority. Use a method of "*" to register GET, POST, and HEAD filters. If a filter is not critical, page viewing will not abort if a filter fails. If debug is set to "t", all invocations of the filter will be ns_logged. } {
+    if { $method == "*" } {
+	# Shortcut to allow registering filter for all methods.
+	foreach method { GET POST HEAD } {
+	    eval [concat [list ad_register_filter -debug $debug -priority $priority -critical $critical $kind $method $path $proc] $args]
+	}
+	return
+    }
+
+    ns_mutex lock [nsv_get ad_filters mutex]
+
+    # Append the filter to our list.
+    set filters [nsv_get ad_filters "$method,$kind"]
+    set filter_info [list $priority $kind $method $path $proc $args $debug $critical]
+
+    set counter 0
+    # Insert the filter in sorted order (lowest priority# first).
+    foreach f $filters {
+	if { ![string compare $f $filter_info] } {
+	    ns_log "Notice" "$kind filter $proc already registered for $method $path"
+	    ns_mutex unlock [nsv_get ad_filters mutex]
+	    return
+	}
+	if { $priority < [lindex $f 0] } {
+	    break
+	}
+	incr counter
+    }
+    ns_log "Notice" "Registering $kind filter $proc for $method $path with priority $priority"
+    set filters [linsert $filters $counter $filter_info]
+    nsv_set ad_filters "$method,$kind" $filters
+
+    ns_mutex unlock [nsv_get ad_filters mutex]
+}
+
+proc_doc ad_run_scheduled_proc { proc_info } { Runs a scheduled procedure and updates monitoring information in the shared variables. } {
+    # Grab information about the scheduled procedure.
+    set thread [lindex $proc_info 0]
+    set once [lindex $proc_info 1]
+    set interval [lindex $proc_info 2]
+    set proc [lindex $proc_info 3]
+    set args [lindex $proc_info 4]
+    set time [lindex $proc_info 5]
+    set count 0
+    set debug [lindex $proc_info 7]
+
+    ns_mutex lock [nsv_get ad_procs mutex]
+    set procs [nsv_get ad_procs .]
+
+    # Find the entry in the shared variable. Splice it out.
+    for { set i 0 } { $i < [llength $procs] } { incr i } {
+	set other_proc_info [lindex $procs $i]
+	for { set j 0 } { $j < 5 } { incr j } {
+	    if { [lindex $proc_info $j] != [lindex $other_proc_info $j] } {
+		break
+	    }
+	}
+	if { $j == 5 } {
+	    set count [lindex $other_proc_info 6]
+	    set procs [lreplace $procs $i $i]
+	    break
+	}
+    }
+
+    if { $once == "f" } {
+	# The proc will run again - readd it to the shared variable (updating ns_time and
+	# incrementing the count).
+	lappend procs [list $thread $once $interval $proc $args [ns_time] [expr { $count + 1 }] $debug]
+    }
+    nsv_set ad_procs . $procs
+
+    ns_mutex unlock [nsv_get ad_procs mutex]
+
+    if { $debug == "t" } {
+	ns_log "Notice" "Running scheduled proc $proc..."
+    }
+    # Actually run the procedure.
+    eval [concat [list $proc] $args]
+    if { $debug == "t" } {
+	ns_log "Notice" "Done running scheduled proc $proc."
+    }
+}
+
+ad_proc ad_schedule_proc {
+    {
+	-thread f
+	-once f
+	-debug t
+    }
+    interval
+    proc
+    args
+} { Replacement for ns_schedule_proc, allowing us to track what's going on. Can be monitored via /admin/monitoring/schedule-procs.tcl. } {
+    # Protect the list of scheduled procs with a mutex.
+    ns_mutex lock [nsv_get ad_procs mutex]
+    set proc_info [list $thread $once $interval $proc $args [ns_time] 0 $debug]
+
+    ns_log "Notice" "Scheduling proc $proc"
+
+    # Add to the list of scheduled procedures, for monitoring.
+    set procs [nsv_get ad_procs .]
+    lappend procs $proc_info
+    nsv_set ad_procs . $procs
+    ns_mutex unlock [nsv_get ad_procs mutex]
+
+    set my_args [list]
+    if { $thread == "t" } {
+	lappend my_args "-thread"
+    }
+    if { $once == "t" } {
+	lappend my_args "-once"
+    }
+
+    # Schedule the wrapper procedure (ad_run_scheduled_proc).
+    eval [concat [list ns_schedule_proc] $my_args [list $interval ad_run_scheduled_proc [list $proc_info]]]
+}
+
+if { ![nsv_exists ad_filters mutex] } {
+    nsv_set ad_filters mutex [ns_mutex create]
+
+    foreach method { GET POST HEAD } {
+	foreach kind { preauth postauth trace } {
+	    ns_log "Notice" "Setting up $kind filter for \"$method\" method"
+	    nsv_set ad_filters "$method,$kind" ""
+	    ns_register_filter $kind $method /* ad_handle_filter
+	}
+    }
+
+    nsv_set ad_procs mutex [ns_mutex create]
+    nsv_set ad_procs . ""
+}
+
+# branimir 2000/04/25 ad_returnredirect and helper procs :
+#    util_complete_url_p util_absolute_path_p util_current_location
+#    util_current_directory   
+# See: http://www.arsdigita.com/bboard/q-and-a-fetch-msg.tcl?msg_id=0003eV
+
+ad_proc ad_returnredirect {{} target_url} {
+  A replacement for ns_returnredirect.  It uses ns_returnredirect but is better in
+  two important aspects:
+  <ul>
+     <li>When the supplied target_url isn't complete, (e.g. /foo/bar.tcl or foo.tcl)
+         the prepended location part is constructed by looking at the HTTP 1.1 Host header.
+     <li>If an URL relative to the current directory is supplied (e.g. foo.tcl)
+         it prepends location and directory.
+  </ul>
+} {
+  if {[util_complete_url_p $target_url]} {
+      # http://myserver.com/foo/bar.tcl style - just pass to ns_returnredirect
+      ns_returnredirect $target_url
+  } elseif {[util_absolute_path_p $target_url]} {
+      # /foo/bar.tcl style - prepend the current location:
+      ns_returnredirect [util_current_location]$target_url
+  } else {
+      # URL is relative to current directory.
+      ns_returnredirect [util_current_location][util_current_directory]$target_url
+  }
+}
+
+ad_proc util_complete_url_p {{} string} {
+  Determine whether string is a complete URL, i.e.
+  wheteher it begins with protocol: where protocol
+  consists of letters only.
+} {
+  if {[regexp -nocase {^[a-z]+:} $string]} {
+     return 1
+  } else {
+     return 0
+  }
+}
+
+ad_proc util_absolute_path_p {{} path} {
+   Check whether the path begins with a slash
+} {
+   set firstchar [string index $path 0]
+   if {[string compare $firstchar /]} {
+        return 0
+   } else {
+        return 1
+   }
+}
+
+ad_proc util_current_location {{}} {
+   Like ns_conn location - Returns the location string of the current
+   request in the form protocol://hostname[:port] but it looks at the
+   Host header, that is, takes into account the host name the client
+   used although it may be different from the host name from the server
+   configuration file.  If the Host header is missing or empty util_current_location
+   falls back to ns_conn location.
+} {
+   set host_from_header [ns_set iget [ns_conn headers] Host]
+   # host_from_header now hopefully contains hostname[:port]
+   set location_from_config_file [ns_conn location]
+   if {[empty_string_p $host_from_header]} {
+      # Hmm, there is no Host header.  This must be
+      # an old browser such as MSIE 3.  All we can do is:
+      return $location_from_config_file
+   } else {
+      # Replace the hostname[:port] part of $location_from_config_file with $host_from_header:
+      regsub -nocase {(^[a-z]+://).*} \
+                $location_from_config_file \\1$host_from_header location_from_host_header
+      return $location_from_host_header
+   }
+}
+
+ad_proc util_current_directory {{}} {
+    Returns the directory of the current URL.
+    <p>
+    We can't just use [file dirname [ns_conn url]] because
+    we want /foo/bar/ to return /foo/bar/ and not /foo  .
+    <p>
+    Also, we want to return directory WITH the trailing slash
+    so that programs that use this proc don't have to treat
+    the root directory as a special case.
+} {
+   set path [ns_conn url]
+
+   set lastchar [string range $path [expr [string length $path]-1] end]
+   if {![string compare $lastchar /]} {
+        return $path
+   } else { 
+        set file_dirname [file dirname $path]
+        # Treat the case of the root directory special
+        if {![string compare $file_dirname /]} {
+            return /
+        } else {
+            return  $file_dirname/
+        }
+   }
+}
+
+util_report_successful_library_load
+

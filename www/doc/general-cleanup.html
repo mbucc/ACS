@@ -1,0 +1,170 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>general cleanup</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+
+<h2>general cleanup</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="http://photo.net/philg/">Philip Greenspun</a>
+
+<hr>
+
+This document was written on February 28, 2000.  It contains
+miscellaneous things that we want to clean up in the ACS.
+
+<h3>Integer primary keys everywhere</h3>
+
+Jeff Davis claims that our magic scheme for pointing from, say,
+general_comments to other tables, is causing trouble with the Oracle
+query optimizer because it doesn't like to coerce from varchars to
+integers.  There are only a handful of tables that use varchar keys
+(notably bboard) so we should just root out the evil and have done with
+it.  If you think that you might end up breaking links from elsewhere
+on the Web, remember to leave behind a legacy_key column and make the
+scripts appropriately robust.
+
+
+<h3>approved/disapproved/unexamined</h3>
+
+The unexamined life may not be worth living but to better support
+workflow among a group of site admins, we need to make sure that we are
+using three-valued logic consistently:
+
+<ul>
+<li>an item starts with an <code>approved_p</code> column value of NULL
+(unless there is autoapproval configured with an "open" policy in
+ad.ini); this means that nobody has looked at it
+
+<li>an administrator is presented with a bunch of items in this state
+and can push them into "t" or "f" (approved or explicitly disapproved)
+
+<li>we always record by whom approved 
+
+<li>once items are approved or disapproved, they disappear from the
+queue of things to look at (though we will have admin pages for digging
+out all the stuff when necessary)
+
+</ul>
+
+<h3>Push stuff out of /admin/</h3>
+
+We want to be able to delegate admin authority for virtually every
+module.  So the day-to-day admin stuff should be in, for example,
+/neighbor/admin/ rather than /admin/neighbor/.  Anyone with site-wide
+administration privileges ought to be able to work in /neighbor/admin/
+and, if they have site-wide privs, the links anchored by user names
+ought to point to /admin/users/one (so that the site-wide admin can
+actually ban or nuke the user)
+
+<h3>No more incremental ns_writes</h3>
+
+Our customers are using ACS for sites with millions of hits/day.  In
+general, we should not be doing explicit ns_writes while holding a
+database handle.  With rare exceptions, every page should be
+accumulating a string of some sort, releasing the database handle, and
+then ns_return'ing the complete page.
+
+<p>
+
+In fact, what I'd like to see is the .tcl pages not calling ns_return at
+all.  They should return a data structure (see <a
+href="templating-etc.html">templating-etc.html</a>) containing the
+string that they've produced and a tag saying "I'm a complete HTML page"
+or "I'm a fragment of HTML that needs to be wrapped in a site-wide
+template" or whatever.  For compatibility with old code, we can tell
+that a Tcl script is just calling <code>ns_return</code> or
+<code>ns_write</code> because it will return the empty string, 0, or 1.
+
+<h3>LDAP compliance</h3>
+
+Lars wrote a thing for Siemens to authenticate ACS users from an
+external system.  This is exactly the same problem as LDAP integration.
+I want Lars's code packaged up and documented and stuck into ACS,
+ideally with the next release.  It doesn't matter if it is
+comprehensive, just the hooks and a doc are enough to help adopters and
+to claim victory.
+
+
+<h3>Bookmarks module should deal with HTTPS</h3>
+
+Aure and Dave should extend bookmarks to distinguish between HTTPS and
+HTTP bookmarks (right now they both end up in the system without being
+distinguished).
+
+<h3>File storage module shouldn't recompute sort keys after an update</h3>
+
+Right now file storage recomputes all the sort keys after an update.
+This is obviously not going to scale to thousands of files very
+gracefully.
+
+<h3>A modest proposal:  one content table</h3>
+
+How about one single content table?  Instead of bboard, news,
+static_pages, etc. each storing user-uploaded content, just put
+everything that we might ever serve back to a user all in one big
+table.  This will make it easier to build an Intermedia index.  This
+will make approval, etc., potentially more consistent.
+
+<p>
+
+If Oracle were a true object database, we could have tables that
+inherited from the <code>all_content</code> table but supplemented it
+with extra columns (e.g., <code>refers_to</code> in the case of
+<code>bboard</code>).  But Oracle isn't so we will probably have to
+resort to kludges like the _info helper tables that we have for
+user groups.
+
+<p>
+
+Some ideas:  
+
+<ul>
+
+<li>think about related links; we have to keep the content (a short text
+string) plus a title, <em>plus</em> some annoation (brief description)
+
+<li>for attachments it probably makes more sense to have two content
+pieces, one for the thing and another that is "attached".  This means
+that a content item must be able to be a BLOB plus have all the extra
+data associated with an image, for example
+
+<li>in some cases we like to build a B-tree index on the content itself,
+which won't work with LOB datatypes, so we might have to denormalize out
+the first few hundred bytes or something if we need to do this
+
+<li>BLOB versus CLOB versus NCLOB?  If we're going to be international,
+we'd better figure out which is the right thing to use
+
+<li>speaking of international, we need a column to store which language
+the content is in
+
+<li>Let's try to figure out whether Oracle 8.1.6 fixes the
+"import/export doesn't work with LOBs" bug (feature); -- I read the docs 
+and, sure enough, this is covered as a feature:
+
+<blockquote>
+
+"If LOB data resides in a tablespace that does not exist at the time of
+import or the user does not have the necessary quota in that tablespace,
+the table will not be imported." -- 
+<a href="http://oradoc.photo.net/ora816/server.816/a76955/ch02.htm#36202">http://oradoc.photo.net/ora816/server.816/a76955/ch02.htm#36202</a>
+
+</blockquote>
+
+<li>Let's try to figure out if we can really stomach the pain of having
+nearly all of our data in an Oracle data type that does not support SQL
+(i.e., the LOB).  We won't be able to do LIKE or WHERE = or anything
+else with our content :-(
+
+
+</ul>
+
+
+<hr>
+<a href="http://photo.net/philg/"><address>philg@mit.edu</address></a>
+</body>
+</html>

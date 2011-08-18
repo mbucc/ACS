@@ -1,0 +1,245 @@
+<html>
+<head>
+  <title>Data Pipeline</title> 
+</head>
+<body bgcolor=white>
+<h2>Data Pipeline</h2>
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="mailto:oumi@arsdigita.com">Oumung Mehrotra</a>,
+<a href="mailto:mbryzek@arsdigita.com">Michael Bryzek</a>
+
+<hr>
+
+<ul>
+<li>User-accessible directory:  None
+<li>Site administrator directory:  None
+<li>Data model:  None
+<li>Tcl procs:  /tcl/data-pipeline.tcl
+</ul>
+
+<h3>The Big Picture</h3>
+When processing forms with a lot of fields, it is a real pain to write the 
+insert and update sql statements, and to enforce basic validation. It would 
+be nice to have a layer of 
+abstraction that allowed you to not worry about the sql statements and, 
+instead, focus on building the large html form.
+<p>
+It turns out this idea is often good even for small forms. An abstraction
+of the sql statement means changes only need to be made in 1 place - the 
+html form, and not in the add and edit pages.
+
+<h3>The Medium-Sized Picture</h3>
+We want to focus almost all of our effort on creating the html form.
+Data Pipeline is based on the proper naming of html form elements. The 
+structure is:
+<br><dd><code> 
+dp.&lt;table name&gt;.&lt;column name&gt;.&lt;data type&gt;
+</code><br>
+The dp at the start of the field name is used by data_pipeline to identify
+the elements for data pipeline to insert into some table. Data type 
+is an optional argument that defaults to text. 
+<p>
+To process a form, you simply call <code>dp_process</code>. This procedure
+reads all the variables that begin with "dp" from [ns_getform], and generates
+an insert or update statement as appropriate.
+<p>
+Arguments to dp_process (using ad_proc):
+<ul>
+  <li> -db: Specify a database handle. If no database handle is missing, data
+       pipeline gets one from the subquery pool.
+  <p><li> -db_op: Specify the database operation. The default operation is
+       "update_or_insert" which first tries to update the row in question,
+        and if it fails, tries to insert the row. Other valid values for this
+	argument are "update" to only update the row, or "insert" to only
+	insert the row. 
+  <p><li> -where_clause: specify the where_clause to use when updating. This 
+       argument is optional only when db_op is insert. 
+  <p><li> -form_index: If you need to serialize updates to multiple tables (for 
+       example, insert a user before inserting a row into user_group_map), you 
+       can use form_index which specifies an identifier to use with dp in the 
+       html form element name. This will be clear in the example that follows.
+</ul>
+
+<b>Supported data types:</b><br>
+The following data types are currently supported. 
+To be supported means that there is some mechanism to validate input. When 
+validation fails, data-pipeline returns with an ad_return_complaint 
+describing the errors. Note that there is currently no way to specify "not null."
+<ul>
+  <li> int: Returns an error if the specified value has non-digits in it.
+
+  <li> money: Like int, except money allows for commas. 
+
+  <li> year: Value must be exactly 4 digits
+
+  <li> date: Uses ns_buildsqldate to validate the date. Value must be in YYYY-MM-DD format.
+
+  <li> expr: An expression is a string that does not have spaces and that 
+can be inserted into the database without single quotes. A common case is
+inserting sysdate where sysdate is much different from 'sysdate'.
+
+  <li> clob: Data pipeline gracefully handles clobs so you never have to worry
+about the format of the update/insert statement. 
+
+  <li> phone: Returns an error if phone number has fewer than 10 characters. 
+This is obviously very limited but works well for the US.
+
+  <li> email: Returns an error if ![philg_email_valid_p $value]
+</ul>
+
+
+<h3>Example - a signup form</h3>
+
+This example is a bit contrived, but let's say your users fill out the form below. Your data model is:
+<pre>
+create table inquiry_contact (
+       contact_id             integer primary key,
+       name		      varchar(100),
+       phone		      varchar(100),
+       email  	              varchar(200)
+);
+
+create table inquiries (
+       inquiry_id             integer primary key,
+       contact_id             not null references inquiry_contact,
+       comments		      clob
+);
+</pre>
+
+
+
+<table>
+<tr>
+  <th>Appearance</th>
+  <th>HTML</th>
+</tr>
+<tr>
+  <td><hr size=1></td>
+  <td><hr size=1></td>
+</tr>
+<tr><td valign=top>
+
+<form method=post>
+<input type=hidden name=dp.inquiries.inquiry_id.int value=1003>
+<input type=hidden name=dp_c.inquiry_contact.contact_id.int value=123>
+<p>1 Your name:
+<br><dd><input type=text name=dp_c.inquiry_contact.name size=45>
+
+<p>2 Your email address:
+<br><dd><input type=text name=dp_c.inquiry_contact.email.email size=45>
+
+<p>3 Your phone number:
+<br><dd><input type=text name=dp_c.inquiry_contact.phone.phone size=45>
+
+<p>4 Do you have any comments for us?
+<br><dd><textarea name=dp.inquiries.comments.clob cols=45 rows=5 wrap=soft></textarea>
+
+<p><dd><input type=submit></form>
+
+</td><td valign=top><pre>
+
+&lt;form method=post action=signup-2.tcl&gt;
+&lt;input type=hidden name=dp.inquiries.inquiry_id.int value=1003&gt;
+&lt;input type=hidden name=dp_c.inquiry_contact.contact_id.int value=123&gt;
+&lt;p&gt;1 Your name:
+&lt;br&gt;&lt;dd&gt;&lt;input type=text name=dp_c.inquiry_contact.name size=45&gt;
+
+&lt;p&gt;2 Your email address:
+&lt;br&gt;&lt;dd&gt;&lt;input type=text name=dp_c.inquiry_contact.email.email size=45&gt;
+
+&lt;p&gt;3 Your phone number:
+&lt;br&gt;&lt;dd&gt;&lt;input type=text name=dp_c.inquiry_contact.phone.phone size=45&gt;
+
+&lt;p&gt;4 Do you have any comments for us?
+&lt;br&gt;&lt;dd&gt;&lt;textarea name=dp.inquiries.comments.clob cols=45 rows=5 wrap=soft&gt;&lt;/textarea&gt;
+
+&lt;p&gt;&lt;dd&gt;&lt;input type=submit&gt;&lt;/form&gt;
+
+</pre></td></tr>
+</table>
+
+<p>
+Now you want to process the data. Let's say you just want to make sure name is not empty. Here's the tcl script to
+do your error checking and to process the form:
+
+<p>
+<blockquote>
+<pre>
+set_form_variables 0
+# dp variables: contact_id, inquiry_id, name, email, phone, comments
+
+set exception_count 0
+set exception_text ""
+
+if { ![exists_and_not_null dp_c.inquiry_contact.name] } {
+    append exception_text "  &lt;li&gt; Please enter your name"
+    incr exception_count
+}
+
+if { $exception_count > 0 } {
+    ad_return_complaint $exception_count $exception_text
+    return
+}
+
+set form_setid [ns_getform]
+
+# Need to create the relation
+ns_set put $form_setid dp.inquiries.contact_id ${dp_c.inquiry_contact.contact_id.int}
+
+set db [ns_db gethandle]
+
+ns_db dml $db "begin transaction"
+
+# update or insert the record in inquiry_contact 
+dp_process -db $db -form_index "_c" -where_clause "contact_id=${dp_c.inquiry_contact.contact_id.int}"
+
+# update or insert the record in inquiries
+dp_process -db $db -where_clause "inquiry_id=${dp.inquiries.inquiry_id.int}"
+
+ns_db dml $db "end transaction"
+
+ns_returnredirect /
+</pre></blockquote>
+
+<p>The sql trace generated would look like:
+
+<pre><blockquote>
+    select count(1) from inquiry_contact where contact_id=123
+    update inquiry_contact set
+        contact_id=123,
+        name='Mike',
+        email='mbryzek@arsdigita.com',
+        phone='555-555-5555'
+    where contact_id=123 
+    insert into inquiry_contact (
+        contact_id,name,email,phone 
+    ) values (
+        123,'Mike','mbryzek@arsdigita.com','555-555-5555' 
+    ) 
+    
+    select count(1) from inquiries where inquiry_id=1003
+    update inquiries set
+        inquiry_id=1003,
+        comments='Nothing to say',
+        contact_id='123'
+    where inquiry_id=1003 
+    insert into inquiries (
+        inquiry_id,comments,contact_id 
+    ) values (
+        1003,'Nothing to say','123' 
+    ) 
+</pre></blockquote>
+<p>
+<b>Things to note:</b> we only use ns_ora clob_dml if the clob you're inserting is indeed longer 
+than 4000 characters. Note that the "select count(1) ...." seems redundant when we could use 
+ns_ora resultrows. Unfortunately, resultrows won't work after [ns_ora clob_dml ...].
+
+
+<h3>Future Enhancements</h3>
+We need to add more datatypes. Namely, better date handling is important and it would be nice
+to incorporate validate_ad_dateentrywidget and the new validate_ procs in the utilities file.
+Also, we'd like to expand the error checking to allow for a way to specify not null.
+
+<hr size=1>
+<i>written by <a href=mailto:mbryzek@arsdigita.com>mbryzek@arsdigita.com</a> in March 2000</i>
+</body></html>

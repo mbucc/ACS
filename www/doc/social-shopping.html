@@ -1,0 +1,203 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>Social Shopping</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Social Shopping</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="http://photo.net/philg/">Philip Greenspun</a>
+and <a href="http://www.yoon.org">Michael Yoon</a>
+
+<hr>
+
+<ul>
+
+<li>User-accessible directory:  <a href="/social-shopping/">/social-shopping/</a>
+
+<li>Merchant-only pages:  <a href="/social-shopping/merchant/">/social-shopping/merchant/</a>
+<li>Moderator pages:  <a href="/social-shopping/admin/">/social-shopping/admin/</a>
+
+
+<li>Site administrator directory:  <a href="/admin/social-shopping/">/admin/social-shopping/</a>
+<li>data model :  <a href="/doc/sql/display-sql.tcl?url=/doc/sql/social-shopping.sql">/doc/sql/social-shopping.sql</a>
+
+</ul>
+
+<h3>The Big Idea</h3>
+
+People drove me (Philip) insane at photo.net asking shopping questions
+in what was supposed to be a photography technique Q&A forum.  If these
+pinheads had a shopping question, why didn't they call up a frigging
+camera store?
+
+<p>
+
+It hit me: they were terrified of buying the wrong thing.  Photography
+is a strange and technical field.  There are more than 1000 cameras on
+the market and more than 100,000 regularly-sold accessories.  Many times
+the differences between models are insignificant.  Camera manufacturing
+is a 150-year-old industry and most differentiation is simply marketing.
+So the plastic-electronic single-lens-reflex bodies from Canon, Minolta,
+and Nikon will all take the same pictures.  Yet to achieve a particular
+photographic goal, one often needs specialized equipment.  
+
+<p>
+
+<a href="http://photo.net/photo/pcd1765/bearfight-2.tcl"><img hspace=5 vspace=5 align=right HEIGHT=134 WIDTH=196 src="http://photo.net/photo/pcd1765/bearfight-2.1.jpg" ALT="Brooks Falls, Katmai National Park"></a>
+
+
+Consider the photo at right.  It was taken with 300/2.8 lens that costs
+$4500 and is rather too bulky to carry around most of the time.  The
+average camera store will not keep this lens in stock and the clerk will
+be unfamiliar with it.  You can ask his opinion of the alternatives:
+300/4, 400/2.8, 500/4.5, 600/4, 300/2.8 plus 1.4X and 2X
+teleconverters.  The clerk will never have physically handled any of
+these lenses and probably won't know that the 300/2.8 is great for bears
+but too short for birds.
+
+<p>
+
+There are little thousands of weird little accessories in the Nikon and
+Canon SLR lines.  Which cables and connectors do you need to use two
+flashes with a Canon EOS-5?  Even the best camera store might not give
+you the right answer.
+
+<p>
+
+What is needed is the virtual equivalent of the physical store where
+geeks hang out and schmooze.  If you go to real professional camera
+store, you'll often find a shopper conversing as much with fellow
+customers as with the salespeople.  The sales person is best qualified
+to give price and stock information but the other shoppers are often
+better qualified to say whether Item X fits Situation Y.
+
+<h3>The Shopper's Experience</h3>
+
+<ul>
+
+<li>shopper comes to an ACS-backed site and picks a social shopping
+forum (or more likely follows a link in)
+
+<li>shopper clicks on the "ready to buy" link
+
+<li>shopper types in text to explain his or her need and may upload a
+photo or document to elaborate
+
+<li>shopper clicks to agree to a condition of usage:  they promise to
+respond to two questions following their purchase ("How did you like the
+merchant from whom you bought?" and "How did you like the product?")
+
+<li>merchants and other users who've asked for email alerts get mail
+saying "new buyer is on the forum" (with the full text of the shopping
+situation) 
+
+<li>merchants may post offers to supply the goods desired.  If the
+shopper has left some ambiguity in the item desired (the usual
+situation), the merchant will explain exactly what he plans to supply
+and also a written explanation of why he thinks this is the best
+solution for the shopper's problem.  An offer by a merchant is
+immediately emailed to the shopper.  An offer by a merchant may be
+publicly available in the thread depend on how the publisher sets
+policies and what the merchant chooses (if the policy allows a choice). 
+
+<li>other users of the site post suggestions, which are immediately made
+public.  These suggestions are also emailed to the shopper.
+
+</ul>
+
+
+<h3>A Merchant's Private Pages</h3>
+
+In the /social-shopping/merchant/ directory, a merchant will find pages
+that show
+
+<ul>
+<li>summary statistics of offers made, offers accepted, dollar value of
+transactions 
+
+<li>currently open offers (made to shoppers who've not yet made up their
+mind); should be smart enough to exclude shoppers who randomly
+disappeared, e.g., each forum should have a specified number of days
+after which a consumer's shopping quest is considered stale
+
+</ul>
+
+
+<h3>Levels of Moderation/Administration</h3>
+
+The site administrator via the /admin/social-shopping/ directory does
+the following:
+
+<ul>
+<li>decides what social shopping forums will be available on a site,
+e.g., cameras, cars, and computers
+
+<li>decides on the publishing policies in each forum, e.g.,
+merchant_approval_policy
+
+<li>decides which users will get moderation responsibility for each
+forum 
+
+<li>views statistics on forum usage
+
+</ul>
+
+A designated moderator in a particular forum can do the following:
+
+<ul>
+
+<li>approve or disapprove a posting from either a user or a merchant 
+
+<li>edit postings
+
+<li>approve a merchant's application (if the publisher has set the
+policy to require this)
+
+<li>invite a merchant to participate 
+
+</ul>
+
+<h3>Software Engineering</h3>
+
+We build this system on the bones of <a href="bboard.html">the /bboard
+system</a> and <a href="permissions.html">the permissions package</a>.
+We may want to use the ecommerce system as well since it already has a
+way for a user to say "I want to sign up as a retailer" and for multiple
+users to have authority to maintain a retailer's prices and inventory.
+
+<p>
+
+There are two fundamental modes that we have to support:
+
+<ol>
+
+<li>shopper types textual description of what he wants to buy
+(appropriate for photographic equipment shopping where the range of
+products and packages is enormous)
+
+<li>shopper selects item he is considering purchasing from the products
+table in <a href="ecommerce.html">the ecommerce module</a> (appropriate
+for simpler markets, e.g., cars)
+
+</ol>
+
+So I guess we support this with a nullable column that references the
+products table.  The publisher decides for each forum whether it is Mode
+1 or Mode 2 (and if it is Mode 2, what range of stuff from the products
+table should be selectable; you don't want gardening shoppers having to
+wade through cameras or cars).
+
+<p>
+
+For Version 1 of this module, to be applied at photo.net, it is
+sufficient to implement only Mode 1 (textual descriptions).  But leave
+enough hooks in to do Mode 2.
+
+
+<hr>
+<a href="http://photo.net/philg/"><address>philg@mit.edu</address></a>
+</body>
+</html>

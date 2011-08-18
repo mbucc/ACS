@@ -1,0 +1,360 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>/admin/spam system</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>/admin/spam system</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="http://photo.net/philg/">Philip Greenspun</a>
+
+<hr>
+
+<ul>
+<li>User directory:  none
+<li>Admin directory:  <a href="/admin/spam/">/admin/spam/</a> 
+<li>Data model:  subsection within 
+<a href="/doc/sql/display-sql.tcl?url=/doc/sql/spam.sql">/doc/sql/spam.sql</a>
+
+<li>Procedures:  within /tcl/spam-daemon.tcl
+<li>Related modules: <a href="email-handler.html">automatic email processing</a>, bulkmail
+</ul>
+
+<h3>The Big Picture</h3>
+
+
+This is a module to be used only by the publisher.  Moreover, it has
+very little user interface of its own: URLs underneath /admin/spam are
+typically only invoked from within /admin/users.  The data model is in
+<a
+href="sql/display-sql.tcl?url=/doc/sql/spam.sql">/doc/sql/spam.sql</a>.
+
+<h3>Under the Hood</h3>
+<P>
+
+<ul>
+<li>we keep a history of all the spam we've sent to users in the
+<code>spam_history</code> table
+<p>
+<li>forms that allow a publisher to spam (e.g.,
+/admin/users/action-choose.tcl) generate a new spam_id for the blank
+form; this way a double click does not result in a spam being sent twice
+(spam is bad enough!)
+<p>
+<li> The spam sending system tries to send email using each users email_type preference
+(from the users_preferences table). You can enter copies of the spam mail message
+formatted as  plain-text, HTML, and AOL-HTML (some HTML subset). The spam sending routine
+will attempt to send the proper format to each user based on their preference. The default
+is plain text.
+<p>
+
+</ul>
+
+<h3>Sending spam from the browser</h3>
+
+ The /admin/spam page has a link
+to send a plain spam message to a class of users, or to send a
+combined plain and HTML message. In both cases you will be given a
+form which asks for a subject line, a target class of users, and a
+date to send the message. The from-address will probably be overridden
+with a machine-generated email address in order to make the automated bounce
+handling scripts work.
+
+<p>
+
+<h3>General Tcl Substitution in Message Body and Subject Line</h3>
+The spam entry forms all have a checkbox labeled <b>Template?</b>. 
+
+If checked, then Tcl evaluator will be run <i>at the time the message
+is actually sent</i> on message subject and body, substituting
+variables or procedure calls wherever \$ and \[\] chars are
+found. This is specially useful for creating automatically generated
+templates, such as a daily report which runs a tcl procedure to query
+the database or create some other summary message.
+<p>
+Note: if you have the <i>Template? </i> option selected, make sure you 
+use backslash to quote any $ or '[]' characters in your message, if you do
+not want them to undergo evaluation by the Tcl parser.
+<p>
+
+<h3>Guessing user's email preferences</h3>
+In the site .ini file, you can set up a list of patterns to be used to
+guess the email type preference of new users, based on their email address.
+<p>
+The param is an association-list, with SQL patterns on the left, and
+pseudo-mime types on the right. Supported types right now are <code>text/html,
+text/html, and text/aol-html</code>.
+
+<pre>
+EmailTypes={%@hotmail.com text/html} {%@aol.com text/aol-html}
+</pre>
+
+<h3>Manually Sending Spam From a File on the Server</h3>
+
+You can schedule a spam which gets its content from files in the file system,
+using the "Post spam from file" link on the admin spam page. It will look
+n the "Drop Zone" directory (described below) for files with the specified names, and 
+send the spam using them as the content to the target user class of your choice.
+
+<p>
+
+<h3>Spam Which Is Sent Automatically: Newsletter Groups</h3>
+
+The spam daemon can send out daily (or any period you want) email to
+groups of users in  designated user classes. There is a configurable list of "daily spam"
+files, accessible from the /admin/spam page via the 
+"View/modify automatic daily spam file settings " link.
+<p>
+Every time you create a new user group, a new user_class will be created to 
+go along with it. You may want to designate a specific group type to be the "Newsletter"
+group type, and then you can make a user self-service subscriptions page, which simply
+adds or removes the user from the groups of type Newsletter. You can then configure
+the Daily Spam Locations admin page to look for content files which correspond to
+the different Newsletter groups. Here is an example of what the admin page
+might look like for sending three types of newsletters; Daily, Weekly, and Special Updates.
+<p>
+<form action="none" method=post>
+<table border=1>
+<tr><td>
+<p>
+<h2>Daily Spam File Locations</h2>
+
+<a href="/pvt/home.tcl">Your Workspace</a> : <a href="/admin/">Admin Home</a> : <a href="index.tcl">Spam</a> : List Daily Spam Files
+
+<hr>
+<p>
+Spam files to look for in drop-zone directory "/web/greentravel-dev/spam/".
+<p>
+To delete an entry, just enter an empty string for the filename and subject, and press the Modify button.
+
+<form action=modify-daily-spam.tcl method=post>
+<table>
+<tr><th>User Class</th>
+<th>Subject</th>
+<th>Filename</th></tr>
+
+    
+<tr><td><select name=user_class_id_0>
+<option value=28>test
+<option value=30>Females
+<option value=31>Archaelogy users
+<option value=41>Gay Tours
+<option value=44>honeymoon
+<option value=45>Homestays
+<option value=46>Great contacts
+<option value=61>A last names
+<option value=62>Last name starts with A
+<option value=81>Old female climbers
+<option value=101>My first query
+<option value=102>Artist
+<option value=122>Cycling Women
+<option value=142>My favorites
+<option value=164>Last name starts with a
+<option value=182>Archeology users
+<option value=202>Testers
+<option value=222>HQM group
+<option value=283>Unusual specials
+<option value=282>Weekly newsletter
+<option value=263 selected>Daily newsletter
+
+</select></td>
+<td><input name=subject_0 type=text value="Greentravel Daily Newsletter for %%DATE%%" size=40></td>
+<td><input name=file_prefix_0 type=text size=24 value="daily"></td></tr>
+
+<tr><td><select name=user_class_id_1>
+<option value=28>test
+<option value=30>Females
+<option value=31>Archaelogy users
+<option value=41>Gay Tours
+<option value=44>honeymoon
+<option value=45>Homestays
+<option value=46>Great contacts
+<option value=61>A last names
+<option value=62>Last name starts with A
+<option value=81>Old female climbers
+<option value=101>My first query
+<option value=102>Artist
+<option value=122>Cycling Women
+<option value=142>My favorites
+<option value=164>Last name starts with a
+<option value=182>Archeology users
+<option value=202>Testers
+<option value=222>HQM group
+<option value=283>Unusual specials
+<option value=282 selected>Weekly newsletter
+<option value=263>Daily newsletter
+
+</select></td>
+<td><input name=subject_1 type=text value="Greentravel Weekly Newsletter for %%DATE%%" size=40></td>
+<td><input name=file_prefix_1 type=text size=24 value="weekly"></td></tr>
+
+<tr><td><select name=user_class_id_2>
+<option value=28>test
+<option value=30>Females
+<option value=31>Archaelogy users
+<option value=41>Gay Tours
+<option value=44>honeymoon
+<option value=45>Homestays
+<option value=46>Great contacts
+<option value=61>A last names
+<option value=62>Last name starts with A
+<option value=81>Old female climbers
+<option value=101>My first query
+<option value=102>Artist
+<option value=122>Cycling Women
+<option value=142>My favorites
+<option value=164>Last name starts with a
+<option value=182>Archeology users
+<option value=202>Testers
+<option value=222>HQM group
+<option value=283 selected>Unusual specials
+<option value=282>Weekly newsletter
+<option value=263>Daily newsletter
+
+</select></td>
+<td><input name=subject_2 type=text value="Greentravel Specials Newsletter for %%DATE%%" size=40></td>
+<td><input name=file_prefix_2 type=text size=24 value="specials"></td></tr>
+
+<tr><td colspan=3>Add new daily spam</tr>
+
+<tr><th>User Class</th>
+<th>Subject</th>
+<th>Filename</th></tr>
+
+<tr><td>
+<select name=user_class_id_3>
+<option value=28>test
+<option value=30>Females
+<option value=31>Archaelogy users
+<option value=41>Gay Tours
+<option value=44>honeymoon
+<option value=45>Homestays
+<option value=46>Great contacts
+<option value=61>A last names
+<option value=62>Last name starts with A
+<option value=81>Old female climbers
+<option value=101>My first query
+<option value=102>Artist
+<option value=122>Cycling Women
+<option value=142>My favorites
+<option value=164>Last name starts with a
+<option value=182>Archeology users
+<option value=202>Testers
+<option value=222>HQM group
+<option value=283>Unusual specials
+<option value=282>Weekly newsletter
+<option value=263>Daily newsletter
+
+</select>
+<td> <input name=subject_3 type=text size=40></td>
+<td><input name=file_prefix_3 type=text size=24></td>
+</tr>
+</table>
+
+<input type=submit value="Modify Spam Entries">
+</form>
+</td></tr></table>
+</form>
+
+<p>
+You can enter the following information for an automatic spam daily message:
+
+<dl>
+<dt>User Class
+<dd> (pulldown menu)
+<dt> Subject
+<dd>Note that you can include the current date in the subject line of
+the spam, by including the string "%%DATE%%" in the subject. 
+
+<dt>File Prefix
+<dd>The filename prefix where you will deposit the new content for periodic mailings.
+</dl>
+
+<p>
+
+<h3>Drop Zone Directory</h3>
+The files should be placed in the "Drop Zone" directory specified by the .ini
+parameter <code>DailySpamDirectory</code>:
+<p>
+
+Example:
+<pre>
+DailySpamDirectory=/home/johnny/spam
+</pre>
+
+For each spam defined in the Daily Spam list, the system will look for
+the following files:
+
+<pre>
+<i>file_prefix</i>-MM-DD-YYYY
+<i>file_prefix</i>
+</pre>
+<font color=red>Note: Be sure to always use two-digits for Month and Day fields, i.e.,
+03-06-1999. Don't forget the leading zeros.</font>
+<p>
+
+If a file whose name matches with the specified prefix and the current
+day's date is found, the contents are queued up to be sent as spam to
+the designated target user class.
+<p>
+The spam system will only send a dated spam once. It keeps a history of
+all spams sent, and will be robust across server restarts. If the server
+is restarted in the middle of sending a spam, the spam daemon will resume
+sending where it left off in the list of users.
+<p>
+<h4><font color=red>Be very careful with filenames that have no date suffix!</font></h4>
+
+If you use a filename with no date suffix, the spam will be sent once a day
+from the file. This behavior is designed to support a special case spam
+for new users, where the user class contains a magic query  like
+<pre>
+select user_id from users where trunc(registration_date)=trunc(sysdate-1) 
+</pre>
+which is carefully constructed to  always select a mutually exclusive set  of users each day, and never repeat the same user twice.
+
+<p>
+<h3>HTML and AOL content types</h3>
+Some users will have designated preferred MIME types for email via the
+users_preferences table. Currently we support HTML and AOL types in addition
+to plain text. If you create auxiliary files with the names
+<pre>
+<i>file_prefix</i>-html-MM-DD-YYYY
+<i>file_prefix</i>-aol-MM-DD-YYYY
+</pre>
+Then content from these files will be sent preferentially to users who have
+their email types preferences set in the database.
+<p>
+
+<h3>Setting the .ini Parameters</h3>
+
+Here is a summary of the .ini params you will need
+<pre> 
+[ns/server/yourserver/acs/spam]
+
+; Pairs of {email_addr_pattern pseudo-mime-type}
+EmailTypes={%@hotmail.com text/html} {%@aol.com text/aol-html}
+DailySpamDirectory=/web/yourserver/spam
+SpamRobotFromAddress=email-robot@yourdomain.com
+</pre>
+
+<h3>BulkMail</h3> By default the spam system uses the built-in
+AOLserver ns_sendmail routine. This is adequate for low volume
+mailings, but if you need to send mail to more than about 500 users,
+then it has serious limitations. A high-performance module called
+<i>bulkmail</i> which has a multi-threaded mail client which can talk
+to multiple mail servers concurrently, and can generate the QMAIL
+style VERP return addresseses to make automatic bounce handling
+possible. This will soon be available as part of the core ACS
+distribution, and the spam module will have an option to use this as
+the mail transport rather than sendmail.
+<p>
+For more info on the configuration of bulkmail and qmail, see <a href=bulkmail.html>bulkmail and qmail configuration</a>
+
+
+<hr>
+<a href="http://photo.net/philg/"><address>philg@mit.edu</address></a>
+<br><a href=mailto:hqm@arsdigita.com><address>hqm@arsdigita.com</address></a>
+</body>
+</html>

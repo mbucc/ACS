@@ -1,0 +1,186 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>Curriculum System</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Curriculum System</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="http://photo.net/philg/">Philip Greenspun</a>
+
+<hr>
+
+<ul>
+<li>User directory:  <a href="/curriculum/">/curriculum/</a>
+<li>Admin directory:  <a href="/admin/curriculum/element-list.tcl">/admin/curriculum/element-list.tcl</a> 
+<li>data model:  
+<a href="/doc/sql/display-sql.tcl?url=/doc/sql/curriculum.sql">/doc/sql/curriculum.sql</a>
+
+<li>procedures:  /tcl/curriculum.tcl 
+
+</ul>
+
+<h3>The Big Picture</h3>
+
+Surfing the Web can seem like an aimless unproductive activity.  This
+system enables a publisher to establish a curriculum at their site,
+identifying up to a dozen or so important areas of content that they'd
+like a user to visit eventually.
+
+<P>
+
+Suppose that Joe User comes to <a href="http://www.edf.org">www.edf.org</a> hoping to learn something
+about being an environmentalist.  He reads an article or two before
+becoming distracted by another task.  Three months later, Joe User
+returns to www.edf.org to continue his environmentalism education.  He
+can't remember which articles he has read.  The home page has been
+freshened with news so that the links aren't in familiar places.  Joe
+doesn't know what he should read next and, worse, doesn't feel that he
+is progressing toward any goal.
+
+<p>
+
+With this system, Joe can refer to a curriculum bar that is displayed on
+every page grabbed from www.edf.org.  The bar shows a condensed
+description of the articles that Environmental Defense Fund wants
+everyone to read, with little checkboxes by the ones that he has read
+already.  As Joe finishes a section, it is clear from referring to the
+curriculum bar which section to read next.
+
+<h3>Configuration</h3>
+
+<blockquote>
+<pre><code>
+[ns/server/yourserver/acs/curriculum]
+EnabledP=1
+; does ad_footer put this in every dynamic page?
+StickInFooterP=1
+; does ad_serve_html_page put this on every static page?
+StickInStaticPagesP=1
+</code></pre>
+</blockquote>
+
+
+
+<h3>What we need to represent</h3>
+
+We need to store 
+
+<ul>
+<li>the overall objective of the curriculum at this site 
+<li>for each element 
+<ul>
+<li>the URL of the element (can be off the site)
+<li>the position within the curriculum
+<li>a very very short name (one or two words)
+<li>a one-line description for an outline
+<li>a full description of the pedagogical value of this element
+
+</ul>
+
+</ul>
+
+The overall objective is kept in an optional /curriculum/objective.txt
+file.  This contains an HTML fragment that the publisher wants the user
+to see.
+
+<p>
+
+Everything else is in the following table
+
+<blockquote>
+<pre><code>
+create table curriculum (
+	curriculum_element_id	integer primary key,
+	-- 0 is the first element of the course, 8 would be the 9th
+	element_index		integer,
+	url			varchar(200) not null,
+	very_very_short_name	varchar(30) not null,
+	one_line_description	varchar(200) not null,
+	full_description	varchar(4000)
+);
+</code></pre>
+</blockquote>
+
+We record individual user experiences in 
+
+<blockquote>
+<pre><code>
+create table user_curriculum_map (
+	user_id			not null references users,
+	curriculum_element_id	not null references curriculum,
+	completion_date		date default sysdate not null,
+	primary key (user_id, curriculum_element_id)
+);
+</code></pre>
+</blockquote>
+
+You might wonder why we don't use the <code>user_content_map</code>
+table.  We have some good reasons:  (a) the table only records static
+.html page loads, (b) the table is only properly used to record content
+viewed on our server whereas a curriculum may include content from
+foreign sites.
+
+<h3>Registered vs. Non-registered Learners</h3>
+
+The system needs to work for non-registered learners via browser
+cookies.  At the same time, someone who does register ought to be able
+to claim their curriculum progress when logging in from another browser.
+
+
+<h3>Where displayed</h3>
+
+Our canonical location for the curriculum bar is at the bottom of
+the page, just above the HR tag the precedes the signature.  We can get
+this into most .tcl pages by making <code>ad_footer</code> check for the
+publisher's curriculum system settings.  A modification to
+<code>ad_serve_html_page</code> in /tcl/ad-html.tcl suffices to make
+the bar visible on static pages.
+
+<h3>When displayed</h3>
+
+Once a user has completed the curriculum the bar is no longer displayed
+unless the user explicitly clears the curriculum history from the
+/curriculum/ pages.
+
+<h3>Performance</h3>
+
+Anything that can be memoized is, e.g., the elements of the curriculum
+at a site.  Anything that can be pushed into a browser cookie is.  We
+don't want to hit Oracle one extra time for every page load.
+
+
+<h3>Cookies Employed</h3>
+
+For both registered and non-registered users, we keep a browser cookie
+<code>CurriculumProgress</code>.
+
+<P>
+
+This is either a space-separated list of integers (curriculum element
+IDs) or the token "finished".
+
+
+<h3>Filters</h3>
+
+We want to make sure that curriculum progress is recorded even if a user
+does not navigate to sections via the curriculum bar.  So we'll need a
+filter that checks the URL against the curriculum elements and that
+checks the user's CurriculumProgress cookie.  For the curriculum bar to
+be up to date, the filter will have to run before the page is served and
+destructively modify the input header ns_set to make CurriculumProgress
+reflect the current page.
+
+<p>
+
+By default, the filter ought to be run before every .html, .tcl, or .adp
+page served, if the curriculum system is enabled.
+
+
+
+<hr>
+<a href="http://photo.net/philg/"><address>philg@mit.edu</address></a>
+</body>
+</html>

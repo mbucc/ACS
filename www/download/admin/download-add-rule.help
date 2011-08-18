@@ -1,0 +1,9 @@
+<%= [ad_scope_admin_page_top "Help for Add New Rule page" "Help for Add New Rule page" "Help"] %>
+
+<ul>
+
+This page lists already added downloads for which different download Rules can be added. Click on the file for which you want to add new rule. If there is no file in the database, it will ask you to add new downloadable file before adding rules to it. 
+
+</ul>
+
+<%= [ad_scope_admin_footer] %>

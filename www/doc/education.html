@@ -1,0 +1,89 @@
+<html>
+<head>
+<title>Education Module</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+
+<h2>Education Subsystem</h2>
+
+part of the 
+<a href="http://photo.net/doc/index.tcl">ArsDigita Community System</a>
+by 
+<a href="http://web.mit.edu/randyg/www/">Randy Graebner</a>
+and 
+<a href="mailto:aileen@mit.edu">Aileen Tang</a>
+
+<hr>
+
+Note: This module and documentation are not yet complete.  We are
+releasing it so that people may know what is currently available and
+what is coming.  We hope to be making significant improvements to this
+module over the next several incremental releases.  We encourage all
+forms of feedback.  If there are any features that are not currently
+in the system but you would like to see, please feel free to request
+them.
+
+<blockquote>
+
+This module implements all the IT needs for a department or university
+to organize and administer all of its classes online. Most
+importantly, it is tightly integrated with the rest of the ArsDigita
+Community System. This enables the site administrator to run a single
+Oracle query to "find all users who have taken classes A, B, and C",
+then spam them asking if anyone wants to TA a new course.  Or, they can
+say "find all students in danger of failing a class", then notify them
+of the situation.
+
+<p>
+
+In addition to the standard <a href="bboard.html">bulletin board</a>
+and <a href="chat.html">chat room</a> you would expect in any online
+educational system, this provides administrators with the ability to
+see all information about any student or any group of students at any
+given time.  The system provides online homework submission and
+grading, automated grade calculation, and the ability to easily
+monitor students' performance and participation.  In addition, it
+enables instructors to create and manage course Web sites without
+having to know HTML or other programming languages.
+
+<p>
+
+The system provides the student with the ability to view all of their
+classes and assignments on an integrated schedule.  In addition, it
+allows students to easily build a portfolio of their work across
+classes.  Students can customize their calendars and work space using
+extra tables for the <a href="portals.html">portal system</a>.
+
+<p>
+
+Department administrators can collect statistics about classes they
+are offering as well as view information about the students taking
+those classes.  
+
+<p>
+
+The education moudle offers these featurs in addition to many other
+features detailed in the overview below.
+
+<ol>
+<li><a href="education-features.html">Feature-by-feature overview</a>
+<li>Setting up your university
+<li>Operation of your university
+<li>Technical details (for now, you can view the <a href="sql/education.sql">data model</a>)
+
+</ol>
+
+</blockquote>
+<hr>
+<i>randyg@arsdigita.com</i>,
+<i>aileen@mit.edu</i>
+</body>
+</html>
+
+<!--
+Mention that the permissions for files are hierarchical depending on the sort key
+<p>
+Also mention that performance will be pathetic on pages the reference fs_files because of the 
+user_had_row_permission_p function can cause a full table scan.
+-->

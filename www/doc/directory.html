@@ -1,0 +1,70 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>User Directory</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>User Directory</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="mailto:philg@mit.edu">Philip Greenspun</a> documented by <a href="mailto:walter@arsdigita">Walter McGinnis</a>
+
+<hr>
+<blockquote>
+<ul>
+<li> User-accessible directory: <a href="/directory/">/directory/</a>
+</ul>
+
+<h3> The Big Idea </h3>
+
+<p>The User Directory is a way for users to get a sense of the size and character of the community (as well as find a specific member) by browsing or searching the list of members.
+
+<h3> Parameters</h3>
+
+<p>Developers can decide whether to provide a membership browser page, whether to list the full membership or just those who have submitted a homepage URL, and whether to include an image (and what image) at the top of certain pages.
+<blockquote>
+<pre>
+; for the /directory module wherein users get to look each other up
+[ns/server/yourdomain/acs/directory]
+ProvideUserBrowsePageP=1
+UserBrowsePageLimitedToNotNullUrlP=0
+;the following three parameters set images using an html fragment 
+;for decoration on their corresponding pages
+IndexPageDecoration= an html image tag
+BrowsePageDecoration= an html image tag
+SearchResultsDecoration= an html image tag
+</pre>
+</blockquote>
+
+<h3> What It Does </h3>
+
+<p>When Jane User visits /directory she can search for community members by last name or email address and then follow the results to information about the member of her choice.  She can also browse a list of all members (if the membership is large the developer can limit this list to just members that have submitted a homepage URL) or member portraits.
+
+<p>Relevant ACS Conventions:
+<ul>
+ <li>A linked member name points to the member's public information.
+ <li>Users can email a member by clicking on the member's linked email address.
+</ul>
+<p>/directory contains the following pages:
+
+<dl>
+ <dt>index.tcl</dt>
+  <dd>Where a user can choose between searching for a member or browsing the User Directory or Portrait Gallery.</dd>
+ <dt>lookup.tcl</dt>
+  <dd>Returns a list of members that match the search criteria.</dd>
+ <dt>browse.tcl</dt>
+  <dd>Returns a list of members.</dd>
+ <dt>portrait-browse.tcl</dt>
+  <dd>Returns a list of either members who have recently added portraits or all users who have portraits.  For each member in the list it displays either the associated image file name, thumbnail, or full size portrait.
+</dl>
+
+<!-- <h3> Future enhancements</h3>
+<ul>
+<li>
+</ul> -->
+</blockquote>
+<hr>
+<a href="mailto:walter@arsdigita.com"><address>walter@arsdigita.com</address></a>
+</body>
+</html>

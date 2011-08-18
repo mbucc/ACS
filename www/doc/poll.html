@@ -1,0 +1,400 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>Poll</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Poll</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="http://www.badgertronics.com">Mark Dalrymple</a>
+
+<hr>
+
+<ul>
+<li>User-accessible directory:  <a href="/poll/">/poll/</a>
+<li>Site administrator directory:  <a href="/admin/poll/">/admin/poll/</a>
+<li>data model :  <a href="/doc/sql/display-sql.tcl?url=/doc/sql/poll.sql">/doc/sql/poll.sql</a>
+<li>Tcl procs:  /tcl/poll-defs.tcl 
+
+</ul>
+
+<h3>The Big Idea</h3>
+
+People like to offer their opinions, and one of the easiest ways to do
+that is to vote in an opinion poll.  The Poll module lets you
+construct polls that are active for a range of dates, specify the
+choices the users can make, whether to require the voter to be a
+registered user, and display the current results.  Since site
+designers like to change things, all of the user-accessible portions
+of the polls use the ACS <a href="/doc/style.html">style</a>
+mechanism.
+
+<p>
+
+Limitation:  this system is only useful for asking one question at a
+time (i.e., if you have N questions to ask, each with M possible
+answers, you need to create N separate polls).
+
+<h3>Under the Hood</h3>
+
+Three tables are used.  One to hold the polls, one to hold the 
+choices the user can make for each pool, and the actual set of
+votes users have made.
+
+
+<pre>
+create table polls (
+	poll_id		integer not null primary key,
+	name		varchar(100),
+	description	varchar(4000),
+	start_date	date,
+	end_date	date,
+	require_registration_p	char(1) default 'f' check (require_registration_p in ('t','f'))
+);
+</pre>
+
+Any number of polls can be active at a time.  Whether a poll is active
+depends on the start_date and end_date.  To disable a poll, use the
+admin pages to set the end_date into the past or the start_date into
+the future.  Name is a short name used to label pages and links, while
+description is a longer description that is displayed with the votes
+and results.
+
+<p>
+
+require_registration_p indicates whether a user has to be a registered
+user (have an entry in the users table) before they can vote.  Making
+registration required implies that the user can only vote once for
+each poll.  
+
+<p>
+
+If registration is <b>not</b> required, we can't distinguish one vote
+from another, so users can vote any number of times for each poll.  In
+that case, it wouldn't be fair to let unregistered users vote any
+number of times and registered users vote only once, so we just let
+them all vote any number of times.  Why not restrict by IP address
+then in this case?  IP masquedaring hides many people behind one
+IP address (meaning we would prevent legal votes), and AOL users get 
+a random IP address (meaning obnoxious folks can vote multiple times)
+
+<pre>
+create table poll_choices (
+	choice_id	integer not null primary key,
+	poll_id		references polls,
+	label		varchar(500)
+);
+</pre>
+
+This holds the choices that users can vote on.
+
+<p>
+
+<pre>
+create table poll_user_choices (
+	poll_id		references polls,
+	choice_id	references poll_choices,
+	user_id		references users,
+	ip_address	varchar(50),
+	choice_date	date
+);
+</pre>
+
+Each user vote is recorded here.  If there is no user ID (meaning that
+the voter is not a registered user), the user_id in this table is
+NULL.  Even though we don't use the IP address to control user
+voting, we keep it around in case some obnoxious person stuffs
+the ballot box.  We can go into SQL*Plus and undo the damage.
+
+
+<h3>Templates and Customization</h3>
+
+The templates for the user-accessable pages are stored in 
+/template/poll.  The templates there are pretty much just
+examples to use and modify (the "fancy" templates are pretty horrific)
+The templates are named "template-name.plain.adp" and 
+"template-name.fancy.adp".  The ACS style mechanisms choose which
+template to use.
+
+<p>
+
+There are two categories of templates in use: those that display the polls,
+the choices, and the results; and those that say "you did something wrong".
+
+
+<ul>
+<li> <b>index</b>: what is used for the top-level page in /poll.
+<li> <b>one-poll</b>: display one poll for voting. 
+<li> <b>poll-results</b>: show the current resutls
+<li> <b>vote</b>: thanks for voting<p>
+<li> <b>already-voted</b>: the user has already voted in a "registration required" poll
+<li> <b>novote</b>: The user didn't chose a radio button on the one-poll page
+<li> <b>dberror</b>: something bad happened in storing the vote in the database.
+</ul>
+
+All templates are passed the page_title, header_image, and context_bar variables.
+These templates get extra variables:
+<ul>
+<li> <b>index</b>: polls (which should be passed to [poll_front_page])<p>
+
+<li> <b>one-poll</b>: poll_name, poll_description, choices (which should be passed to
+ [poll_display]), form_html (which should be output after the &lt;form&gt;)<p>
+
+<li> <b>poll-results</b>: poll_name, poll_description, values (which should be passed to [poll_results]), poll_id (which should be used in links), total_count (the total number of votes)<p>
+
+<li> <b>vote</b>: poll_id<p>
+
+<li> <b>already-voted</b>: poll_name, poll_description, poll_id<p>
+
+<li> <b>novote</b>: poll_id<p>
+
+<li> <b>dberror</b>: errmsg (the error string from the database)
+</ul>
+
+
+<h4>Customization Functions</h4>
+
+Customizing templates for the Poll system are twice as complicted as
+customizing the templates for the news system.  The designers need to
+know how to invoke functions as well as putting varibles into
+<code>&lt;%=&nbsp;$variable&nbsp;&gt;</code> units.  There are three
+functions provided that take the database-driven output (e.g. the currently
+active polls) and some customization information and then return a blob of
+html for inclusion.  Designers would do something like 
+<code>&lt;%=&nbsp;[poll_display&nbsp;-item_start&nbsp;"&lt;tr&gt;&lt;td&gt;"&nbsp;-item_end&nbsp;"&lt;/tr&gt;"&nbsp;-style_start&nbsp;"&lt;font&nbsp;color=white&gt;&lt;i&gt;"&nbsp;-style_end&nbsp;"&lt;/i&gt;&lt;/font&gt;"&nbsp;&nbsp;$choices]&nbsp;%&gt;</code>
+
+<p>
+
+So why not use <code>ad_register_styletag</code> and include tweakable parameters
+in the tagset?  ADPs have a severe limitation in that html &lt;tags&gt; embedded
+in the styletag cause ADPs to premature end the parsing of the tagset.  That is, this:<br>
+<code>&lt;my-tag foo="&lt;b&gt;" bar="&lt;li&gt;" baz="&lt;font face=happy&gt;"&gt;&lt;/my-tag&gt;</code><br>
+has a tagset that consists of <code>"foo=&lt;b"</code>, and a content-string of
+everything else. 
+
+<p>
+
+To allow customization of each line of database-driven output, say whether to
+arrange the available choices in an <code>&lt;ul&gt;</code> or in
+a table, not being able to include arbitrary html is major loss.
+
+<p>
+
+Instead, three functions are provided.  Each takes optional parameterized
+arguments and a required blob of data which is passed to the template ADP
+by the Tcl pages in /poll.
+
+<p>
+
+<b><code>poll_front_page ?optional arguments? polls</code></b>
+
+<blockquote>
+
+Use this function to control the display on the "index" page (the top-level page
+you get when going to /poll).  If invoked without optional arguments,
+the polls are arranged in an unordered list.  The "polls" variable is provided to
+the index template.
+
+<p>
+
+This code:<pre>
+&lt;ul&gt;
+<%= [poll_front_page $polls] %>
+&lt;/ul&gt;
+</pre>
+
+results in this:
+
+<blockquote>
+
+<li>  <a href="poll.html">What Would Rolf Do?</a>  
+<li>  <a href="poll.html">What's Your Favorite Color?</a>   (registration required) 
+
+</blockquote>
+
+While this:
+<pre>
+&lt;table border=1 bgcolor=white&gt;
+&lt;%= [poll_front_page -item_start "&lt;tr&gt;&lt;td&gt;" -style_start "&lt;font color=green&gt;" -style_end "&lt;/font&gt;" -require_registration_start "&lt;td&gt;" -require_registration_text "&lt;font color=green&gt;Registration Mandatory!!!&lt;/font&gt;"  $polls] %&gt;
+&lt;/table&gt;
+</pre>
+
+results in this:
+
+<blockquote>
+<table border=1 bgcolor=white>
+<tr><td> <font color=green> <a href="poll.html">What Would Rolf Do?</a> </font> 
+<tr><td> <font color=green> <a href="poll.html">What's Your Favorite Color?</a> </font> <td> <font color=green>Registration Mandatory!!!</font> 
+</table>
+</blockquote>
+
+<h4>The arguments:</h4>
+
+<ul>
+<li> <b>-item_start</b>: text to be emitted before each poll name.  Usual uses are &lt;li&gt;
+     or &lt;tr&gt;&lt;td&gt;  Defaults to &lt;li&gt;<p>
+
+<li> <b>-item_end</b>: text to be emitted after each poll name.<p>
+
+<li> <b>-style_start</b>: text to be emitted immediately before the poll name.
+     Here'd you put &lt;font&gt; directives or other text formatting commands<p>
+
+<li> <b>-style_end</b>: text to be emitted immediately after the poll name.  You'd
+     put &lt;/font&gt; tags and the like here.<p>
+
+<!-- the above two are pretty redundant.  maybe just merge them? -->
+
+<li> <b>-require_registration_text</b>: what to display if the poll requires registration.
+     Defaults to "There are no currently active polls"<p>
+
+<li> <b>-require_registraion_start</b>: text to be emitted immediately before the
+     require_registration_text.  You can put text formatting and/or html
+     structural tags (like making a new table row or column before the
+     require_registration_text)<p>
+
+<li> <b>-require_registration_end</b>: text to be emitted immediately after the
+     require_registration_text.<p>
+
+</ul>
+
+
+</blockquote>
+
+<b><code>poll_display ?optional arguments? choices</code></b>
+
+<blockquote>
+
+Use this function to control the display of an individual poll.  If
+invoked without optional arguments, the poll choices are arranged in an
+unordered list.  The "choices" variable is provided to the one-poll template.
+
+This code:<pre>
+&lt;ul&gt;
+<%= [poll_display $choices] %>
+&lt;/ul&gt;
+</pre>
+
+results in this:
+
+<blockquote>
+<form>
+<li> <input type=radio name=choice_id value=17>  Eat Cheese  
+<li> <input type=radio name=choice_id value=18>  Go Skateboarding  
+<li> <input type=radio name=choice_id value=19>  Wait for Cable Modem installer  
+</form>
+</blockquote>
+
+While this:
+<pre>
+&lt;table border=2 text=white bgcolor=black&gt;
+&lt;%= [poll_display -item_start "&lt;tr&gt;&lt;td&gt;" -item_end "&lt;/tr&gt;" -style_start "&lt;font color=white&gt;&lt;i&gt;" -style_end "&lt;/i&gt;&lt;/font&gt;"  $choices] %&gt;
+&lt;/table&gt;
+</pre>
+
+results in this:
+
+<blockquote>
+
+<form>
+<table border=2 text=white bgcolor=black>
+<tr><td> <input type=radio name=choice_id value=17> <font color=white><i> Eat Cheese </i></font> </tr>
+<tr><td> <input type=radio name=choice_id value=18> <font color=white><i> Go Skateboarding </i></font> </tr>
+<tr><td> <input type=radio name=choice_id value=19> <font color=white><i> Wait for Cable Modem installer </i></font> </tr>
+</table>
+</form>
+
+
+</blockquote>
+
+
+<h4>The arguments:</h4>
+
+<ul>
+<li> <b>-item_start</b>: text to be emitted before each choice name.  Usual uses are &lt;li&gt;
+     or &lt;tr&gt;&lt;td&gt;  Defaults to &lt;li&gt;<p>
+
+<li> <b>-item_end</b>: text to be emitted after each choice name.<p>
+
+<li> <b>-style_start</b>: text to be emitted immediately before the choice name.
+     Here'd you put &lt;font&gt; directives or other text formatting commands<p>
+
+<li> <b>-style_end</b>: text to be emitted immediately after the choice name.  You'd
+     put &lt;/font&gt; tags and the like here.<p>
+
+<!-- the above two are pretty redundant.  maybe just merge them? -->
+
+<li> <b>-no_choices</b>: text to be emitted if there are no choices in the poll.  This
+     is really an adimistration/configuration problem.  Defaults to "No Choices Specified"
+
+</ul>
+
+</blockquote>
+
+
+<b><code>poll_results ?optional arguments? results</b></code>
+
+<blockquote>
+
+Use this function to control the display on the "results" page.  This function
+is a wrapper around gr_sieways_bar_chart which simplifies the API.
+
+This code
+<pre>
+<%= [poll_results $values] %>
+</pre>
+
+results in this:
+<blockquote>
+
+<table border=0 cellspacing=0 cellpadding=0><tr><td><img width=1 height=10 src="/graphics/graphing-package/white-dot.gif"><br clear=all><font face=arial size=4 color=black></font></td><td align=right><img width=10 height=15 src="/graphics/graphing-package/scale-left.gif"><br clear=all><img width=1 height=3 src="/graphics/graphing-package/white-dot.gif"></td><td><img width=320 height=15 src="/graphics/graphing-package/scale-main.gif"><br clear=all><img width=1 height=3 src="/graphics/graphing-package/white-dot.gif"></td></tr><tr><td><font face=arial size=3 color=black>Eat Cheese</font></td><td width=10> </td><td><img width=120 height=15 src="/graphics/graphing-package/blue-dot.gif"> <font face=arial size=1 color=0000ff>40</font><br clear=all><img width=1 height=7 src="/graphics/graphing-package/white-dot.gif"></td></tr><tr><td><font face=arial size=3 color=black>Go Skateboarding</font></td><td width=10> </td><td><img width=80 height=15 src="/graphics/graphing-package/blue-dot.gif"> <font face=arial size=1 color=0000ff>26.7</font><br clear=all><img width=1 height=7 src="/graphics/graphing-package/white-dot.gif"></td></tr><tr><td><font face=arial size=3 color=black>Wait for Cable Modem installer</font></td><td width=10> </td><td><img width=100 height=15 src="/graphics/graphing-package/blue-dot.gif"> <font face=arial size=1 color=0000ff>33.3</font><br clear=all><img width=1 height=7 src="/graphics/graphing-package/white-dot.gif"></td></tr></table>
+
+</blockquote>
+
+While this:
+<pre>
+&lt;table bgcolor=pink border=3&gt;
+&lt;tr&gt;
+&lt;td width=300&gt;
+&lt;%= [poll_results -bar_color purple -display_values_p "f" -display_scale_p "f" -bar_height 30 $values] %&gt;
+&lt;/table&gt;
+</pre>
+
+results in this:
+
+<blockquote>
+<table bgcolor=pink border=3>
+<tr>
+<td width=300>
+<table border=0 cellspacing=0 cellpadding=0><tr><td><img width=1 height=10 src="/graphics/graphing-package/white-dot.gif"><br clear=all><font face=arial size=4 color=black></font></td><td><img width=10 height=15 src="/graphics/graphing-package/white-dot.gif"></td><td> </td></tr><tr><td><font face=arial size=3 color=black>Eat Cheese</font></td><td width=10> </td><td><img width=120 height=30 src="/graphics/graphing-package/purple-dot.gif"><br clear=all><img width=1 height=7 src="/graphics/graphing-package/white-dot.gif"></td></tr><tr><td><font face=arial size=3 color=black>Go Skateboarding</font></td><td width=10> </td><td><img width=80 height=30 src="/graphics/graphing-package/purple-dot.gif"><br clear=all><img width=1 height=7 src="/graphics/graphing-package/white-dot.gif"></td></tr><tr><td><font face=arial size=3 color=black>Wait for Cable Modem installer</font></td><td width=10> </td><td><img width=100 height=30 src="/graphics/graphing-package/purple-dot.gif"><br clear=all><img width=1 height=7 src="/graphics/graphing-package/white-dot.gif"></td></tr></table>
+</table>
+</blockquote>
+
+<h4>The arguments:</h4>
+
+<ul>
+<li> <b>-bar_color</b>: what color to display the bar.  Can be blue, dark-green, purple, red, black, orange, or medium-blue.  Defaults to blue.<p>
+
+<li> <b>-display_values_p</b>: a "t" or "f" value.  Should the percentages of the vote
+     be displayed.  Defaults to "t"<p>
+
+<li> <b>-display_scale_p</b>: a "t" or "f" value.  Should the "0 to 100" scale be
+     displayed at the top of the results.  Defaults to "t"<p>
+
+<li> <b>-bar_height</b>: how tall to make the bars.  Defaults to 15.
+
+</ul>
+
+Note that some specific customizations aren't possible now, such as putting the
+total number of votes after each bar on the chart, and using multiple pictures
+for each bar (like what the <a href="http://www.slashdot.org">Slashdot</a> poll
+does) due to limitations in the API of gr_sideways_bar_chart.  This is something
+that needs to be fixed eventually.
+
+</blockquote>
+
+<hr>
+<a href="mailto:markd@arsdigita.com"><address>markd@arsdigita.com</address></a>
+</body>
+</html>

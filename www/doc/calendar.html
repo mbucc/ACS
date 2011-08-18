@@ -1,0 +1,115 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>Calendar</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Calendar</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="http://photo.net/philg/">Philip Greenspun</a>
+
+<hr>
+
+<ul>
+<li>User-accessible directory:  <a href="/calendar/">/calendar/</a>
+<li>Site administrator directory:  <a href="/admin/calendar/">/admin/calendar/</a>
+<li>Group administrator directory:  <a href="/calendar/admin">/calendar/admin</a>
+<li>data model :  <a href="/doc/sql/display-sql.tcl?url=/doc/sql/calendar.sql">/doc/sql/calendar.sql</a>
+<li>Tcl procs:  /tcl/calendar-defs.tcl 
+
+</ul>
+
+<h3>The Big Idea</h3>
+
+A site like photo.net might want to offer a calendar of upcoming
+events.  This has nothing to do with displaying things in a
+wall-calendar style format, as provided by <a
+href="calendar-widget.html">the calendar widget</a>.  In fact, a
+calendar of upcoming events is usually better presented as a list.  
+
+<p>
+
+What distinguishes /calendar from /news is that items may be categorized
+and the display at a large site might be personalized to a user's
+country, state, or zip code.  Also, if there are too many items to
+display comfortably, the non-expired events coming up soonest get
+displayed.
+
+<p>
+
+See <a href="http://www.harpcolumn.com">www.harpcolumn.com</a> for a 
+good running example that distinguishes /news from /calendar.
+
+
+<h3>Under the Hood</h3>
+
+The data model is simple:
+
+<blockquote>
+<pre><code>
+
+
+create sequence calendar_category_id_sequence start with 1 ;
+
+create table calendar_categories (
+	category_id	integer primary key,
+	-- if scope=public, this is the address book the whole system
+        -- if scope=group, this is the address book for a particular group
+ 	scope           varchar(20) not null,
+	group_id	references user_groups,
+	category	varchar(100) not null,
+	enabled_p	char(1) default 't' check(enabled_p in ('t','f')),
+	constraint calendar_category_scope_check check ((scope='group' and group_id is not null) or
+       							(scope='public')),
+	constraint calendar_category_unique_check unique(scope, category, group_id)	
+);
+
+create index calendar_categories_group_idx on calendar_categories ( group_id );
+
+create sequence calendar_id_sequence start with 1;
+
+create table calendar (
+	calendar_id	integer primary key,
+	category_id	not null references calendar_categories,
+	title		varchar(100) not null,
+	body		varchar(4000) not null,
+	-- is the body in HTML or plain text (the default)
+	html_p			char(1) default 'f' check(html_p in ('t','f')),
+	start_date	date not null,  -- first day of the event
+	end_date	date not null,  -- last day of the event (same as start_date for single-day events)
+	expiration_date	date not null,  -- day to stop including the event in calendars, typically end_date
+	event_url	varchar(200),  -- URL to the event
+	event_email	varchar(100),  -- email address for the event
+	-- for events that have a geographical location
+	country_code	references country_codes(iso),
+	-- within the US
+	usps_abbrev	references states,
+	-- we only want five digits
+	zip_code	varchar(10),
+	approved_p	char(1) default 'f' check(approved_p in ('t','f')),
+	creation_date	date not null,
+	creation_user		not null references users(user_id),
+	creation_ip_address	varchar(50) not null
+);
+
+</code></pre>
+</blockquote>
+
+Comments are handled by <a href="general-comments.html">the general comments facility</a>.
+
+<h3>Related Modules</h3>
+
+The <a href="news.html">/news module</a> is better for generation
+announcements (e.g., press releases from companies).
+
+<p>
+
+The <a href="bboard.html">/bboard system</a> is better if you want to
+support lively discussion and archive the exchanges.
+
+<hr>
+<a href="http://photo.net/philg/"><address>philg@mit.edu</address></a>
+</body>
+</html>

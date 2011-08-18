@@ -1,0 +1,183 @@
+<HTML>
+<HEAD>
+<SCRIPT LANGUAGE="JavaScript1.2" SRC="resize.js"></SCRIPT>
+<SCRIPT LANGUAGE="JavaScript1.2" SRC="list.js"></SCRIPT>
+<SCRIPT LANGUAGE="JavaScript">
+function init() {
+  if(parseInt(navigator.appVersion) < 4) {
+    alert("Sorry, a 4.0+ browser is required to view this demo.");
+    return;
+  }
+  var width, height = 22;
+  if(isNav4) width = 3*window.innerWidth/4;
+  else width = 3*document.body.clientWidth/4;
+  var bgColor = "#CCCCCC";
+  l = new List(true, width, height);
+  l.setFont("<FONT FACE='Arial,Helvetica' SIZE=-1'><B>","</B></FONT>");
+    m = new List(false, width, height);
+    m.setFont("<FONT FACE='Arial,Helvetica' SIZE=-1'>","</FONT>");
+    m.addItem("Join Now");
+    m.addItem("Access Benefits");
+    m.addItem("Benefits at a Glance");
+    m.addItem("Membership Services");
+    m.addItem("Contact Us");
+    m.addItem("FAQs");
+  l.addList(m, "Membership");
+    o = new List(false, width, height);
+    o.setFont("<FONT FACE='Arial,Helvetica' SIZE=-1'>","</FONT>");
+    o.addItem("Site Showcase");
+    o.addItem("HTML & Web Design");
+    o.addItem("Scripting");
+    o.addItem("Membership");
+    o.addItem("Partner Technologies");
+  l.addList(o, "Open Studio");
+    d = new List(true, width, height);
+    d.setFont("<FONT FACE='Arial,Helvetica' SIZE=-1'>","</FONT>");
+    d.addItem("Technical Manuals");
+    d.addItem("Sample Code");
+    d.addItem("White Papers");
+      techNote = new List(false, width, height);
+      techNote.setFont("<FONT FACE='Arial,Helvetica' SIZE=-1'>","</FONT>");
+      techNote.addItem("DHTML Buzzword Bingo");
+      techNote.addItem("JS DHTML Utilities");
+      techNote.addItem("JS DHTML Toolbars");
+      techNote.addItem("Drifting Layers");
+      techNote.addItem("JS DHTML Collapsable Lists");
+    d.addList(techNote, "TechNotes");
+    d.addItem("Articles");
+    d.addItem("Books");
+    d.addItem("Presentations");
+  l.addList(d, "Documentation");
+    t = new List(false, width, height);
+    t.setFont("<FONT FACE='Arial,Helvetica' SIZE=-1'>","</FONT>");
+    t.addItem("Components");
+    t.addItem("CORBA/IIOP");
+    t.addItem("Dynamic HTML");
+    t.addItem("Java");
+    t.addItem("JavaScript");
+    t.addItem("Directories and LDAP");
+    t.addItem("XML and Metadata");
+    t.addItem("Security");
+  l.addList(t, "Technologies");
+    s = new List(false, width, height);
+    s.setFont("<FONT FACE='Arial,Helvetica' SIZE=-1'>","</FONT>");
+    s.addItem("Search Newsgroups");
+    s.addItem("DevEdge Newsgroups");
+    s.addItem("FAQs");
+    s.addItem("Known Bugs");
+    s.addItem("One-to-One Development Support");
+    s.addItem("Courses");
+    s.addItem("How to Get Answers");
+  l.addList(s, "Support & Newsgroups");
+  l.addItem("View Source Magazine");
+  l.addItem("Communicator Source Code");
+  l.addItem("Co-Marketing");
+  l.addItem("Products & Downloads");
+  l.build(width/8,40);
+}
+</SCRIPT>
+<STYLE TYPE="text/css">
+#spacer { position: absolute; height: 1120; }
+</STYLE>
+<STYLE TYPE="text/css">
+#lItem0 { position:absolute; } 
+#lItem1 { position:absolute; } 
+#lItem2 { position:absolute; } 
+#lItem3 { position:absolute; } 
+#lItem4 { position:absolute; } 
+#lItem5 { position:absolute; } 
+#lItem6 { position:absolute; } 
+#lItem7 { position:absolute; } 
+#lItem8 { position:absolute; } 
+#lItem9 { position:absolute; } 
+#lItem10 { position:absolute; } 
+#lItem11 { position:absolute; } 
+#lItem12 { position:absolute; } 
+#lItem13 { position:absolute; } 
+#lItem14 { position:absolute; } 
+#lItem15 { position:absolute; } 
+#lItem16 { position:absolute; } 
+#lItem17 { position:absolute; } 
+#lItem18 { position:absolute; } 
+#lItem19 { position:absolute; } 
+#lItem20 { position:absolute; } 
+#lItem21 { position:absolute; } 
+#lItem22 { position:absolute; } 
+#lItem23 { position:absolute; } 
+#lItem24 { position:absolute; } 
+#lItem25 { position:absolute; } 
+#lItem26 { position:absolute; } 
+#lItem27 { position:absolute; } 
+#lItem28 { position:absolute; } 
+#lItem29 { position:absolute; } 
+#lItem30 { position:absolute; } 
+#lItem31 { position:absolute; } 
+#lItem32 { position:absolute; } 
+#lItem33 { position:absolute; } 
+#lItem34 { position:absolute; } 
+#lItem35 { position:absolute; } 
+#lItem36 { position:absolute; } 
+#lItem37 { position:absolute; } 
+#lItem38 { position:absolute; } 
+#lItem39 { position:absolute; } 
+#lItem40 { position:absolute; } 
+#lItem41 { position:absolute; } 
+#lItem42 { position:absolute; } 
+#lItem43 { position:absolute; } 
+#lItem44 { position:absolute; } 
+#lItem45 { position:absolute; } 
+#lItem46 { position:absolute; } 
+</STYLE>
+<TITLE>Collapsable Lists: Clear Example</TITLE>
+</HEAD>
+<BODY BACKGROUND="background.jpg" ONLOAD="init();">
+<DIV ID="spacer"></DIV>
+<DIV ID="lItem0" NAME="lItem0"></DIV>
+<DIV ID="lItem1" NAME="lItem1"></DIV>
+<DIV ID="lItem2" NAME="lItem2"></DIV>
+<DIV ID="lItem3" NAME="lItem3"></DIV>
+<DIV ID="lItem4" NAME="lItem4"></DIV>
+<DIV ID="lItem5" NAME="lItem5"></DIV>
+<DIV ID="lItem6" NAME="lItem6"></DIV>
+<DIV ID="lItem7" NAME="lItem7"></DIV>
+<DIV ID="lItem8" NAME="lItem8"></DIV>
+<DIV ID="lItem9" NAME="lItem9"></DIV>
+<DIV ID="lItem10" NAME="lItem10"></DIV>
+<DIV ID="lItem11" NAME="lItem11"></DIV>
+<DIV ID="lItem12" NAME="lItem12"></DIV>
+<DIV ID="lItem13" NAME="lItem13"></DIV>
+<DIV ID="lItem14" NAME="lItem14"></DIV>
+<DIV ID="lItem15" NAME="lItem15"></DIV>
+<DIV ID="lItem16" NAME="lItem16"></DIV>
+<DIV ID="lItem17" NAME="lItem17"></DIV>
+<DIV ID="lItem18" NAME="lItem18"></DIV>
+<DIV ID="lItem19" NAME="lItem19"></DIV>
+<DIV ID="lItem20" NAME="lItem20"></DIV>
+<DIV ID="lItem21" NAME="lItem21"></DIV>
+<DIV ID="lItem22" NAME="lItem22"></DIV>
+<DIV ID="lItem23" NAME="lItem23"></DIV>
+<DIV ID="lItem24" NAME="lItem24"></DIV>
+<DIV ID="lItem25" NAME="lItem25"></DIV>
+<DIV ID="lItem26" NAME="lItem26"></DIV>
+<DIV ID="lItem27" NAME="lItem27"></DIV>
+<DIV ID="lItem28" NAME="lItem28"></DIV>
+<DIV ID="lItem29" NAME="lItem29"></DIV>
+<DIV ID="lItem30" NAME="lItem30"></DIV>
+<DIV ID="lItem31" NAME="lItem31"></DIV>
+<DIV ID="lItem32" NAME="lItem32"></DIV>
+<DIV ID="lItem33" NAME="lItem33"></DIV>
+<DIV ID="lItem34" NAME="lItem34"></DIV>
+<DIV ID="lItem35" NAME="lItem35"></DIV>
+<DIV ID="lItem36" NAME="lItem36"></DIV>
+<DIV ID="lItem37" NAME="lItem37"></DIV>
+<DIV ID="lItem38" NAME="lItem38"></DIV>
+<DIV ID="lItem39" NAME="lItem39"></DIV>
+<DIV ID="lItem40" NAME="lItem40"></DIV>
+<DIV ID="lItem41" NAME="lItem41"></DIV>
+<DIV ID="lItem42" NAME="lItem42"></DIV>
+<DIV ID="lItem43" NAME="lItem43"></DIV>
+<DIV ID="lItem44" NAME="lItem44"></DIV>
+<DIV ID="lItem45" NAME="lItem45"></DIV>
+<DIV ID="lItem46" NAME="lItem46"></DIV>
+</BODY>
+</HTML>

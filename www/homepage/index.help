@@ -1,0 +1,159 @@
+<%= [ad_header "Help for Homepage Maintenance"] %>
+
+<h2>Help</h2>
+
+for Homepage Maintenance Page
+
+<hr>
+
+The homepage maintenance page is at /homepage/. You use it to maintain
+your web content once your webspace has been initialized and you have
+set up a screen name for yourself.
+<p>
+
+1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Customizing your Maintenance and Public Pages
+<p>
+You can change the display settings of your maintenance page by
+clicking on the [display-settings] link in the lower right of the
+page. There are two types of settings: settings for public pages, and
+settings for maintenance pages. The settings will affect your public
+and maintenance pages respectively. Your public pages are the pages
+shown to the entire world and are available at
+http://yourdomain.com/users/your_screen_name. Your maintenance page is
+/homepage/, the page through which you maintain your webspace. You can
+also customize the way you view your files. The directory listing can
+be normal or hierarchical. This can be set using the [ normal view |
+tree view ] buttons at the upper right of the screen. By clicking on a
+directory, you browse its content (in the normal view), or you browse
+content rooted at it (in the tree view).
+<p>
+
+2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Creating Files
+<p>
+You can create files by clicking on the "create file" link. You will
+be prompted for the name, and an empty file with that name will be
+created. Mind however that to be able to invoke the editor on a file,
+it should have a .text, .html, .htm, .txt or anyother extension that
+represents a mime type of text/*. If you're unsure of what this means,
+just end the filename in .html if it's an html file or .text if it's a
+text file. If you do not know html then, for your own good, I advise
+you to learn it. It is a very good advice. Take it. Html is very very
+easy to learn. Meanwhile, you can just name your files ending with
+.text or just use the "publish content" option. It requires no
+knowledge of html. The created file is placed in the directory you are
+currently browsing. Html files have the following format:<br>
+<code>
+&lt;html&gt;<br>
+&lt;head&gt;<br>
+&lt;title&gt;<i>title-goes-here</i>&lt;/title&gt;<br>
+&lt;/head&gt;<br>
+&lt;body&gt;<br>
+<br>
+<i>body-text-goes-here</i><br>
+<br>
+&lt;/body&gt;<br> &lt;/html&gt;<br> </code><br> To learn about the
+things you can do in the body text, read the lower half of section
+5.1 of this document
+
+<p>
+
+2.1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Index files and generated indices
+<p>
+If a web user requests a file from your webspace which is actually a
+directory, then the system generates a default index page for it. The
+format of the index page is such: your portrait (if you uploaded one
+following the links in your workspace) in the top right, your name as
+heading, and "webspace at your-system-name" as subheading. Then it
+displays a listing of files in the directory. If you do not wish to
+have a generated index, you can create an index file in that
+directory. By default filenames index.html, index.htm, and Default.htm
+will be treated by the system as index files and will be served when a
+directory is requested by the web browser. The presence of an index
+file makes it impossible for the web browser to lit the contents of
+that directory.
+<p>
+
+3&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Uploading Files
+<p>
+You can upload files from your local computer to your homepage
+webspace by clicking on the "upload file" link. You can either type
+the full filename on the local filesystem or press the browse button
+to browse your local filesystem to select the file you want to
+upload. Please mind your limited quota space before deciding on which
+files to upload.
+<p>
+
+4&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Creating Folders
+<p>
+Create folders using the "create folder" link. You are prompted for a
+folder name and a description. Choose a nice description for your
+folders as these descriptions are displayed alongside the folder name
+in the generated index pages which the world sees. You can remove,
+rename, or move folders by using the remove, rename, and move links
+respectively. A folder which is not empty cannot be deleted.
+<p>
+
+5&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Invoking the Content Manager
+<p>
+Click the "publish content" link to publish managed content on your
+site. You have to provide four parameters to the content manager: the
+content type, short name, full name, and subsections. Content type
+determines the type of your content. It can be anything from "book",
+"magazine", "newsletter", "encyclopedia", to anything you can come up
+with. The short name is a short name which describes the content. A
+specially marked folder with that name is created to store the
+content. The full name is the full name of your content. For example,
+if you're publishing your book then this ought to be the complete
+title of the book etcetra. In subsections, provide what one subsection
+of the content is called. For a book, this could be "chapter". If the
+content type is chapter, this could be "section". Please mind that you
+must provide a singular in this field.
+<p>
+
+5.1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Managing Content
+<p>
+I will illustrate this with an example. Suppose I click on "publish
+content" and create content of type "magazine", short name "mobmag",
+full name "Mobin's Foolish Magazine", and subsections "article". This
+tells the content manager that I wish to publish a magazine which is
+composed of articles (multiple level hierarcies in content is possible
+but not discussed here). The content manager creates a folder "mobmag"
+(which is marked as a a magazine). When I click on "mobmag" to browse
+its contents, I see one file in it already, "Introductory Text". You
+can only edit or remove this file. The web viewer sees the contents of
+this file on the main magazine page (in this case
+http://mydomain.com/users/mobin/mobmag/) above the table of
+contents. To add an article, click on the "add article" link. This
+adds an empty article which you can then edit. While creating
+articles, choose meaningful descriptions for them. You can use html in
+these files if you want. This gives you the ability to show uploaded
+photos i your web content. The contents of these files are pasted
+within larger html files when these are served so you should not use
+the &lt;html&gt;, &lt;title&gt;, &lt;body&gt; etcetra tags. Also,
+since these files are really html, you will need to escape &lt, &gt,
+and & with &amp;lt, &amp;gt and &amp;amp if any of these are used as
+text. So you can enclose text within the &lt;h2&gt; and &lt;/h2&gt; to
+make it a second level heading, &lt;b&gt; and &lt;/b&gt; to make it
+bold, &lt;i&gt; and &lt;/i&gt; to make it italicised and more
+importantly, you can use something like &lt;a href=http://<i>whatever
+address</i>&gt;<i>whatever link name</i>&lt;/a&gt; to provide a link
+to any addess on the web. Also, you can have something like &lt;img
+src=<i>picture-filename</i>&gt; to display the picture which has the
+name <i>picture-filename</i>. This way you can upload picture files
+and then show them in your documents.
+<p>
+
+5.2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Deleting Managed Directories
+<p>
+Delete all files in a managed directory by using the remove links next
+to them and then go to the parent directory and then remove the
+managed directory.
+<p>
+
+
+<%= [ad_footer] %>
+
+
+
+
+

@@ -1,0 +1,20 @@
+<%= [wp_help_header "Styles"] %>
+
+Styles allow you to prettify your presentations, displaying them
+differently from the standard black-on-white with red/blue/purple
+links. This page allows you to view or edit your personal style repository,
+allowing you to change pages' background and color scheme, and even more if
+you know how to write <a href="http://www.w3.org/Style/CSS/">CSS (Cascading Style Sheets)</a>
+code.
+
+<p>To edit one of your styles, click its title.
+
+<h3>Using Styles</h3>
+You can associate a style with a presentation you're editing by clicking
+<i>Edit presentation properties</i> link on the main presentation-editing screen,
+and selecting an item from the <i>Style</i> pull-down menu.
+While you're viewing a presentation, you can change the style
+by clicking the <i>Change Style</i> link in the lower-right corner on the presentation's
+table of contents.
+
+<%=[wp_footer]%>

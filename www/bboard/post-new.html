@@ -1,0 +1,39 @@
+<html>
+<head>
+<title>Post New Message</title>
+</head>
+<body bgcolor=#ffffff text=#000000>
+
+<h3>Post a New Message</h3>
+
+into the <a href="index.tcl" target="_top">Bulletin Board</a>
+
+<hr>
+
+<form method=post action="insert-msg.tcl" target="_top">
+
+<input type=hidden name=refers_to value=NEW>
+
+<table>
+
+<tr><th>Your Email Address<td><input type=text name=email size=30></tr>
+
+<tr><th>Your Full Name<td><input type=text name=name size=30></tr>
+
+<tr><th>Subject Line<td><input type=text name=one_line size=50></tr>
+
+<tr><th>Message<td><textarea name=message rows=6 cols=50></textarea></tr>
+
+<tr><th>Notify Me of Responses<br>(via email)
+<td><input type=radio name=notify value=t CHECKED> Yes
+<input type=radio name=notify value=f> No
+</tr>
+
+</table>
+
+<input type=submit value=Submit>
+
+</form>
+
+</body>
+</html>

@@ -1,0 +1,114 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>Contact Manager</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Contact Manager</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="http://photo.net/philg/">Philip Greenspun</a>
+
+<hr>
+
+<ul>
+<li>User-accessible directory:  /contact-manager/
+
+<li>Site administrator directory:  none (only site admin activity is to
+put people in the relevant user group)
+
+<li>data model :  <a href="/doc/sql/display-sql.tcl?url=/doc/sql/contact-manager.sql">/doc/sql/contact-manager.sql</a>
+
+</ul>
+
+<h3>The Big Idea</h3>
+
+As of March 1999, about six ArsDigita clients had come to us with the
+same problem
+
+<ul>
+
+<li>they have a big list of all the entities that they'd like to have
+as customers
+
+<li>they have a bunch of people whose job it is to contact these
+entities and exhort them to become customers; these people use a desktop
+contact manager such as ACT
+
+<li>when the entity is converted into a customer, information about it
+must be rekeyed from ACT into the main Oracle database that sits behind
+their Web site
+
+</ul>
+
+All said "we don't really care if we lose 95% of the features of ACT; we
+want to drive all of our activities from one database."
+
+<p>
+
+So here is a system with 5% of the features of ACT.  It has one killer
+feature, though:  you can tie it to the Oracle table of your choice!
+
+<h3>Stuff we need to keep in the /parameters/ad.ini file</h3>
+
+The Contact Manager system needs to know
+
+<ol>
+<li>to what table am I tied?
+<li>what column holds the primary key?
+<li>what data type is this column ("text" or "number"; we just want to
+know whether we have to wrap values in '' or not)
+<li>what column holds the best short name for an entity?
+<li>singular noun for an entity
+<li>plural noun for entities
+
+<li>how to do a transaction saying "this org is now signed up; they
+don't need to be sold anymore" (the parameter is the name of a PL/SQL
+proc to exec with an argument of the primary key value of the relevant entity) 
+
+<li>how to do a transaction saying "this org isn't worth signing up;
+they don't need to be contacted anymore" (the parameter is the name of a PL/SQL
+proc to exec with an argument of the primary key value)
+
+<li>what goes after an SQL ORDER BY if we want to rank entities by
+descending order of necessity to contact (e.g., for potential customers
+of a bank's VISA card program, you'd have <code>bankrupt_p, income
+desc</code> (rank by bankrupt or not first, then by descending income.))
+
+</ol>
+
+<h3>Stuff we store in Oracle tables</h3>
+
+The one thing that saddens me is that it is going to be impossible to
+spec a referential integrity constraint in the .sql file because we
+don't know in advance to what table the contact manager will be tied.
+However, we can say that we want to keep
+
+<ul>
+<li>date of contact 
+
+<li>who did the contacting (we assume it is person logged into browser;
+i.e., that people record their own contacts)
+
+
+<li>Name of contactee
+
+<li>email address of contactee
+
+
+
+<li>free text note (4000-character long max; not worth using a CLOB)
+
+</ul>
+
+We don't try to keep any fancy structure for things like the phone
+number of the contactee.  This might be annoying for users and it is
+useless because the only thing that this software is really be able to
+do with structured info is sent email (so we want the name for a "Dear
+Foobar" salutation and the email address for the To: header).
+
+<hr>
+<a href="http://photo.net/philg/"><address>philg@mit.edu</address></a>
+</body>
+</html>

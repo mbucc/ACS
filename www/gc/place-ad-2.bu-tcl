@@ -1,0 +1,30 @@
+# nobody should be calling this anymore
+# it is a legacy URL from the days when 
+# a user had to tell us his or her name/email/password
+# -- philg 11/19/98
+
+if {[ad_read_only_p]} {
+    ad_return_read_only_maintenance_message
+    return
+}
+
+set_the_usual_form_variables
+
+# domain_id, primary_category
+
+#check for the user cookie
+set user_id [ad_get_user_id]
+
+
+
+if {$user_id != 0} {
+    set db [ns_db gethandle]
+    ad_returnredirect place-ad-3.tcl?domain_id=$domain_id&primary_category=[ns_urlencode $primary_category]
+} else {
+    ad_returnredirect /register.tcl?return_url=[ns_urlencode  place-ad-3.tcl?domain_id=$domain_id&primary_category=$primary_category] }
+
+
+
+
+
+

@@ -1,0 +1,133 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>Display Settings</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Display Settings</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="mailto:tarik@arsdigita.com">Tarik Alatovic </a> and  <a href="mailto:ahmeds@mit.edu">Sarah Ahmed</a>
+
+<hr>
+
+<ul>
+<li>Site Administrator directory:  <a href="/admin/display/">/admin/display/</a>
+<li>data model:   <a href="/doc/sql/display-sql.tcl?url=/doc/sql/display.sql">/doc/sql/display.sql</a>
+<li>procedures:   base in /tcl/display-defs.tcl
+
+</ul>
+
+<h3>The Big Picture</h3>
+
+This module allows the site administrator to set the most commonly used CSS ( Cascaded Style Sheet) properties and the Logo for the site. It currently employs a simple version of CSS that supports only the options to choose fonts, background color, font color, link color and link underline status. Although it limits how much one can do with css, it should suffice for most practical purposes.
+As explained in the future improvement section, we are working on a data model to support a more complete version of CSS.
+
+<h3>The Medium-Sized Picture</h3>
+
+This system consists of two tables. 
+
+css_simple table holds the css_properties of the site that can be set by the administrators together with the scope information.Using this table makes writing user friendly css forms possible.
+
+<blockquote>
+<pre>
+
+create table css_simple (
+        css_id  		  integer primary key,
+        -- if scope=public, this is the css for the whole system
+        -- if scope=group, this is the css for a particular group
+        -- is scope=user this is the css for particular user
+        scope   	          varchar(20) not null,
+        user_id			  references users,
+        group_id		  references user_groups,
+	css_bgcolor		  varchar(40),
+	css_textcolor		  varchar(40),
+	css_unvisited_link	  varchar(40),
+	css_visited_link	  varchar(40),
+	css_link_text_decoration  varchar(40),
+	css_font_type		  varchar(40)
+);
+
+alter table css_simple add constraint css_simple_scope_unique 
+unique(scope, user_id, group_id);
+
+alter table css_simple add constraint css_simple_data_scope_check check (
+	(scope='group' and group_id is not null and user_id is null) or
+        (scope='user' and user_id is not null and group_id is null) or
+        (scope='public'));
+</pre>
+</blockquote>
+
+<P>
+
+page_logos table stores the log that can be displayed on every page
+
+<blockquote>
+<pre>
+
+create sequence page_logos_id_sequence;
+create table page_logos (
+	logo_id 		integer primary key,
+       	-- if scope=public, this is the system-wide logo
+        -- if scope=group, this is the logo for a particular group
+        -- is scope=user this is the logo for a particular user
+        scope           	varchar(20) not null,
+        user_id			references users,
+        group_id		references user_groups,
+	logo_enabled_p		char(1) default 'f' check(logo_enabled_p in ('t', 'f')),
+	logo_file_type          varchar(100) not null,
+        logo_file_extension     varchar(50) not null,    -- e.g., "jpg"
+	logo			blob not null
+);
+
+alter table page_logos add constraint page_logos_scope_check check (
+	(scope='group' and group_id is not null and user_id is null) or
+        (scope='user' and user_id is not null and group_id is null) or
+        (scope='public'));
+
+alter table page_logos add constraint page_logos_scope_unique 
+unique(scope, user_id, group_id);
+
+</pre>
+</blockquote> 
+
+<h3>Legal Transactions</h3>
+From the Site Administration pages at <a href="/admin/display">/admin/display</a> the site-wide administrator can go to 
+<p>
+<a href="/admin/display/edit-simple-css.tcl">/admin/display/edit-simple-css.tcl</a> in order to set  
+<ul>
+<li>Body Background Color
+<li>Body Text Color
+<li>Links Color
+<li>Visited Links Color
+<li>Choose Font
+<li>Set Links Underlined / Not Underlined 
+</ul>
+<P>
+<a href="/admin/display/upload-logo.tcl">/admin/display/upload-logo.tcl</a> in order to
+<ul>
+<li>Upload a New Logo
+<li>View Current Logo
+<li>Change Current Logo if it exists
+<li>Enable/Disable Current Logo
+</ul> 
+
+<h3>Future Improvements</h3>
+
+Right now, the system only supports a simple version of CSS which restricts the administrator to set style selectors for his/her site. It will be augmented by a more complete version of CSS module which will allow the administrator to set any selector-property-value combination for the site. We are working on a unified version of a data model which will provide the flexibility of the complete version and the easy interface of the simple version.
+
+<p>
+
+<hr>
+
+<a href=mailto:tarik@arsdigita.com><address>tarik@arsdigita.com</address></a>
+</body>
+</html>
+
+
+
+
+
+
+

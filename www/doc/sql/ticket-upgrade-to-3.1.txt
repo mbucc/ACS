@@ -1,0 +1,44 @@
+In order to upgrade a pre ACS-3.1 ticket database you need to do some
+manual work.
+
+The basic sequence is to do:
+
+@ticket-save 
+@ticket-nuke-old
+@ticket
+@ticket-data
+@ticket-map
+
+Unfortunately, since there are as many local variants of the ticket 
+system as there are installed versions of the ACS it is not always
+this straight-forward.
+
+The two places that manual intervention may be needed are: 
+
+ticket-data.sql -- need to make sure that the "code_long" values inserted
+                   into ticket_codes_i match those on your system (you can
+                   add or change values here without creating any problems since this 
+                   is now data driven).
+
+ticket-map.sql -- since users email addresses were stored with tickets
+                  it is necessary to make sure they all map correctly
+                  if you want to proserve ownership of tickets.
+
+Once you have run ticket-save.sql there is a full copy of the original
+data in TICKET_(blah)_S and you can do the cycle 
+
+@ticket
+@ticket-data
+@ticket-map 
+
+If something goes wrong, you can nuke the new data-model via 
+
+@ticket-nuke 
+
+edit the ticket-data and ticket-map files and try again.
+
+Note that you will get some errors about the sequence
+ticket_issue_id_sequence already existing.  This is because it is 
+never dropped since we go to great length to preserve the original 
+Ticket ID numbers.
+

@@ -1,0 +1,856 @@
+<html>
+<!--AD_DND-->
+<!-- $Id: acceptance-test.html,v 3.1.2.34 2000/03/29 09:54:12 carsten Exp $ -->
+<head>
+<title>Acceptance Test</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+
+<h2>Acceptance Test</h2>
+
+for the <a href=index.html>Arsdigita Community System</a> 
+by <a href="http://teadams.com">Tracy Adams</a>
+<hr>
+
+Use this to test an ACS installation. Going through these steps is also
+a good way to learn the major features of Arsdigita Community System
+administration.
+
+<p>
+
+<h3>Installation</h3>
+You should ensure the database has been properly configured and that your
+AOLserver installation will actually start.<br>
+Suggested method:
+<ul>
+<li>Open up a sqlplus session as the Oracle user your AOLserver will connect
+as.  We want to ensure we've completed the installation step of adding
+NLS_DATE_FORMAT = "YYYY-MM-DD" to the Oracle instance init file.  Make sure the date format is set correctly.
+<blockquote><pre><code>
+SQL> select to_date('1-1-2000', 'MM-DD-YYYY') as y2k from dual ;
+
+Y2K
+----------
+2000-01-01
+</code></pre></blockquote>
+
+<p>
+If the date did not read "2000-01-01" that installation step failed.
+
+<li>Next, make sure that the step of feeding Oracle the data model works.  In the same sqlplus session, make sure the <code>country_codes</code>, <code>counties</code>, and <code>states</code> tables were loaded:
+
+<blockquote><pre><code>
+SQL> select table_name from user_tables where lower(table_name) in ('country_codes', 'states', 'counties') ;
+
+TABLE_NAME
+------------------------------
+COUNTIES 
+COUNTRY_CODES
+STATES
+</code></pre></blockquote>
+
+<p>
+
+If these three tables do not show up, we failed to properly feed Oracle the
+data model.
+
+<li>Spot-check that database objects created in <code>.../doc/sql</code> exist.
+
+<li>If you installed site-wide-search make sure the im_convert PL/SQL proc is there.  This procedure converts a search string into a form interMedia understands to perform the search.
+<blockquote><pre><code>
+
+SQL> select im_convert('foo bar') from dual ;
+
+IM_CONVERT('FOOBAR')
+--------------------------------------------------------------------------------
+( { foo } NEAR { bar })*2.0,about(   foo     bar  )
+
+
+</code></pre></blockquote>
+
+If this is not what you see, then you likely failed to properly feed Oracle
+the data model.
+
+<li>Unless you have specified port numbers for both the ns_sock and ns_ssl (if
+applicable) modules that are greater than 1024, you will need 
+<code>sudo</code> permissions or root access for the following command.
+As <code>root</code> make sure your server will start
+<blockquote><code><pre>
+/webroot/aol30/bin/nsd -fc /webroot/aol30/<yourservername>.ini -r /webroot
+</pre></code></blockquote>
+<p>
+The <code>-f</code> option runs the server in the foreground, so you can easily see any errors that may have occurred when the server was run.  If you see any errors indicating the failure of a virtual server to start, this step failed.
+
+</ul>
+
+<h3>Registration</h3>
+You should test basic registration and the login process. <br>
+Suggested method:
+<ul>
+<li> Go to /pvt/home.tcl
+<li> Walk through registering as a new user
+<li> Go back to /pvt/home.tcl and "Log out"
+<li> Go back to /pvt/home.tcl again and log in as the same user
+</ul>
+
+<h3>User Administration</h3>
+You should test adding a user, searching for users, modifying user data, banning or deleting a user, and spamming a class of users. <br>
+Suggested method:
+<ul>
+<li> Go to /admin/users
+<li> Create a test user
+<li> Search for a class of users (which includes the test user)
+<li> View the list of matching users and edit the user data for the new test user
+<li> Spam a (small) group of users.
+<li> Delete the test user
+<li> Ban the test user
+<li> Nuke the test user
+</ul>
+
+<h3>Bboard System</h3>
+You should test setting up a bboard, posting a message, alerts, and searching.<br>
+Suggested method:
+<ul>
+<li> Create a test bboard
+<li> Sign up for an instantaneous alert
+<li> Post a message
+<li> Respond to your message
+<li> Search for your message (Note that you must wait for the index to be rebuilt before you'll actually see your new posting. Or you can do it manually by going to SQL*Plus and typing <code>alter index sws_ctx_index rebuild parameters('sync')</code>.)
+<li> Deactivate the test bboard (you can leave it for later testing)
+</ul>
+<h3>Classified Ads</h3>
+You should test setting up a domain, posting/editing and ad, alerts, hot auctions and searching.<br>
+Suggested Method:<br>
+<ul>
+<li>Go to /admin/gc and create a domain.  Make sure you add a least one category.
+<li> Go to /gc and add an instant alert.
+<li> Post an ad.
+<li> Edit your ad.
+<li> Place a bid on the ad.
+<li> Search for your ad.
+<li> Deactivate your domain (you can leave it for later testing).
+</ul>
+
+<h3>Download</h3>
+You should test adding new downloads, upload versions of existing downloads, adding rules to all versions/specific version of a download, edit/remove download data, download a file, view download history.
+<br>
+Suggested Method:<br>
+<ul>
+<li>Add a new download
+<li>Upload a new version of the download
+<li>Add a rule to the download
+<li>Edit the download data
+<li>Go to user pages and download the version
+<li>Go back to admin pages and view the download history
+<li>Remove the version
+<li>Remove the whole download
+</ul>
+
+<H3>User searchers</h3>
+The searches you made in the bboard and classified ads should have been 
+logged.  View the user searches section in the admin pages to verify.
+
+<h3>News</h3>
+You should test story posting, story approval, and story editing (for both site-wide and group scope). You can also test the interface into the general comments module.
+<br>
+Suggested Method:<br>
+<ul>
+<li> Add a story
+<li> Approve the story in the admin pages (depends on policy)
+<li> Add a comment to the story 
+<li> Approve the comment in the admin pages (depends on policy)
+<li> Revoke approval for the story in the admin pages. The story should not appear the user pages.
+</ul>
+<h3>Calendar</h3>
+You should test adding an event, approving events, and  adding comments.<br>
+Suggested Method:
+<ul>
+<li> Add a category through the admin pages
+<li> Add an event through the user pages
+<li> Approve the event (depends on policy)
+<li> Comment on the event
+<li> Approve comment (depends on policy)
+<li> Revoke approval on the news story so the item does not show up
+</ul>
+<h3>Curriculum</h3>
+<ul>
+<li> Turn on curriculum in the parameters file.
+<li> Create some curriculum items from the site-wide admin pages
+<li> View the curriculum and visit some of the pages.
+<li> Make the curriculum disappear by visiting all the pages
+<li> Visit /curriculum to turn it back on again and to view the reasons.
+</ul>
+<h3>Neighbor to Neighbor</h3>
+You should test creating a domain and subcategory, adding and approving a posting, adding and adding and approving a comment, and searching.
+Suggested Method:
+<ul>
+<li> Create a domain
+<li> Create a subcategory
+<li> Add a posting
+<li> Approve the posting (depends on policy)
+<li> Add a comment
+<li> Approve the comment (depends on policy)
+<li> Search for posting
+<li> Inactivate the domain (you can leave it for later testing)
+</ul>
+<H3>Stolen equipment registry</h3>
+You should test adding and entry, adding a comment, and searching.
+<br>
+Suggested method:
+<ul>
+<li> Add an entry
+<li> Add a comment
+<li> Approve the comment (depends on policy)
+<li> Search
+<li> Delete the entry using the the admin pages
+</ul>
+
+<h3>HTML Comments and Related Links</h3>
+You should test syncing the html pages with the database, adding/editing comments, adding/editing related links.
+<br>
+Suggested method:<br>
+<ul>
+<li> Create a test html file
+<li> Sync the database with the system
+<li> Add, then edit a comment on your test page.
+<li> Add, then edit a comment on your test page.
+<li> Delete the comment and link from the admin pages.
+</ul>
+
+<h3>Referrals</h3>
+You should test that referral tracking is working.
+<br>
+Suggested method:<br>
+<ul>
+<li> Link to your server from another site.  
+<li> View the admin pages for referrals.  You should see the foreign referral, but no local ones.
+</ul>
+<h3>Clickthroughs</h3>
+You should test that clickthroughs are logging.<br>
+Suggested Method:
+<ul>
+<li> Create a valid clickthrough test link
+<li> Click on the link and then verify that is was tracked
+</ul>
+<h3>Ad Server</h3>
+You should test that you can insert and view ads.<br>
+Suggested Method:
+<ul>
+<li> Add an ad in the admin pages
+<li> View the ad the the user pages
+</ul>
+<h3>Contest System</h3>
+You should test setting up a contest, contest entry, modifying contest parameters, and voting.<br>
+Suggested method:<br>
+<ul>
+<li> Create a current contest.  Add some customized columns.  
+<li> Verify that you can add a contest entry from the user pages. 
+<li> Edit the domain parameters and verify the changes.
+</ul>
+<h3>Ticket Tracker</h3>
+You should test adding users, creating a project, and creating an issue.<br>
+Suggested path:
+<ul>
+<li> Add a user to the Ticket Administration
+<li> as that user create a new project and feature area
+<li> Add an issue
+<li> Close the issue
+<li> Add and remove an assigned user (as the ticket administrator user)
+<li> Add a watch on a ticket (via the link at the bottom of the page)
+<li> Check that the watch shows up on /pvt/alerts.tcl
+<li> Add a comment on a ticket
+</ul>
+
+<h3>Chat</h3>
+    <ul>
+    <li> Go to /admin/chat/ and create a public chat room
+    <li> Go to /chat/ and enter the room
+    <li> Log in to /chat/ as a different user on a different browser
+    <li> Open up the javascript version on both browsers and have a nice chat
+    <li> Delete all the messages from the room
+    <li> Delete the room
+    </ul>
+
+<h3>File-Storage</h3>
+    <ul>
+    <li> Upload a URL and a file (.gif, .jpg or .doc)
+    <li> Set read permission for an arbitrary user and a group
+    <li> Upload a new version of the file, and check that the permissions
+	 got copied
+    <li> Create a folder
+    <li> Edit the file to move it into the new folder
+    <li> Download the file (checking the MIME type)
+    <li> In the "Shared Document Tree", click on a folder containing files
+	 and subfolders. Check the layout, and the links for files and folders
+    <li> Go to your "Personal Document Tree" and upload a file, 
+	 giving it permissions that make it unviewable to the public
+    <li> Upload another file and make it viewable to a specific user
+    <li> Upload a third file and make it viewable to a specific group
+    <li> Log in as the user you just specified and check if you can read the last
+	 two uploaded documents (using "All public files"; make sure the user
+	 is a member of the above group)
+    <li> Check that the "Go to" list only shows trees for which you have either
+	 write permission, or which contain files you can read (site-wide
+	 administrators can read all files - so be sure to also test this as
+	 a normal user)
+    <li> Delete a file in the shared and in your personal document tree
+    <li> Do the same as above for /admin/file-storage
+    </ul>
+
+<h3>Bookmarks</h3>
+    <ul>
+    <li> Add one bookmark manually by URL only
+    <li> Create a new folder and a subfolder
+    <li> Edit the bookmark by
+        <ul>
+        <li>changing its name
+        <li>changing its location to the new folder
+        <li>making it private
+        </ul>
+    <li> Make the folder private and check if its contents
+	 are marked as private, too
+    <li> Click on a folder and subfolder to open/close them
+    <li> Delete (through edit) the folder, thereby deleting 
+         the bookmarks as well
+    <li> Import bookmarks from a Netscape bookmarks.html file
+    <li> View the Javascript version
+    <li> Check validity the links and delete some dead links
+    </ul>
+
+<h3>Portals</h3>
+    <ul>
+    <li> Define a group type <code>portal_group</code>.  
+    <li> Create two groups of this type.  Each of these groups will have its own
+portal.  
+    <li> Create a group called "Super Administrators" of type "portal_group"
+    <li> Add yourself as a <code>Super Administrator</code> from the <code>/admin/portals</code> page.  
+    <li> Create tables from <code>/portals/admin/</code> 
+    <li> Lay out the portal pages by masquerading as an administrator
+of the various portal groups
+    <li> View the resultant user page
+    </ul>
+
+<h3>Pull-Down Menus</h3>
+    <ul>
+    <li> Upon installation you should have two pull-down menus predefined, if not load them with <code> sqlplus user/password < pdm-data.sql</code>
+    <li> View one of these pull-down menus by clicking from /admin/pull-down-menus
+    <li> Go to /admin/pull-down-menus and create a new pull-down menu filling in only the necessary fields
+    <li> Go to the new pull-down menu and a top level item and a child of that item
+    <li> Delete the test pull-down menu
+    </ul>
+
+<h3>Address Book</h3>
+You should test adding, editing, viewing and searching for a contact.<br>
+Suggested path:
+<ul>
+<li> Add a contact
+<li> View a contact
+<li> Edit a contact
+<li> Search for the contact
+</ul>
+
+<h3>Directory</h3>
+You should test searching and browsing the directory.<br>
+Suggested path:
+<ul>
+<li> Search by last name, then email, and then both (try apostrophe)
+<li> Click on browse
+<li> Click on "look at user-uploaded portraits 
+</ul>
+
+<h3>Glossary</h3>
+You should test definition entry, editing, approval, and deletion.
+<br>
+Suggested Method:<br>
+<ul>
+<li> Add a definition
+<li> Approve the definition in the admin pages (depends on policy)
+<li> Edit the definition from the user pages (depends on policy)
+<li> Edit the definition from the admin pages
+<li> Delete the definition in the admin pages. 
+The definition should no longer appear.
+</ul>
+
+<h3>General Links</h3>
+You should test link entry, rating, editing, approval, and deletion.
+<br>
+Suggested Method:<br>
+<ul>
+<li> Create a test page that calls <code>ad_general_links_list</code>
+<li> Add a link from the test page
+<li> Go to user index page
+<li> Add a link from the user index page
+<li> Approve/reject a link in the admin pages (depends on policy)
+<li> Edit a link from the admin pages
+<li> Delete a link in the admin pages. 
+The definition should no longer appear.
+</ul>
+
+<h3>Polls</h3>
+You should test poll entry, editing, voting, and reporting.
+<br>
+Suggested Method:<br>
+<ul>
+<li> Go to /admin/poll and add a new poll.
+<li> Add some poll choices.  Move them around.
+<li> Go to /poll.  Make sure the poll is there and has the proper choices.
+<li> Vote.  Check the results.
+<li> Edit the poll.  Revisit the poll and make sure the changes appear.
+<li> Delete the poll.
+</ul>
+
+<h3>User groups</H3>
+You should test links to sections, group membership and group spamming.
+<br>
+Suggested Method:<br>
+<ul>
+<li>Make sure links to group modules and sections are working on both group public and group admin pages.
+<li>Add and remove a member of a group, change member's role, change new member policy, toggle option to send email to administrators on new membership request.
+<li>Change group spam policy to open, wait and closed, and try sending spams to  group members and administrators from both the admin and the user pages, view, for wait policy, approve and disapprove emails that are waiting, view email history from both admin and user pages.
+</ul>
+
+<h3>General Permissions</h3>
+Run the <a href="/admin/acceptance-tests/gp-acceptance-test">automated
+acceptance test</a>. This tests all PL/SQL functions against the data
+model.
+
+<h3>Press</h3>
+You should test adding, viewing, editing, and deleting a press item: 
+
+<ul>
+<li>Go to /press/admin/ and add a new low-priority press item
+<li>Verify that the item shows up with the correct number of days left
+for display 
+<li>Go to /press/ and make sure the item is formatted correctly  
+<li>Go to /admin/press/ and add a new template to the system
+<li>Verify that the template is displayed correctly
+<li>Go to /press/admin/, select your test item, and then select your
+template to display it
+<li>Delete the item
+<li>Delete the template
+</ul>
+
+<h3>FAQ</h3>
+<ul>
+<li>As site-wide admin:
+<ul>
+ <li>Go to /admin/faq/ 
+ <li>Create a public FAQ
+ <li>Create a private FAQ for Group X
+ <ul>
+  <li>Visit /admin/ug/index.tcl and make sure that the group_type of which group X is a member is associated with the FAQ module.
+ </ul>
+ <li>Visit /faq/ and click on the public faq
+ <li>Click on Maintain this FAQ 
+ <li>Add questions, edit questions, swap questions, insert after..
+ <li>Edit the FAQ name
+</ul>
+<li>As a simple user: 
+ <ul>
+ <li>Go to /faq/
+ <li>Visit the public FAQ
+ </ul>
+<li>As an administrator for Group X
+ <ul>
+ <li>Visit /groups/X/faq/
+ <li>Perform the same tests on the private FAQ that you did on the public one
+ </ul> 
+</ul>
+
+<h3>Events</h3>
+You should make sure that you can create an event, register for it, and
+review registrations.<br>
+Suggested method:
+<ul>
+ <li>Create a venue
+ <li>Create an activity
+ <li>Create an event for that activity
+ <li>Add organizers to that event
+ <li>Register for an event
+ <li>Cancel a registration
+ <li>Review order histories
+</ul>
+
+<h3>Template System</h3>
+
+<p>Go to a number of pages under <code>/ecommerce/</code> and make
+sure they get displayed with uniform style, e.g. <pre>
+  index.tcl
+   -> product-search.tcl
+  shopping-cart.tcl
+  gift-certificate-order.tcl
+  gift-certificate-order-2.tcl
+   -> gift-certificate-order-3.tcl
+       -> gift-certificate-order-4.tcl
+</pre>
+(The style is defined in
+<code>/web/<em>yourservername</em>/tcl/ecommerce-styles.tcl</code>).
+
+<p>Note: this is the old template system, documented in <a
+href="style.html">style.html</a>; the new one by <a href =
+"http://www.arsdigita.com/intranet/users/view.tcl?user_id=86" >Karl
+Goldstein</a> is not included in the ACS.
+
+<h3>Categorization and User Profiling</h3>
+
+You should be able to add categories, define their positions in
+category hierarchy and, as registered user, choose content
+categories you're interested in.
+
+<ul>
+    <li>Add new category 'scratch1' through category admin pages <a href="/admin/categories/">/admin/categories/</a>
+    <li>Add subcategory 'scratch2' of 'scratch1'
+    <li>Try to nuke category 'scratch1', system should return
+        proper error message
+    <li>Edit parentage of 'scratch2', remove link to parent 'scratch1'
+    <li>Edit parentage of 'scratch1' and make it child of 'scratch2'
+    <li>See if the categories are placed properly in hierarchy tree view
+
+    <p>
+    <li>In <a href="/pvt/home.tcl">/pvt/home.tcl</a> both categories should
+        show up, check 'scratch1', update interest,
+	then check 'scratch2' and update interests again
+    <li>User interest changes should be reflected in user admin pages as
+        well
+
+    <p>
+    <li>When tired of playing, nuke both scratch categories in proper
+        order.
+</ul>
+
+<h3>Graphing</h3>
+
+Stick this into a .tcl file and then access it with your browser:
+
+<blockquote>
+<pre>
+set legend [list "1997" "1998" "1999" "2000"]
+
+set subcategory_category_and_value_list [list [list "Dog" "Favorite Animal" [list "45" "47" "40" "45"]] \
+                [list "Cat" "Favorite Animal" [list "20" "21" "19" "21"]] \
+                [list "Other" "Favorite Animal" [list "35" "32" "41" "34"]] \
+		[list "Pizza" "Favorite Food" [list "34" "33" "35" "35"]] \
+		[list "Chocolate" "Favorite Food" [list "24" "25" "24" "25"]] \
+		[list "Other" "Favorite Food" [list "42" "42" "41" "40"]]]
+               
+
+ns_return 200 text/html "&lt;font face=arial size=+2&gt;Madrona Elementary School Annual Poll Results&lt;/font&gt;
+&lt;p&gt;
+[gr_sideways_bar_chart -legend $legend $subcategory_category_and_value_list]
+"
+</pre>
+</blockquote>
+It should produce a lovely four-color bar chart!
+
+
+<h3>Ecommerce</h3>
+
+After you have completed the setup tasks in <a href="ecommerce-technical.html">Technical Details of the Ecommerce Module</a>, here are some good tests of the things most likely to be broken:
+
+<ul>
+<li>Go to http://yourserver/ecommerce/ .  If the page is broken, it's because the data model wasn't automatically loaded with the rest of the ACS (the ecommerce data model is omitted intentionally to save publishers who aren't doing ecommerce from having a gigantic number of unused tables).  Solution: load the two files ecommerce.sql and ecommerce-plsql.sql with <code>sqlplus scott/tiger &lt; ecommerce.sql</code> (same for ecommerce-plsql.sql).  If you get an error while loading the data model, it may mean that you're not using Oracle 8i (required).
+
+<li>Go to https://yourservername/admin/ecommerce/products/add.tcl (or http:// instead of https:// if you don't have SSL) and try to add a product without a picture.  If you get an error on add-2.tcl, it's probably because the directory to hold auxiliary product info cannot be created.
+Make sure the directory (specified by the parameters EcommerceDataDirectory and ProductDataDirectory) exists.  By default, this is /web/yourserver/data/ecommerce/product/ .  Also make sure the permissions are correctly set (AOLserver has to be able to create new directories inside of this directory).
+
+<li>Now try to add a product <i>with</i> a picture.  If it can't be created, that may mean that ImageMagick is not installed or is not at the expected path (/usr/local/bin/convert).
+
+<li>Go to the customer service submodule  (https://yourserver/admin/ecommerce/customer-service/ -- or http:// instead of https:// if you don't have SSL) and add an interaction (if you get an error on interaction-add-2.tcl, that may mean the zip_codes table hasn't been loaded).   Use the email address of an existing user.  All the other information can be garbage.  Return to the main customer service admin page and find the issue you just created (look under Customer Service Issues).  When you're viewing the issue, click Send Email at the top.  Try sending email.  Possible problem #1: spell checker doesn't exist.  Solution: install spell checker (tools module).  Possible problem #2: can't send email.  Solution: install qmail on your machine.
+
+<li>Go to http://yourserver/ecommerce/ and click on one of the products you just added.  Add it to your shopping cart and try to check out (using a real credit card).  If all has gone well, you will never see finalize-order.tcl (you'll be redirected immediately to thank-you.tcl), but if you get an error on finalize-order.tcl that may mean that CyberCash has not been correctly set up.
+
+</ul>
+
+Once all this is working, you can further test your system:
+
+<ul>
+<li>Follow the setup instructions in
+<a href="ecommerce-setup.html">Setup of the Ecommerce Module</a>
+<li>Go to the user pages at http://yourserver/ecommerce/ and place
+orders, write reviews of products, join mailing lists, view your
+account, etc.
+<li>Return to the admin pages and do some maintenance (see <a href="ecommerce-operation.html">Operation of the Ecommerce Module</a> for details).
+</ul>
+
+<h3>Display Module</h3>
+Test cascaded style sheet settings and uploading of a logo
+<ul>
+<li>changing background color
+<li>changing body text color
+<li>changing color of the links
+<li>changing color of the visited links
+<li>changing the font type
+<li>changing links display (underlined, non-underlined, ...)
+<li>uploading logo
+<li>enabling and disabling logo
+</ul>
+
+<h3>General Comments</h3>
+Test tcl procedures used for adding comments to pages and test
+general comments admin pages
+<ul>
+<li>adding a comment using <code>ad_general_comment_add</code>
+<li>updating a comment using <code>ad_general_comment_update</code>
+<li>displaying general comments using <code>ad_general_comments_summary</code> 
+  and <code>ad_general_comments_summary_sorted</code>
+<li>approving/disapproving a comment through admin pages
+<li>editing a comment through admin pages
+<li>deleting a comment through admin pages
+<li>using dimensions on admin pages (sections, approving/disapproving, number of days)
+</ul>
+
+<h3>Help</h3>
+Make sure that help links work and that appropriate .help files are used
+
+<h3>Content Sections</h3>
+Test content section admin pages
+
+<ul>
+<li>add a static section
+<li>add a module (for groups having a complete module administration)
+<li>add a custom sections (for groups having custom section module installed
+<li>edit section properties (section key, section pretty name, sort
+key, help, intro)  
+<li>enable/disable sections
+<li>test view links on content-sections index page
+<li>section navigation (make sure that correct navigation bars are generated)
+</ul>
+
+<h3>New modules</h3>
+
+ Systematically go through each option making sure:
+<ul>
+<li> Instructions and page flow make sense
+<li> Page layout is standard
+<li> All inserts are immune to double clicks
+<li> Links are all valid
+<li> Everything is spelled correctly   
+<li> You can't type in data that will cause errors. Try ', ", and blank entries
+</ul>
+
+<h3>Intranet</h3>
+Suggested Method:<br>
+<ul>
+  <li> <b>Setup</b>
+  <ul>
+    <li> Set IntranetEnabledP=1 in the server .ini file and restart your web server
+    <li> Create an account for yourself
+    <li> goto /intranet - should be denied access.
+    <li> Log in as a site-wide administrator
+    <li> Add yourself as an employee (from Employee Administration)
+    <li> Go back to employee administration and add yourself as an Intranet Administrator
+    <li> Go to the admin user group page for intranet. Add news and address-book as modules associated with groups in intranet.
+    <li> Log in as yourself - should be automatically redirected to intranet workspace
+  </ul>
+  
+  <p><li> <b>Testing</b>
+  <ul>
+    <li> Add an office. Add yourself to that office and make yourself the primary contact. Email the office.
+    <li> Add a partner. Add a contact to and a correspondence with that partner. Spam people working with the partner.
+    <li> Add a procedure.
+    <li> Add a customer (Make sure it's marked as current).
+    <li> Add a project.
+    <li> Create a ticket tracker from the project page.
+    <li> Remove yourself from the project.
+    <li> Go back to your workspace. Make sure your customer shows up.
+    <li> Move your customer from current to past state.
+    <li> Click on status report. Make sure customer status change shows up.
+    <li> Click on "Your public information" and make sure your office comes up.
+    <li> Log some hours. 
+    <li> Add an office absence.  Edit it.  Remove it.
+    <li> Upload a portrait of yourself.
+    <li> Edit your public information.
+    <li> Edit your h.r. information.
+    <li> Change your password, log out and back in.
+    <li> Add a couple of new users and make them employees from Employee Administration.
+    <li> Create one or two direct reports by setting the users' supervisor id's to you.
+    <li> Create some direct reports for your direct reports.
+    <li> Check the org chart from your workspace.
+  </ul>
+</ul>
+
+<h3>Data Pipeline</h3>
+Data Pipeline will be fully exercised by the Intranet module.
+
+<h3>Simple Survey</h3>
+You should test creating a new survey, editing a survey, enabling a survey, 
+responding to a survey and viewing responses.
+
+<ul>
+  <li> Creating a new survey:
+    <ul> 
+    <li> log in as a simple survey administrator
+    <li> go to /survsimp/admin/ and create a new survey
+    </ul>
+
+  <li> Editing a survey:
+    <ul> 
+    <li> log in as a simple survey administrator
+    <li> go to /survsimp/admin/ and select the survey to edit
+    <li> edit description
+    <li> add new categories
+    <li> insert new questions
+    <li> change question properties: active/inactive, response required/not required,
+    order (swap with previous)
+    <li> delete a question; repeat this step after having responded to the survey
+    and viewed the responses
+    <li> go to /survsimp/ and check that the new survey isn't listed
+    </ul>
+
+  <li> Enabling a survey:
+    <ul> 
+    <li> log in as a site-wide administrator
+    <li> go to /admin/survsimp/
+    <li> enable the survey
+    </ul>
+
+  <li> Responding to a survey:
+    <ul> 
+    <li> log in as a regular user
+    <li> go to /survsimp/
+    <li> check that the new survey is now listed and select it
+    <li> submit responses
+    <li> respond again to the same survey and check your previous responses
+    </ul>
+
+  <li> Viewing responses:
+    <ul> 
+    <li> log in as a simple survey administrator
+    <li> go to /survsimp/admin/
+    <li> select the survey to check
+    <li> view responses by user and summary of responses and check that your 
+    responses were correctly inserted
+    </ul>
+</ul>
+
+<h3>WimpyPoint</h3>
+
+<ul>
+<li>Go to /wp and create a new, public presentation. Select "I'll provide my own" as the style.
+<li>Create a fancy style with wacky colors. Verify that the color picker widgets work
+properly.
+<li>Add an image. Verify that clicking on the image filename displays the image.
+<li>Go to the list of presentations. Verify that the presentation shows up.
+<li>Edit the presentation. Add several slides with some attachments. Return to the
+main editing page for your presentation by clicking your presentation's title in the
+navigation bar.
+<li>Click <i>Show presentation, viewing comments from collaborators and "edit" links</i>.
+Make a comment or two.
+<li>Log out. Go to http://<i>yourservername.com</i>/wp/ and view your presentation.
+<li>Log back in. Click <i>Edit the presentation properties</i>, change a thing or
+two, and save your changes.
+<li>Bulk copy slides from one of your presentations into the current presentation,
+and from a presentation belonging to another user. (Just follow onscreen prompts.)
+Verify that the slides were properly added.
+<li>Create a ZIP file containing several images (GIF, JPG, or PNG). Upload the
+batch, verifying that the slides were properly added.
+<li>Change the order of slides in the presentation.
+<li>Click <i>Change people who can view/edit this presentation</i> and:
+  <ul>
+    <li>Make the presentation private.
+    <li>Invite an ACS user to view and make changes to the presentation.
+    <li>Invite a non-ACS user to administer the presentation (decide who gets to
+view/edit it.)
+  </ul>
+  Ensure that both users receive emails, and that following the instructions in
+  the emails gives them appropriate access to the presentation.
+<li>Freeze the current slide set. Make a change to a slide. View the previous
+(frozen) version of the presentation, ensuring that the change is not apparent
+here. View the current version of the presentation, ensuring that the change <i>is</i>
+apparent here. Revert to the original version of the presentation, ensuring that
+the change has disappeared.
+<li>Log out, ensuring that the public cannot see the (now-private) presentation.
+<li>Log back in and delete the presentation.
+</ul>
+
+<h3>CRM</h3>
+<ul>
+<li>Go to the admin page and add at least two states.
+<li>Add some transitions. Try to pick conditions so that it will be
+true for at least some people. Example: Users who have had some
+activity in the last month: 0 < activity_since(user_id,
+add_months(sysdate, -1)).
+<li>Run the state machine a few times and see if any users move around
+from state to state.
+</ul>
+
+<h3>Referer Module</h3>
+<ul>
+<li>Make sure the referer parameter section of the server.ini file is set up correctly.
+<li>Go to some other web server, create a page with a link to the
+server you are testing on. Click on that link a few times.
+<li>Go to the referer admin page and see if your clicks were recorded.
+(Note: there's a cutoff so referers with only a few counts don't show. 
+If you select a report for one day only, three clicks on the referring link should do the trick).
+</ul>
+
+<h3>Member Value Module</h3>
+<ul>
+<li>Make sure the member value parameter section of the server.ini file is switched on .
+<li>Go to a page which supports member value (e.g. delete a bboard message).
+<li>Execute the page (e.g. actually delete a bboard message and charge the user for it).
+<li>Go to admin pages, member value. Look at expensive users and all charges. If your charge shows up there, fine, otherwise it's broken (aka this document is badly written).
+<li>Make sure you switch the parameter off again after testing.
+<li>If you stumble across an error on other pages related to member value, please inform the module owner, as he has no clue where the calls to member value are and will be used, as this is and will be the responsibility of every single module owner (this being a meta system).
+</ul>
+
+<h3>Education Module</h3>
+<ul>
+<li>Go to /admin/education/ and create a new department.
+<li>Go to the admin page of your new department.
+<li>Add a user to the deparment.
+<li>Add a subject to the department.
+<li>Go to the admin page for the subject.
+<li>Add a class under the subject.
+<li>Go to the class's admin page.
+<li>Upload a syllabus.
+<li>Add an assignment.
+<li>Add lecture notes.
+<li>Go to the permissions page and make sure that there are values under
+the roles (e.g. where it says Singular and Plural, there should be four
+roles there).  If there are not, then the trigger that creates those roles
+were not created properly.
+</ul>
+
+<h3>Glassroom</h3>
+<ul>
+<li>Add one each of: logbook entry, software module, procedure, service,
+    host, certificate, domain
+<li>From /glassroom, 'view' each entry by clicking on it's entry
+    in each section (i.e. logbook, software modules, etc.) You should
+    have a successful view of each page, then just back arrow to /glassroom.
+<li>There is no /admin/glassroom section, and no delete function, so
+    go into sqlplus and delete the entries from the glassroom tables.
+</ul>
+
+<a name="robot"><h3>Robot Detection</h3></a>
+
+In order to test the Robot Detection package, we need to be able to
+request URLs from the site with a <code>User-Agent</code> that is
+listed in the <code>robots</code> table and see for ourselves that the
+results are as expected.
+
+<p>
+
+The simplest approach to testing this is to add a
+<code>FilterPattern</code> into the
+<code>[ns/server/<em>yourservername</em>/acs/robot-detection]</code>
+section of the parameters file and to add a record into
+<code>robots</code> that matches a web browser program and use that
+browser to access the site. The following SQL works for Microsoft
+Internet Explorer 4.01 on Windows NT:
+
+<pre>
+insert into robots(robot_id, robot_name, robot_details_url, robot_useragent)
+values('msie4', 'Microsoft Internet Explorer 4.0 (for testing purposes only)',
+'http://www.microsoft.com/ie/', 'Mozilla/4.0 (compatible; MSIE 4.01; Windows NT)');
+</pre>
+
+Just be sure to delete this row when you go into production!
+
+<p>
+<hr>
+<a href="http://teadams.com"><address>teadams@mit.edu</address></a>
+</body>
+</html>

@@ -1,0 +1,179 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>Project Tracker</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Project Tracker</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="http://teadams.com">Tracy Adams</a>
+
+<hr>
+<ul>
+<li>User directory:  <a href="/project-tracker">/project-tracker</a>
+<li>Admin directory: /admin/project-tracker
+<a href="/admin/project-tracker/">/admin/project-tracker</a> 
+<li>data model:  
+<a href="/doc/sql/display-sql.tcl?url=/doc/sql/project-tracker.sql">/doc/sql/project-tracker.sql</a>
+<li>procedures:   /tcl/project-tracker.tcl
+</ul>
+
+<h3>The Big Picture</h3>
+
+Corporations need a way of organizing their people, projects, and time.
+
+<h3>The Medium Size Picture</h3>
+
+Vital company knowledge lies in answers to the following questions.
+<ul>
+<li> Where is Betty Stripe today?
+<li> What are our upcoming deadlines?
+<li> What is John Smith working on?
+<li> Which people are on the CNN project?
+<li> How much time did that project take?
+<li> What current issues and problems we are facing?
+<li> What has this project involved so far?
+</ul>
+
+
+
+<h3>Core Components</h3>
+
+The Project Tracker runs as part of the dedicated
+ArsDigita Community System for your intranet.
+Components of the Project Tracker are employees, 
+customers, and projects.
+
+
+
+<h4>Employees</h4>
+
+Employees or key members of the company are users of the ArsDigita Community System. Detailed contact information is stored for users to provide a company directory. 
+
+<p>
+A "current information note" is used as a quick reference for employees' temporary contact information and other special items. Users are reminded to maintain their current information note in their workspace.
+<p>
+Email notifications remind users to keep their contact and current information note up to date.
+
+<h4>Projects</h4>
+<p>
+Typical projects are 
+<ul>
+<li> A  client (iMedix)
+<li> A module (Project Tracker Module)
+<li> An initiative (convert company structure from LLC to SCorp)
+</ul>
+
+The <code>project_tracker_projects</code> table stores the main project information.
+<blockquote>
+<pre>
+create sequence project_tracker_projects_id_seq;
+create table project_tracker_projects (
+        project_id       integer not null primary key,
+	creator_user_id  integer references users,
+	creation_date    date,
+	name            varchar(200),
+	--- the url of the staff server for this service, if applicable
+	glassroom_url   varchar(100),
+	start_date      date,
+	end_date        date,
+	-- if this project is for a customer, which one
+	customer_id     integer references project_tracker_customers,
+	--- purpose is sales, operations, customer
+        purpose         varchar(100),
+	--- major considerations for this project
+	notes           varchar(4000),
+);
+</pre>
+</blockquote>
+
+
+Employees of the company are assigned to projects.
+<blockquote>
+<pre>
+create table project_tracker_assignments (
+       user_id          integer references users,
+       project_id	integer references project_tracker_projects,
+       creator_user_id  integer references users,
+       creation_date    date,
+       -- what the user does for this project
+       role             varchar(4000),
+       unique(project_id, user_id)
+);
+</pre>
+</blockquote>
+
+
+Each project has  major deadlines. Example 
+deadlines are "initial launch", "site upgrade",
+or "progress checkpoint".
+
+<blockquote>
+<pre>
+create sequence project_tracker_deadline_id_seq;
+create table project_tracker_deadlines (
+    deadline_id      integer primary key,
+    creator_user_id  integer references users,
+    creation_date    date,
+    name             varchar(200),
+    start_date       date,
+    due_date         date,
+    description      varchar(4000),
+    status_note      varchar(4000)
+);
+</pre>
+</blockquote>
+
+User's record time spent on each project or deadline.
+
+<blockquote>
+<pre>
+create table project_tracker_hours (
+     user_id           integer not null references users,
+     project_id        integer not null references project_tracker_hours,
+     deadline_id       integer reference project_tracker_deadlines,
+     notes             varchar(4000),
+     -- start_time and finish_time include date and time
+     -- If total_hours is blank, we will assume that the
+     -- user precisely enter the times and will calculate total_hours
+     -- If total_hours is not blank, we will assume that start_time
+     -- and end_time represent "general timeframes" and not try
+     -- to recalculate total_hours
+     start_time	       date,             
+     finish_time       date,
+     total_hours       number(5,2),
+     -- billing rate is in dollars
+     billing_rate      number(5,2) 
+);
+</pre>
+</blockquote>
+
+<h4>Customers</h4>
+
+We store potential, current, and past customers.
+
+<blockquote>
+<pre>
+create sequence project_tracker_customer_id_seq;
+create table project_tracker_customers (
+     customer_id      integer primary key,  
+     creator_user_id  integer references users,
+     creation_date    date
+     name             varchar(200),
+     -- we are not going to bother storing a ton
+     -- of structure information
+     -- To store individual contact records, use the contact-manager
+     contact_info    varchar(4000),
+     -- potential, current, past
+     status         varchar(100),
+     notes          varchar(4000)
+);
+</pre>
+</blockquote>
+
+<hr>
+<a href="http://teadams.com"><address>teadams@mit.edu</address></a>
+</body>
+</html>

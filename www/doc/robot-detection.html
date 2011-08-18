@@ -1,0 +1,138 @@
+<html>
+<head>
+<title>Web Robot Detection</title>
+<style type="text/css">
+BODY {
+  background-color: #FFFFFF;
+}
+</style>
+</head>
+
+<body>
+
+<h2>Web Robot Detection</h2>
+
+part of the <a href="/doc/">ArsDigita Community System</a>
+by <a href="http://michael.yoon.org/">Michael Yoon</a>
+
+<hr>
+
+<ul>
+<li>User-accessible directory: none
+<li>Site administrator directory: <a href="/admin/robot-detection/">/admin/robot-detection/</a>
+<li>Data model: <a href="/doc/sql/robot-detection.sql">/doc/sql/robot-detection.sql</a>
+<li>Tcl procedures: /tcl/ad-robot-defs.tcl
+</ul>
+
+<h3>The Big Picture</h3>
+
+Many of the pages on an ACS-based website are hidden from robots
+(a.k.a. search engines) by virtue of the fact that login is required to
+access them. A generic way to expose login-required content to robots is
+to redirect all requests from robots to a special URL that is designed
+to give the robot what at least appear to be linked .html files.
+
+<p>
+
+You might want to use this software for situations where public (not
+password-protected) pages aren't getting indexed by a specific robot.
+Many robots won't visit pages that look like CGI scripts, e.g., with
+question marks and form vars (this is discussed in <a
+href="http://photo.net/wtr/thebook/publicizing.html">Chapter 7</a> of
+<cite>Philip and Alex's Guide to Web Publishing</cite>).
+
+<h3>The Medium-sized Picture</h3>
+
+In order for this to work, we need a way to distinguish robots from
+human beings.  Fortunately, the <a
+href="http://info.webcrawler.com/mak/projects/robots/active.html">Web
+Robots Database</a> maintains a list of active robots that they kindly
+publish as a <a
+href="http://info.webcrawler.com/mak/projects/robots/active/all.txt">text
+file</a>. By loading this list
+into the database, we can implement the following algorithm:
+
+<ol>
+<li>Check the <code>User-Agent</code> of each HTTP request against those of known robots (which are stored in the <code>robot_useragent</code> column of the <code>robots</code> table).
+<li>If there is a match, redirect to the special URL.
+<li>This special URL can either be a static page or a dynamic script that dumps lots of juicy text from the database, for the robot's indexing pleasure.
+</ol>
+
+<p>
+
+This algorithm is implemented by a postauth filter proc: <code>ad_robot_filter</code>.
+
+<p>
+
+(<em>Note:</em> For now, we are only storing the minimum number of
+fields needed to detect robots, so many of the columns in the
+<code>robots</code> table will be empty. Later, if the need presents
+itself, we can enhance the code to parse out and store all fields.)
+
+<h3>Configuration Parameters</h3>
+
+<pre>
+[ns/server/yourservername/acs/robot-detection]
+; the URL of the Web Robots DB text file
+WebRobotsDB=http://info.webcrawler.com/mak/projects/robots/active/all.txt
+; which URLs should ad_robot_filter check (uncomment to turn system on)
+; FilterPattern=/members-only-stuff/*.html
+; FilterPattern=/members-only-stuff/*.tcl
+; the URL where robots should be sent
+RedirectURL=/robot-heaven/
+; How frequently (in days) the robots table
+; should be refreshed from the Web Robots DB
+RefreshIntervalDays=30
+</pre>
+
+<h3>Notes for the Site Administrator</h3>
+
+<ul>
+
+<li>
+Though admin pages exist for this module, there should be no need to
+use them in normal operation. This is because the ACS automatically
+refreshes the contents of the <code>robots</code> table at startup, if
+it is empty or if its data is older than the number of days specified
+by the <code>RefreshIntervalDay</code> configuration parameter (see
+below).
+
+<li>
+If no <code>FilterPattern</code>s are specified in the configuration,
+then the robot detection filter will <em>not</em> be installed.
+
+</ul>
+
+<h3>Set Up</h3>
+
+<ul>
+
+<li>build a non-password protected site starting at /robot-heaven/
+(that's the default destination), using <code>ns_register_proc</code> if
+necessary to create a pseudo static HTML file appearance
+
+<li>specify directories and file types you want filtered and bounced
+into /robot-heaven/ (from the ad.ini file)
+
+<li>restart AOLserver
+
+<li>visit the /admin/robot-detection/ admin page to see whether your
+configs took effect
+
+<li>view your server error log to make sure that the filters are getting
+registered
+
+</ul>
+
+<h3>Testing</h3>
+
+See the <a href="acceptance-test#robot">ACS Acceptance Test</a>.
+
+<p>
+
+<hr>
+
+<a href="mailto:michael@arsdigita.com"><address>michael@arsdigita.com</address></a>
+
+</body>
+</html>

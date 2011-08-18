@@ -1,0 +1,18 @@
+<%= [wp_help_header "Attaching Images and Files"] %>
+
+This page allows you to attach images to a slide in your presentation,
+or upload a file (an "attachment") to be linked from the slide.
+
+<p>The top of the box displays a list of all images and attachments
+(if any) currently associated with the slide, along with their
+respective sizes and an indication of where they are displayed (these
+options correspond to the options in the bottom half of the box).
+
+<p>To add an image or attachment, click the <i>Browse...</i> button
+and select the file containing the image or attachment. Choose how you
+want the file displayed (if it's not an image, you'll want to select
+<i>Display a link the viewer can use to download the file</i>),
+and click <i>Add the Attachment</i>. Once you do this, you can click
+<i>Preview the Slide</i> to see how the slide will look.
+
+<%=[wp_footer]%>

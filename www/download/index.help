@@ -1,0 +1,23 @@
+<!-- $Id: index.help,v 3.0.6.1 2000/04/12 09:00:37 ron Exp $ -->
+
+<%= [ad_scope_page_top "Help for Download Main Page" "Download Main Page" "Help"] %>
+
+<ul>
+
+<li>This page displays a list of files that are available for
+download. You can click on the name and the file will be
+downloaded. If the file is viewable by the browser, it will be
+viewed. Otherwise it will be saved on your hard disk.
+
+<li>If a particular file has other available versions, a link to
+"other available versions" will appear to the right of the file
+name. Clicking on this link will take you to a different page which
+shows the list of available versions for this file.
+
+<li>If you want a list of all the files available for download, click
+on the "Archive of all files available for download" link towards the
+bottom of the page.
+
+</ul>
+
+<%= [ad_scope_footer] %>

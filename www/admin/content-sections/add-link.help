@@ -1,0 +1,16 @@
+<%= [ad_header "Help for Edit Display Settings"] %>
+
+<h2>Help</h2>
+
+for the Section Navigation page
+
+<hr>
+<blockquote>
+<p>
+You can use the links on this page to add section navigation links.
+Just click on one of the sections names listed under " Add Link to" to add a link from the originally chosen content section.
+<p>
+</blockquote>
+
+
+<%= [ad_footer] %>

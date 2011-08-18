@@ -1,0 +1,180 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>Portals</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Portals</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="http://aure.com/">Aurelius Prochazka</a> and <a href="mailto:dh@arsdigita.com">David Hill</a>
+
+<hr>
+
+<ul>
+<li>User-accessible directory:  <a href="/portals/">/portals/</a>
+<li>Site administrator directory:  <a href="/admin/portals/">/admin/portals/</a>
+<li>Portal manager directory:  <a href="/portals/admin/">/portals/admin/</a>
+<li>data model :  <a href="/doc/sql/display-sql.tcl?url=/doc/sql/portals.sql">/doc/sql/portals.sql</a>
+<li>Tcl procs:  /tcl/portals-defs.tcl
+
+<p>
+
+<li>Public demonstrations:  <a href="http://my.caltech.edu/">my.caltech.edu</a>
+and 
+<a href="http://photo.net/portals/">http://photo.net/portals/</a>
+
+</ul>
+
+<h3>What are portals?</h3>
+
+The term "portal" is used for any site that serves as an entry point, especially for those that serve as an entry point for many, many  people like <a href=http://www.yahoo.com/>Yahoo!</a>, <a href=http://www.excite.com/>Excite</a>,or <a href=http://www.lycos.com/>Lycos</a>.  
+
+<p>
+
+In order to retain users, these sites introduced personalized portals (eg my.yahoo.com) which allow the user, via simple interfaces,
+to select various types of pre-existing data-feeds and do basic page layout.  
+
+<h3>Why are portals useful?</h3>
+
+Even if you are not trying to index the world like Yahoo! you still might have a lot of information that you're trying to disseminate.  For instance, I designed Caltech's home page at first trying to create a nice hierarchical categorization system - you want research information, click here, you want news, click here.  This worked for a while, but as Caltech's web presence grew, interesting information became more and more buried and difficult to find.  The home page 
+couldn't be everything to all people.  
+<p>
+The solution to Caltech's dilemma was to offer information in two ways - organized as above, or organized by what kind of audience type the person browsing belongs to, i.e. Portals for Alumni, Undergraduates, Staff, etc.
+
+<h3> The big picture</h3>
+
+The sites above exemplify the types of portals which our system supports, user-level, group-level, and to some extent a mixture of the two. 
+
+<p>
+My{Yahoo|Excite|Lycos} are personal portals because they have a wide variety
+of choices from which each person may choose when personalizing his site.
+This type of portal is really popular right now, but I would be curious to see how
+many people actually take the time to personalize.
+
+<p>
+Our portals form a "group portal" system;  a set of administration level people
+(managers) guess at what a specific type of audience would like to see.  
+These managers construct or choose the data-feeds and do the page layout.  The parameter  AllowUserLevelPortals, when set to 1, can allow each user to act as his own manager - although the user-as-manager can not construct his own data-feeds.
+
+<p>
+Perhaps the best kind of portal is the kind that allows the user to start
+with a group type and then later may customize his own set up.  We don't currently have a way for a user to easily migrate from a group to a personal portal, but it should not be difficult to do so.
+
+<h3>The data model</h3>
+
+The data model is linked above.  The portal_tables table holds display information for each generic piece of the portal (usually kept in HTML tables, which is the table that is referred to in "portal_tables" - not necessarily a SQL table).
+Each table has a name and associated ADP display information.  The name is used as a header, and the ADP is displayed below the header.  One nice feature about the ADP is that the output may be regsubbed to fit into a site's look, for example, we change all &lt;td*&gt; to &lt;td*&gt;&lt;font face=arial,helvetica&gt; to make sure we have a consistent font.  
+<p>
+The default portal_table editor is a simple ADP editing field; the ADP itself can be complex depending on how much, if any, tcl is involved.  To shield managers from this, the admin_url column can be set to a URL of a better administration tool.  
+<p>
+Changes to portal_table fires a trigger which backs-up information in portal_tables_audit for versioning purposes.
+<p> 
+The portal_pages table holds page names, numbers, and owners, where the owner is either defined by a group_id or user_id, whichever is not null.
+<p>
+Finally, portal_page_map is a bit more than most _maps in ACS, it maps tables to pages and to locations (left side, right side, 3rd from top, etc.) so it is more of a layout definer than a map.
+
+<h3> Portals customization </h3>
+
+Here are the ad.ini parameters for the portals system
+
+<pre>
+; for the Portals System
+[ns/server/yourserver/acs/portals]
+Administrator=aure@caltech.edu
+AdministratorName=Aurelius Prochazka
+SystemName=Caltech Portals
+; set to 1 if individual may create their own portals
+AllowUserLevelPortals=1
+; set to 1 if super administrator can add or remove themselves and other super administrators
+SuperAdminCanChangeSuperAdminP=0
+BodyTag=&lt;body background="http://www.caltech.edu/pics/background.jpg" link=#006600 vlink=#003300 alink=#669966 bgcolor=#eeeedd>
+FontTag=&lt;font face=arial,helvetica size=-1>
+; These standardize a prettier table than the browser default
+BeginTable=&lt;table border=0 bgcolor=#006600 cellpadding=1 cellspacing=0 width=100%>&lt;tr>&lt;td>&lt;table border=0 bgcolor=white cellpadding=3 cellspacing=0 width=100%>
+EndTable=&lt;/table>&lt;/td>&lt;/tr>&lt;/table>
+HeaderTD=&lt;td bgcolor=#006600>&lt;font face=arial,helvetica size=-1 color=#eeeedd>&lt;b>
+HeaderBGColor=#006600
+SubHeaderTD=&lt;td bgcolor=#eeeedd>&lt;font face=arial,helvetica size=-1>&lt;b>
+SubHeaderBGColor=#eeeedd
+NormalTD=&lt;td>&lt;font face=arial,helvetica size=-1>
+; For portals with multiple pages, tabs link to the other pages, set this to 1 if you want each tab 
+; to be equal width instead of proportional to the name of the page
+EqualWidthTabsP=0
+MainPublicURL=/portals/
+; number of seconds to memoize a portal page
+CacheTimeout=100
+; browsers will decide the "optimal" column sizes unless you force column widths here:
+;LeftSideWidth=
+;RightSideWidth=
+SpacerImage=/portals/spacer.gif
+</pre>
+
+<h3> Setting up the portals </h3>
+
+The steps:
+
+<ol>
+<li>define a group type <code>portal_group</code>.  
+
+<li>create groups of this type.  Each of these groups will have its own
+portal.  
+
+<li>create a group called "Super Administrators" of type "portal_group"
+
+<li>Add yourself as a
+
+<code>Super Administrator</code> from the <code>/admin/portals</code>
+page.  
+
+<li>create tables from <code>/portals/admin/</code> 
+
+<li>finally, to lay out the portal pages, masquerade as an administrator
+of the various portal groups.
+
+</ol>
+
+
+<h3> User interface</h3>
+
+Portal display should be fairly simple to understand for the user. If the manager has spread that information over two pages, the user will see page tabs at the upper and lower right sections of the page.  Also in the footer, content managers are advertised to allow the user a place to complain if he didn't find what he wanted.
+<p>
+We use the "memoize" procs on the  portal pages for speed:  Popular pages need not incur x sql queries on each server request. We use a variant of Memoize_Force called Memoize_for_Awhile_Force found in /tcl/portals-defs.tcl
+
+<h3> Manager interface</h3>
+
+There are two types of managers: The Super Administrator and the regular ol' joe administrator we will refer to as a manager.  When configured with AllowUserLevelPortals, each user becomes a manager which we refer to as user-as-manager.
+<p>
+Super Administrators can assign portal managers and create, edit, delete or restore any portal table he wishes. When creating or editing a portal table he has the option of associating a url with that table. In restoring a table, the Super Administrator can view previous versions of a table (held in an audit table in Oracle) and select the one he wants.  
+<p>
+The Super Administrator may also masquerade as a manager of any portal group to directly change the layout of a given portal.
+<p>
+Regular managers see a list of manageable portals (one manager can have any number of portals to manage) or get redirected to the main portal management page if he is a manager of only one group.  On this page, he will see select boxes that correspond to page sides.  Each page has a
+re-nameable title. The last page is initially empty because it will only be created when items are moved into it.  Potential portal elements (not on any page) appear in the bottom
+centered selectbox, clicking one of the two arrow keys adds that element to
+the lowest page.
+<p>
+
+Here the manager may also click on "X" to remove the table from portal pages seen by the user or the manager may click "?" to edit the ADP content.  
+<ul>
+<li>The ADP content is not unique to a portal:  Change the
+content on one portal and it changes on all others.
+<li>If the Super Administrator has associated a url (admin_url) with a given portal, the manager will not be able to edit the ADP - he will be redirected to the url instead.
+<li>In the case of the user-as-manager, "?" edit is disabled.</ul>  
+<P>
+When done setting up the portals the way the manager likes, he clicks FINISH to
+implement the layout changes.
+
+<h3>Future Improvements</h3>
+
+There should be a simple way for a single user to migrate from a group-type portal
+to a custom single user (user-as-manager) portal.
+<p>
+
+
+<hr>
+<a href="mailto:aure@arsdigita.com"><address>aure@arsdigita.com</address></a>
+</body>
+</html>
+

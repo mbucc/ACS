@@ -1,0 +1,181 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>Content Sections</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Content Sections</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="mailto:tarik@arsdigita.com">Tarik Alatovic </a> and  <a href="mailto:ahmeds@mit.edu/">Sarah Ahmed</a> 
+
+<hr>
+
+<ul>
+<li>Site Wide Administrator directory:  <a href="/admin/content-sections/">/admin/content-sections/</a>
+<li>Group Administrator directory:  <a href="/groups/admin/$group_name/content-sections">/groups/admin/$group_name/content-sections</a>
+<li>data model:  <a href="/doc/sql/display-sql.tcl?url=/doc/sql/community-core.sql">/doc/sql/community-core.sql</a>
+<li>procedures:  in tcl/user-groups-defs.tcl
+
+</ul>
+
+<h3>The Big Picture</h3>
+
+This module allows the site administrator to create and manage different
+content sections of the site. Administration of content sections can be
+done on a site-wide level and a group level. It supports four different
+types of content sections - admin, system, custom and static. System
+sections correspond to one of the system modules of the site, e.g. news,
+bboard etc. Custom sections serve like url directories. So if group
+administrator of group travel at photo.net defines custom section sweden
+(e.g. photo.net/travel/sweden), he will be able to upload files for this
+section (see content_files table) in order to display the file
+photo.net/groups/travel/sweeden/stockholm.html. Details on custom
+sections can be found at <a
+href="/doc/custom-sections.html">/doc/custom-sections.html</a>. Static
+sections serve as html pages and address of html page is specified in
+section_url_stub. If you have file arsdigita.html in your careers
+directory then section_url_stub should be /careers/arsdigita.html. Admin
+sections are system sections that do not have associated public
+pages. They only have administration pages.
+
+<P>
+
+After creating appropriate content sections for the site, the system allows to view/edit/enable/disable the sections. It also allows to link different content sections so as to be shown on the page navigation bar (using ad_scope_navbar).  
+
+<p>
+
+At this stage, we only support creation and administration of system/admin/custom content sections at the group level. Site wide administrator can only create and manage static public pages. 
+
+<h3>The Medium-Sized Picture</h3>
+
+This system consists of three tables. The content_sections table holds information about different content sections; e.g. their scope, type , pretty_name etc. A row in the table would be news,bboard etc.
+
+<blockquote>
+<pre>
+create table content_sections (
+        section_id              integer primary key,
+        -- if scope=public, this is the content sections for the whole system
+        -- if scope=group this is the content sections for particular group
+        -- is scope=user this is the content sections for particular user
+        scope                   varchar(20) not null,
+	-- if section_type=system, this section corresponds to one of the system sections
+	-- such as news, bboard, ...
+	-- if section_type=custom, this section is custom section
+	-- custom sections serve like url directories. so if group administrator of group travel 
+	-- at photo.net defines custom section sweeden (e.g. photo.net/travel/sweeden), he will be 
+	-- able to then to upload files for this section (see content_files table) in order to display
+	-- the file photo.net/groups/travel/sweeden/stockholm.html
+	-- if section_type=static, this section is static section
+	-- static sections serve as html pages and address of html page is specified in section_url_stub
+	-- if you have file arsdigita.html in your carrers directory then section_url_stub should be
+	-- /carrers/arsdigita.html  
+	-- if section_type=admin, this section is system section but does not have associated public pages
+	-- it only has administration pages.
+	section_type                    varchar(20) not null,
+	-- does user have to be registered in order to access this page
+	requires_registration_p	char(1) default 'f' check(requires_registration_p in ('t','f')),
+	-- if visibility=public this content section is viewable by everybody
+	-- if visibility=private this content section is viewable be a user only if scope=user
+	-- or by group members only if scope=group
+	visibility		varchar(20) not null check(visibility in ('private', 'public')),
+        user_id                 references users,
+        group_id                references user_groups,
+        section_key             varchar(30) not null,
+	-- this is used only for system sections
+	-- each system sections is associated with an acs module
+	module_key		references acs_modules,
+        section_url_stub        varchar(200),
+        section_pretty_name     varchar(200) not null,
+        -- if we print lists of sections, where does this go?
+        -- two sections with same sort_key will sort 
+        -- by upper(section_pretty_name)
+        sort_key                integer,
+        enabled_p               char(1) default 't' check(enabled_p in ('t','f')),
+        intro_blurb		varchar(4000),
+        help_blurb      	varchar(4000),
+        index_page_enabled_p    char(1) default 'f' check (index_page_enabled_p in ('t','f')),
+        -- html content for customizing index page (this is used only for content sections of section_type custom)
+        body                    clob,
+        html_p                  char(1) default 'f' check(html_p in ('t','f'))
+);
+
+
+</pre>
+</blockquote>
+
+<P>
+
+The content_files table holds information about different files that belong to a custom section. The files can be of type text/binary.
+
+<blockquote>
+<pre>
+
+create table content_files (
+	content_file_id 	integer primary key,
+	section_id 		references content_sections,
+	-- this will be part of url; should be a-zA-Z and underscore
+	file_name		varchar(30) not null,
+        -- this is a MIME type (e.g., text/html, image/jpeg)	
+        file_type               varchar(100) not null,
+        file_extension          varchar(50),    -- e.g., "jpg"
+	-- if file is text or html we need page_pretty_name, body and html_p
+	page_pretty_name        varchar(200),
+	body			clob,
+	html_p			char(1) default 'f' check(html_p in ('t','f')),
+	-- if the file is attachment we need use binary_data blob( e.g. photo, image)
+	binary_data             blob
+);
+
+
+</pre>
+</blockquote>
+
+<P>
+
+The content_section_links table contains information about links between sections that is used to generate the page navigation bar.
+
+
+<blockquote>
+<pre>
+
+create table content_section_links(
+	section_link_id integer primary key,
+	from_section_id references content_sections,
+	to_section_id references content_sections,
+	constraint content_section_links_unique unique(from_section_id, to_section_id)
+);
+
+</pre>
+</blockquote>
+
+<P>
+
+<h3>Legal Transactions</h3>
+From the group administration pages at <a href="/groups/admin/$group_name/content-sections">/groups/admin/$group_name/content-sections</a> the group administrator can
+<p> 
+<ul>
+<li>Add/View/Edit/Enable/Disable a Static Section
+<li>Add/View/Edit/Enable/Disable a Custom Section
+<li>Add/View/Edit/Enable/Disable a Module
+<li>Set up Link between different sections to be shown in the navigation bar.
+</ul>
+<P>
+
+As mentioned before, the side wide administrator can Add/View/Edit/Enable/Disable a Static Section from <a href="/groups/admin/$group_name/content-sections">/groups/admin/$group_name/content-sections</a>.
+
+<p>
+
+<hr>
+
+<a href=mailto:tarik@arsdigita.com><address>tarik@arsdigita.com</address></a>
+</body>
+</html>
+
+
+
+
+
+
+

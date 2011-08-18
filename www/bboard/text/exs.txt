@@ -1,0 +1,22 @@
+Examples
+
+<a name="pp"> SAMPLE QUESTIONS FOR YOU TO ASK COMPANIES ABOUT POLLUTION PREVENTION 
+<p>
+<ol>
+<li>What toxic chemicals does your facility use or produce that it does not report to <a href="http://www.scorecard.org/general/tri/tri_gen.html"> TRI </a>, and has your facility switched to these chemicals since 1988?
+<p>
+<li>Were TRI reductions a result of calculating or measuring releases in a different manner, having other facilities perform operations formerly performed on-site, or a decline in production? Please explain.
+<p>
+<li>Do you have a pollution prevention plan, or an equivalent document identifying changes that will be made to improve plant efficiency and reduce use of toxic chemicals, with a summary that you will share with the public?
+<p>
+<li>Does your facility use materials accounting (i.e., input-output calculations) to identify pollution prevention opportunities?
+<p>
+<li>I am interested in how your total waste generation to air, water, and land relates to your production. Is the <a href= "http://www.scorecard.org/general/tri/tri_desc.html#Total_Production-Related_Waste"> total production-related waste (TPRW)</a> per unit produced declining? Please provide annual numbers (TPRW, units produced, and define the units used).
+<p>
+</ol>
+<p>
+<a name="spill"> SAMPLE QUESTIONS TO ASK COMPANIES ABOUT AN UNUSUAL EVENT SUCH AS A SPILL OR A STACK RELEASE
+<p>
+1. Please explain what happened, and why.
+<p>
+2. What actions are being taken, or have been taken, to prevent this event from happening again?

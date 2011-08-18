@@ -1,0 +1,465 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>Site-wide Search</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Site-wide Search</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="http://photo.net/philg/">Philip Greenspun</a>
+and Jin Choi
+
+<hr>
+
+<ul>
+<li>User-accessible directory:  <a href="/search/">/search/</a>
+<li>Site administrator directory:  none
+<li>data model :  <a href="/doc/sql/display-sql.tcl?url=/doc/sql/site-wide-search.sql">/doc/sql/site-wide-search.sql</a>
+
+</ul>
+
+<b>Note: this facility requires interMedia version 8.1.5.1, which you can upgrade to via a patch, or Oracle 8.1.6 (not yet available)</b>
+
+
+<h3>The Big Idea</h3>
+
+This is a system for using a full-text search engine bundled with the
+RDBMS, e.g., Oracle Intermedia, to permit site-wide searches with
+results ranked by descending relevance.  So, for example, bulletin board
+postings and classified ads are searched at the same time as static
+.html documents.
+
+<h3>Under the Hood</h3>
+
+We define a <code>site_wide_index</code> table which ties together
+rows from different tables to a single interMedia index column. We use
+the user datastore feature of interMedia which gives us flexibility in
+how we index various tables, and saves us from having to copy text we
+wish to index.
+
+<h3>Deeper Under the Hood</h3>
+
+The main action is 
+
+<blockquote>
+<pre><code>
+create table site_wide_index (
+	table_name	     	varchar(30) not null,
+	the_key		     	varchar(700) not null,
+	one_line_description 	varchar(4000) not null,
+	datastore		char(1) not null, -- place holder for datastore column
+	primary key (table_name, the_key)
+);
+</code></pre>
+</blockquote>
+
+We store the table name from which the content came originally.  We
+also keep a key from that table.  This will typically be an integer
+but it might be character data (e.g., the <code>msg_id</code> from
+<code>bboard</code>).  In some cases, it might be a delimited
+composite key (it is up to the application code to pull this out and
+use it intelligently).  Note that Oracle automatically coerces from
+integer to varchar and therefore we don't have to do anything fancy to
+make queries work in the typical case (where the primary key of the
+fundamental table is an integer).
+
+<p>
+
+We must have the primary key constraint on this index because Oracle
+Intermedia can't deal with any table that doesn't have a primary key.
+
+<p>
+
+We need <code>one_line_description</code> so that we can display a nice
+list of query results to users who do a site-wide search.  If we didn't
+keep this, we'd have to outer join with every possible table that
+contributes to the index or laboriously look up every row with a PL/SQL
+procedure.  And even then we'd need to keep some record of, for each
+table, what was the best way to get a one-line description.
+
+<p>
+
+For consistent site-wide user interface, we keep a table of what the
+table names in the index should be called as far as sections go.  For
+example, the table name for the /bboard module is "bboard" but a
+publisher might wish this presented in a search form as "Discussion
+Forums".  This is done by entering rows in the
+<code>table_acs_properties</code> table, described in 
+<a href="user-profiling.html">the user profiling documentation</a>.  We
+reproduce the table definition here:
+
+<blockquote>
+<pre><code>
+create table table_acs_properties (
+             table_name      varchar(30) primary key,
+             section_name    varchar(100) not null,
+             user_url_stub   varchar(200) not null,
+             admin_url_stub  varchar(200) not null
+);
+</code></pre>
+</blockquote>
+
+The <code>user_url_stub</code> column holds the url necessary to direct the
+user from the search results page to the page with the content.  For
+example, for the discussion forum module, this column would contain 
+"/bboard/redirect-for-sws.tcl?msg_id=".  The search
+results page will append the value of <code>the_key</code> column to
+this URL stub.  
+
+<h3>Triggers that fill the table</h3>
+
+Here's some example PL/SQL code to keep the site-wide index table
+updated for static pages. It is complicated by the need to observe the
+<code>index_p</code> flag, which is used to mark pages which should not
+be indexed.
+
+<p>
+
+Note that the <code>datastore</code> column is just a placeholder; its
+value is unimportant (we just happen to use the letter 'a'). Updating
+this column causes the index to be rebuilt for a row by calling the
+user datastore procedure (see next section).
+
+
+<pre>
+<code>
+create or replace trigger static_pages_sws_insert_tr
+  after insert on static_pages for each row
+BEGIN
+  IF :NEW.index_p = 't' THEN
+     -- we have to create a new row in the index table for this row.
+     insert into site_wide_index (table_name, the_key, one_line_description, datastore)
+       values ('static_pages', :new.page_id, :new.page_title, 'a');
+  END IF;
+END;
+/
+show errors
+  
+
+CREATE OR replace trigger static_pages_sws_update_tr
+  after UPDATE ON static_pages FOR each row
+BEGIN
+  IF :old.index_p = 'f' AND :NEW.index_p = 't' THEN
+     insert into site_wide_index (table_name, the_key, one_line_description, datastore)
+       values ('static_pages', :new.page_id, :new.page_title, 'a');
+  ELSIF :old.index_p = 't' AND :NEW.index_p = 'f' THEN
+     DELETE FROM site_wide_index
+       WHERE table_name = 'static_pages'
+       AND the_key = :old.page_id;
+  ELSIF :NEW.index_p = 't' THEN
+     update site_wide_index 
+       set the_key = :new.page_id, one_line_description = nvl(:new.page_title, '(no title)'), datastore = 'a'
+       where the_key = :old.page_id
+       and table_name = 'static_pages';
+  END IF;
+end;
+/
+show errors
+
+
+CREATE OR replace trigger static_pages_sws_delete_tr
+  after DELETE ON static_pages FOR each row
+BEGIN
+  IF :old.index_p = 't' THEN
+     DELETE FROM site_wide_index
+       WHERE the_key = :old.page_id
+       AND table_name = 'static_pages';
+  END IF;
+END;
+/
+show errors
+
+</code>
+</pre>
+
+<h3>User Datastore Procedure</h3>
+
+This is the heart of the site wide index. This procedure needs to know
+about every section of the ACS which intends to use the site-wide
+search. This example indexes <code>bboard</code> and
+<code>static_pages</code>.
+
+<p>
+
+This procedure is run to gather the text that is to be indexed for any
+row of the <code>site_wide_index</code> table. Its arguments are the
+rowid of the row that it is to retrieve the content for, and a
+temporary clob in which the results are to be stored.
+
+<p>
+
+Different sections can be indexed in different ways. Note that the
+bboard section indexes entire threads into a single entry in the site
+wide index, instead of indexing each message as its own entry.
+
+<p>
+
+The user datastore procedure must be loaded as the ctxsys user, and
+must be granted select access on the tables you want to index
+from. You must grant execute permissions on the user datastore
+procedure to the user who will be using it to create the index.
+
+<pre>
+<code>
+CREATE OR replace procedure sws_user_datastore_proc ( rid IN ROWID, tlob IN OUT nocopy clob )
+IS
+   v_table_name  VARCHAR(30);
+   v_primary_key VARCHAR(700);
+   v_one_line VARCHAR(700);
+   v_static_pages_row photonet.static_pages%ROWTYPE;
+   cursor bboard_cursor(v_msg_id CHAR) IS
+     SELECT one_line, message 
+       FROM photonet.bboard
+       WHERE sort_key LIKE v_msg_id || '%';
+BEGIN
+     -- get various info on table and columns to index
+   SELECT table_name, the_key, one_line_description
+     INTO v_table_name, v_primary_key, v_one_line
+     FROM photonet.site_wide_index
+     WHERE rid = site_wide_index.ROWID;
+   
+   -- clean out the clob we're going to stuff
+   dbms_lob.trim(tlob, 0);
+   
+   -- handle different sections
+   IF v_table_name = 'bboard' THEN
+
+      -- Get data from every message in the thread.
+      FOR bboard_record IN bboard_cursor(v_primary_key) LOOP
+	 IF bboard_record.one_line IS NOT NULL THEN
+	    dbms_lob.writeappend(tlob, length(bboard_record.one_line) + 1, bboard_record.one_line || ' ');
+	 END IF;
+	 dbms_lob.append(tlob, bboard_record.message);
+      END LOOP;
+   ELSIF v_table_name = 'static_pages' THEN
+      SELECT * INTO v_static_pages_row
+	FROM photonet.static_pages
+	WHERE page_id = v_primary_key;
+      
+      IF v_static_pages_row.page_title IS NOT NULL THEN
+         dbms_lob.writeappend(tlob, length(v_static_pages_row.page_title) + 1, v_static_pages_row.page_title || ' ');
+      END IF;
+      dbms_lob.append(tlob, v_static_pages_row.PAGE_BODY);
+   END IF;
+END;
+/
+show errors
+
+grant execute on sws_user_datastore_proc to photonet;
+
+</code>
+</pre>
+
+
+<h3>Querying</h3>
+
+If you just want to find the most relevant documents across the entire
+site:
+
+<blockquote>
+<pre><code>
+select 
+  score(10) as the_score,
+  the_key,
+  one_line_description,
+  map.user_url_stub 
+from site_wide_index swi, table_acs_properties map
+where swi.table_name = map.table_name
+and contains(indexed_stuff,'about($user_entered_query)',10) > 0 
+order by score(10) desc
+</code></pre>
+</blockquote>
+
+Within the discussion forums, you wouldn't bother to join with 
+<code>table_acs_properties</code> since you don't need the URL stub
+and you know what the section is called.  But you'd probably want to 
+join with the bboard table in order to restrict to a particular topic,
+e.g., 
+
+<blockquote>
+<pre><code>
+select 
+  score(10) as the_score,
+  msg_id,
+  one-line,
+  posting_time,
+  topic
+from site_wide_index swi, bboard
+where swi.the_key = bboard.msg_id 
+and swi.table_name = 'bboard'
+and contains(indexed_stuff,'about($user_entered_query)',10) > 0
+order by score(10) desc
+</code></pre>
+</blockquote>
+
+<p>
+
+The <code>about()</code> in the query specifies a theme query, which
+takes the words of the query to be "themes" to search for. Oracle
+has had geniuses locked up for the last several years dividing up the
+English language into a taxonomy of semantic topics. interMedia will
+decide which of these themes your documents are most relevant to, and
+match those up to the words in your query. Leaving out the
+<code>about()</code> gives you a simple word query, which is more like
+what you'd expect.
+
+<p>
+
+In practice, feeding a user entered query directly to interMedia turns
+out to be very bad, because it is expecting queries to be specified
+using their little query language. Any syntactical errors in defining
+a query causes interMedia to cough up an error. This is very easy to
+do, since various punctuation characters and words like "and" are
+special in this query language. We use the PL/SQL function
+<code>im_convert</code> to massage the user input into a form which is
+safe to pass to interMedia, and which performs a combination of text
+search and theme search to try to bring the most relevant documents.
+
+<p>
+
+<code>im_convert()</code> cannot be called directly from within
+<code>contains()</code>, so we must use a separate database query to
+convert the user search string. This may be replaced at a later date
+into a Tcl procedure, to make modifications easier.
+
+<h3>Tcl processing of the results</h3>
+
+Unlike Verity and PLS, ConText doesn't have a good way to refer to
+previous searches and say "give me results 100 through 200 from that
+last search".  Combined with the stateless nature of HTTP, this makes it
+hard to implement the kinds of search user interfaces prevalent at most
+sites (notably AltaVista).  Personally I'm not sorry.  I've always hated
+sites like those.  My personal theory is that the user should get about
+25 highly relevant documents back from a search.  Additional documents
+shouldn't be offered unless they are nearly as relevant as the most
+relevant.  Here's an example of the Tcl code necessary to implement
+this:
+
+<blockquote>
+<pre><code>
+set counter 0 
+while {[ns_db getrow $db $selection]} {
+    set_variables_after_query
+    incr counter
+    if { ![info exists max_score] } {
+	# first iteration, this is the highest score
+	set max_score $the_score
+    }
+    if { ($counter &gt; 25) && ($the_score &lt; [expr 0.3 * $max_score] ) } {
+	# we've gotten more than 25 rows AND our relevance score
+	# is down to 30% of what the maximally relevant row was
+	ns_db flush $db
+	break
+    }
+    if { ($counter &gt; 50) && ($the_score &lt; [expr 0.5 * $max_score] ) } {
+	# take a tougher look
+	ns_db flush $db
+	break
+    }
+    if { ($counter &gt; 100) && ($the_score &lt; [expr 0.8 * $max_score] ) } {
+	# take a tougher look yet
+	ns_db flush $db
+	break
+    }
+...
+}
+</code></pre>
+</blockquote>
+
+<p>
+
+The heuristic cutoff in the above procedure has been packaged into the
+Tcl procedure <code>ad_search_results_cutoff</code>.
+
+<h3>For the user who has a PhD in computer science</h3>
+
+Suppose that the user doesn't like the rough results that come back from
+a phrase relevancy query in ConText.  We should give the user an
+opportunity to go into an "advanced search" mode where they can exploit
+the full power of the ConText query language.
+
+<h3>"More Like This"</h3>
+
+interMedia doesn't have a built-in facility for doing query by example
+("give me more documents like this one"), but we can use theme
+searches to build a reasonable facsimile. The Tcl procedure
+<code>ad_search_qbe_get_themes</code> takes a table name and key from
+the site wide index table and returns the top five themes associated
+with that document. Those themes can be used in an
+<code>about()</code> search to find documents about the same themes.
+
+<p>
+
+In practice, the themes returned by interMedia for a document are
+fairly general, and occasionally irrelevant (including things like
+HTML tags). So we throw in the <code>one_line_description</code> as
+part of the query, which seems to do a better job of bringing up
+relevant results. See <code>/search/query-by-example.tcl</code> for an
+example of query by example.
+
+<h3>Using a Separate Search Server</h3>
+
+You may decide you want a separate server to serve up the search
+queries, perhaps for performance reasons, or perhaps because Oracle
+hasn't made available the patch you need to run Oracle on a machine
+with more than 10 IP addresses on the architecture your main server is
+on. The two parameters, <code>BounceQueriesTo</code> and
+<code>BounceResultsTo</code> in the site-wide-search section of your
+parameters file allows you to do this.  <code>BounceQueriesTo</code>
+should be set on your main server, and <code>BounceResultsTo</code>
+set on the search server. This will bounce queries and results back
+and forth for all search pages.
+
+
+<h3>Keeping the index in sync</h3>
+
+If you update a table with a ConText index....  nothing happens.  The
+index doesn't get updated, unlike any other kind of index in the SQL
+world.  There are two ways to update the index:
+
+<ul>
+<li>saddle your Unix system administrator with the task of making sure
+that the ctxsrv process is kept running at all times (this is in
+addition to the six Unix process that constitute a normal Oracle
+installation)
+
+<li>periodically manually sync the index with 
+<code>alter index one_index rebuild parameters('sync');</code>
+</ul>
+
+This module supports both methods.  There is an ad.ini file parameter
+specifying the <code>ns_schedule</code> command to invoke to manually
+sync the index.  If this is left unspecified then it will never happen.
+
+<P>
+
+Another thing that you might have to do periodically is 
+
+<blockquote>
+<pre><code>
+alter index one_index rebuild online 
+parameters('optimize full maxtime 60');
+</code></pre>
+</blockquote>
+
+This gives Oracle one hour (60 minutes) to rebuild an optimized index.
+I'm not quite sure whether this simply means more efficient for query
+time or better (more relevant) results for users.
+
+<h3>If you care about performance</h3>
+
+If you don't want to slow down transactions by building up these clob
+copies of everything, keep the <code>site_wide_index</code> table on a
+separate physical disk drive.  Also try to put the Intermedia index onto
+yet another separate physical disk drive.  Since every disk drive on a
+24x7 server must be mirrored, that means you need four new disk drives
+to implement this glorious module.  If you happen to have two more disk
+drives, use them for the primary key index of the site_wide_index table.
+
+
+<hr>
+<a href="http://photo.net/philg/"><address>philg@mit.edu</address></a>
+</body>
+</html>

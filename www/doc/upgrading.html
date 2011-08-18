@@ -1,0 +1,134 @@
+<html>
+<!--AD_DND-->
+<HEAD><TITLE>ArsDigita Community System Upgrade Instructions</TITLE></HEAD>
+<BODY bgcolor=#ffffff text=#000000>
+<h2>Upgrading an ArsDigita Community System</h2>
+
+part of <a href="index.html">the ACS docs</a>
+
+by <A href="http://photo.net/philg/">Philip Greenspun</a>
+
+<hr>
+
+This document contains some tips that may be useful when
+migrating data from a legacy database into ACS Oracle tables
+or upgrading an ArsDigita Community System.
+
+<h3>Migrating crud from legacy databases</h3>
+
+There isn't any best way to migrate data.  Here are some reasonable
+strategies that we've used.
+
+
+<h4>Strategy 1: if the legacy data can be loaded into Oracle</h4>
+
+Load your data in as a separate user, GRANT SELECT on these tables to
+your ACS Oracle user Once you've got all your data loaded in and owned
+by the "otherusername" user, construct statements of the following form:
+
+<blockquote>
+<pre><code>
+insert into clickthrough_log (local_url, foreign_url, entry_date, click_count)
+ select local_url, foreign_url, entry_date, click_count 
+ from otherusername.clickthrough_log;
+</code></pre>
+</blockquote>
+
+
+<h4>Strategy 2: if the legacy data aren't in Oracle and the data model
+isn't documented</h4>
+
+Suppose that you've got a huge database in an Informix database that you
+don't really understand.  Get hold of the Data Junction product (see
+<a href="http://www.datajunction.com/">http://www.datajunction.com/</a>)
+and have it connect to Informix, grab all the data, and stuff them into
+Oracle.
+
+
+<h4>Strategy 3: if you have lots of random losers giving you flat files
+in different formats</h4>
+
+Suppose that you have lots of little collectible shops giving you their
+inventory data.  You don't think they are sufficiently wizardly in
+<i>Excel</i> to massage their columns into your format.  So you're
+forced into taking data in all kinds of quirky formats.  Moreover, you
+don't want to have to hire a staff of really good programmers to write
+conversion scripts for each shop.  What my friend Olin did at
+exchange.com was use Data Junction again (<a
+href="http://www.datajunction.com/">http://www.datajunction.com/</a>).
+It has a little scripting language that was very convenient for this
+purpose.
+
+
+
+<h4>Strategy 4: if it was your crud to begin with but it is another
+brand of RDBMS</h4>
+
+Suppose that you've built up a big collection of data in Sybase and
+understand the data model but need to move it to Oracle.  If you are an
+expert AOLserver developer, the easiest thing to do is configure a pool
+of connections to Sybase and a pool to Oracle.  Then write .tcl scripts
+to select from Sybase and insert into Oracle.
+
+
+<h3>Upgrading ACS</h3>
+
+We're not going to pretend that upgrading an ACS-backed site is trivial,
+even if you've followed the religion of /doc/patches.html and
+/doc/custom.html.  Does this mean that ACS is badly engineered?  Maybe.
+But other major RDBMS-backed systems such as SAP suffer from the same
+problems.  People have had 20 years to attack this problem and nobody
+has come up with a silver bullet.  This is why IT departments tend to
+grow monotonically in size and budget.  Also, if we're going to be
+innovative we want it to be in collaboration features that users can
+use, not in sysadmin/dbadmin or other areas that only programmers will
+see. 
+
+<P>
+
+There are two basic strategies for upgrading an ACS.  If you're doing a
+minor upgrade, say from 2.3 to 2.4, you'll want to apply the ALTER TABLE
+statements to your online Oracle database, create any new tables, add a
+few parameters to your ad.ini file, and update your scripts.  If you're
+doing a major upgrade from 1.0 to 2.4, you might want to consider
+creating a new Oracle user and populating the fresh tables with data
+from the online system (see above section on migrating data).  Then
+reapply any personality or customizations to a freshly untarred ACS.
+Finally you can reconfigure your public Web server to run against the
+new ACS installation.
+
+<h4>Upgrading "stop and copy" style</h4>
+
+The /admin/conversion/ directory contains the following scripts that are
+useful if you are stopping and copying:
+
+<ul>
+<li><code>copy-acs-tables.sql</code> : a good model for copying data from an online
+system into a fresh development database for a new ACS version
+
+<li><code>sequence-update.tcl</code> : you'll want to make sure that all
+your sequences aren't still starting with 1 now that you have old data
+in your new tables
+
+<li><code>parameter-differences.pl</code> : this Perl script will help
+you identify differences between your ad.ini file and the new ACS's
+default; just call it from the shell with two file names as arguments
+and view the report on standard output
+
+
+</ul>
+
+
+<h4>Upgrading online style</h4>
+
+If you're doing an upgrade to an online database, you'll want to look
+at any relevant <code>/doc/sql/upgrade*.sql</code> scripts.  Also,
+you'll surely make use of
+<code>/admin/conversion/parameter-differences.pl</code> to see what
+parameters you must add. Lastly, <code>/install/obsolete.txt</code>
+lists files, by release, that you should remove.
+
+<hr>
+<a href="mailto:philg@mit.edu"><address>philg@mit.edu</address></a>
+</body>
+</html>

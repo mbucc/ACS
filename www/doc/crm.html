@@ -1,0 +1,118 @@
+<html>
+<head>
+<title>Customer Relationship Management</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Customer Relationship Management</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by Jin Choi
+
+<hr>
+<ul>
+<li>Admin directory: <a href="/admin/crm/">/admin/crm</a> 
+<li>data model:  
+<a href="/doc/sql/display-sql.tcl?url=/doc/sql/crm.sql">/doc/sql/crm.sql</a>
+<li>procedures:   /tcl/crm-defs.tcl
+</ul>
+
+<h3>The Big Picture</h3>
+
+Publishers want to track a relationship with a customer over time by
+classifying them by various metrics such as site activity or buying
+activity. This module provides a way to specify states that a user may
+be in, and a way to specify state transitions based on any metric
+which can be expressed in SQL. This models the progression of a
+relationship better than a static numeric worth value. These states
+can then be used to target actions at particular classes of users.
+
+<p>
+
+An example: an e-commerce site might define the following states:
+<ul>
+<li>raw user: just registered, hasn't really done much yet
+<li>good prospect: has bought one or more thing in the last month
+<li>solid customer: has bought more than 3 things in the last month
+<li>great customer: has bought more than 10 things in the last month
+<li>slipping customer: formerly a solid or great customer, but has fallen
+    under threshold in the past month
+<li>dead user: has not done anything for the last three months
+</ul>
+
+<p>
+
+The transitions might be
+<ul>
+<li>from raw user to good prospect or dead user
+<li>from good prospect to solid customer or dead user
+<li>from solid customer to great customer or slipping customer
+<li>from great customer to slipping customer
+<li>from slipping customer to dead user
+<li>from dead user to good prospect
+</ul>
+
+
+<h3>Under the Hood</h3>
+
+A user's current state and the date it was entered is stored as part of the
+<code>users</code> table:
+
+<blockquote>
+<pre><code>
+crm_state		varchar(50) references crm_states,
+crm_state_entered_date	date, -- when the current state was entered
+</code></pre>
+</blockquote>
+
+<p>
+
+The allowable states are listed in
+<blockquote>
+<pre><code>
+create table crm_states (
+	state_name	varchar(50) not null primary key,
+	description	varchar(1000) not null -- for UI
+);
+</code></pre>
+</blockquote>
+
+<p>
+
+Allowable state transitions are stored in
+<blockquote>
+<pre><code>
+create table crm_state_transitions (
+	state_name	not null references crm_states,
+	next_state	not null references crm_states,
+	triggering_order	integer not null,
+	transition_condition	varchar(500) not null,
+	primary key (state_name, next_state)
+);
+</code></pre>
+</blockquote>
+
+The <code>transition_condition</code> field specifies a SQL fragment
+which will get called as
+
+<blockquote>
+<pre><code>
+update users
+set user_state = **next_state**, crm_state_entered_date = sysdate
+where user_state = **state_name**
+and (**transition_condition**)
+</code></pre>
+</blockquote>
+
+<p>
+
+Periodically (as defined by the parameter
+<code>UpdatePeriodHours</code> in the [ns/server/servername/acs/crm]
+section and defaulting to 24 hours), each
+<code>transition_condition</code> fragment will be run as above, in
+the order specified by <code>triggering_order</code>.
+
+<hr>
+<a href="mailto:jsc@arsdigita.com"><address>jsc@arsdigita.com</address></a>
+</body>
+</html>

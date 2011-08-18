@@ -1,0 +1,60 @@
+<%= [wp_help_header "Editing Presentations"] %>
+
+This is the main page of WimpyPoint's authoring interface - from
+here you can access a wide variety of features to edit your presentation
+(or view the finished product).
+
+<h3>The Slide List</h3>
+To preview a slide as it will look in the finished presentation, click its title.
+To edit or delete the slide, follow the corresponding link to the right of the
+title. To add an image to your slide, or to upload a file which you want linked
+from the slide (called an &quot;attachment&quot;), follow the <i>attach</i> link.
+
+<p>You can insert a new slide at any point in the presentation by following the
+<i>Insert</i> link pointing between the appropriate two slides, or add a new slide
+at the end by following the <i>Add</i> link.
+
+<p>For a screen allowing you to arbitrarily reorder your slides, follow the link
+entitled <i>Change order of slides</i>.
+
+<h3>Options</h3>
+To view the presentation, follow one of the <i>Show presentation</i>
+links. Click <i>done</i> in the upper-right corner of the presentation's
+table of contents to return to the editing screen.
+<i>Show presentation, viewing comments from collaborators and "edit" links</i>
+differs from <i>Show presentation</i> in that it
+
+<ul>
+  <li>displays collaborators' comments on slides and allows you to add your own comments, providing
+feedback to others working on the presentation with you.
+  <li>displays links in the upper-right corner of slides allowing you to edit or delete slides.
+</ul>
+
+To change the presentation settings which specified when the presentation
+was created (e.g., the presentation's title, whether it is public, etc.), click <i>Edit presentation properties</i>.
+To set which slides appear in the presentation's table of contents, and when context breaks
+are displayed, click <i>Adjust outline and context breaks</i>.
+
+<p>If you're having a bad day, devoid of creative thought, you might just want to
+blatantly steal slides instead of creating them: click on one of the <i>Bulk-copy slides</i> links.
+
+<p>If you want to hose your presentation, click <i>Delete this presentation</i>. Be careful, though:
+once you delete a presentation there's no way at all to get it back! (This option is only available
+to a presentation's owner.)
+
+<h3>Viewers/Collaborators</h3>
+
+This section lists the users allowed to view or edit the presentation. If you own a presentation,
+you can add or remove people from this list by following the
+<i>Change people who can view/edit this presentation</i> link at the bottom.
+
+<h3>Versioning</h3>
+
+Versioning allows you to permanently preserve the current set of slides in your presentation. It's especially useful before you
+invite someone to work on your presentation - if he or she messes things up, you can always revert to a previous version.
+If you own a presentation, you can <i>Freeze the slide set</i>, i.e., preserve its current state.
+Once the slide set has been frozen, you can view a frozen version of the presentation by selecting it
+from the pull-down menu and clicking one of the <i>Show</i> buttons. If you want to roll back all
+changes to the slides, you can select an old version and click <i>Revert</i>.
+
+<%=[wp_footer]%>

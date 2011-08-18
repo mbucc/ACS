@@ -1,0 +1,77 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>Redirects</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Redirects</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="http://photo.net/philg/">Philip Greenspun</a>
+
+<hr>
+
+<blockquote>
+Alternative title:  "papering over your historical stupidity."
+</blockquote>
+
+<p>
+
+Suppose that you're a stupid person like me and back in 1993 published
+URLs such as "/~philg/philg.html".  You now want users to get
+"/philg/index.html".  The redirect subsystem is for you!
+
+<p>
+
+Hey, doesn't AOLserver already have an aliases module?  Yes, but it
+assumes that you never move stuff off your server.  The ArsDigita
+Community System redirect module let's you do the following:
+
+<ul>
+<li>Redirect "foo" to "bar" (JustOne)
+<li>Redirect anything that starts with "foo" to "bar" (Inherit)
+<li>Redirect anything that starts with "foo" to whatever came after the
+"foo" but starting now with "bar" (Pattern)
+</ul>
+
+You specify redirects in /parameters/ad.ini.  All of the work happens in
+/tcl/ad-redirect.tcl
+
+<P>
+
+Here's an example:
+
+<blockquote>
+<pre>
+[ns/server/yourservername/acs/redirect]
+Pattern=/~philg|/philg
+JustOne=/~philg/new-zealand/nz-mtn-bike.text|/nz/nz-mtn-bike.html
+Inherit=/bp/czech-FAQ.html|http://www.fas.harvard.edu/~sever/Czech.homepage.html
+</pre>
+</blockquote>
+
+The first line ensures that old URLs with a ~philg will still work.  It
+is a "Pattern" redirect spec so that "/~philg/photo/hand-coloring.html"
+goes to "/philg/photo/hand-coloring.html" rather than simply to "/philg".
+
+<p>
+
+The second line redirects the user from a .text file in one directory to
+a .html file in another redirectory.
+
+<p>
+
+The third line redirects anything starting with "/bp/czech-FAQ.html" to
+a server at Harvard (the author of this FAQ is a Harvard staff member
+and it is easier for him to maintain the content there now that Harvard
+has moved into the Internet Age).  You might think that this would be a
+logical candidate for JustOne rather than Inherit but I wanted to make
+sure that something like "/bp/czech-FAQ.html#section1" would also get
+redirected.
+
+
+<hr>
+<a href="http://photo.net/philg/"><address>philg@mit.edu</address></a>
+</body>
+</html>

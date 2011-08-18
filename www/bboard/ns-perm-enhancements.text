@@ -1,0 +1,18 @@
+alter table bboard_topics add column ns_perm_group text;
+-- should be a text column because in case the user changes 
+-- the group we don't want to just blithely delete
+alter table bboard_topics add column ns_perm_group_added_for_this_forum text;
+
+alter table bboard_topics add column q_and_a_primary_p boolean;
+
+------
+
+added to defs.tcl
+
+proc bboard_use_ns_perm_authorization_p {} {
+    return 1
+}
+
+----------
+
+new versions of admin-home, add-new-topic, add-new-topic-2

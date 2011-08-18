@@ -1,0 +1,421 @@
+// MessageParser.sqlj
+// part of the webmail ACS module
+// written by Jin Choi <jsc@arsdigita.com>
+// 2000-03-01
+
+// This class provides some static methods for parsing RFC822 messages
+// into an Oracle database.
+
+package com.arsdigita.mail;
+
+import oracle.sql.*;
+import oracle.sqlj.runtime.Oracle;
+import java.sql.*;
+
+import java.io.*;
+import javax.mail.*;
+import javax.mail.internet.*;
+import java.util.*;
+import java.text.DateFormat;
+import java.text.ParseException;
+
+
+public class MessageParser {
+    
+    private static boolean runningOutsideOracleP = false;
+    protected static Session s = null;
+
+    // For debugging.
+    public static void main (String args[]) {
+	try {
+	    // set the default connection to the URL, user, and password
+	    // specified in your connect.properties file
+	    Oracle.connect(MessageParser.class, "connect.properties");
+	    System.out.println("Connected.");
+
+	    // Set the flag to tell the system not to delete any messages
+	    // after parsing.
+	    MessageParser.runningOutsideOracleP = true;
+	    
+	    MessageParser.processQueue("/home/nsadmin/qmail/queue/new");
+#sql { COMMIT };
+	    // MessageParser.parseMessageFromFile("mimetest.msg");
+	    System.out.println("Parse succeeded.");
+	} catch (Exception e) { 
+	    System.err.println("Error running the example: " + e.getMessage());
+	    e.printStackTrace();
+	}
+	System.exit(1);
+    }
+    
+
+    // Process all files in a directory.
+    public static void processQueue(String queueDirectory) 
+	throws SQLException {
+	try {
+
+	    // Lock the wm_messages table to make sure we have exclusive access to it, and
+	    // to make sure there isn't another queue processing job running.
+#sql {lock table wm_messages in exclusive mode nowait};
+
+	} catch (SQLException e) {
+
+	    // Someone else has it; just give up for now.
+	    return;
+	}
+	
+	// Go through all the files in the queue and attempt to parse them.
+	File qdir = new File(queueDirectory);
+	
+	// Not compatible with 1.1
+	// File[] filesToProcess = qdir.listFiles();
+
+	String[] filenamesToProcess = qdir.list();
+	for (int i = 0; i < filenamesToProcess.length; i++) {
+	    File currentFile = new File(qdir, filenamesToProcess[i]);
+	    System.out.println("Processing " + currentFile.getAbsolutePath());
+	    if (! currentFile.isFile()) {
+		System.out.println("Not a file!");
+		continue;
+	    }
+	    try {
+		parseMessageFromFile(currentFile);
+		if (! MessageParser.runningOutsideOracleP) {
+#sql { COMMIT };
+		    currentFile.delete();
+		}
+	    } catch (Exception e) {
+		// We don't want to quit for parse errors.
+
+		int n_already_reported = 0;
+		String filename = currentFile.getAbsolutePath();
+
+#sql {select count(*) into :n_already_reported 
+		    from wm_parse_errors
+			where filename = :filename};
+
+		if (n_already_reported == 0) {
+		    String errmsg = e.getMessage();
+
+#sql {insert into wm_parse_errors (filename, error_message, first_parse_attempt)
+values (:filename, :errmsg, sysdate)};
+		}
+		e.printStackTrace();
+		continue;
+	    }
+	}
+    }
+
+    // Process a single file.
+    public static void parseMessageFromFile(String filename) 
+	throws MessagingException, SQLException, FileNotFoundException, IOException, ParseException {
+	parseMessageFromFile(new File(filename));
+    }	
+
+    public static void parseMessageFromFile(File file) 
+	throws MessagingException, SQLException, FileNotFoundException, IOException, ParseException {
+	// Open the file.
+	BufferedInputStream is = new BufferedInputStream(new FileInputStream(file));
+
+	// Get the headers as an enumeration of Header objects.
+	InternetHeaders ih = new InternetHeaders(is);
+	Enumeration headers = ih.getAllHeaders();
+
+	// Create new record in wm_messages and grab the CLOB to stuff with the body.
+	CLOB body = null;
+	int msgId = 0;
+
+	System.out.println("Inserting into wm_messages...");
+
+#sql {select wm_msg_id_sequence.nextval into :msgId from dual};
+
+#sql {insert into wm_messages (msg_id, body) 
+	    values (:msgId, empty_clob())};
+
+#sql {select body into :body from wm_messages where msg_id = :msgId};
+
+	System.out.println("done");
+	
+	copyInputStreamToClob(is, body);
+
+	// Insert the headers into wm_headers.
+	insertHeaders(msgId, headers);
+
+	// "Deliver" the message by inserting into wm_message_user_map.
+	deliverMessage(msgId, ih.getHeader("Delivered-To", null));
+
+	String contentType = ih.getHeader("Content-Type", null);
+	if (contentType != null) {
+	    contentType = contentType.toLowerCase();
+	    if (contentType.indexOf("text") == -1) {
+		// Reopen the file to pass to parseMIME.
+		is = new BufferedInputStream(new FileInputStream(file));
+		
+		// If message is a MIME message and is not plain text, save
+		// text to wm_messages.mime_text and save attachments to directory.
+		parseMIME(msgId, is);
+	    }
+	}
+    }
+
+    private static void insertHeaders(int msgId, Enumeration headers)
+	throws SQLException, ParseException {
+	int sortOrder = 0;
+	boolean receivedSeenP = false;
+	
+	while (headers.hasMoreElements()) {
+	    Header h = (Header) headers.nextElement();
+	    String name = h.getName(); 
+	    String lowerName = name.toLowerCase();
+	    String value = h.getValue();
+	    
+	    if ((lowerName.equals("from") || lowerName.equals("return-path")) && value.length() > 0) {
+		try {
+		    // Stuff email_value and name_value fields.
+		    InternetAddress[] addresses = InternetAddress.parse(value);
+		    String email = addresses[0].getAddress();
+		    String fullName = addresses[0].getPersonal();
+		    
+#sql {INSERT INTO wm_headers (msg_id, name, lower_name, value, email_value, name_value, sort_order) 
+			VALUES (:msgId, :name, :lowerName, :value, :email, :fullName, :sortOrder)};
+		} catch (AddressException ae) {
+		    // Couldn't parse it as an address; just store the value.
+#sql {INSERT INTO wm_headers (msg_id, name, lower_name, value, sort_order)
+VALUES (:msgId, :name, :lowerName, :value, :sortOrder)};
+		}
+
+	    } else if (lowerName.equals("date") && value.length() > 0) {
+		// Stuff date values into date_value field.
+		try {
+		    Timestamp d = parseDate(value);
+#sql {INSERT INTO wm_headers (msg_id, name, lower_name, value, time_value, sort_order)
+VALUES (:msgId, :name, :lowerName, :value, :d, :sortOrder)};
+		} catch (Exception pe) {
+#sql {INSERT INTO wm_headers (msg_id, name, lower_name, value, sort_order)
+VALUES (:msgId, :name, :lowerName, :value, :sortOrder)};
+		}
+	    } else if (lowerName.equals("received") && !receivedSeenP) {
+		// Only parse the first Received header, the one qmail tacked on.
+		// Others will often be nastily formatted.
+		receivedSeenP = true;
+		String timestamp = value.substring(value.lastIndexOf(";") + 1);
+
+		try {
+		    Timestamp d = parseDate(timestamp);
+#sql {INSERT INTO wm_headers (msg_id, name, lower_name, value, time_value, sort_order)
+VALUES (:msgId, :name, :lowerName, :value, :d, :sortOrder)};
+		} catch (Exception pe) {
+		}
+	    } else {
+		if (lowerName.equals("message-id") && value.length() > 0) {
+#sql {UPDATE wm_messages SET message_id = :value WHERE msg_id = :msgId}; 
+		}
+
+#sql {INSERT INTO wm_headers (msg_id, name, lower_name, value, sort_order)
+VALUES (:msgId, :name, :lowerName, :value, :sortOrder)};
+
+	    }
+
+	    // If this is a recipient field, then parse it and insert it into recipients.
+	    if (lowerName.equals("to") || lowerName.equals("cc")) {
+		try {
+		    InternetAddress[] recipients = InternetAddress.parse(value);
+		    
+		    for (int i = 0; i < recipients.length; i++) {
+			InternetAddress recipient = recipients[i];
+			String email = recipient.getAddress();
+			String fullName = recipient.getPersonal();
+#sql {INSERT INTO wm_recipients (msg_id, header, email, name) VALUES (:msgId, :name, :email, :fullName)};
+		    }
+		} catch (Exception e) {
+		    // do nothing
+		}
+	    }
+
+	    sortOrder++;
+	}
+
+    }
+
+    // Map recipient to ACS user and insert row for that user's INBOX.
+    private static void deliverMessage(int msgId, String lastDeliveredTo)
+	throws SQLException {
+	
+	if (lastDeliveredTo != null) {
+
+#sql {insert into wm_message_user_map (msg_id, mailbox_id)
+      select :msgId, mailbox_id
+	  from wm_email_user_map eum, wm_domains d, wm_mailboxes m
+	  where d.short_name = eum.domain
+	  and m.name = 'INBOX'
+	  and m.creation_user = eum.user_id
+	  and 'webmail-' || eum.domain || '-' || email_user_name || '@' || d.full_domain_name = :lastDeliveredTo};
+	}
+    }
+
+
+    // Utility procedure to write an InputStream to a CLOB.
+    protected static void copyInputStreamToClob(InputStream is, CLOB to) 
+	throws IOException, SQLException {
+	OutputStream os = to.getAsciiOutputStream();
+	int chunk = to.getChunkSize();
+	byte[] copyBuffer = new byte[chunk];
+
+	int bytesRead;
+
+	System.out.println("Entering copyInputStreamToClob");
+
+	while ((bytesRead = is.read(copyBuffer)) > 0) {
+	    os.write(copyBuffer, 0, bytesRead);
+	    System.out.println("wrote " + bytesRead + " bytes");
+	}
+	os.flush();
+	os.close();
+	is.close();
+    }
+
+    // Same, for BLOBs.
+    public static void copyInputStreamToBlob(InputStream is, BLOB to) 
+	throws IOException, SQLException {
+	OutputStream os = to.getBinaryOutputStream();
+	int chunk = to.getChunkSize();
+	byte[] copyBuffer = new byte[chunk];
+
+	int bytesRead;
+
+	System.out.println("Entering copyInputStreamToBlob");
+
+	while ((bytesRead = is.read(copyBuffer)) > 0) {
+	    os.write(copyBuffer, 0, bytesRead);
+	    System.out.println("wrote " + bytesRead + " bytes");
+	}
+	os.flush();
+	os.close();
+	is.close();
+    }
+
+
+    // Utility procedure for parsing timestamps. Java date parsing
+    // wayyyy sucks; this is the simplest method that seems to work
+    // most of the time.
+    public static Timestamp parseDate(String s)
+	throws ParseException {
+	// This DateFormat stuff doesn't work so great.
+	// DateFormat df = DateFormat.getDateTimeInstance(DateFormat.MEDIUM,
+	//					       DateFormat.FULL);
+	System.out.println("Attempting to parse date: " + s);
+	return new java.sql.Timestamp(Timestamp.parse(s));
+    }
+
+
+    // Parses a MIME message, inserts text into wm_messages.mime_text, and unpacks
+    // attachments into wm_attachments.
+    public static void parseMIME(int msgId, InputStream is) 
+	throws MessagingException, SQLException, IOException {
+
+	// Parse the message.
+	if (s == null) {
+	    Properties props = new Properties();
+	    s = Session.getDefaultInstance(props, null);
+	}
+	MimeMessage msg = new MimeMessage(s, is);
+	is.close();
+
+	System.out.println("Message type is " + msg.getContentType());
+
+	// Buffer we're going to store up text bits in.
+	StringBuffer text = new StringBuffer();
+
+	// Wrap partNumber in an array so we can pass by reference.
+	int[] partNumber = new int[1];
+	partNumber[0] = 0;
+
+	dumpPart(msgId, msg, text, partNumber);
+	    
+	String textStr = text.toString();
+
+	// System.out.println("Parsed MIME text is:\n" + textStr);
+	
+	if (textStr.length() > 0) {
+	    CLOB mimeText = null;
+	    StringBufferInputStream sbis = new StringBufferInputStream(textStr);
+#sql { update wm_messages set mime_text = empty_clob() where msg_id = :msgId };
+#sql { select mime_text into :mimeText from wm_messages where msg_id = :msgId };
+	    copyInputStreamToClob(sbis, mimeText);
+	}
+    }
+
+    // Writes text representation of part to text buffer and saves
+    // attachment data to wm_attachments. partNumber is for creating
+    // unique identifiers if filename is not specified in the part.
+
+    protected static void dumpPart(int msgId, Part p, StringBuffer text, int[] partNumber)
+	throws MessagingException, SQLException, IOException {
+	
+	Object o = p.getContent();
+
+	System.out.println("Part is " + o.getClass().getName());
+
+	if (o instanceof java.lang.String) {
+	    text.append(o);
+	    return;
+	}
+
+	if (o instanceof javax.mail.Multipart) {
+	    Multipart mp = (Multipart) o;
+	    int count = mp.getCount();
+	    for (int i = 0; i < count; i++) {
+		dumpPart(msgId, mp.getBodyPart(i), text, partNumber);
+	    }
+	    return;
+	}
+	
+	if (o instanceof javax.mail.internet.MimeMessage) {
+	    MimeMessage msg = (MimeMessage) o;
+	    text.append('\n');
+	    Enumeration e = msg.getAllHeaderLines();
+	    while (e.hasMoreElements()) {
+		String line = (String) e.nextElement();
+		text.append(line);
+		text.append('\n');
+	    }
+	    dumpPart(msgId, msg, text, partNumber);
+	    return;
+	}
+
+	if (o instanceof java.io.InputStream) {
+	    InputStream is = (InputStream) o;
+	    
+	    String filename = null;
+	    try {
+		filename = p.getFileName();
+	    } catch (MessagingException mex) {
+		// System.out.println(mex.getMessage());
+	    }
+	    
+	    if (filename == null || filename.length() == 0) {
+		filename = "" + partNumber[0]++;
+	    }
+	    
+	    // Write out place holders for links.
+	    if (p.isMimeType("image/*")) {
+		text.append("##wm_image: " + filename + "\n");
+	    } else {
+		text.append("##wm_part: " + filename + "\n");
+	    }
+	    
+	    String contentType = p.getContentType();
+	    // use only primary type and sub type
+	    int firstSemicolonLocation = contentType.indexOf(";");
+	    if (firstSemicolonLocation != -1) {
+		contentType = contentType.substring(0, firstSemicolonLocation);
+	    }
+	    
+	    BLOB data = null;
+#sql { insert into wm_attachments (msg_id, filename, content_type, data) values (:msgId, :filename, :contentType, empty_blob()) };
+#sql { select data into :data from wm_attachments where msg_id = :msgId and filename = :filename };
+
+	    copyInputStreamToBlob(is, data);
+	}
+    }
+}

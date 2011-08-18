@@ -1,0 +1,10 @@
+<%= [ad_scope_admin_page_top "Help for Upload New Version page" "Help for Upload New Version page" "Help"] %>
+
+<ul>
+
+This page lists already added downloads for which different version files can be uploaded. Click on the file for which you want to upload new version. If the download ( for which versions will be uploaded) is not added already ( not listed in this page), then you have to add it first.
+
+</ul>
+
+
+<%= [ad_scope_admin_footer] %>

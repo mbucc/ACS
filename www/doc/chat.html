@@ -1,0 +1,438 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>Chat</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Chat</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="http://photo.net/philg/">Philip Greenspun</a>
+
+<hr>
+
+<ul>
+<li>User-accessible directory:  <a href="/chat/">/chat/</a>
+<li>Site administrator directory:  <a href="/admin/chat/">/admin/chat/</a>
+<li>Group administrator directory:  <a href="/chat/admin">/chat/admin/</a>
+<li>data model :  <a href="/doc/sql/display-sql.tcl?url=/doc/sql/chat.sql">/doc/sql/chat.sql</a>
+<li>Tcl procs:  /tcl/chat-defs.tcl
+</ul>
+
+
+<h3>Why is Chat Useful?</h3>
+
+Why is a chat server useful?  As traditionally conceived, it isn't.  The
+Internet is good at coordinating people who are separated in space
+<em>and time</em>.  If a bunch of folks could all agree to meet at a
+specific time, the telephone would probably be a better way to support
+their interaction.
+
+<p>
+
+The way that commercial chat server vendors pitch their products these
+days is for customer service.  Joe User is presumed to be using a
+computer and his one phone line.  So he can't just pick up the phone and
+call them because he'd have to drop his Internet connection.  Also, a
+customer service person can handle four or five sessions at once if done
+via something like AOL Instant Messenger rather than via the telephone.
+
+<p>
+
+Then why can't companies that want to do 1:1 conversations just use 
+<a href="http://www.aim.aol.com/">AOL
+Instant Messenger (AIM)</a>?  AOL Instant Messenger works best with
+some
+additional software to be installed on the user's machine.  This is free
+software and it shipped with Netscape 4.x and it is certainly available
+to AOL service customers.  But it is not universal and you can't be
+guaranteed that because someone is connecting to your Web site that they
+have the AIM client.  An AIM-compatible Java applet is available.  Since
+a Java applet can only connect to the server from which it was
+downloaded, you must reference this by including a link to 
+<a href="http://toc.oscar.aol.com">http://toc.oscar.aol.com</a>
+(the first thing this page does is execute some JavaScript that bounces
+your browser back one page, so from the user's point of view it looks
+like the Java client just popped up and they never left the real
+publisher's page).
+
+<p>
+
+A second limitation to the "just use AIM" approach for customer service
+is that AIM doesn't provide convenient canned responses.  In theory, you
+might be able to come up with 10 or 15 canned responses that would cover
+50% of the inquiries.  Then the same staff can handle more customers.
+
+<p>
+
+A third limitation to the "just use AIM" approach is that you can't have
+rich content, e.g., in-line images, because AIM is not a Web browser and
+can't render HTML.
+
+<p>
+
+A fourth reasons that AIM isn't adequate is that it is tough to measure
+the effectiveness of your staff.  The conversations aren't centrally
+logged (though your staff could save them individually to disk).  The
+conversations aren't tied to your users table.
+
+<p>
+
+A good example of a company that has addressed many of these issues is 
+<a href="http://www.liveperson.com">liveperson.com</a>.  For $250 per
+customer service agent per month (prices as of April 1999), they will
+just do everything for you on their server farm.  There are a few
+problems with LivePerson:
+
+<ol>
+<li>The information in their database isn't automatically sync'd with
+the information in your database; you'll have two users tables, one on
+their server and one on your server.
+
+<li>They don't solve the "public chat room" problem for those who wish
+to have this; LivePerson is limited to customer service and is best
+thought of as "a more specialized AIM".
+
+</ol>
+
+
+<h3>The Big Idea</h3>
+
+We have our own chat server because 
+
+<ul>
+
+<li>we want our entire system to be integrated; one users table; one
+comprehensive view of what a user has done on our site
+
+<li>we want to be able to create and drop chat rooms in conjunction with
+the creation or dropping of user groups or other publisher-specific
+database structures, e.g., the creation of a class by a teacher.  The
+only practical way to do this is if a chat room is really an Oracle
+table construct of some sort.  Otherwise, we can't do this as a
+transaction (sadly, I'm not sure that we can really accomplish this
+objective if we go with separate tables per chat room since CREATE TABLE
+and DROP TABLE are not rollback-able).
+
+<li>we want something that can be extended and maintained by any
+ArsDigita programmer, i.e., something that requires only AOLserver Tcl
+and Oracle skills
+
+<li>commercial chat servers tend to be unreliable and expensive to
+maintain; they sometimes bring down entire Solaris machines
+
+</ul>
+
+A potential limitation of our system is that Oracle's consistency and
+durability guarantees are expensive.  If we had 50 submissions per
+second and 1000 queries for chatroom updates per second, we would need a
+super huge Unix machine.  In theory, a custom-built chat server ought to
+be capable of higher performance for a given piece of hardware.  In
+practice, the commercial systems aren't programmed properly and they
+crash.  They also get unreliable and slow when, for example, the number
+of chat rooms is large.
+
+<h3>One Table or Many Tables?</h3>
+
+We've had good luck with the /bboard system since 1995.  This uses one
+table to store all the messages, one message per row with a column for
+<code>topic</code>.  This has the virtue of simplicity.  This has the
+virtue of cleanliness in that all the identically structured data in the
+system is in a single table.  This has the virtue of easy searchability
+since Oracle is designed to build indices on one table at a time.  This
+has the virtue of transactionality for creation of bboard topics and
+deletion of bboard topics; no tables are created or dropped when topics
+are created or dropped.
+
+<p>
+
+A bad thing about the one-table structure is fragmentation and lack of
+recovery of disk space when postings are deleted.  For example, suppose
+that you drop an entire bboard topic with 2000 archived messages.  This
+will result in 2000 random deletions from perhaps 1000 Oracle blocks.
+The table won't shrink any, i.e., it will still consume just as many
+disk blocks.  The free space might not even be used on subsequent
+inserts, depending on what percentage of the block is now free.
+According to <cite>Oracle8 Tuning</cite>, page 146, index entries for
+deleted rows aren't reclaimed until you do an <code>alter index
+***index_name*** rebuild</code>.  In practice, it seems that the
+<code>bboard</code> table on photo.net hasn't suffered too badly from
+this problem (after three months).
+
+<p>
+
+Oracle has b-tree indices that are a maximum of four levels deep
+(header, two intermediate levels, leaf nodes).  So you don't get
+<i>O(log n)</i> access time through an index if the table has an
+outrageous number of rows.  The most important thing that we'll want to
+do is query by chat room key and date-time.  If we were to build a
+concatenated index on these values, we'd probably have the header block
+taken up with all the chat room names.  Then the next level would be
+ranges of times for a particular chat room.  Then the third level could
+be more ranges of times.  Then the leaf nodes would point to the rowids
+for specific dates.  This could be pretty darn selective if Oracle is
+smart about building the index.
+
+
+<h3>Archive or not?</h3>
+
+We have to drive the entire system design from a publishing decision:
+are we interested in seeing archives of chat sessions?  If we are, then
+the one-table structure makes a lot more sense.  We'll want to do a
+single SQL query to see everything that a user has contributed.  We'll
+want to do a single SQL query to see how a customer service person is
+doing. 
+
+<p>
+
+A disadvantage of archiving is that it chews up disk space.  Suppose
+we're America Online and 1 million subscribers chat or AIM every day.
+Let's further assume that each person types 50 rows of stuff, 100 bytes
+each.  That means our table will grow by 50 million rows and 5 GB every
+day.  After 20 days, we'll begin to bump up against the billion-row
+table size that data warehouse experts suggest as a practical limit.
+
+<p>
+
+Does that mean we scrap our simple one-table system?  Not yet.
+Designing systems for the highest volume sites is gratifying in a nerd
+ego sense, but it is a mistake if it leads to fewer features for the
+user and the publisher.  Remember that the future is not mass media but
+personalized content and lots of interesting mid-sized communities.
+
+<p>
+
+Let's reconsider a community like photo.net where the public bboards get
+no more than 2000 new messages per day, each one an average of 650
+characters.  That's an average of 1.3 Mbytes of new content every day,
+implying 8000 days before a 9 GB hard drive is filled up and 500,000
+days before we've built a billion-row table.  Obviously this isn't going
+to be a problem to archive indefinitely.  
+
+<p>
+
+Let's look at the photo.net community another way.  We have about 25,000
+daily visits.  Suppose that each of those 25,000 people used a photo.net
+chat or instant messaging service to send as much communication as they
+send via email.  Assume 100 messages per day and 200 bytes per message
+and all 25,000 people participating.  That's 0.5 Gbytes per day.  We
+fill up a modern (April 1999) 36 GB disk drive after two months. 
+
+<p>
+
+So it seems that on popular public sites we won't be able to store
+everything that users type.  At the same time, a real customer's
+interaction with a real customer service person ought to be archived
+forever (so that you can ask questions like "show me how many users who
+talked to Kathy eventually bought an item").
+
+<h3>How do we accomplish pruning and tuning?</h3>
+
+If we can be sure that we always have at least twice as much disk space
+as the chat that we want saved, we can do the following:
+
+<ul>
+<li>assume the live chat table is <code>chat_msgs</code>
+<li>create a table called <code>chat_msgs_new</code>
+<li>select all the stuff we want to save from <code>chat_msgs</code> and
+insert it into <code>chat_msgs_new</code>
+<li>drop any integrity constraints that reference <code>chat_msgs</code>
+<li><code>drop table chat_msgs</code>
+<li><code>alter table chat_msgs_new rename to chat_msgs</code>
+<li>rebuild indices on <code>chat_msgs</code>
+<li>add any integrity constraints that reference <code>chat_msgs</code>
+</ul>
+
+This is a pretty risky operation and we'd want a PL/SQL program to do it
+rather than rely on a human dba.  Chat could be down for as much as an
+hour so we'd want to do it on an early Sunday morning at the beginning
+of each month (or something similar).  We'll need to develop the Tcl
+scripts so that they can say "Chat server is being maintained right now;
+try back in one hour".  The pruning/tuning should be done by an
+AOLserver ns_schedule_proc that (1) sets the maintenance flag, (2)
+executes the PL/SQL proc, (3) resets the maintenance flag.
+
+<p>
+
+Following this operation, the chat table will be as compact as possible.
+
+<h3>Types of chat we need to support</h3>
+
+Public chat rooms.  These are open to everyone in the
+<code>users_active</code> view.  For moderation, we check perms using <a
+href="permissions.html">the permissions package</a> (where module =
+"chat" and submodule = **chat_room_id**).
+
+<P>
+
+Private chat rooms.  These are open to people in particular user
+groups.  We check perms using <a href="permissions.html">the permissions
+package</a>.
+
+<p>
+
+For either kind of chat room, we should support moderated chat.  That is, a
+posting doesn't go live until it has been approved by someone who has
+the "moderator" or "administrator" role in user group associate with a
+private chat room or, in the case of a public chat room, by someone who
+is a member of the appropriate chat moderation group.
+
+<P>
+
+We want to support 1:1 messages for customer support, if nothing else.
+We need one layer on top of this to make sure that users can find an
+appropriate chat partner. For example, if Bill User says that he needs
+support for his widget, the system has to find the least busy authorized
+widget support person and start a 1:1 chat session between Bill and that
+person.
+
+<p>
+
+For public community sites where nothing is being sold or supported, a
+publisher might wish to limit the load on the server from all of this
+1:1 chatting.  In that case, we set an ad.ini file parameter to just
+bounce users over to the AOL Instant Messenger infrastructure.
+
+<h3>Options for the publisher</h3>
+
+Some options are configurable per-room, e.g., 
+
+<ul>
+<li>Is a room moderated?  
+<li>If so, by whom?
+<li>Is a room restricted to users who are members of a particular group?
+<li>Should messages expire after a certain number of days?
+</ul>
+
+The per-system options are configurable in the ad.ini file.  The big
+items:
+
+<ul>
+<li>can users create their own rooms?
+
+<li>do you want the posting form on the top of the page and the most
+recent messages at the top (this is better for users; they won't have to
+scroll down after a refresh to see if there are new messages); or do you
+want the messages to run down chronologically?  (Note that theglobe.com
+and other popular chat systems seem to use the "new messages on top" style.)
+
+<li>do you want to offer users the option of using the system to send
+private messages to each other (not very well supported in version 1.5)?
+
+<li>do you offer users the ability to see the complete history of a chat
+room or is it "use it or lose it" (Our default is to provide this but
+note that many commercial chat systems do not provide history, at least
+not to the users)
+
+
+<li>exactly how many messages should be displayed when users get a chat
+page (starts at "short" and if they click "more messages" they can
+graduate to "medium" or "long")
+
+<li>add a photograph or other graphic in the top left corner of all chat
+pages? 
+
+</ul>
+
+<pre>
+[ns/server/yourservername/acs/chat]
+EnabledP=1
+; SystemName=Chat
+; how long to cache the postings to a room (updates force a cache update
+; so this theoretically could be 5 hours or whatever)
+CacheTimeout=120
+; how long will a room's properties (e.g., private group, moderation) be cached
+RoomPropertiesCacheTimeout=600
+UsersCanCreateRoomsP=0
+; set to 1 if you want most recent postings on top; this is the way that 
+; theglobe.com and other familiar chat systems do it (keeps users from 
+; having to scroll to see new msgs)
+MostRecentOnTopP=1
+; do we want to offer users the option of sending private messages?
+PrivateChatEnabledP=0
+; do we offer users a link to a chat room's history?
+ExposeChatHistoryP=1
+; how many messages to display when users choose short medium or long
+NShortMessages=25
+NMediumMessages=50
+NLongMessages=75
+; show a picture at the index page and in individual rooms?
+DefaultDecoration=&lt;a href="/photo/pcd0865/rachel-mouth-3.tcl"&gt;&lt;img HEIGHT=134 WIDTH=196 src="/photo/pcd0865/rachel-mouth-3.1.jpg" ALT="Mouth."&gt;&lt;/a&gt;
+; how often the javascript version should refresh itself
+JavaScriptRefreshInterval=5
+</pre>
+
+
+<h3>Linking into the system from a static page</h3>
+
+If you want to link into the chat system from a static page elsewhere on
+your site, do it by linking to "enter-room.tcl" rather than the more
+obvious "chat.tcl".  That way other users will see people coming in.
+
+<blockquote>
+<pre><code>
+&lt;a href="/chat/enter-room.tcl?chat_room_id=142"&gt;Chat&lt;/a&gt;
+</code></pre>
+</blockquote>
+
+
+<h3>Ensuring high performance</h3>
+
+Inevitably a system like this will require some polling, either by Java
+clients, HTTP Refresh headers, or JavaScript.  If we have 100 people in
+a chat room and they are all polling every 2 seconds, we don't want to
+have to buy an 8-CPU computer to support 50 queries per second right
+into Oracle.  So we make heavy use of 
+<a
+href="proc-one.tcl?proc_name=util_memoize"><code>util_memoize</code></a>.
+When a new posting is made, we force a cache update with <a
+href="proc-one.tcl?proc_name=util_memoize_flush"><code>util_memoize_flush</code></a>.
+More than 95% of the time, a user is getting 
+results from AOLserver's virtual memory and not from the database.
+
+
+<h3>Why the HTML version can't autorefresh</h3>
+
+The HTML page cannot have a Refresh: header for client-pull autofresh.
+If you did this, the user would be at risk of losing what he or she was
+typing into the post form.
+
+
+<h3>If you care about database performance</h3>
+
+An active chat server is going to result in a fair number of Oracle
+transactions.  You'll at least want to keep chat tables on a new
+separate physical disk drive.  You'll want indices on those tables to
+reside on yet another new disk drive.  Since every disk drive on a 24x7
+server must be mirrored, that means you need four new disk drives to
+implement this module.  
+
+<h3>Practical Experience from photo.net</h3>
+
+We tested the service on photo.net.  Here's a transcript excerpt from
+the first day:
+
+<blockquote>
+<pre><code>
+Justin (06:42:14) Anyone there?
+Justin (06:46:41) alright...I'll assume everyone is asleep. Sleep well. Goodnight.
+Tommy (06:55:33) anyone here?
+Tommy (06:58:09) so this is supposed to be a camera shopping chat room...
+Justin (07:27:04) I'm here.
+Justin (07:28:25) But...I guess you were here...like a half hour ago, so I'm going to take my
+circadain rhythm problem to the donut shop.
+Lim (09:59:23) hi
+Lim (09:59:51) anybody around?
+Eve (10:19:10) Hi there.
+Eve (10:24:14) anybody around? Are you still there Lim?
+</code></pre>
+</blockquote>
+
+Kind of makes you feel that all those long hours spent programming and
+maintaining Unix and Oracle were worthwhile...
+
+<hr>
+<a href="http://photo.net/philg/"><address>philg@mit.edu</address></a>
+</body>
+</html>

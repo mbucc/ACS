@@ -1,0 +1,54 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>Member Value</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Member Value</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="http://photo.net/philg/">Philip Greenspun</a>
+
+<hr>
+
+<ul>
+<li>User-accessible directory:  none
+<li>Site administrator directory:  <a href="/admin/member-value/">/admin/member-value/</a>
+<li>data model :  <a href="/doc/sql/display-sql.tcl?url=/doc/sql/member-value.sql">/doc/sql/member-value.sql</a>
+
+</ul>
+
+<h3>The Big Idea</h3>
+
+If we're commercial, we want to know how much to charge each user at the
+end of each month.  If we're non-commercial, we want to use
+pseudo-dollars to track those members who are imposing a burden on the
+community (e.g., by posting off-topic questions in a discussion forum).
+
+<h3>Rates, etc.</h3>
+
+Rates and policies are kept in the "acs/member-value" section of the
+/parameters/ad.ini file.  I'm not 100% happy about this because I think
+that some Oracle-based accounting software might need to check rates.
+It also keeps simple Oracle triggers from adding charges.  But on
+balance, I thought it was more important to be consistent with the
+ad.ini religion of the ArsDigita Community System.  None of the pages
+that use member value depend explicitly on rates being stored in a .ini
+file.  Instead of using <code>ad_parameter</code> to check a rate, they
+use <code>mv_parameter</code> (defined in /tcl/ad-member-value.tcl).
+
+<h3>A non-commercial site</h3>
+
+A site like photo.net that is non-commercial but wishes to keep track of
+who has cost the community how much needs the following tables:
+
+<ul>
+<li>users_orders (because users_charges references it)
+<li>users_charges
+</ul>
+
+<hr>
+<a href="http://photo.net/philg/"><address>philg@mit.edu</address></a>
+</body>
+</html>

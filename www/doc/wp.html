@@ -1,0 +1,159 @@
+<html>
+<head>
+<title>WimpyPoint</title>
+</head>
+
+<body bgcolor=white text=black>
+<h2>WimpyPoint</h2>
+
+part of the <a href="">ArsDigita Community System</a><br>
+by <a href="http://photo.net/philg/">Philip Greenspun</a>,
+   <a href="http://www.coordination.com/krish/">Krish Menon</a>, and
+   <a href="mailto:jsalz@mit.edu">Jon Salz</a>
+
+<hr>
+
+<ul>
+<li>User-accessible directory: <a href="/wp/">/wp/</a>
+<li>Data model: <a href="/doc/sql/display-sql.tcl?url=/doc/sql/wp.sql">/doc/sql/wp.sql</a>
+<li>Procedures: /tcl/wp-defs.tcl
+</ul>
+
+<h3>History</h3>
+
+WimpyPoint was born as a standalone application, started by Philip Greenspun
+in late December, 1997 and later enhanced by Krish Menon. WimpyPoint was 
+rewritten by Jon Salz and reborn as an ACS module in late 1999, as
+a term project for MIT's <a href="http://6916.lcs.mit.edu">6.916: Software Engineering of Innovative Web Services</a> class.
+
+<p>For more general information, see
+the <a href="/help/for-one-page.tcl?url=%2fwp%2findex%2etcl">the user-level help pages</a>.
+
+<h3>Data Model</h3>
+
+<h4>Styles</h4>
+
+The standalone WimpyPoint provided only limited style support: it allowed users to select
+from a limited set of CSS style sheets to associate with each presentation. Users can now
+maintain their own repositories of styles. Each style is a row in the <tt>wp_styles</tt>
+table. Users can provide colors (stored in table columns in the form <tt>192,192,255</tt>)
+and optionally background image.
+
+<p>A style can be marked public, meaning that every user can view it. (For instance,
+the "Default (Plain)" style is public.) The UI does not provide any mechanism for
+styles to be marked public (administrators should just use SQL*Plus to change <tt>public_p</tt>).
+
+<p>Note that the <tt>wp_styles</tt> and <tt>wp_style_images</tt> tables are interdependent,
+so if you wanted to drop either table you'd need to use the <tt>CASCADE CONSTRAINTS</tt>
+option to <tt>DROP TABLE</tt>.
+
+<p>The style mechanism has much more general applicability than just to WimpyPoint - it
+might be useful in the future to abstract this out somehow to provide cross-module style-editing
+support.
+
+<h4>Versioning</h4>
+
+The data model is complicated significantly by versioning support,
+which allows the owner of a presentation to freeze the slide set (and
+later view previous versions, or revert to them). Each presentation
+is associated with a nonempty set of "checkpoints," each a row in the
+<tt>wp_checkpoints</tt> table.
+Each slide is associated with the range of checkpoints
+<tt>[min_checkpoint, max_checkpoint)</tt> in <tt>wp_slides</tt> (a <tt>max_checkpoint</tt>
+of <tt>NULL</tt> corresponds to infinity, i.e., the latest version).
+
+<p>In general, when a slide is edited and hasn't been changed
+since the latest checkpoint, we make a new copy of the slide and fiddle
+with the <tt>(min|max)_checkpoint</tt> of the old and new slide; when a slide is deleted,
+we just set <tt>max_checkpoint</tt> to the current checkpoint (so it becomes
+invisible in the most recent "view"). See <tt>slide-edit-2.tcl</tt> and
+<tt>slide-delete-2.tcl</tt> for examples.
+
+<p>When a slide set is frozen, we preserve the sorted order of the slides
+in <tt>wp_historical_sort</tt>. Without this facility, in order to maintain
+the versioning abstraction, whenever a user reordered slides
+in a versioned presentation we'd have to recopy all the slides (defeating
+the incremental nature of our versioning implementation).
+
+<p>The <tt>wp_(previous|next)_slide</tt> functions determine
+the slide before/after a particular slide when viewing the slide set at
+a particular checkpoint (a <tt>v_checkpoint</tt> of <tt>NULL</tt>) corresponds
+to the latest version).
+
+<p><tt>wp_set_checkpoint</tt> and <tt>wp_revert_to_checkpoint</tt> do pretty
+much what you'd think.
+
+<h4>Access Control</h4>
+
+Access control is handled using ACS groups. The <tt>wp_access</tt> function
+determines, given a user's ID (or <tt>NULL</tt> for an anonymous user and
+some fields from <tt>wp_presentations</tt>, what privileges the user has
+with respect to the presentation.
+
+<h3>Tcl Definitions</h3>
+
+This was a term project, so I (<a href="mailto:jsalz@mit.edu">Jon</a>) was
+eager to do something interesting from an engineering standpoint,
+and went maybe a little overboard with
+the abstractions involved. I don't think these are bad abstractions per se -
+they consolidate code which, while taking 6.916, I found myself writing over and over -
+but in retrospect maybe using abstraction so heavily is not The ACS Way(tm).
+
+<ul>
+<li><tt><b>wp_select</b></tt>, a control structure, takes the
+place of the usual <tt>ns_db select</tt>/<tt>ns_db getrow</tt>/<tt>set_variables_after_query</tt>
+loop. You can do:
+
+<blockquote><pre>wp_select $db "select foo, bar from whatever" {
+    ns_write "&lt;li&gt;$foo, $bar\n"
+} else {
+    ns_write "&lt;li&gt;nothing selected\n"
+}</pre></blockquote>
+
+<li><tt><b>wp_prepare_dml</b></tt>, given a table name, and names and values of columns, prepares
+an <tt>UPDATE</tt> or <tt>INSERT</tt> statement. In general, this facilitates the consolidation
+of pages which add records and edit existing records (e.g., <tt>slide-edit-2.tcl</tt> and
+<tt>slide-add-2.tcl</tt> are wrapped into <tt>slide-add.tcl</tt>). This is useful since
+<tt>-add</tt> and <tt>-edit</tt> pages often have to do the same kind of input validation
+anyway.
+
+<li><tt><b>wp_clob_dml</b></tt> applies an <tt>INSERT</tt> or <tt>UPDATE</tt> DML statement (such as that prepared by
+<tt>wp_prepare_dml</tt>), optionally with up to three CLOBs provided in a list.
+
+<li><tt><b>wp_try_dml</b></tt> and <tt><b>wp_try_dml_or_break</b></tt> try to execute a <tt>DML</tt> statement
+but generate an appropriate error message if it fails. (<tt>wp_try_dml_or_break</tt> additionally does a
+<tt>return -code return</tt> in this case.)
+
+<li><tt><b>wp_only_if</b></tt> returns certain text if a condition is true, else other text.
+This is useful for embedding in long strings, e.g.:
+
+<blockquote><pre>ns_write "
+... stuff ...
+
+&lt;option [wp_only_if { $id == 1 } "selected"]&gt;Nummer Eins
+&lt;option [wp_only_if { $id == 2 } "selected"]&gt;Nummer Zwei
+
+... more stuff ...
+"</pre></blockquote>
+
+<li><tt><b>wp_header</b></tt>, given an <tt>ad_context_bar</tt>-style argument list, generates
+the entire header for a page. The title is simply the last element of the argument list.
+<i>Your Workspace</i> is included in the header only if the user is currently logged in.
+
+<li><tt><b>wp_header_form</b></tt> is just like <tt>wp_header</tt>, except that the first
+argument contains attributes to insert into a <tt>&lt;form&gt;</tt> tag placed at the top
+of the page. (We always insert <tt>&lt;form&gt;</tt> at the very top of a page because
+placing it anywhere else results in unsightly extra white space.)
+
+<li><tt><b>wp_slider</b></tt> generates a slider given a list of options. It's typically
+used like this:
+
+<blockquote><pre>ns_write [wp_slider "age" $age \
+    [list [list 7 "Week Old"] [list 30 "Month Old"] [list all "All"]]]</pre></blockquote>
+
+</ul>
+
+</body>
+</html>
+
+

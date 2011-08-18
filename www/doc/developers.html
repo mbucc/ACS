@@ -1,0 +1,731 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>Developers Guide</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Developers Guide</h2>
+
+to the <a href="index.html">ArsDigita Community System</a>
+by <a href="http://photo.net/philg/">Philip Greenspun</a>
+
+<hr>
+
+This document contains general guidelines for building new ACS pages.
+It should used in conjunction with <a href="procs.tcl">the procedure-by-procedure documentation</a>.
+
+
+<h3>Writing a Whole Module</h3>
+
+If you're writing a new module, see the short instructions in <a href="custom.html">/doc/custom.html</a>,
+and a detailed guide in <a href="/doc/writing-a-module.html">/doc/writing-a-module.html</a>.
+
+<h3>Documentation</h3>
+
+Every procedure that you expect to be called externally (i.e., by Tcl
+code that doesn't reside in the same file) should be documented with a
+doc string.  Instead of using <code>proc</code>, you should use
+<code>proc_doc</code>.  This results in <a href="procs.tcl">the
+procedure-by-procedure documentation</a>.  If you're a new programmer,
+you might want to read the <a href="common-errors.html">common errors
+list</a>.
+
+<p>
+
+You call <code>proc_doc</code> with a string in between the args and the body:
+
+<blockquote>
+<pre>
+proc_doc plus2 {x} "returns the result of adding 2 to its argument" {
+    return [expr $x + 2]
+}
+</pre>
+</blockquote>
+
+<h3>Magic Numbers in the Code (Parameters)</h3>
+
+Don't put magic numbers in your code with site-specific stuff, e.g.,
+whether a particular feature is enabled or disabled.  Add a parameter or
+a section, if necessary, to your ad.ini file in the /parameters
+directory.
+
+Instead of 
+
+<blockquote>
+<pre><code>
+proc bboard_users_can_add_topics_p {} {
+    return 0
+}
+</code></pre>
+</blockquote>
+
+do 
+
+<blockquote>
+<pre><code>
+[ns/server/photonet/acs/bboard]
+; can a user start a new bboard
+UserCanAddTopicsP=0
+...
+
+proc bboard_users_can_add_topics_p {} {
+    return [ad_parameter UserCanAddTopicsP bboard]
+}
+</code></pre>
+</blockquote>
+
+<h3>Naming</h3>
+
+If it is a parameter, put it in
+/web/yourdomain/parameters/yourdomain.ini and capitalize words, e.g.,
+"SystemName" (for consistency with AOLserver .ini file).
+
+<p>
+
+If your define a Tcl procedure that is site-specific, name it with a
+prefix that is site-specific.  E.g., the EDF scorecard.org site uses
+"score_".  A site to sell khakis uses "k_".
+
+<p>
+
+If it is a community procedure, name it ad_ and put in somewhere in the
+/tcl directory.
+
+<p>
+
+If it is a utility procedure, name it util_ and put it in the
+/home/nsadmin/modules/tcl/utilities.tcl file.
+
+
+<h3>Naming (files)</h3>
+
+In general, we like to name sequences of forms in the following way:
+
+<ul>
+<li>foo.tcl (or foo.adp) -- presents a form to the user
+<li>foo-2.tcl (or foo-2.adp) -- presents a confirmation page to the user 
+<li>foo-3.tcl (or foo-3.adp) -- actually does the database transaction,
+may redirect rather than present anything to the user
+</ul>
+
+As far as the "foo" goes (the actual name of the file), we like to use
+object-verb.  So you might have "user-update.tcl" for a form that
+updates a record in the <code>users</code> table.  Try not to be
+redundant with the directory name.  So if you have a bunch of scripts in
+a directory called "users", the script to look at one user would just be
+"one.tcl" rather than "user.tcl".
+
+<h3>Naming (columns)</h3>
+
+The following column names are ArsDigita Community System standards.
+<ul>
+<li> creation_date  - date row was created
+<li> creation_user - user_id of the creator
+<li> creation_ip_address - ip address of the creator
+<li> last_modified - date row was last modified
+<li> last_modifying_user - user_id of the user last modifying the row
+<li> modified_ip_address - ip address of the last modifying user
+<li> html_p (t,f) -  is the text in html?
+<li> approved_p (t,f) - is this row approved?
+</ul>
+
+<h3>Style Guide</h3>
+
+Dynamically generated pages should always be signed with an email
+address.  This should be the correct address for a user complaining that
+a page does not contain the correct content.  Thus in general the
+correct footer for a user page will be either <code>ad_footer</code> or
+<code>gc_footer</code> or <code>calendar_footer</code>, etc.  Admin
+pages should end with <code>ad_admin_footer</code>.  Then if the
+webmaster encounters a bug or a page that doesn't do what is needed, he
+or she can complain to a programmer.
+
+<p>
+
+If we're building a system where we can't get any better theories from
+the publisher, we design pages to have the following structure:
+
+<ul>
+<li>title
+
+<li>context bar (Yahoo-style navigation)
+
+<li>HR
+
+<li>out-of-flow options such as help or admin (aligned off to the right,
+just underneath the HR)
+
+<li>the meat of the page
+
+<li>navigation and "more info" options
+
+<li>HR
+
+<li>email address signature 
+
+</ul>
+
+What about smaller style issues?  Here are some general principles we've
+developed so far at ArsDigita:
+
+<ol>
+
+<li>don't smash stuff against the left margin of the page (hard to read,
+esp. on screens crowded with windows); use BLOCKQUOTE or UL/LI tags to
+put a white border between the left edge of the browser and the content
+on the page.  Note that this also applies to tables of info.  BLOCKQUOTE
+then TABLE.
+
+<li>try to have no more than one form button per page and certainly no
+more than one per form.  Some sub-issues:
+
+<ul>
+
+<li>you will never have a RESET or CANCEL button.  A user who mis-mouses
+should not lose typed-in data.  If they change their mind, let them back
+up, navigate away via the context bar, or reload.
+
+<li>a SUBMIT button should never be called "submit".  It should say
+something like "Create Account" or "Proceed" (if a multi-form pipeline)
+or "Search"
+
+<li>the submit button should be centered within the page, underneath the
+table of form inputs
+
+</ul>
+
+<li>speaking of forms, if you have hidden or pass-through variables,
+put them right up at the top of the form immediately underneath the FORM
+tag.
+
+</ol>
+
+<h3>Using the Database Intelligently</h3>
+
+Virtually every page on every site that ArsDigita has ever built (1) is
+generated by a computer program, (2) has access to the relational
+database that sits behind the site.  Take advantage of these facts.
+
+<p>
+
+How?  Follow two principles:
+
+<ol>
+
+<li>Show users as much information as quickly as possible; don't make
+them click down
+
+<li>Don't offer users dead links.
+
+</ol>
+
+These sound obvious but most programmers' instincts are to produce .tcl
+pages that behave like static .html files.  For example, in a bond
+trading site the top-level page might offer links to "portfolio,
+trading, and open orders".  This could have been done with a .html file!
+Instead, why not query Oracle to find out the total value of the
+portfolio (show users as much info as possible)?  Or query Oracle to
+find out if there <em>are</em> any open orders; if there are just a few,
+display them in-line, otherwise don't have a hyperlink anchored with
+"open orders" (show as much info as possible; don't offer dead links).
+
+<p>
+
+In a photography classifieds page, don't show categories that haven't
+any current ads (no dead links) and count up the ads in each category
+for display next to the link (as much info as possible).  Isn't this
+GROUP BY that sequentially scans the classifieds table kind of expensive
+for a top-level page on a non-commercial site?  Sure.  But the solution
+is to use <code>Memoize_for_Awhile</code> to cache results in virtual
+memory.
+
+<p>
+
+Computer time is cheap; user time is precious.  Work the server hard on
+behalf of each and every user.  Support the user with personalization.
+Find out what is going to be down a hyperlink before offering it to the
+user.  Buy extra processors as the community grows.
+
+
+<h3>Give the User Dimensional Controls</h3>
+
+See the /ticket module for how a large body of data may be rendered
+manageable by giving the user several dimensions along which to select.
+
+<h3>Pages that accept user input</h3>
+
+Pages that accept user input should first call ad_read_only_p to make
+sure that the Oracle database isn't being maintained in such a way that
+updates would be lost.  Right at the top of a file that offers the user
+a form or stuff something into the db, put 
+
+<blockquote>
+<pre>
+if {[ad_read_only_p]} {
+    ad_return_read_only_maintenance_message
+    return
+}
+</pre>
+</blockquote>
+
+<p>
+
+Systems should be designed so that a user clicking submit twice will not
+result in a duplicate database entry.  The fix is that we generate the
+unique primary key in the form or the approval page (better since it will
+still work if the user reuses the form).  See the ecommerce chapter of
+<a href="http://photo.net/wtr/thebook/">my book</a> for a discussion of
+how this works.  See the news subsystem for a simple implementation
+example.
+
+<p>
+
+Systems should be designed so that they do something sensible with plain
+text and HTML.  Add an "html_p" column to any table that accepts user
+input.  Store the user input in unadulterated form in the database.
+Convert it to HTML on the fly if necessary when displaying (this
+consists of guessing where to stick in &lt;P&gt; tags and quoting
+greater-than or less-than signs).  See the
+news subsystem for an example.
+
+<h3>Pages that are broken</h3>
+
+It is nice to email the host admin if things are wrong, but don't do it
+directly with ns_sendmail; use ad_notify_host_administrator (defined in
+/tcl/ad-monitor.tcl ).  This way, the host admin won't get email more
+than once every 15 minutes.
+
+<h3>Adding an item when some are present</h3>
+
+Suppose that you have a page that has to (1) show a list of some items,
+(2) offer the user the option of adding a new item of the same type as
+the items being displayed.
+
+<P>
+
+Our convention in the ACS is to present the existing items in a list
+(UL).  Then we have a blank line (P tag).  Then we have a new list item
+(LI) with a hyperlinked phrase like "add new item".  
+
+
+<h3>Content that can accept comments</h3>
+
+In general, the purpose of Web content is to attract comments (see
+Chapter 1 of <a href="http://photo.net/wtr/thebook/">my
+book</a> if you aren't convinced).  That means whenever you're
+developing a new application within ACS you should give users the
+ability to contribute comments.  This is already a system feature for
+static pages and the discussion forum.  For miscellaneous areas, such as
+news and calendar, use this table from general_comments.sql:
+
+<blockquote>
+<pre>
+create table general_comments (
+	comment_id		integer primary key,
+	on_what_id		integer not null,
+	on_which_table		varchar(50),
+	user_id			not null references users,
+	comment_date		date,
+	ip_address		varchar(50) not null,
+	modified_date		date,
+	content			clob,
+	approved_p		char(1) default 't' check(approved_p in ('t','f'))
+);
+</pre>
+</blockquote>
+
+Note that it points to other tables via the on_what_id and
+on_which_table columns.
+
+<h3>Email Alerts</h3>
+
+To avoid sending undesired email, use  the  <code>users_alertable</code>  view instead of the <code>users</code> table as a selection pool for generating alerts:
+
+<blockquote>
+<pre>
+create or replace view users_alertable
+as
+select * 
+ from users 
+ where (on_vacation_until is null or 
+        on_vacation_until < sysdate)
+ and (deleted_p is null or deleted_p = 'f')
+ and (email_bouncing_p is null or email_bouncing_p = 'f');
+</pre>
+</blockquote>
+
+
+<h3>Distributing Maintenance</h3>
+
+When distributing maintenance responsibility, use the <a
+href="permissions.html">permissions package</a>.  See the /gc/ module
+for an example of how this package may be used.
+
+<h3>Auditing</h3>
+
+Often a table will need to be audited, particularly if your client
+has hired a number data entry people who are prone to make
+mistakes.  Auditing a table allows you
+to see who made changes, when the changes were made, what
+changed, and the history of all states the data have been in (so
+the data are never lost).
+
+<p>
+
+Auditing a table consists of:
+
+<p>
+
+<ul>
+<li>Adding a few columns to the table to record the time of update
+and the identity of the person making the update.
+<li>Creating a separate audit table that contains all old versions
+of the data in the table.
+<li>Creating a trigger which automatically stuffs a row into the
+audit table whenever the original table is modified.
+</ul>
+
+<p>
+
+The ACS has a number of auditing conventions which you should follow,
+as well as some utility procedures which can be used to display the history
+of all states a table (or set of tables) has been in.  This is documented
+in the <a href="audit.html">Audit Trail Package</a>.
+
+<p>
+
+<h3>Adding Graphics</h3>
+
+If you want to add graphics to your site without performing major
+surgery, the easiest thing to do is add <em>illustrations</em>.  That
+is, put in pictures and drawings to give users a feeling of place.
+Avoid making graphics and buttons part of the user interface.  It will
+make the site hard to use for people on slow links.  It will make it
+harder to maintain the code.  It will make it harder to offer a
+text-only version of the site.
+
+<p>
+
+The two places on photo.net where there are decorations like this are 
+up in the headline (turning it into an HTML table) and also alongside
+lists of stuff.  Procedures that support this are the following:
+
+<ul>
+<li><code><a href="proc-one.tcl?proc_name=ad_decorate_side">ad_decorate_side</a></code> (in /tcl/ad-sidegraphics.tcl) 
+<li><code><a href="proc-one.tcl?proc_name=ad_decorate_top">ad_decorate_top</a></code> (in /tcl/ad-defs.tcl)
+</ul>
+
+See <a
+href="http://photo.net/bboard/">http://photo.net/bboard/</a> for a
+demonstration of both in use.
+
+<h3>Categorization</h3>
+
+Suppose that you want to let each user manage a collection of items on
+the server.  For example, at jobdirect.com, an employer searches among
+tens of thousands of student resumes and can pick out especially
+promising students to save for later scrutiny.  You know that at least
+some users will pick hundreds of students via this mechanism and will
+need some way to organize them.  However, new employer-users won't have
+any students on their "favorites" list and it is unnecessary to expose
+them to categorization machinery as they pick their first favorite
+student.  Suppose that your categorization solution for power users is
+one layer of folders.  When Joe Employer picks his first favorite
+student, should he really be hammered with a message: "You haven't set
+up any folders for favorite students yet.  Please set up a folder first
+and then you can pick favorite students."
+
+<p>
+
+Remember Alan Cooper's adage that "No matter how cool your user
+interface, it would be better if there were less of it."
+
+<p>
+
+We applied this principle on jobdirect.com by suppressing the
+categorization machinery until the employer-user had picked at least 8
+students.  Categorization then appeared as an option when the user was
+viewing his or her list of favorite students (presumably this is the
+only time when the user might have been thinking "hey, this list is
+getting long").  Once the user had elected to switch over to the more
+complex categorization interface, future picks of favorite students
+would result in messages like "Oh, into which folder would you like us
+to put this resume?"
+
+<p>
+
+For the advanced user, given that you're going to have categorization
+you might ask how much is needed.  Users are familiar with the
+hierarchical directory structures in the Windows and Macintosh file
+systems.  Or are they?  Hierarchical file systems were lifted from the
+operating systems of the 1960s and pushed directly into consumer's laps
+without anyone asking the question "Are desktop users in fact able to
+make effective use of this interface directly?"  The programmers who
+built file systems needed an O(log n) retrieval method for files.  A
+tree data structure yields O(log n) retrieval, so a file system has an
+underlying hierarchical structure.  The programmers were too lazy to
+develop any kind of categorization or database scheme on top of the
+hierarchical tree so they just exposed the tree structure directly to
+users.  So let's not invest too much authority in tree-structured file
+systems.
+
+<p>
+
+Even if they have painfully learned to manage a hierarchy of files on
+their desktop, do users want to manage another hierarchy on each Web
+service that they use?
+
+<p>
+
+Do we need elaborate hierarchies?  Consider the user who has 1000 items
+to manage but is very likely to want to work on the 20 selected or
+uploaded in the last month.  Does this user need to wade through 1000
+listings to find the 20 most recent?  No, not if we provide a "sort by
+most recent" option.  Then the user can simply look at the top of the
+page and not scroll down too much.
+
+<p>
+
+Can we survive with only one level of hierarchy?  I think so.
+Especially if 
+
+<ul>
+
+<li>you provide ways to sort by creation or modification date within a
+category
+
+<li>you provide multiple hierarchies (e.g., by project, by subject)
+
+</ul>
+
+
+<h3>Searching -- is scoring better than a naive SQL query?</h3>
+
+Suppose that you're faced with the task of letting the user search
+through some data.  One way to go about this is to give the user the
+ability to type SQL queries.  
+
+<p>
+
+User typing SQL queries?!?!?  Am I insane?  How could a random Web
+surfer be expected to master the profundities of SQL syntax?  
+
+<p>
+
+Thus the average Web developer will typically build an HTML form to
+shield the user from the complexity of SQL <em>while retaining all the
+power of SQL</em>.  This form will have one input for every column in
+the table, perhaps with some ability for a user to specify operators
+(e.g., "less than", "equal to", "starting with").  The form will have a
+select box or radio button set where the user can decide whether he
+wants to AND or OR the criteria.
+
+<p>
+
+This approach shields the user from the trivial <em>syntactic</em>
+complexity of SQL but directly exposes the far more brain-numbing
+<em>semantic</em> complexities of SQL in general and the publisher's
+data model in particular.
+
+<P>
+
+<blockquote>
+
+<b>Bottom Line Principle 1</b>: the first search form that your user sees
+ought to be a single text entry box, just like AltaVista's.  The results
+page can explain how the results were obtained and perhaps offer a link
+to an advanced search form at the bottom (on the presumption that the
+user has scanned all the results and found them inadequate).
+
+</blockquote>
+
+<p>
+
+Let's now consider the case of the user who fills out a multi-input
+search form or types a long phrase into a text search box.  I.e., the
+user has given the server lots of information about his or her
+interests.  What is this user's reward?  Generally fewer results than
+would be delivered to a user who only provided one query word or filled
+in one field in the moby search form.  Compare this to AltaVista, Lycos,
+and other full-text search systems that people use every day.  The more
+words a user gives a public search engine, the more results are returned
+(though oftentimes only the first 20 or 30 are displayed).
+
+<blockquote>
+
+<b>Bottom Line Principle 2</b>: the more information a user gives to
+your server the more results your server should offer to the user.
+
+</blockquote>
+
+<p>
+
+This principle seems dangerous in practice.  What if the user types so
+many words that essentially every item in the database is a match?
+Wouldn't it be better to offer an advanced search form that lets the
+user limit results explicitly.
+
+<p>
+
+Very seldom.  Users are terrible at formulating boolean queries.  Most
+often, they'll come up with a query that matches every row in your
+database or a query that matches none.  You really shouldn't engineer
+software so that it is possible for the server to return a page saying
+"Your query returned zero results."
+
+<p>
+
+What's the way out?  Suppose that you could score every row in the
+database again the user's criteria.  It would then be perfectly
+acceptable to return every row in the database, ranked by descending
+score.  The user need only look at the top of the page and may ignore
+the less relevant results.
+
+<p>
+
+Is this a radical idea?  Hardly.  All the public search engines use it.
+They may return tens of thousands of results if a user supplies a long
+query string but the most relevant ones are printed first.
+
+
+<blockquote>
+
+<b>Bottom Line Principle 3</b>: Scoring and ranking and returning the
+top scoring items is a much better user interface than forcing the user
+into a simplistic binary in/out.
+
+</blockquote>
+
+Suppose that your users are giving you criteria that are more structured
+than free text.  What's a good user interface?  On the search form, ask
+for preferences but provide checkboxes to "absolutely exclude items that
+don't meet this criterium".  On the results page, print items as
+follows:
+
+<blockquote>
+
+<table>
+<tr>
+<td bgcolor=#EEEEEE>
+<font size=-1 face="verdana, arial, helvetica">
+<ul>
+
+<h4>Items that meet all your criteria</h4>
+<li>98: foobar
+<li>92: yow
+<br>
+<br>
+... 
+
+<h4>Items that meet some of your criteria</h4>
+
+<li>83: blatzco
+<li>83: bard 
+<li>82: cookie monster
+<br>
+<br>
+... 
+
+</ul>
+</font>
+</td>
+</tr>
+</table>
+</blockquote>
+
+
+<h3>Warning signs that you don't know SQL</h3>
+
+Most Web programmers suffer from the delusion that they know SQL and
+understand Oracle.  This delusion stems from the euphoria of getting a
+Web page to work.  In reality, most Web programmers are very weak SQL
+developers and the only things that save them are the incredible speed
+of modern computers and the relative paucity of traffic on most Web
+sites.
+
+<p>
+
+Here are some warning signs that you need to get help from a real SQL
+programmer:
+
+<ul>
+<li>you've built a page that uses <code>lock table</code>
+
+<li>you query Oracle for N things and then use Tcl code to filter out
+some that don't fit your criteria for display.  I.e., you don't use all
+of the data that you query from Oracle.  SQL is a very powerful query
+language and, supplemented on occasion with PL/SQL or Java inside the
+database, it is always possible to do your filtering inside Oracle
+rather than dragging data across SQL*Net to filter in Tcl.
+
+<li>you've built a page that queries Oracle for a list of stuff and
+then, for each thing in the list, goes back to Oracle with another
+query.  So if you had 1000 things on the list, you'd go to Oracle a
+total of 1001 times for this page.  This kind of page can almost always
+be slimmed down to 1 single query with an outer JOIN and GROUP BY.  You
+might need to JOIN against an on-the-fly view.  In the worst case you
+might need a PL/SQL procedure.
+
+<li>you've gone into SQL*Plus and <code>set timing on</code> and
+<code>set autotrace trace</code> and find that some of your queries are
+taking more than a fraction of a second and/or requiring full table
+scans.  Online systems should try to get everything done within 1/10th
+of a second.  Remember that if your page takes 1/10th of a second you
+can only serve 10 pages/second per processor.
+
+</ul>
+
+<h3>Sharing data among threads</h3>
+
+The AOLserver <code>ns_share</code> construct is very slow in the Tcl
+8.2 version of AOLserver.  We recommend the use of the much more
+powerful <cod>nsv</code> facility, documented in
+<a href="README-NSV.txt">README-NSV.txt</a>.
+
+<h3>Filters</h3>
+
+Use of <tt>ns_register_filter</tt> is deprecated as of ACS 3.2 - it's been
+replaced with <tt><a href="/doc/proc-one.tcl?proc_name=ad%5fregister%5ffilter">ad_register_filter</a></tt>, a drop-in replacement which supports
+some extra flags. <tt>ad_register_filter</tt>
+provides the following functionality:
+
+<ul>
+  <li><b>Priorities</b> - filters are executed in order of priority (lowest number to highest).
+For instance, the security filter (which must be run before anything else) has a priority of
+1, compared to the default of 10000.
+  <li><b>Monitoring</b> - using <a href="/admin/monitoring/filters.tcl">/admin/monitoring/filters.tcl</a>
+you can see which filters will run for any given request.
+  <li><b>Debugging</b> - invocations of the filter can be logged.
+  <li><b>Error recovery</b> - if a non-critical filter throws an error, subsequent filters will
+still be run (AOLserver's default behavior is to terminate the connection if any filter fails).
+</ul>
+
+<p>To provide this extra flexibility, ACS actually registers a single "&uuml;ber-filter"
+with AOLserver and handles
+filtering itself (in <tt>ad_handle_filter</tt>).
+
+<p>You can use Perl to change all your legacy code to use <tt>ad_register_filter</tt>:
+
+<blockquote><pre>perl -pi -e 's/ns_register_filter/ad_register_filter/g' <i>files-to-process...</i></pre></blockquote>
+
+<h3>Scheduled Processes</h3>
+
+<tt>ns_schedule_proc</tt> is also deprecated as of ACS 3.2 - use 
+<tt><a href="/doc/proc-one.tcl?proc_name=ad%5fschedule%5fproc">ad_schedule_proc</a></tt> instead. <tt>ad_schedule_proc</tt> is <i>almost</i> a drop-in replacement (the
+syntax for flags is slightly different, as the <tt>-thread</tt> and <tt>-once</tt> switches
+require argumens -
+see the <a href="/doc/proc-one.tcl?proc_name=ad%5fschedule%5fproc">documentation</a>. Using <tt>ad_schedule_proc</tt> lets you track which scheduled procedures are
+about to be run and when (view <a href="/admin/monitoring/scheduled-procs.tcl">/admin/monitoring/schedule-procs.tcl</a>).
+
+<p>You can use Perl to change all your legacy code to use <tt>ad_schedule_proc</tt>:
+
+<blockquote><pre>perl -pi -e 's/ns_schedule_proc( -\w+)?/"ad_schedule_proc$1".($1 ? " t" : "")/eg;'` <i>files-to-process...</i></pre></blockquote>
+
+This adds the necessary <tt>t</tt> after the <tt>-thread</tt> or <tt>-once</tt> flag (e.g.,
+converts <tt>ns_schedule_proc -once</tt> to <tt>ad_schedule_proc -once t</tt>).
+
+<hr>
+<a href="http://photo.net/philg/"><address>philg@mit.edu</address></a>
+</body>
+</html>

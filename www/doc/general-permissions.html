@@ -1,0 +1,360 @@
+<html>
+<head>
+
+<title>General Permissions</title>
+
+<style>
+BODY {
+  background-color: #FFFFFF;
+  color: #000000
+}
+</style>
+
+</head>
+
+<body>
+
+<h2>General Permissions</h2>
+
+part of the <a href="/doc/">ArsDigita Community System</a>
+
+by <a href="mailto:richardl@arsdigita.com">Richard Li</a>,
+<a href="mailto:michael@arsdigita.com">Michael Yoon</a>,
+<a href="mailto:yon@arsdigita.com">Yon Feldman</a>, and
+<a href="mailto:markc@arsdigita.com">Mark Ciccarello</a>
+
+<hr>
+
+<ul>
+<li>User-accessible directory: /gp/ (no index page)
+<li>Site-wide administration directory: <a href="/admin/gp/">/admin/gp/</a>
+<li>Data model: <a href="/doc/sql/display-sql?url=/doc/sql/general-permissions.sql">/doc/sql/general-permissions.sql</a>
+<li>Tcl procedures: /tcl/ad-general-permissions.tcl
+<li>Acceptance tests: <a href="/admin/acceptance-tests/gp-acceptance-test">/admin/acceptance-tests/gp-acceptance-test</a>
+</ul>
+
+<h3>The Big Picture</h3>
+
+The General Permissions package lets you control who can do what with
+each row in your database, by providing:
+
+<ul>
+
+<li><strong>an API for defining and querying permission rules</strong>
+- Each rule grants a specific type of permission such as "read" or
+"write" (i.e., the "what") on one row in the database to a specific
+party (i.e., the "who")
+
+<li><strong>a simple means to enforce those rules throughout the
+site</strong> - One line of code at the top of each page identifies
+the required permission and ensures that each user who attempts to
+view the page has been granted that permission.
+
+</ul>
+
+There are five types of party to whom permissions can be granted:
+
+<ul>
+<li>An individual user
+<li>Any user who play a specific role in a specific user group
+<li>A specific user group, i.e., any user who is a member of the group
+<li>All registered users
+<li>All users, registered or not
+</ul>
+
+In essence, General Permissions treats rows in the database as
+operating systems like Unix and Microsoft Windows NT treat files in
+the filesystem.
+
+<h3>The Data Model</h3>
+
+The General Permissions data model is simple, consisting of one table:
+
+<blockquote>
+<pre><code>
+create table general_permissions (
+	permission_id		integer not null primary key,
+	-- on_what_id is a varchar to accomodate non-integer ID's
+	on_what_id		varchar(30) not null,
+	on_which_table		varchar(30) not null,
+        scope           	varchar(20),
+	user_id			references users,
+	group_id		references user_groups,
+	role			varchar(200),
+	permission_type		varchar(20) not null,
+	check ((scope = 'user' and user_id is not null
+                and group_id is null and role is null) or
+	       (scope = 'group_role' and user_id is null
+                and group_id is not null and role is not null) or
+	       (scope = 'group' and user_id is null
+                and group_id is not null and role is null) or
+	       (scope in ('registered_users', 'all_users')
+                and user_id is null
+                and group_id is null and role is null)),
+	unique (on_what_id, on_which_table,
+                scope, user_id, group_id, role, permission_type)
+);
+</code></pre>
+</blockquote>
+
+The <code>on_what_id</code> and <code>on_which_table</code> columns
+identify the database row in question. The <code>scope</code>,
+<code>user_id</code>, <code>group_id</code>, and <code>role</code>
+columns together identify the party to whom the permission is being
+granted. Finally, the <code>permission_type</code> column contains
+values like "read", "comment", "write", and "administer" that
+represent the actions you want to control. As with Unix, permission
+types are independent of one another. One permission does not imply
+another (e.g., "write" does not imply "read").
+
+<p>
+
+To define rules for who can insert new rows into a table, the
+convention is to require "write" access on a row in the table's parent
+table, e.g., in order to add contact information for a given user
+(insert a row into the <code>users_contact</code> table), you need to
+have "write" permission on the corresponding row in the
+<code>users</code> table.
+
+<h3>Enabling Users to Grant and Revoke Permissions</h3>
+
+The page <code>/gp/administer-permissions</code> (an <a
+href="abstract-url.html">abstract URL</a>) provides a reusable
+interface for granting and revoking permissions on an arbitrary row in
+the database. You simply link to this page from your own pages, making
+sure to pass along:
+
+<ul>
+
+<li><strong><code>on_what_id</code></strong> and
+<strong><code>on_which_table</code></strong> - the identity of the
+database row whose permissions will be edited
+
+<li><strong><code>object_name</code></strong> - the name of the
+database row whose permissions will be edited; used only for display
+purposes: in the page title, etc. (We name this variable "object_name"
+because a database row typically represents an object of some kind,
+and because "row_name" is not very intuitive.)
+
+<li><strong><code>return_url</code></strong> - usually the result of a
+call to <code>ns_conn url</code>, i.e., the page containing the link
+
+</ul>
+
+Consider the <a href="file-storage.html">File Storage</a> module,
+which enables users to upload and store files on the server through a
+web interface. To allow the user to edit the permissions of a row in
+the File Storage module's <code>fs_files</code> table, here is an
+example of how we could construct the link:
+
+<blockquote>
+<pre><code># assuming that $file_id contains the ID of a row in fs_files...
+#
+set on_what_id $file_id
+set on_which_table "fs_files"
+
+# use the value of the file_title column as the "object_name"
+#
+set object_name [database_to_tcl_string $db "select file_title
+from fs_files
+where file_id = $file_id"]
+
+set return_url [ns_conn url]
+
+set edit_permissions_link \
+     "/gp/administer-permissions?[export_url_vars on_what_id on_which_table object_name return_url]"
+</code></pre>
+</blockquote>
+
+Access to <code>/gp/administer-permissions</code> will be denied
+unless the user has "administer" permission on the specified database
+row.
+
+<h3>How to Enforce Permissions</h3>
+
+The page <code>/file-storage/one-file.tcl</code> (also part of the
+File Storage module) displays all versions of a given file. To make
+sure that we show the page only to users with "read" permission on the
+identified file, we include a call to <a
+href="proc-one?proc_name=ad_require_permission"><code>ad_require_permission</code></a>:
+
+<blockquote>
+<pre><code>ad_page_variables { file_id }
+
+set user_id [ad_validate_and_get_user_id]
+
+set db [ns_db gethandle]
+
+<strong>ad_require_permission $db $user_id "read" $file_id "fs_files"</strong>
+</code></pre>
+</blockquote>
+
+Let's walk through this example step by step: First, we specify that
+we expect to receive the identity of a row in the
+<code>fs_files</code> table as a form or query string variable. Next,
+we check the identity of the user and grab a database handle. Finally,
+the call to <code>ad_require_permission</code> is self-explanatory:
+"read" is the type of permission required and the combination of
+<code>$file_id</code> and <code>fs_files</code> identifies the
+database row that the user is attempting to access.
+
+<p>
+
+Internally, we first check to see if the user is logged-in. If so,
+then the following questions are asked to determine if the user has
+been granted the requested type of permission:
+
+<ul>
+
+<li>Is the user a member of the Site-wide Administration group?
+
+<li>Has the user been granted the permission directly (i.e., a
+<code>user</code>-scoped permission)?
+
+<li>Does the user play a role within a group where that role has been
+granted the permission (i.e., a <code>group_role</code>-scoped
+permission)?
+
+<li>Does the user belong to a group where all members of that group
+have been granted the permission (i.e., a <code>group</code>-scoped
+permission)?
+
+<li>Has the permission been granted to all registered users (i.e., a
+<code>registered_users</code>-scoped permission)?
+
+</ul>
+
+If the answer to all five of these questions is "no," then
+<code>ad_require_permission</code> prohibits further processing of the
+page by returning a 403 "Forbidden" error.
+
+<p>
+
+If the user is not logged-in, then we check to see if the requested
+permission has been granted to unregistered as well as registered
+users (i.e., an <code>all_users</code>-scoped permission). If not,
+then <code>ad_require_permission</code> redirects to the login page.
+
+<h3>The API</h3>
+
+In addition to <code>ad_require_permission</code>, the Tcl API of
+General Permissions provides the <a
+href="proc-one?proc_name=ad_user_has_row_permission_p"><code>ad_user_has_row_permission_p</code></a>
+predicate.
+
+<p>
+
+To access General Permissions data, you should use the <a
+href="view-pl-sql?name=ad_general_permissions&type=package"><code>ad_general_permissions</code></a>
+PL/SQL package, instead of SQL statements. (The Tcl API procs are just
+thin wrappers on top of the PL/SQL package.) Here is a summary of how
+to use the various procedures and functions in the package:
+
+<ul>
+<li>To check if the user has a specific permission, call
+<code>user_has_row_permission_p</code>
+
+<p>
+
+<li>To grant a permission, call one of:
+
+<p>
+
+<ul>
+<li><code>grant_permission_to_user</code>
+<li><code>grant_permission_to_role</code>
+<li><code>grant_permission_to_group</code>
+<li><code>grant_permission_to_reg_users</code>
+<li><code>grant_permission_to_all_users</code>
+</ul>
+
+<p>
+
+e.g., <code>ns_ora exec_plsql $db "begin :1 := ad_general_permissions.grant_permission_to_users($user_id, 'read', $version_id, 'FS_VERSIONS'); end;"</code>
+
+<p>
+
+<li>To get the ID of a specified permission, call one of:
+
+<p>
+
+<ul>
+<li><code>user_permission_id</code>
+<li><code>role_permission_id</code>
+<li><code>group_permission_id</code>
+<li><code>reg_users_permission_id</code>
+<li><code>all_users_permission_id</code>
+</ul>
+
+<p>
+
+All of these functions return zero if the specified permission has not
+been granted.
+
+<p>
+
+<li>To revoke a permission, first get the permission ID and then call
+<code>revoke_permission</code>
+
+</ul>
+
+<p>
+
+Note that the PL/SQL API (and therefore the Tcl API) is
+<em>case-insensitive</em>.
+
+<p>
+
+One instance in which you may need to query the
+<code>general_permissions</code> table directly is when you are trying
+to answer a question like "What are the titles of all files in the
+File Storage system on which I have administrative permission?" One
+way to write this query is:
+
+<blockquote>
+<pre><code>select f.file_title
+from fs_files f
+where ad_general_permissions.user_has_row_permission_p(<i>user_id</i>, 'administer', f.file_id, 'fs_files') = 't'
+</code></pre>
+</blockquote>
+
+While this query is simple and readable, it has the unfortunate
+side-effect of causing Oracle (8.1.5 and below) to execute a full
+table scan of <code>fs_files</code>. (If function-based indexes worked
+as advertised, then this would not be an issue.) So, if
+<code>fs_files</code> were to become large, we would want to rewrite
+this query with a join to <code>general_permissions</code> to keep
+performance acceptable; see the implementation of
+<code>user_has_row_permission_p</code> for what criteria that you
+would need to make this work.
+
+<h3>Future Enhancements</h3>
+
+A high-priority enhancement of this module is to design and implement
+a good scheme for default permissions, e.g., how do we know what
+permissions to grant when a user creates a new file in the File
+Storage system? The Unix <code>umask</code> concept is a simple model
+from which we can start.
+
+<p>
+
+A possible extension to the data model would be to support dependency
+rules between permission types, e.g., a way to say that granting
+"administer" permission implies granting "write" permission, which, in
+turn, implies granting "read" permission. It would be important to
+ensure that this extension would be optional, i.e., that it would not
+interfere with the current model, in which permission types are
+independent of one another.
+
+<hr>
+
+<address>
+<a href="mailto:richardl@arsdigita.com">richardl@arsdigita.com</a>
+</address>
+
+<address>
+<a href="mailto:michael@arsdigita.com">michael@arsdigita.com</a>
+</address>
+
+</body>
+</html>

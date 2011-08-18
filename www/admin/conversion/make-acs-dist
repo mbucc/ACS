@@ -1,0 +1,98 @@
+#!/usr/local/bin/bash
+
+# to create a distribution of an ArsDigita Community System, you 
+# need to cd to your home directory and run
+# make-acs-dist /web/yourdomainname
+
+if [ $# != 1 ]; then
+    echo "usage: $0 <directory to tar up>"
+    exit
+fi
+
+distfile=acs-`/bin/date +%Y%m%d`.tar
+distdir=$1
+
+if [ ! -d $distdir ]; then
+    echo "$distdir is not a directory"
+    exit
+fi
+
+if [ -e acs ]; then
+    echo "Please remove acs from this directory (or do this somewhere else)"
+    exit
+fi
+
+/bin/ln -s $distdir acs
+
+# exclude ~ files and .bak files and Emacs backup files
+# exclude everything .ini from parameters except for ad.ini
+# (i.e., don't include the publisher's specific config stuff)
+# exclude any philg stuff
+
+/usr/local/bin/tar -c -v -f $distfile \
+    --exclude='*~' --exclude='*#' --exclude='*.bak' --exclude='*/core' --exclude='*/.#*' --exclude='*/CVS' \
+    --exclude='acs/parameters' \
+    --exclude='acs/tcl/photodb.tcl' \
+    --exclude='acs/tcl/sql-book-defs.tcl' \
+    --exclude='acs/tcl/teaching-defs.tcl' \
+    --exclude='acs/www/Architext' \
+    --exclude='acs/www/Excite' \
+    --exclude='acs/www/WealthClock.html' \
+    --exclude='acs/www/acsplans' \
+    --exclude='acs/www/alta-vista.html' \
+    --exclude='acs/www/bg' \
+    --exclude='acs/www/bp' \
+    --exclude='acs/www/ca' \
+    --exclude='acs/www/cgi-bin' \
+    --exclude='acs/www/cr' \
+    --exclude='acs/www/diary' \
+    --exclude='acs/www/dldf' \
+    --exclude='acs/www/dm' \
+    --exclude='acs/www/dreamgirl' \
+    --exclude='acs/www/global-photonet-specific' \
+    --exclude='acs/www/hardware.html' \
+    --exclude='acs/www/htbin' \
+    --exclude='acs/www/incoming' \
+    --exclude='acs/www/index.html' \
+    --exclude='acs/www/italy' \
+    --exclude='acs/www/large' \
+    --exclude='acs/www/materialism' \
+    --exclude='acs/www/mjcal' \
+    --exclude='acs/www/nz' \
+    --exclude='acs/www/outgoing' \
+    --exclude='acs/www/philg' \
+    --exclude='acs/www/photo' \
+    --exclude='acs/www/photodb' \
+    --exclude='acs/www/samantha' \
+    --exclude='acs/www/scratch' \
+    --exclude='acs/www/smyly' \
+    --exclude='acs/www/soccer' \
+    --exclude='acs/www/sql' \
+    --exclude='acs/www/sukuma' \
+    --exclude='acs/www/summer94' \
+    --exclude='acs/www/sweden' \
+    --exclude='acs/www/tcl' \
+    --exclude='acs/www/teaching' \
+    --exclude='acs/www/thesis' \
+    --exclude='acs/www/webtravel' \
+    --exclude='acs/www/wtr' \
+    --exclude='acs/www/zoo'  \
+    --exclude='acs/www/philg.css' \
+    --exclude='acs/www/doc/social-shopping.html' \
+    --exclude='acs/www/doc/sql/photodb.sql' \
+    --exclude='acs/www/social-shopping' \
+    --exclude='acs/www/admin/social-shopping' \
+    acs/readme.txt acs/templates acs/tcl acs/www acs/parameters/ad.ini
+
+/bin/rm acs
+
+/usr/local/bin/gzip $distfile
+
+# Note:  if you're releasing this on Homepage into /web/acs, you're not done.
+# What you have to do is 
+
+# cd /web
+# mv acs archived-servers/acs1999whatever
+# /usr/local/bin/tar xvfz /home/philg/scratch/acs-19990208.tar.gz
+# cp -rp archived-servers/acs1999whatever/old-versions-of-the-acs-that-suck acs/old-versions-of-the-acs-that-suck
+# 

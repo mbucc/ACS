@@ -1,0 +1,42 @@
+<%= [ad_header "Help for Homepage Maintenance"] %>
+
+<h2>Help</h2>
+
+for Neighbourhoods Page
+<hr>
+
+1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Neighbourhoods Page for users
+<p>
+The neighbourhoods page lets you browse through neighbourhoods. You
+can join a neighbourhood by clicking on the [join] button besides a
+neighbourhood's entry in the list. Similarly, the [members] button
+lets you view all the members of a neighbourhood. As a normal user,
+you cannot create, modify, delete, move, or rename neighbourhoods. An
+attempt at doing so will result only in a meaningless error message
+such as "Insufficient permission to perform requested database access
+in AddNeighborhood". The neighbourhoods page is located at
+/homepage/neighbourhoods.tcl. Alternatively, there is a link to it
+from your workspace.
+<p>
+
+2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Neighbourhoods Page for adminitrators
+<p>
+
+Administration of neighbourhoods is done at
+/homepage/neighbourhoods.tcl. This page will hereby be referred to as
+the "neighbourhoods page". If the homepage module is enabled in your
+system, a link should appear to the neighbourhoods page at your
+workspace. The neighbourhoods page is essentially for browsing through
+neighbourhoods, viewing their members or even joining a
+neighbourhood. Additionally, site wide administrators can create
+neighbourhoods by pressing the [create-neighborhood] button above the
+neighbourhoods listing; remove neighbourhoods by pressing the [remove]
+button besides a neighbourhoods name; change neighbourhood hierarchy
+by pressing the [move] button and moving neighbourhoods around; or
+change the name or description of a neighbourhood by pressing the
+[rename] button besides a neighbourhood name. Administrators should
+mind the five hundred letter maximum limit on neighbourhood names and
+a four thousand letter limit on neighbourhood descriptions.
+<p>
+
+<%= [ad_footer] %>

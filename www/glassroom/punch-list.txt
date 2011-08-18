@@ -1,0 +1,30 @@
+GlassRoom punch-list
+--------------------------------------------------
+* Add 'Clear User' button for forms with user-searching
+
+* make sure all the nav bar things are accurate and speld corectly
+  = particularly logbook entry comments.
+
+* Make the usual cleanup/editing/sanitizing pass through code
+  = space around '=' in sql statements
+  = ns_db releasehandle's as soon as possible
+
+* test all text entry fields for
+  = empty values
+  = '
+  = "
+
+* use util_AnsiDatetoPrettyDate for all displayed dates
+
+* try pages with ad_read_only_p turned on
+
+* need to make things less open and move some editing functions to admin pages
+  = any of the 'edit', 'add', or 'delete' files
+
+* error handling checking on inserts, updates
+  = particularly things that violate referential integrety
+
+* look for procedures that are haven't been done in min_interval_time yet
+
+* add approval policy for comments
+

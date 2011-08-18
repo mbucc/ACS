@@ -1,0 +1,140 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>Contests</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Contests</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="mailto:markd@arsdigita.com">Mark Dalrymple</a>
+
+<hr>
+
+<ul>
+<li>User-accessible directory:  <a href="/contest/">/contest/</a>
+<li>Site administrator directory:  <a href="/admin/contest/">/admin/contest/</a>
+
+<li>data model :  <a href="/doc/sql/display-sql.tcl?url=/doc/sql/contest.sql">/doc/sql/contest.sql</a>
+<li>Tcl procs:  /tcl/contest-defs.tcl 
+
+</ul>
+
+<h3>The Big Idea</h3>
+
+People like to get free stuff.  The contest module allows publishers
+to create a doorprize like contest and allows registered users to
+participate in the contest.  Contest can be a simple "visit this 
+page to get entered" or a more complex "please give us some information
+while entering" page.  The publisher can then choose an arbitrary number
+of winners from the pool of contestants.
+
+<h3>Publishing Decisions</h3>
+
+Contests can be simple entry buttons, or they can be forms which
+ask for information.  When you're creating a contest, the admin
+pages provide a customization feature where you can specify
+any extra data to be collected (such as a yes/no question, or
+a text field for free-form commentary).  You can either use
+the automatically generated contest entry page (which looks at
+your customizations and generates the HTML &lt;form&gt; elements)
+or you can create your own page and include some hidden values
+which are used in entry processing.
+
+<h3>Choosing Winners</h3>
+
+When it's time to choose winners, go to the contest management
+page.  You can specify the time range to choose entrants from
+(say from the last month), and the number of unique winners
+to return.  The contest module will grovel through the database
+and return a unique set of results, which you can then do what
+you wish. (send them email, deliver a box of chocolate)
+
+
+<h3>Under the Hood</h3>
+
+There are two primary tables which hold the contest information, and
+a new table is created for each contest to hold any customized
+entry fields.
+
+<p>
+
+<code>contest_domains</code> is the table that holds general information
+about each contest: 
+<blockquote><pre>
+create table contest_domains (
+	domain_id		integer not null primary key,
+	domain			varchar(21) not null unique,
+	-- the unique constraint creates an index for us
+	entrants_table_name	varchar(30),
+	pretty_name		varchar(100) not null,
+	-- where the contest starts
+	home_url	varchar(200),
+	-- arbitrary HTML text that goes at the top of 
+	-- the auto-generated entry form
+	blather		varchar(4000),
+	-- where to send users after they enter
+	-- (if blank, we use a generated form)
+	post_entry_url	varchar(200),
+	maintainer	not null references users(user_id),
+	notify_of_additions_p	char(1) default 'f' check (notify_of_additions_p in ('t', 'f')),  -- send email when a person enters
+	us_only_p		char(1) default 'f' check (us_only_p in ('t', 'f')),
+	start_date		date,	-- these are optional
+	end_date		date
+);
+</pre></blockquote>
+
+In earlier versions of this module, the <code>domain</code> column was
+the primary key.  It has been changed to an integer
+(<code>domain_id</code>) because of performance enhancements to the
+site-wide search.  There is some backwards-compatibility code in the
+contest module that uses the <code>domain</code> column if there is no
+domain_id provided in the form data.
+
+<p>
+
+When a new contest is created, a new row is added to contest_domains,
+and a new table called <code>contest_entrants_$domain</code> (where
+<code>$domain</code> is the value of the domain column).  This new
+<code>entrants</code> table looks like this:
+
+<blockquote><pre>
+create table contest_entrants_whatever (
+	entry_date	date not null,
+	user_id		not null references users
+);
+</pre></blockquote>
+
+We don't really care how many times they enter.  We'll do a "distinct"
+query when choosing the winners.  For contests that allow extra 
+information to be provided by the user, we may want them to be able
+to enter multiple times.
+
+<p>
+
+Now, how is this extra information handled?  When you add a custom
+column to a contest, a row gets added to the table
+<code>contest_extra_columns</code>:
+
+<blockquote><pre>
+create table contest_extra_columns (
+	domain_id		not null references contest_domains,
+	column_pretty_name	varchar(30),
+	column_actual_name	varchar(200) not null,
+	column_type		varchar(200) not null,	-- things like 'boolean' or 'text'
+	column_extra_sql	varchar(200)	-- things like 'not null' or 'default 5'
+);
+</pre></blockquote>
+
+The <code>column_pretty_name</code> is what is displayed to the user,
+while <code>column_actual_name></code> is the name of the column in
+the contest specific <code>contest_entrants_$domain</code> table.
+These new columns get added to the entrants table as the contest
+gets customized. (e.g. at any time)
+
+<hr>
+<a href="mailto:markd@arsdigita.com"><address>markd@arsdigita.com</address></a>
+</body>
+</html>
+

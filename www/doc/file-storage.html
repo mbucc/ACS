@@ -1,0 +1,184 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>Community File Storage System</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Community File Storage System</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="mailto:dh@caltech.edu">David Hill</a> and  <a href="http://aure.com/">Aurelius Prochazka</a>
+
+<hr>
+
+<ul>
+<li> User-accessible directory: <a href="/file-storage/">/file-storage/</a>
+<li> Site adminstrator directory: <a href="/admin/file-storage/">/admin/file-storage/</a> (must use https://)
+<li> data model: <a href="/doc/sql/display-sql?url=/doc/sql/file-storage.sql">/doc/sql/file-storage.sql</a>
+<li> procedures: /tcl/file-storage-defs.tcl
+</ul>
+
+<h3>The big picture</h3>
+
+Suppose that a bunch of people need to collaboratively maintain a set of
+documents.  These documents need to be organized in some way but you
+don't want to require the contributors to learn HTML or filter all
+emplacements of files through a Webmaster.
+
+<p>
+
+If you simply give everyone FTP access to a Web-accessible directory,
+you are running some big security risks.  FTP is insecure and passwords
+are transmitted in the clear.  A cracker might sniff a password, upload
+.pl, .tcl, and .adp pages, then grab those URLs from a Web browser.  The
+cracker is now executing arbitrary code on your server with all the
+privileges that you've given your Web server.
+
+<p>
+
+This system allows users to save their files on our server so that they
+may:
+
+<ul>
+   <li> Organize files in a hierarchical directory structure
+   <li> Upload using Web forms, using the file-upload feature of Web
+        browsers (potentially SSL-encrypted)
+   <li> Grab files that are served bit-for-bit by the server, without
+        any risk that a cracker-uploaded file will be executed as code
+   <li>	Retrieve historical versions of a file
+</ul>
+
+
+<h3>Parameters</h3>
+
+<blockquote><pre>
+; for the ACS File-Storage System
+[ns/server/yourserver/acs/fs]
+SystemName=File Storage System
+SystemOwner=file-administrator@yourserver.com
+DefaultPrivacyP=f
+; do you want to maintain a public tree for site wide documents
+PublicDocumentTreeP=1
+MaxNumberOfBytes=2000000
+DatePicture=MM/DD/YY HH24:MI
+HeaderColor=#cccccc
+FileInfoDisplayFontTag=&lt;font face=arial,helvetica size=-1&gt;
+UseIntermediaP=0
+</pre>
+</blockquote>
+
+<h3>Details</h3>
+<ul>
+
+The file-storage system is built around a data model consisting of two
+tables, one for files and a second for versions.  A folder is treated as
+a type of file.  Files are owned by a single user, but may contain
+versions created by authors other than the owner.
+
+<p>
+
+Permissions were only given to files and not folders in order to
+simplify both the code and the user interface i.e. to avoid questions
+like "Why can't any of the people in my group see my files?" answered by
+"Did you notice that someone changed the permissions of the parent of
+the parent of the parent folder of this file?"  However, the system is easy 
+to extend to allow folders to have thier own permissions.
+
+<p>
+
+The permissions are handled by the <a href="general-permissions.html">general permissions</a> system.
+
+<p>
+
+No file or version can be deleted from the database, except by an
+administrator.  Instead, the file is deleted by setting the deleted_p
+flag.
+<p>
+This system supports site-wide, group and individual user document trees.
+
+</ul>
+
+<h3> Full-text Indexing </h3>
+
+If you're running Oracle 8i (8.1.5 or later), you might want to build an
+Intermedia text index (ConText) on the contents of file versions.
+Intermedia incorporates very smart filtering software so that it can
+grab the text from within HTML, PDF, Word, Excel, etc. documents.  It is
+also smart enough to ignore JPEGs and other pure binary formats.
+
+<p>
+
+Steps to using Intermedia:
+
+<ul>
+
+<li>install Intermedia (Oracle dbadmin hell)
+
+<li>get Intermedia's optional "INSO filtering" system to work.  Here's
+what jsc@arsdigita.com had to say about his experience doing this...
+
+<blockquote><pre><code>I got the INSO stuff working. The major holdup was that you have to
+configure listener.ora to have $ORACLE_HOME/ctx/lib in
+LD_LIBRARY_PATH. The docs mumble something about editing listener.ora,
+but a careful perusal of anything having to do with networking setup
+didn't turn up any examples. The networking assistant program has a
+field for "Environment", but when you try to put anything in there, the
+program hits a null pointer exception when you go to save it and doesn't
+write anything. I "solved" this eventually by just symlinking all the
+.so files in ctx/lib into $ORACLE_HOME/lib, which is already in the
+LD_LIBRARY_PATH for the listener.</code></pre></blockquote>
+
+<li>In order to have the interMedia index synchronized whenever
+documents get added or updated, the index must be synchronized (using
+<code>alter index indexname rebuild online parameters
+('sync')</code>), or the ctxsrv process must be run, which updates all
+interMedia indices periodically (<code>ctxsrv -user
+ctxsys/ctxpassword</code>). If using ctxsrv, the shell which starts it
+must have <code>$ORACLE_HOME/ctx/lib</code> as part of LD_LIBRARY_PATH.
+
+<li>uncomment the <code>create index fs_versions_content_idx</code>
+statement in file-storage.sql (and then feed it to Oracle)
+
+<li>set <code>UseIntermediaP=1</code> in your ad.ini file
+
+<li>restart AOLserver (so that it reads the new parameter setting)
+
+</ul>
+
+Warning: Intermedia is a tricky product for users.  The default mode is
+exact phrase matching, which means that the more a user types the fewer
+search results will be returned (a violation of the user interface
+guidelines in <a href="developers.html">developers.html</a>).  So you
+might be letting yourself in for some education of users...
+
+<h3>Future Improvements</h3>
+
+<ul>
+
+<li>Currently the administration section needs considerable work.  Instead of trying to clean /admin/file-storage/ up, we should build a better /file-storage/admin or even allow administrators to do more within /file-storage/.
+
+<p>
+
+<li> Ticket Tracker style column sorting.  We want the ability to sort the contents of each folder by name, author, size, type and last modified.  In addition, the folders should be able to sort among themselves by name.  You should use something very similar to the procedure <a href=http://sloan.arsdigita.com/doc/proc-one?proc_name=ad%5ftable>ad_table</a>.  The procedure that you use will be slightly different because the files will be sorted on a per folder basis instead of on a per table basis.
+
+<p>
+
+<li> Better organization of the folder tree - Make the interface more
+of a Window's style interface.  Add a + type icon next to the folder
+if the folder is open and all of the files in the folder can be seen.
+Add a - icon when the folder is closed and can be expanded.  Clicking
+on the + sends the user back to the same page with the contents of the
+folder to be hidden and the - icon in place of the +.  Clicking on the -
+sends the user back to the same page causing a + to replace the - and
+all of the files in the folder to be shown.  Clicking on the folder
+icon or name should act just as they do now.
+
+<li> Nifty javascript version
+</ul>
+
+<hr>
+<a href="mailto:aure@arsdigita.com"><address>aure@arsdigita.com</address></a>
+</body>
+</html>
+ 

@@ -1,0 +1,94 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>plan to revise the /bboard system</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+
+<h2>revision plan for the /bboard system</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="http://photo.net/philg/">Philip Greenspun</a>
+
+<hr>
+
+We want to rewrite the /bboard system so that 
+
+<ul>
+
+<li>we switch from a varchar primary key to an integer (part of a
+general ACS-wide move to simple integer primary keys); retaining the
+old sort_key system, though, and also preserving the legacy keys in a
+separate column so that people can still point to threads
+
+<li>let's increase the number of chars used at any one level to 4 (from
+2).  This will address the needs of sites like cnn.com where they don't
+use threading and have a gazillion responses to the same top-level
+question
+
+<li>we have soft-delete by the moderators (thread disappears from the
+moderated version but is still in the database) and a mode where new
+questions require approval before they go live in the moderated version
+("don't show this to anyone until at least one moderator has said it was
+okay")
+
+<li>we use <a href="abstract-url.html">the abstract URL system</a>
+
+<li>(to support the edu module and MIT Sloan School) scoping of bboards
+by roles within a group (so that a bboard can be for professors and TAs
+in a class but not students)
+
+<li>(related to above) make sure that the bboard system works with the
+group scoping stuff (subcommunities)
+
+<li>some additional abstraction in the database at the PL/SQL level,
+e.g., a function that answers the question "Can User 17 read Bboard
+Topic #32?"
+
+<li>a more sensible approach to this "featured", unmoderated, etc. stuff
+(template it!) on the home page (and don't show people bboards in which
+they are prohibited from reading))
+
+<li>an actually useful threaded interface for bboards with 100,000
+postings
+
+<li>maybe some abstraction out of the USgeospatial stuff (we should be
+able to tie discussions to arbitrary other objects in the database,
+using on_which_table, on_what_id style of pointing)
+
+</ul>
+
+<h3>Email Fixes</h3>
+
+<ul>
+<li>take out the control-Ms
+<li>From header should say "Joe Smith via photo.net bboard
+&lt;joes@foobar.com&gt;"
+
+<li>the email notifications should have a link not just to the overall
+bboard but to the individual thread
+
+<li>correctly set References: and In-Reply-To: headers so that a mail
+reader can display these as threads
+
+<li>(hard and make it configurable) inbound email gets posted to the
+bboard in the right place
+
+
+</ul>
+
+
+<h3>Bug Fixes</h3>
+
+<ul>
+
+<li>the Q&amp;A admin pages should not warn you that a user has turned
+off notification when in fact there is a thread alert
+
+</ul>
+
+<hr>
+<a href="http://photo.net/philg/"><address>philg@mit.edu</address></a>
+</body>
+</html>

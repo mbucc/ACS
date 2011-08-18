@@ -1,0 +1,182 @@
+<html>
+<head><title>6.916: WimpyPoint II</title></head>
+<body bgcolor=white>
+
+<h2>WimpyPoint II</h2>
+
+by <a href="mailto:jsalz@mit.edu">Jon Salz</a><br>
+Revision 2 (13 Nov 1999)
+
+<hr>
+
+<h3>Overview</h3>
+This document outlines the design and implementation strategy planned
+for improving WimpyPoint, including (in order of priority):
+
+<ul>
+  <li>Integration with ACS (e.g., fixing naming conventions and using ACS users).
+  <li>Allowing authors to freeze presentations, and later view older versions
+      of the presentation or revert to a previous, frozen version.      
+  <li>Unlimited length for slide content.
+  <li>Allowing files and images to be attached to slides.
+  <li>User/group-based access control (ACL lists).
+  <li>Implementing data mirroring (copying everything to a backup server
+      nightly).
+  <li>Allowing users to upload and maintain their own style sheets.
+  <li>Allowing viewers to override authors' style information.
+  <li>User-interface improvements in authoring mode.
+</ul>
+
+<h3>Data Model</h3>
+The tentative new data model is available
+<a href="sql/wimpysql.txt">here</a>.
+It differs
+from the old data model in the following ways:
+
+<h4>Naming Conventions</h4>
+All tables will begin with the prefix <tt>wp_</tt>. This provides
+consistency with ACS and will ease migration (see <a href="#migration">Migration</a>).
+
+<h4>ACS Integration</h4>
+There will be no table specifically tracking WimpyPoint users - instead, we will use
+WimpyPoint users and groups.
+
+<h4>Access Control</h4>
+The new <tt>wp_user_access</tt> and <tt>wp_group_access</tt> tables describe the set of privileges
+available to particular users/groups with respect to a presentation. A user or group may
+have
+
+<ul>
+  <li><tt>read</tt> access, allowing the user to view the presentation even
+    if it is not public.
+  <li><tt>write</tt> access, allowing the user (a "collaborator") to edit the presentation.
+  <li><tt>admin</tt> access, allowing the user (an "owner") to change the ACL, invite
+    collaborators, freeze the presentation, delete the presentation, etc.
+</ul>
+
+<p>An administrator can invite another user to collaborate (or co-own the
+presentation) by adding him to the ACL list. (WimpyPoint will notify the
+invitee via E-mail if requested.) If the user is not already an ACS user
+(and thus cannot be added to the ACL), WimpyPoint will issue a "ticket"
+(a row in the <tt>wp_user_access_ticket</tt>) which can be redeemed for
+an ACL entry once the account is created. The ticket is protected by a
+secret text string which is encoded into the URL sent to the invitee
+as part of the invitation request.
+
+<h4>Versioning</h4>
+WimpyPoint will allow authors to freeze presentations,
+causing the server to maintain a copy of the current state of the presentation.
+To freeze a presentation we set a "checkpoint," causing WimpyPoint to make any future
+modifications to any slide in a separate copy. The current checkpoint
+ID for a presentation is stored in <tt>wp_presentations.checkpoint</tt>. Operations
+on slides are handled as follows:
+
+<ul>
+<li>To obtain the most recent version of a slide <i>ss</i>, use a query like
+<blockquote><pre>
+SELECT *
+FROM   wp_slides sl
+WHERE  slide_id = <i>ss</i>
+AND    checkpoint = (SELECT MAX(checkpoint) FROM wp_slides WHERE slide_id = sl.slide_id)
+AND    deleted_in_checkpoint IS NULL
+</pre></blockquote>
+In other words, we select the row with the maximum checkpoint.
+
+<li>To obtain the slide as it was when we set checkpoint <i>nn</i>:
+<blockquote><pre>
+SELECT *
+FROM   wp_slides
+WHERE  slide_id = <i>ss</i>
+AND    checkpoint = (SELECT MAX(checkpoint) FROM wp_slides
+                     WHERE  slide_id = sl.slide_id
+                     AND    checkpoint <= <i>nn</i>)
+AND    (deleted_in_checkpoint IS NULL OR deleted_in_checkpoint > <i>nn</i>)
+</pre></blockquote>
+Again, we select the row with the maximum checkpoint, this time subject to the constraint
+that the checkpoint is <i>nn</i> or earlier (i.e., get the latest change before <i>nn</i>).
+
+<p>Note that these previous two queries are not specific to querying for single
+slides; for instance, to view the most resent version of an entire presentation <i>pp</i>,
+simply change <tt>slide_id = <i>ss</i></tt> to <tt>presentation_id = <i>pp</i></tt> and
+add <tt>ORDER BY sort_key</tt>.
+<li>To modify a slide, we check and see if the current version of the slide has <tt>checkpoint</tt>
+set to the most recent checkpoint for the presentation (stored in <tt>wp_presentations.checkpoint</tt>).
+If so, we modify the slide in-place using an <tt>UPDATE</tt>; if not, a checkpoint has been set since
+the last modification so we must create a new row in the <tt>wp_slides</tt> table referring to the
+most recent checkpoint.
+<li>To add a slide, we simply add a row to <tt>wp_slides</tt> with <tt>checkpoint</tt> set to the
+most recent checkpoint for the presentation.
+<li>To delete a slide (assuming that the current checkpoint for the presentation is <i>cc</i>):
+<blockquote><pre>
+DELETE FROM wp_slides
+WHERE  slide_id = <i>ss</i> AND checkpoint = <i>cc</i>
+
+UPDATE wp_slides
+SET    deleted_after_checkpoint = <i>cc</i>
+WHERE  presentation_id = <i>pp</i>
+</pre></blockquote>
+</ul>
+
+<h4>Images and Attachments</h4>
+Users will be able to upload images and attachments to display in
+slides, either inline or with an explicit link.
+
+<p>Users can upload attachments and images to be displayed inline (embedded
+in the page) or separately. These are stored in a separate table
+(<tt>wp_attachments</tt>) so that multiple versions of a presentation can
+share them.
+
+<h4>Styles</h4>
+Style information is not limited to a CSS file name - styles will be
+stored as rows in the <tt>wp_styles</tt> table. A style contains
+a name, a description, CSS source (included inline when presentations
+are displayed), and optionally an owner who can maintain the style.
+Users will be able to upload images associated with their style sheets
+(stored in <tt>wp_style_images</tt>).
+
+<p>Individual readers can override authors' style preferences, e.g.,
+if the reader prefers black text on white text because he/she needs to
+deal with a finicky projector.
+
+<h3>Implementation</h3>
+
+Implementation steps:
+
+<ul>
+  <li>Migrate the existing code to the new data model (this includes
+      ACS integration).
+  <li>Clean up the authoring interface.
+  <li>Add support for versioning.
+  <li>Implement unlimited slide length and image/attachment upload.
+  <li>Add access control.
+  <li>Set up data mirroring (the backup server will run WimpyPoint,
+      but with editing features disabled).
+  <li>Implement the new style management system.
+</ul>
+
+It would also be very cool and useful to allow the user to download a tarball/zipfile
+of an entire presentation
+(<a href="http://intranet.arsdigita.com/proposals/admin/details.tcl?proposal_id=764&title=Improve%20WimpyPoint%20and%20integrate%20with%20ACS">thanks, Richard Tibbets</a>),
+but this is really low priority.
+
+<h3><a name=migration>Migration</a></h3>
+
+All existing presentations will be migrated to the new data model.
+We will write a script which:
+
+<ul>
+  <li>Creates an ACS user entry for each WimpyPoint user.
+  <li>For each presentation in the old WimpyPoint, reads the
+    presentation and slides and inserts the appropriate rows
+    into tables in the new data model, mapping WimpyPoint users
+    to ACS users, ownership privileges to ACL entries, etc.
+</ul>
+
+This will be fairly easy because the new data model is a functional
+superset of the old data model.
+
+<hr>
+<address><a href="mailto:jsalz@mit.edu">jsalz@mit.edu</a></address>
+
+</body>
+</html>

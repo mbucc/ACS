@@ -1,0 +1,1004 @@
+<html>
+<!--AD_DND-->
+<HEAD><TITLE>ArsDigita Community System Version History</TITLE></HEAD>
+<BODY bgcolor=#ffffff text=#000000>
+<h2>Version History</h2>
+
+for the <a href="index.html">ArsDigita Community System</a>
+
+by <A href="http://photo.net/philg/">Philip Greenspun</a> and <A href="http://teadams.com">Tracy Adams</a>.
+
+<hr>
+
+<ul>
+
+<li>Future Versions:
+
+<ul>
+<li>add scoping to the events module and make it conform more to ACS standards - Bryan Che
+<li>ad server enhancements - Tzu-Mainn
+<li>better support for private chat (Live Person)
+<li>class administration module - Randy and Aileen
+<li><a href="/doc/spam.html">spamming</a> bring closer to ACS admin UI standards - Henry Minsky
+<li><a href="/doc/member-value.html">member value</a> enhancement - Malte Sussdorf 
+<li>ecommerce - multi-store functionality Eve
+<li>process control module
+<li>enhanced survey builder
+<li>content management system (pset 3)
+<li>knowledge mangement system (pset 4)
+<li>room registration system (pset 2)
+<li>PIM (calendar)
+<li>appearance improvements and publisher-controlled layout
+<li>user-extensible table module tool (makes it easy to build systems
+where each user can have custom columns)
+<li>open source administration module
+<li>likely modules to expand - ecommerce
+<li>ticket tracker enhancement
+<li>bboard enhancement
+<li>improved template system (karl)
+<li>form management system (karl) 
+<li>expanded self-documentation and collaboration around develoment
+<li>auctions module - rwsu
+<li>Manual system (kevin) - need to get CVS running chroot.
+</ul>
+
+<p>
+
+<li>May 17, 2000: Version 3.2.3:
+<ul>
+  <li> added missing generic_navbar to user-group-defs.tcl
+  <li> merged additional changes to download module
+  <li> removed missing links from prototype builder
+</ul>
+
+<p>
+
+<li>April 12, 2000: Version 3.2.2:
+<ul>
+  <li> rewrite of download module to fix version problems (ron)
+  <li> fixed several problems in abstract url (jsalz)
+</ul>
+
+<p>
+
+<li>March 27, 2000: Version 3.2.1:
+<ul>
+  <li> minor fixes to general permissions (michael)
+  <li> fixed trailing slash bug in abstract urls (jsalz)
+  <li> fixed lots of problems in file-storage (tina)
+  <li> added bookmark open/close feature (carsten)
+</ul>
+
+<p>
+
+<li>March 17, 2000:  Version 3.2:
+
+<ul>
+
+<li>Spam system supports tcl templates, encoding and sending of multipart MIME
+messages containing text/HTML, and uses new user email_type preference
+to decide which content type to send. A preliminary version of gregh's
+bulkmail module is included, which allows the spam daemon to pump mail
+out multiple threads to multiple SMTP servers in parallel. That also
+supports email bounce processing, to automatically maintain clean
+mailing lists. (hqm@arsdigita.com)
+
+<li>Changed the primary key of user_group_map from (user_id, group_id)
+to (user_id, group_id, role), to enable users to be in more than one
+role per user_group. Note that this change turns code like "ns_db 1row
+$db <em>query of user_group_map with criteria for user_id and
+group_id</em>" into bugs waiting to be
+discovered. (michael@arsdigita.com, yon@arsdigita.com,
+markc@arsdigita.com)
+
+<li>Re-wrote events data model so that it would support user-group-based
+registrations and use a registrations/orders model.  Re-wrote tcl pages
+to use new data model (bryanche)
+
+<li>Fixed security hole in /bboard/admin-update-topics-table.tcl.  This
+script had no user validation whatsoever.  Anybody (even a
+nonregistered user) could update anything in the bboard_topics table
+just by visiting this script (branimir)
+
+<li>new <a href="general-permissions.html">general permissions</a>
+(michael, richardl)
+
+<li>cleaned-up classified ads system (standard comment headers,
+ad_page_variables) with ability to attach photos to ads
+
+<li>improvements to the contest system, at least to support
+arsdigita.org (markd)
+
+<li><a href="survey-simple.html">simple survey builder</a> (jsc, philg, surati, teadams)
+
+<li><a href="webmail.html">Web based email system</a> (jsc)
+
+<li>new <a href="security-sessions.html">security subsystem and
+session tracking system</a> (jsalz)
+
+<li><a href="abstract-url.html">abstract URL system</a> (jsalz)
+
+<li>new system for preloading and postloading .tcl files
+(/tcl/00-preload.tcl and /tcl/zz-postload.tcl - jsalz)
+
+<li>new <a
+href="/doc/proc-one.tcl?proc_name=ad_register_filter"><tt>ad_register_filter</tt></a>
+and <a
+href="/doc/proc-one.tcl?proc_name=ad_schedule_proc"><tt>ad_schedule_proc</tt></a>
+routines with <a href="/admin/monitoring/">monitoring tools</a>
+(jsalz)
+
+<li> <a href="download.html">Download</a> module has been upgraded - users are now able to see the available modules before registration, but they are required to register as users before actual download. Also download now supports version specific description, in addition to download specific description which is shown upon download request. (ahmeds) 
+
+<li> <a href="ticket.html">ticket</a> cleanup: bug fixes in adv search, confirms on comment entry,
+  better ticket submission help, added per feature area new ticket
+  templates, replyable notifications and comments, assignment at
+  creation for admins. date widget for ticket creation.
+
+<li> <a href=data-pipeline.html>Data Pipeline</a>: SQL abstraction layer based on form names
+(oumi, mbryzek)
+
+<li> <a href="news.html">News</a> module has been upgraded - news is now organized by newsgroup. There are two scopes of newsgroups: public which serves as the traditional (site-wide) news; and group which contains news for a user_group. There are two special newsgroups: all_users which contains news items that should be displayed to all users; and registered_users which contains items displayed to all registered users.
+
+<h4>minor fixes</h4>
+
+<li> modified <a href="general-links.html">general-links</a> to fit general cleanup guidelines for <code>approved_p</code>. (tzumainn)
+
+</ul>
+
+<p>
+
+<li>March 4, 2000: Version 3.1.5:
+<ul>
+  <li>added nsv_array wrapper to make proc_doc fully functional (contributed by tigre@ybos.net)
+</ul>
+
+<p>
+
+<li>February 28, 2000: Version 3.1.4:
+<ul>
+  <li>merged jsalz's changes to complete the fix for proc_doc (ron)
+  <li>fixed download module (ahmeds)
+</ul>
+
+<p>
+
+<li>February 20, 2000: Version 3.1.3:
+<ul>
+  <li>fixed problem in procs.tcl with AOLserver 2.x (ron)
+  <li>fixed sub-community administration for chat (dh)
+  <li>Changed version datatype from number to varchar to support version numbers like 3.1.2. Added support for download specific description which will be shown to the user upon download request (ahmeds)
+</ul>
+
+<p>
+
+<li>February 13, 2000: Version 3.1.2:
+<ul>
+  <li>added notes on security (jsc)
+  <li>minor bug fixes in download (ahmeds)
+  <li>minor bug fixes in homepage (mobin)
+  <li>minor usage change in FAQ (dh)
+</ul>
+
+<p>
+
+<li>February 5, 2000:  Version 3.1.1:
+
+<ul>
+
+<li>fixed fatal errors in 00-ad-utilities.tcl due to a broken
+ad_page_variables (discovered and fixed by dh)
+
+<li>minor bug fixes in general-links (tzumainn)
+
+<li>minor bug fixes related to group-only bboards (branimir)
+
+</ul>
+
+<p>
+
+<li>Febrary 4, 2000:  Version 3.1:
+
+<ul>
+
+<li>installation verified using AOLserver 2.3.3 and 3.0, Oracle 8i,
+and Solaris 5.6 (aure, dh, ron)
+
+<li><a href=/doc/homepage.html>build your own homepage</a> or
+"GeoCities-in-a-box" (mobin)   
+
+<li>added <a href=/doc/events.html>events module</a> (bryanche)
+
+<li>integrated <a href=/doc/wp.html>WimpyPoint</a> (jsalz, jsc, philg)
+
+<li>revamped <a href=/doc/ticket.html>ticket tracking module</a> (davis)
+
+<li>documentation on <a href=/doc/writing-a-module.html>writing an
+ACS module</a>, now part of the developers guide (tarik)
+
+<li>changed 00-ad-utilities.tcl to use nsv_* instead of ns_share for
+performance benefits with AOLserver 3.0 using Tcl 8.2. The nsv
+mechanism is documented in <a href="README-NSV.txt">README.NSV</a>, in the
+top level of the AOLserver 3.0 source tree. Note that this is not backwards
+compatible with any previous version of AOLserver, but wrappers are
+provided for the nsv_* commands in 00-ad-utilities.tcl.
+
+<h4>minor fixes</h4>
+
+<li>philg updated comments and general comments to look for sabotage-prone
+HTML tags (such as DIV) in user-uploaded comments, implies a change to
+ad.ini (the antispam section)
+
+<li>teadams added editing a user's contact information in the admin pages
+
+</ul>
+<p>
+
+
+
+
+<p>
+
+<li>January 11, 2000:  Version 3.0:
+<ul>
+<li>support for AOLserver 3.0 is added (AOLserver 2.3 seems to work as
+well); AOLserver 3.0 should be configured to run Tcl 7.6 because we rely
+on <code>ns_share</code>
+
+<li>jsc integrated Henry and Branimir's bboard changes:
+<ul>
+<li>Every topic keyed by topic_id instead of topic.
+<li>Topic administration determined by standard ACS user group permission system.
+<li>Read/write permissions determined by new group-based system.
+</ul>
+
+<li>tarik, mobin and sarah - improved group capability (subdomained ACS); now acs modules that
+                             support scoping can be associated with the groups and group types
+<ul>
+<li>tarik added acs_modules table where all acs modules should eventually be registered
+<li>tarik improved content_sections table by adding scope (public, group) and having 
+           4 types of sections: static, custom (a content management system, allows storing
+           html files in db and serving them  to the users), system and admin (these are acs modules -
+           notice that this allows associating modules with groups)
+<li>mobin, sarah - new <a href="download.html">download module</a>
+<li>tarik, sarah - new <a href="display.html">display module</a> (allows configuration of css and logo for the pages)
+<li>tarik - added short name to the user_groups table (this is unique identifier of the group)
+            and is used in url. group public pages are now accessible in /groups directory
+            (e.g. novice-photographers group pages are located at /groups/novice-photographers),
+            group admin pages are accessible in /groups/admin directory (e.g. novice-photographers 
+            group admin pages are located at /groups/admin/novice-photographers)
+<li>tarik - improved group administration (acs_modules can be associated with the group type or with
+            the group). administrator can control how much control over the modules is given to the
+            group administrators
+<li>teadams, tarik added scoping (user, public, and group) to <a href="address-book.html">address book module</a> and ability to attach an address to any item in the database (similar to general comments)
+<li>sarah added scoping (user, public, and group) to <a href="news.html">news module</a> and ability to attach news to any item in the database (similar to general comments)
+<li>tarik, sarah added scoping (public, group) to <a href="faq.html">faq module</a>
+<li>tarik added scoping (public, group) to <a href="general-comments.html">general comments module</a>
+<li>tarik wrote a set of tcl functions needed for writing modules that support scoping (see /tcl/user-group-defs.tcl)
+</ul>
+<li>philg added commentability to the file storage module
+<li>philg added a trigger and fixed the SQL queries in Tcl defs for the
+robot detection module
+<li> philg added <a href="mainframe-integration.html">mainframe integration document</a>
+<li> karlg and philg  added <a href="xml.html">working with XML document</a>
+<li> philg added <a href=ecommerce-for-mbas.html>Ecommerce Subsystem (explained for MBAs)</a>
+<li> philg added some concurrency fixes to referer, clickthrough, and ad
+server logging
+<li> philg improved navigation and display on the /admin/adserver/
+pages; added an example of adserver usage in /acs-examples/ 
+<li> teadams added a monitoring section to the admin pages
+<ul>
+<li> teadams, dvr, and abe added Cassandacle as a built in 
+ACS module. This is in the new monitor section of the admin pages.  Of
+particular note:
+<ul>
+<li>the table detail page lists dependant tables
+<li>The sessions page lists all the information needed to find and kill
+runaway session (see "Be Wary of Sql Plus" in <a href=http://photo.net/wtr/oracle-tips.html#sessions>Oracle Tips</a>)
+
+</ul>
+<li>dvr (mostly) and teadams added Watchdog as a built in module.
+</ul>
+<li>dh added <a href="faq.html">an FAQ maintenance system</a>
+<li>ron added <a href="press.html">a press coverage bragging system</a>
+<li>we added <a href="download.html">a download management system</a>
+<li>davis added ad-table-display.tcl for dimensional
+    sliders, tables, sorts, and persistent user customizations.
+     Some <a href="/acs-examples/table-display/table-display-example.tcl">example
+code</a> is also available.
+
+<h4>minor fixes</h4>
+
+<li> teadams modified ad_restrict_to_administration in /tcl/ad-admin.tcl
+to get you back to the admin pages after you register
+<li> teadams adding the ability for administrator to approve email for
+users awaiting email verification
+<li>teadams modified /admin/users/user-class-add.tcl to be a little
+more intelligent in parsing the initial select clause.
+
+<li>philg modularized the comment/link stuff in /tcl/ad-html.tcl so that
+it was easier for .adp pages to take advantage of the tables and procs
+
+<li>philg made the portals system more robust (programming error in a
+subsection will not render an entire portal unviewable)
+
+<li>replaced the <code>Memoize</code> procedure with <code>util_memoize</code>
+
+<li>added <code>ad_user_group_authorized_admin_or_site_admin</code> API
+call to the <a href="permissions.html">permissions package</a>.
+
+
+</ul>
+<p>
+
+<li>November 8, 1999:  Version 2.4:
+<ul>
+
+<li> teadams added "self-documentation" in the admin area
+<li>philg added integrity checks to the poll system (for exploring and
+removing duplicate votes from the same IP address when you're not
+requiring registration)
+
+<li>philg wrote a "how to upgrade an ACS installation" document
+at <a href="upgrading.html">/doc/upgrading.html</a>
+
+<li>philg added procs to support creating CSV files to 00-utilities.tcl
+
+<li>philg fixed up the user admin pages (/admin/users/view-csv.tcl works now)
+
+<li>jsc and philg improved the <a href="graphing.html">graphing
+package</a> with a drill-down URL facility
+
+<li>philg enhanced ad_return_if_another_copy_is_running to be callable
+from ADP pages (good for stability under extreme loads)
+
+<li>philg fixed some cutting and pasting bugs in general-comments.sql
+triggers (left orphaned comments around)
+
+<li>tracy, philg, michael yoon, and sebastian made the huge overdue
+change to categorization and user profiling, described in
+<a href="user-profiling.html">user-profiling.html</a>
+
+<li>philg added the /tcl/ad-user-contributions-summary.tcl system, where
+each module defines a procedure to produce a summary of User X's
+contributions to a site.  This makes /shared/community-member.tcl and 
+/admin/users/one.tcl extensible and modular.
+
+<li>philg standardized navigation in the /address-book module 
+
+<li>philg added a /static section to ad.ini with exclusion patterns
+for the static page syncer
+
+<li>philg added the <code>static_page_index_exclusion</code> table
+to community-core.sql; this stores SQL LIKE patterns to exclude pages
+from the site-wide index
+
+<li>philg made major modifications to /admin/static/ to manage these
+exclusion patterns 
+
+<li>jsc and philg made major improvements/changes to site-wide search,
+with extensive help from the Context group at Oracle, notably Alpha and
+Paul Dixon. This has not been added to the upgrade script since it requires
+that the administrator be prepared to deal with interMedia, beginning
+with patching it to 8.1.5.1.
+
+<li>aure, dh, and philg improved the bookmarks system, notably the admin
+pages and a "most-popular-public.tcl" page
+
+</ul>
+
+<p>
+
+<li>October 10, 1999:  Version 2.3:
+<ul>
+<li><a href="/doc/crm.html">customer relationship management system</a> 
+<li><a href="/doc/curriculum.html">curriculum establishment system</a>
+<li><a href="/doc/user-profiling.html">user profiling enhancements</a>
+<li><a href="/doc/portals.html">portals system</a>
+<li><a href="/doc/poll.html">polls</a>
+<li>teadams added user classes (see user admin pages)
+<li>philg added ability for each user to upload a portrait of him or
+herself to be displayed to other users.  To be done:  automatic
+production of thumbnail versions when ImageMagick is installed
+(lots of columns added to the users table, including two BLOBs)
+
+<li>philg and MarkD made major improvements to the poll module
+<li>teadams added group login /ug/group-login.tcl, and ad_get_group_id and ad_get_group_info in tcl/ad-user-groups.tcl
+
+<li>General comments: added triggers in general-comments.sql to delete comments on rows that get deleted.
+
+
+<h4>minor fixes</h4>
+<li> rolf: fixed a minor bug in /admin/ug/group-type.tcl, added group-type-member-field-delete.tcl and group-type-member-field-delete-2.tcl.
+<li> teadams: fixed a few little bugs in the bookmarks 
+module that cropped up with a new user
+<li> teadams: modified /regiser/user-new-2.tcl to update last_visit in the users table
+<li> philg: fixed bug whereby the /chat system would produce an error if
+user's contribution was merely spaces
+<li> philg added a simple index-by-date to the referer_log table; speeds
+up queries on photo.net (1.3 million entries) from 34 seconds to 4.
+
+<li> walter documented the <a href="directory.html">/directory system</a>
+
+</ul>
+
+<p>
+
+<li>September 23, 1999: Version 2.2.1:
+<ul>
+<li>eveander: fixed an important ecommerce module bug that appeared due to an undocumented, unannounced CyberCash API change (thank you, CyberCash).  The "query" part of the procedure ec_talk_to_cybercash was modified.
+
+<li>jsc &amp; eveander: significant user group improvements including fixing all user group bugs at photo.net/ticket/, improving UI for group administrators, and allowing administrators to specify fields that are collected for all members of groups of a given type and for all members of a given group.
+
+<li>teadams: added StaffServerP to the ini file.  If StaffServerP=1, 
+then intranet, filestorage, ticket tracker and discussion groups
+will appear in the workspace
+</ul>
+
+<p>
+
+<li>September 22, 1999:  Version 2.2:
+
+<ul>
+
+<li>improved intranet module (procedures plus who is checked off to
+perform them, project and customer reports) (dvr)
+<li>poll module (markd)
+<P>
+<li>eveander: ecommerce module bugs 1822, 1821, 2261 at photo.net/ticket/ were fixed
+<li>eveander: ecommerce module small improvements: <br>
+  <ol>
+  <li>columns shipment_id and refund_id were added to
+  ec_financial_transactions and the admin pages were modified
+  to fill in those columns when making charges/refunds (this is
+  just an extra auditing precaution; those values are never used)
+  <li>the user tracking present in most of the user pages was
+  encapsulated into a procedure to make the code cleaner
+  </ol>
+<li>philg:  added commentability to classified ads; fixed some bugs and
+taste problems in the general comments facility
+<li>teadams: modified content sections so you can add info_blurb, help_blurb, add and edit content sections
+<li>teadams: modified the last visit system so that it a) doesn't record sessions from AOLserver monitors, and b) records a repeat-visit if the last-visit cookie is not present on the inital page load and the user subsequently logs in
+<li> teadams: few annotation edits in /directory
+<li> teadams: modified /share/community-member.tcl to have a menu bar
+<li> teadams: modified /ticket/project-top.tcl to redirect a user
+to the admin pages if they are in the ticket administration group.
+<li> teadams: modified /admin/spam/spam.tcl to clear the ^M's from the email that gets sent
+<li> teadams: modified /tcl/ad-last-visit.html to not overcount cookied browsers. (IP caching), modified /register/user-login-2.tcl to log a repeat visit (not session!) if the second_to_last_visit cookie is not present.  See: doc/user-session-tracking.html for details.
+<li> dvr: file storage permission fixes and ability to add urls
+<li> teadams: modified user admin page to allow admins to select users with different criteria (ie - males who logged in within the last 10 days). This will expand into dynamic user classes.
+<li> jsc: general_comments - added ability to upload files and images
+<li> teadams: general_comments - added option to use titles and list comments by title.
+<li> jsc: finally added utilities.tcl officially to the ACS, as tcl/00-ad-utilities.tcl
+</ul>
+<p>
+
+
+<li>August 9, 1999:  Version 2.1:
+
+<ul>
+<li>collaborative bookmark maintenance system
+</ul>
+
+<h4>minor fixes</h4>
+<ul>
+
+<li>(philg) - added ability to clear a forum of all messages 
+(useful for forums that support university classes when the new semester
+comes around)
+
+<li>(philg) - added <code>one_if_within_n_days</code> to
+/doc/sql/pl-sql.sql (necessary for ecommerce module)
+
+<li>(eveander and jsc) - added templates that were left out in the
+ecommerce module release
+
+<li>(eveander and jkoontz) - new release of the audit trail package
+(necessary for ecommerce module)
+
+<li>(eveander) - slight change in ecommerce data model to protect
+against inserting 2 rows into ec_admin_settings.  See
+http://photo.net/ticket/issue-view.tcl?msg_id=1601
+
+<li>(eveander) - modified various tcl scripts in the ecommerce module
+to fix bugs.  See: http://photo.net/ticket/issue-view.tcl?msg_id=1621,
+http://photo.net/ticket/issue-view.tcl?msg_id=1641, 
+http://photo.net/ticket/issue-view.tcl?msg_id=1701,
+http://photo.net/ticket/issue-view.tcl?msg_id=1721,
+http://photo.net/ticket/issue-view.tcl?msg_id=1741,
+http://photo.net/ticket/issue-view.tcl?msg_id=1761, and
+http://photo.net/ticket/issue-view.tcl?msg_id=1762
+
+
+<li>(teadams) prototype fixes submitted by John Lowry.
+http://photo.net/ticket/admin/issue-view.tcl?msg_id=1461 (tcl/ad-prototype.tcl)
+and http://photo.net/ticket/admin/issue-view.tcl?msg_id=1441 (/admin/prototype/tableinfo-3.tcl)
+
+<li> (teadams) fixed typo in /tcl/file-storage-defs.tcl (public_f instead of public_p)
+
+<li> (teadams) renamed /tcl/ad-prototype.tcl to /tcl/prototype-defs.tcl to reflect the fact that the prototype tool is an standalone module and not a part of ACS core.
+
+<li>(philg) augmented <code>ad_header</code> with an optional arg for
+extra stuff to put in the document HEAD (e.g., JavaScript)
+
+<li>(philg) improved /tcl/ad-html.tcl to never hold onto a db handle
+while writing to the connection (also improve cleanliness of display)
+
+<li> (teadams) edited /general-comments/comment-edit-2.tcl and /general-comments/comment-edit-3.tcl - fixed bug where you couldn't edit your comment.
+</ul>
+
+<p>
+
+
+<li>August 4, 1999:  Version 2.0:
+<ul>
+<li><a href="ecommerce.html">ecommerce module</a> (so huge that we decided to rev the major version number)
+</ul>
+<h4>minor fixes</h4>
+<ul>
+
+<li>(philg) - wrote docs for /news and /calendar modules 
+<li>(philg) - changed release script so that /templates/ with news
+subsystem example would go out in .tar file
+
+</ul>
+
+
+<p>
+
+<li>July 27, 1999:  Version 1.7:
+<ul>
+<li>standard package for adding comments to a table/module 
+<li>ticket tracker upgrade
+<li>Registration paramaterization and finite state machine (update every 
+file in /register and many in /admin, plus load script /doc/sql/upgrade-1.6-2.0-1.sql)
+
+<li>file storage system (requires our Oracle driver 1.03 or newer; you
+need the <code>ns_ora blob_dml_file</code> command); see 
+<a href="file-storage.html">file-storage.html</a>
+
+</ul>
+
+<h4>minor fixes</h4>
+<ul>
+
+<li>(teadams) - modified /tcl/news-defs.tcl (news_new_stuff).  The query to display new stuff to users had "release_date < sysdate".  This was modified to
+and "release_date > sysdate" in order to show news items that have been released in the past.
+
+<li>(jsc) added configurable file system root for the help system (and
+associated parameter in ad.ini); see /doc/help.html for details.
+
+<li>(philg) added Tracy's util_httppost code to utilities.tcl (not
+officially part of ACS)
+
+<li>(philg) added util_link_responding_p and util_get_http_status to
+utilites.tcl; useful for figuring out of a link is returning "404 Not
+Found" or whatever
+
+<li>(philg) enhanced the admin pages for links and comments to provide
+searchability, better sweeping (using
+<code>util_link_responding_p</code>), and one-click restoration of links
+thought to be dead by the sweeper
+
+<li>(philg) changed the most heavily hit /bboard pages to compute the
+page in a string, release the db handle, then ns_return the bytes
+(slightly worse user experience on unloaded system; much better
+performance under heavy load from many users with slow connections
+(fewer db handles tied up))
+
+<li>(teadams) changed /gc/place-ad-4.tcl to produce a user friendly
+error message when the mailer is down
+
+<li>(philg) added the new intranet-required fields to
+<code>users_contact</code> in community-core.sql (thank you, Sean Y)
+
+<li>(teadams) modified /ug/group-new-3.tcl to not produce an error message
+when the user doesn't fill in a non-new column
+
+<li> (teadams) added export_ns_set_vars to utilities.tcl (not officially 
+part of ACS)
+
+<li> (teadams) Added /admin/users/user-add.tcl, user-add-2.tcl and user-add-3.tcl to
+allow admin additions to ACS. Modified /admin/users/index.tcl to add a link.
+
+<li> (teadams) modified /tcl/ad-admin.tcl to allow /www/admin/users/action-choose.tcl to group by intranet users (employees) and groups.  This allows you to spam employees or groups.  Adding a link to "employees" on /www/admin/www/users/index.tcl, controled by the new paramter IntranetEnabled_p.  Adding link for "download or spam group" in /www/admin/ug/group.tcl. Modified /www/admin/www/action-choose.tcl to fix a spam bug (spamming was sending email all authorized users!) 
+
+<li> (teadams) fixed http://photo.net/issue-view.tcl?msg_id=1161  (formatting problem in prototype results)
+
+</ul>
+<p>
+
+<li>July 8, 1999:  Version 1.6:
+<ul>
+<li><a href="robot-detection.html">robot detection</a>
+
+<li><a href="intranet.html">intranet module</a> -- run your whole company from the ACS (that's what
+we do at ArsDigita and we've grown to $6 million in sales without any
+financing or major bloodshed).  Requires 
+<blockquote>
+<pre><code>
+alter table users_contact add (
+        cell_phone            varchar(100),
+        priv_cell_phone       integer,
+        note                  varchar(4000),
+        current_information   varchar(4000)
+);
+</code></pre>
+</blockquote>
+
+<li><a href="calendar-widget.html">calendar display module</a>
+
+
+<li>(philg) added standard way to do site-wide style and multi-languages
+via templating:
+<ul>
+<li>new column in users_preferences:
+<blockquote>
+<pre><code>
+	-- an ISO 639 language code (in lowercase)
+	language_preference	char(2) default 'en',
+</code></pre>
+</blockquote>
+<li>new document at <a href="http://photo.net/doc/style.html">/doc/style.html</a>
+<li>new procs in /tcl/ad-style.tcl 
+</ul>
+
+<li>(philg) added a standard way to do site-wide end-user help pages;
+see 
+<a href="http://photo.net/doc/help.html">/doc/help.html</a>
+
+<li>(hqm) added <a href="/doc/email-handler.html">a standard incoming
+email handler</a> (stuffs email into an Oracle table)
+
+<li>(hqm and philg) added <a href="/doc/ticket.html">a new ticket
+tracker module</a> with automatic integration of Web and email
+contributions (i.e., a programmer can be a full participant in
+discussions even if he or she only uses email).  The system includes a
+revised and simplified user interface and comes out from its hiding
+place under /admin/.
+
+<li>(philg) added a comprehensive system for presentation of new content
+site-wide to site admins, random Web surfers, and folks following via
+email.  Check out /tcl/ad-new-stuff.tcl, <a
+href="http://photo.net/shared/new-stuff.tcl">/shared/new-stuff.tcl</a>, and
+/admin/new-stuff.tcl.
+
+<li>(jsc and eveander) added a spell-checker and inaugurated a /tools/
+directory, documentated at <a href="/doc/tools.html">/doc/tools.html</a>
+
+<li>(teadams) added prototype builder that will allow developers to build standard add/edit/list pages via web forms <a href="/doc/prototype.html">/doc/prototype.html</a>
+
+<h4>minor fixes</h4>
+
+<li>added <code>util_report_library_entry</code> and
+<code>util_report_successful_library_load</code> to 
+utilities.tcl and call them from a bunch of /tcl files so as to make
+debugging easier in the event of a source code error
+(<b>**** you'll have to upgrade your utilities.tcl from 
+http://photo.net/wtr/thebook/utilities.txt to make your ACS work ****</b>)
+
+<li>fixed /chat/post-message.tcl to catch error where browser doesn't
+supply msg
+<li>(teadams) fixed /bboard/add-alert.tcl to use ad_maybe_redirect_for_registration.  Old method did not ns_urlencode spaces.
+
+<li>(teadams) added glossary section to ad.ini file (controls ApprovalPolicy)
+
+<li>(philg) fixed ad_user_class_query (in /tcl/ad-admin.tcl) for small
+sites where you're trying to query out every user
+
+<li>(philg) added active_p column to user_groups 
+
+<li>(philg) fixed "who's online now" to suppress email address if
+connected user isn't logged in
+
+<li>(philg) added query_strings_by_date index on query_strings table in community-core.sql
+
+<li>(philg) fixed /adserver/adimg.tcl to not interpose bogus /adserver/
+in path to ads (thank you, Raissa)
+
+<li>(philg) fixed bug in ad_administration_group_id
+
+<li>(philg) fixed var <code>url</code> being clobbered in /pvt/home.tcl
+by admin group url (thanks again, Raissa)
+
+<li>(philg) changed ad_maintain_last_visits_for_whosonline_internal so
+that if someone's second_to_last_visit was more than four times as long
+as the session expiration seconds (typically one day), we update the
+session (formerly we never updated the second_to_last_visit if someone
+was using JavaScript chat or otherwise coming to the server at least
+once per day)
+
+<li>(philg) moved /tcl/ad-chat.tcl to /tcl/chat-defs.tcl (more standard
+since chat is its own module)
+
+<li>(philg) took the symlinks from /tcl and make them ordinary files
+(and removed the defs.tcl files from the module dirs).  Did this for 
+adserver-defs.tcl, bboard-defs.tcl, calendar-defs.tcl, contest-defs.tcl,
+gc-defs.tcl.
+
+</ul>
+
+<p>
+
+<li>May 31, 1999:  Version 1.5:
+<ul>
+
+<li>fixed philg_quote_double_quotes (used by export_entire_form) in
+utilities.tcl to also quote &gt;, &lt, &amp; chars; this fixes some
+weird behavior when people try to discuss HTML in the /bboard system;
+<b>**** you'll have to upgrade your utilities.tcl from what you see at 
+http://photo.net/wtr/thebook/utilities.txt to get this fix ****</b>
+
+<li>fixed file upload-related bug in /bboard/insert-msg.tcl  (error when
+file uploads enabled but none specified)
+
+<li>because ns_striphtml is so stupid (removes &gt; and &lt; chars but
+doesn't remove teh tags within), change /bboard/insert-msg.tcl to 
+
+<li>fixed typo in bboard_uploaded_files definition (/doc/sql/bboard.sql)
+-- good catch, seany@altavista.net!
+
+<li>squashed a lot of bugs in the bboard photo uploading stuff and
+improved the user interface
+
+<li>added banner ideas system and applied it to the classifieds
+
+<li>added graphic package to generate bar charts
+
+<li>modified /doc/proc-one.tcl to distinguish optional variables
+
+<li>modified /admin/ug/group-info-edit-2.tcl to actually update 
+the user group helper table.
+
+<li>added /admin/categories/ to maintain canonical content categories
+("interests" as far as users are concerned) and also add info for when
+users see this as a mailing list thing
+
+<li>actually implemented the spamming/mailing list system
+(/mailing-list/ for the users /admin/spam/ for the admin).  One of these
+files used to end with "set db [ns_db gethandle]"!  What's the point of
+open-sourcing software if people don't tell us these things!
+
+<li>fixed a bug in the content section stuff whereby "require
+registration_p" did not automatically register a filter
+
+<li>added RegistrationRequiresApprovalP and
+RegistrationRequiresEmailVerification to ad.ini and made lots of changes
+to registration, login, and user admin pages to support private sites
+where people can't just register and waltz in; this necessitates adding
+an <code>approved_p</code> column to the <code>users</code> table, which
+in turns breaks lots and lots of pages site-wide (because
+<code>approved_p</code> becomes ambiguously defined in a JOIN)
+
+<li>added Yahoo-style nav bar in /calendar system
+
+<li>added content tagging system, esp. useful for flagging and replacing
+naughty words
+
+<li>added /chat system, which uses the content tagging system as a
+package
+
+<li>added /shared/whos-online.tcl, which is intertwined with chat and an
+index to support it: <code>users_by_last_visit</code> (in
+/doc/sql/community-core.sql)
+
+<li>added /tcl/ad-sidegraphics.tcl and corresponding section in ad.ini
+file; standard way to decorate lots of ACS pages (or custom pages that
+you might define); see <a
+href="http://photo.net/bboard/">http://photo.net/bboard/</a> for the system in use
+
+<li>added a "sort by usage" option to the /bboard system index page (and
+some graphics options)
+
+<li>added Yahoo-style navigation to the user group admin pages
+
+<li>Usability upgrade to the ticket tracker. Users can now do things like edit the issue's project.
+
+<li>standard package for adding auditing to Oracle tables:  <a href="audit.html">/doc/audit.html</a>
+
+
+
+<h4>pathetically small fixes/changes</h4>
+
+<li>fixed bug in /tcl/ad-monitor.tcl 
+
+<li>changed ad_administration_group_id to return "" if it can't find a
+group (instead of 0)
+
+</ul>
+
+<p>
+
+<li>April 18, 1999:  Version 1.4:
+<ul>
+<li>added the /glossary module 
+
+<li>augmented /bboard to handle arbitrary file uploads (and made image
+file uploads really work)
+
+<li>modified ad_generic_optionlist in /tcl/ad-widgets.tcl to use string compare instead of ==.  This solves some problems the TCL has with using integers with ==.
+
+<li>added bozo filters in the /bboard system (to prevent photo.net users
+from writing "aperature", for example)
+
+<li>added session tracking and reporting.  Keeps counts for each day of
+total sessions and repeat sessions, including both non-registered and
+registered users.  For registered users, we've added an
+<code>n_sessions</code> column to the <code>users</code> table.
+
+<li>added auditing to the classified ads (/gc) module; required new
+table definition for <code>classified_ads_audit</code>, two indices,
+audit insert statements all over the place.  Also removed some dead code
+and clarified the individual ad pages.
+
+<li>April 6, 1999 (teadams): Fixed clobs query in  
+/neighbor/post-new-5.tcl.
+
+<li>added statistics.tcl link to the q-and-a.tcl page for the bboard
+system
+
+<li>added Yahoo-style navigation (from ad-navigation.tcl) to the /bboard
+subsystem 
+
+<li>added Yahoo-style navigation (from ad-navigation.tcl) to the /gc
+subsystem 
+
+<li>added ability for /gc/ system to bounce ads that mention eBay
+
+<li>added <a href="/doc/permissions.html">/doc/permissions.html</a> package
+
+<li>added /gc/admin/ pages that use permissions system
+
+<li>dropped the ad_authorized_maintainers table from the classifieds.sql
+data model (replaced with generic permissions scheme)
+
+<li>created view users_active in /doc/sql/community-core.sql.  Modified view users_alertable to exclude banned users.
+
+<li>ad_handle_spammers in ad-antispam.tcl will block out IP addresses
+identified in the new [ns/server/photonet/acs/antispam] section of the
+ad.ini file; there is a "feign failure" mode where the spammer is
+treated to a bunch of ns_sleep commands
+
+<li>fixed bug in password system (make sure to upgrade to this version
+so that users won't get locked out if they choose the wrong passwords
+and also for better security)
+
+</ul>
+
+<P>
+
+<li>March 1, 1999:  Version 1.3:
+<ul>
+<li> Fixed the "From" field in daily and monday/thursday bboard email alerts.
+<li> Fixed /bboard/admin-community-view.tcl and subordinate pages to use the current data model.
+<li> Users are asked to log in before deleting a classified ad. (Users would visit an ad from an emails alert, click delete and then be told they were not authorized.)
+<li> Modified insert statement in /doc/sql/bboard.sql and classifieds.sql to prevent multiple inserts of seed rows. They are now PL/SQL blocks that first verify the row is not present. 
+<li>Added /tcl/ad-last-visit.tcl to maintain the last_visit and
+second_to_last_visit cookies and users table columns
+<li>Fixed notification message in /gc/place-bid-2.tcl. Changed mailto link to a link to the /shared/community-member.tcl in gc/place-bid.tcl
+<li>Moved call to bbaord_get_top_info in /bboard/q-and-a.tcl before the message output so users can't see private messages for bboard groups they are not in. 
+<li>Modified /shared/community-member.tcl to not return messages from private bboards.
+<li>Added user-error trapping code in /gc/place-ad-4.tcl to limit classified ad to 3600 characters
+<li> Fixed typo in the pl-sql procedure that added the system user in /doc/sql/community-core.sql.  Fixed typo in the pl-sql procedure that add the administrator user-group in /doc/sql/user-groups.sql.
+<li> Set QQtopic to <code>[DoubleApos $topic]</code> in /bboard/q-and-a-fetch-msg.tcl, /bboard/q-and-a-post-repl-form.tcl, /bboard/usgeospacial-fetch-msg.tcl, bboard/usgeospacial-post-reply-form.tcl
+<li> Modified /bboard/q-and-a-post-reply-form.tcl to use html_p.
+<li> Modified /admin/ug/member-add-2.tcl to fix a HTML table problem that occurred when a role was specified in the post. 
+<li> Modified query for user_group_map record in  /admin/ug/role-edit.tcl to contrain by group_id. 
+<li> Only queries supplement group information table if the table exists in /ug/group.tcl.
+<li> Upgraded the ticket tracking system to include status (open, closed, fixed waiting approval, etc).  To upgrade, you must add the column status to the ticket_issues table.
+
+<li>Added member value user charges to bboard deletion.
+<li>Added a "show me expensive users" feature to the admin index (when
+mv_enabled_p ).
+
+<li>Fixed /admin/users/one.tcl to display dates more cleanly and, more
+importantly, not to drag all the actual content of static pages out of
+Oracle when only the title and url stub were needed.
+
+<p>
+
+<li>Added a spam hunter to the links section
+<li>Added pages to manipulate the blacklist GLOB table to the
+/admin/links/ section
+
+<li>Installed the automatic dead link sweeper to the /admin/links/
+pages.  This required adding <code>checked_date	date</code> to the
+<code>links</code> table.
+
+<li>Moved the link-check.tcl procedure (spider to find dead links in
+static .html files) into /admin/static/ (from /admin/).  Linked it from
+the top-level static content admin page.
+
+<li>completely revamped the referral reporting system
+
+<li>Added a procedure <code>ad_context_bar</code> to
+/tcl/ad-navigation.tcl to support Yahoo-style navigation.
+
+<li>Added a Yahoo-style navigation system to the entire /admin tree
+
+</ul>
+
+<p>
+
+<li>February 8, 1999:  Version 1.2:
+<ul>
+
+<li>Added a content section to /parameters/ad.ini; useful for telling
+the ACS where the site map is and also whether the index.tcl page should
+be generated or served from a static file (the average publisher is
+going to want to take special care with the root page of the site).
+
+<li>Began experimenting with a nice tree view of all a site's static
+content (for the administrator) but gave up.  It is too slow on a big
+site such as Photo.Net to keep dragging all the information out of
+Oracle.  The correct solution is to wait a few weeks until Oracle 8.1
+comes out and we can run Java inside the server.  Then do most of the
+work inside Oracle.
+
+<li>Fixed a lot of bugs in the classified ad subsystem.
+<li> Fixed various bugs throughout the system. 
+<li> Added user choice of HTML verses Plain text to comment system.
+<li> Changed /bboard/insert-msg.tcl to isolate the mailer from the database handle by accumulating emails in a ns_set, releasing the handle, and them emailing the messages.
+<li>Added ticket(/admin/ticket) and address book modules
+
+<li>Added a <code>users_alertable</code> view to the database that
+excludes users who've been deleted, who are on vacation, or whose email
+address is generating bounces.  Added pages to let a user announce a
+vacation and then mark his or her return.  Changed all the procedures
+that generate alerts to query from <code>users_alertable</code> rather
+than <code>users</code>.
+
+<li>Removed the <code>administrator_p</code> column from the users
+table, added a predefined user_group of type "system", group name
+"administrators" that accomplishes the same function (lumping a set of
+users together as admins).
+
+<li>Much beefing up of the user groups stuff.
+
+<li>Added <code>ad_acs_version</code> and
+<code>ad_acs_release_date</code> to /tcl/ad-defs.tcl; these will let you
+write programs that adjust to the ACS version
+
+<li>Added ability for users to change passwords
+
+<li>Added /directory module so that users can look each other up
+(entails new section in ad.ini file)
+
+</ul>
+
+<p>
+
+
+
+<li>January 17, 1999:  Version 1.1.  
+<ul>
+<li>Added neighbor-to-neighbor module (under /neighbor)
+
+<li>Substantial improvements to admin pages
+
+<li>User's password (kept in cookie) is now crypted with ns_crypt (means
+users with persistent cookies will be asked to log in again).
+
+<li>Added a skeleton data warehousing module (/dw)
+
+<li>Added a data model for a IT collaboration server: GlassRoom; sadly,
+no .tcl scripts yet
+
+</ul>
+
+<p>
+
+<li>December 12, 1998:  Version 1.0.
+
+<p>
+
+<li>1995-1998:  private releases of different portions of the ACS
+
+</ul>
+
+
+
+<hr>
+<A href="http://photo.net/philg/"><address>philg@mit.edu</address></a>
+</body>
+</html>

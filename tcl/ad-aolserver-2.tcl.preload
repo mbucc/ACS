@@ -1,0 +1,44 @@
+# $Id: ad-aolserver-2.tcl.preload,v 3.3 2000/03/11 05:38:55 michael Exp $
+# File:        ad-aolserver-2.tcl.preload
+# Author:      Jon Salz <jsalz@mit.edu>
+# Date:        27 Feb 2000
+# Description: Contains procedures specific to AOLserver 2.
+
+proc ns_rand {range} {
+    return [randomRange $range]
+}
+
+uplevel #0 {
+    proc nsv_set { array key value } {
+	return [ns_var set "$array,$key" $value]
+    }
+	
+    proc nsv_get { array key } {
+	return [ns_var get "$array,$key"]
+    }
+
+    proc nsv_unset {array key } {
+	ns_var unset "$array,$key"
+    }
+	
+    proc nsv_exists { array key } {
+	return [ns_var exists "$array,$key"]
+    }
+
+    proc nsv_array { option name } {
+	switch $option {
+	    names {
+		set out [list]
+		foreach item [ns_var list] {
+		    if { [regexp "^$name,(.+)\$" $item "" key] } {
+			lappend out $key
+		    }
+		}
+		return $out
+	    }
+	    default {
+		error "Only nsv_array names is supported (not nsv_array $option)."
+	    }
+	}
+    }		
+}

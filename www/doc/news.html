@@ -1,0 +1,131 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>News</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>News</h2>
+
+part of the <a href="">ArsDigita Community System</a>
+by <a href="http://photo.net/philg/">Philip Greenspun</a> and <a href="mailto:jkoontz@arsdigita.com">Jesse Koontz</a>
+
+<hr>
+
+<ul>
+<li>User-accessible directory:  <a href="/news/">/news/</a>
+<li>Site administrator directory:  <a href="/admin/news/">/admin/news/</a>
+<li>data model :  <a href="/doc/sql/display-sql.tcl?url=/doc/sql/news.sql">/doc/sql/news.sql</a>
+<li>Tcl procs:  /tcl/news-defs.tcl 
+
+</ul>
+
+<h3>The Big Idea</h3>
+
+A news item is something that is interesting for awhile and then should
+disappear into the archives without further administrator intervention.
+We want a news article to serve as the focus of user comments.  You
+could use the /bboard system to accomplish the same function.  If you
+did, you'd get the advantages of file attachments, group-based
+administration, etc.  But we think that news truly is different from
+discussion.  We want to present it by date, not by topic.  The publisher
+probably wants to be very selective about what gets posted (as news if
+not as comments on news).  So it gets a separate module.
+<p>
+However, a <b>Newsgroup</b> approach allows a small about of administrative
+control over group scoped news postings.
+<blockquote>
+A message area in the Usenet News, each newsgroup can be either 'moderated' with only 
+postings approved by a moderator publically posted, or 'unmoderated' where all messages 
+are distributed to the newsgroup immediately. 
+</blockquote>
+<p>
+This module has three special newsgroups. The public newsgroup contains news
+items that are accessed at the site wide scope. The all_users newsgroup contains
+news items that show up on all newsgroups. The registered_users
+newsgroup contains news items that show up for all registered users.
+
+<h3>Under the Hood</h3>
+
+The data model has a two tables; one for describing newsgroup and another for holding the news items.
+
+<blockquote>
+<pre><code>
+create sequence newsgroup_id_sequence start with 1;
+
+create table newsgroups (
+	newsgroup_id	integer primary key,
+        -- if scope=all_users, this is the news for all newsgroups
+        -- is scope=registered_users, this is the news for all registered users
+	-- if scope=public, this is the news for the main newsgroup
+	-- if scope=group, this is news associated with a group
+        scope           varchar(20) not null,
+	group_id	references user_groups,
+	check ((scope='group' and group_id is not null) or
+	(scope='public') or
+	(scope='all_users') or
+	(scope='registered_users'))
+);
+
+
+create sequence news_item_id_sequence start with 100000;
+
+create table news_items (
+	news_item_id		integer primary key,
+	newsgroup_id		references newsgroups not null,
+	title			varchar(200) not null,
+	body			clob not null,
+	-- is the body in HTML or plain text (the default)
+	html_p			char(1) default 'f' check(html_p in ('t','f')),
+	approval_state		varchar(15) default 'unexamined' check(approval_state in ('unexamined','approved', 'disapproved')),
+	approval_date		date,
+	approval_user		references users(user_id),
+	approval_ip_address	varchar(50),
+	release_date		date not null,
+	expiration_date		date not null,
+	creation_date		date not null,
+	creation_user		not null references users(user_id),
+	creation_ip_address	varchar(50) not null
+);
+</code></pre>
+</blockquote>
+
+Comments are handled by the general comments facility and are attached to news items.
+<p>
+Permissions are handled by the general permissions system, and are attached
+to the newsgroup rows.
+<p>
+This module requires that a row exists in the newsgroups table before news
+items can be stored for a group (or scope). The all_users, registered_users, and
+public newsgroups are created by default. The group newsgroups are created when
+a group administrator or site-wide admin attempts to add an item or set the 
+newsgroup permissions. The default permissions for a non-existent group scope
+newsgroup is to allow members to view and admins to modify.
+
+<h3>Related Modules</h3>
+
+The <a href="calendar.html">/calendar module</a> is better if the news
+is about an upcoming event.  In this module, the non-expired items that
+are closest are displayed.  Also, there is some support for
+personalization by state or country.  See <a
+href="http://www.harpcolumn.com">www.harpcolumn.com</a> for a good
+running example that distinguishes /news from /calendar.
+
+
+<p>
+
+The <a href="bboard.html">/bboard system</a> is better if you want to
+support lively discussion and archive the exchanges.
+
+<h3>Future Enhancements</h3>
+
+This module will eventually be designed to produce an XML document of the 
+news items to be displayed. This can then be displayed in an adp templating
+system or incorporated as a part of a larger XML document.
+<p>
+The module may also eventually support the deletion of items (and associated
+permissions and comments).
+<hr>
+<a href="http://photo.net/philg/"><address>philg@mit.edu</address></a>
+</body>
+</html>

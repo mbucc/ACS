@@ -1,0 +1,80 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>Custom Sections</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Custom Sections</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="mailto:tarik@arsdigita.com">Tarik Alatovic </a> and  <a href="mailto:ahmeds@mit.edu/">Sarah Ahmed</a> 
+
+<hr>
+
+<ul>
+<li>Group Administrator directory:  <a href="/groups/admin/$group_name/custom-sections/index.tcl?section_id=$section_id">/groups/admin/$group_name/custom-sections/index.tcl?section_id=$section_id</a>
+<li>data model: <a href="/doc/sql/display-sql.tcl?url=/doc/sql/community-core.sql">/doc/sql/community-core.sql</a>
+<li>procedures:  in tcl/user-groups-defs.tcl
+
+</ul>
+
+<h3>The Big Picture</h3>
+
+This module allows the group administrator to create and manage different custom sections of the site. Custom sections serve like url directories. so if group administrator of group travel at photo.net defines custom section sweden (e.g. photo.net/travel/sweden), he will be able to upload files for this section (see content_files table) in order to display the file photo.net/groups/travel/sweeden/stockholm.html. 
+
+<p>
+
+At this stage, we only support creation and administration of custom sections at the group level. Later, we will augment the system to support site wide administration of custom sections.
+
+<h3>The Medium-Sized Picture</h3>
+
+The system consists of one table. The content_files table holds information about different files that belong to a custom section. The files can be of type text/binary. Note that each content file references a custom section stored in the content_sections table. The documentation on content sections can be found in <a href="/doc/content-sections.html">/doc/content-sections.html</a>
+
+<blockquote>
+<pre>
+
+create table content_files (
+	content_file_id 	integer primary key,
+	section_id 		references content_sections,
+	-- this will be part of url; should be a-zA-Z and underscore
+	file_name		varchar(30) not null,
+        -- this is a MIME type (e.g., text/html, image/jpeg)	
+        file_type               varchar(100) not null,
+        file_extension          varchar(50),    -- e.g., "jpg"
+	-- if file is text or html we need page_pretty_name, body and html_p
+	page_pretty_name        varchar(200),
+	body			clob,
+	html_p			char(1) default 'f' check(html_p in ('t','f')),
+	-- if the file is attachment we need use binary_data blob( e.g. photo, image)
+	binary_data             blob
+);
+
+</pre>
+</blockquote>
+
+<P>
+
+<h3>Legal Transactions</h3>
+From the group administration pages at <a href="/groups/admin/$group_name/custom-sections/index.tcl?section_id=$section_id">/groups/admin/$group_name/custom-sections/index.tcl?section_id=$section_id</a>, the group administrator can
+
+<p> 
+<ul>
+<li>View/Edit the index page of the custom section. It should be noted that a default index page is provided by the system. The administrator has the option of augmenting the page.
+<li>Add/View/Edit/Delete section pages that belongs to the custom section.
+<li>Upload/View/Delete images for the section that can be referenced from any page that belongs to the custom section.
+</ul>
+<P>
+
+<hr>
+
+<a href=mailto:tarik@arsdigita.com><address>tarik@arsdigita.com</address></a>
+</body>
+</html>
+
+
+
+
+
+
+

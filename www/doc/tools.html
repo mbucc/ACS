@@ -1,0 +1,130 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>Tools</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Tools</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="http://eveander.com/">Eve Andersson</a>
+
+<hr>
+
+<ul>
+<li>all scripts: <a href="/tools/">/tools/</a>
+<li>data model: <a href="/doc/sql/tools.sql">/doc/sql/tools.sql</a>
+</ul>
+
+<h3>The Big Idea</h3>
+
+Tools are collections of scripts used by other scripts in the ACS
+to perform common tasks such as spell checking.
+
+<h3>The Tools</h3>
+
+<ol>
+
+<b><li>Spell Checker</b>
+
+<p>
+
+Files:
+
+<ul>
+<li>ispell-words
+<li>spell.tcl
+<li>spelling-dictionary-add-to.tcl
+<li>webspell
+</ul>
+
+<p>
+
+<p>
+webspell is a shell script wrapper to ispell, necessary because ispell
+requires the HOME environment variable to be set, and setting
+env(HOME) doesn't seem to work from AOLserver Tcl. It takes two
+arguments, a filename to be spell checked and a dictionary file of
+extra words, one word per line.
+<p>
+The file <code>ispell-words</code> is such a dictionary file. The table
+<code>ispell_words</code> contains the same information as <code>ispell-words</code>, and is
+kept to make the editing of <code>ispell-words</code> easy. Any additions or
+deletions are made to the table, then the entire file is regenerated
+from the table.
+
+<p>
+
+One table:
+
+<blockquote>
+<pre>
+create table ispell_words (
+    ispell_word    varchar(100) primary key
+);
+</pre>
+</blockquote>
+
+
+To use:
+
+<blockquote>
+Say you have a form as follows, and you want the <code>email_body</code> to be spellchecked when the user pushes Submit:
+
+<blockquote>
+<pre>
+&lt;form method=post action="email-send.tcl"&gt;
+
+&lt;input type=text name="email_to" size=30&gt;
+&lt;input type=text name="email_subject" size=40&gt;
+&lt;textarea name="email_body" rows=10 cols=50&gt;&lt;/textarea&gt;
+&lt;input type=submit value="Send"&gt;
+
+&lt;/form&gt;
+
+</pre>
+</blockquote>
+
+Change the action to <code>/tools/spell.tcl</code> and specify the 
+<code>var_to_spellcheck</code> and <code>target_url</code> as follows:
+
+<blockquote>
+<pre>
+&lt;form method=post action="/tools/spell.tcl"&gt;
+
+&lt;input type=hidden name="var_to_spellcheck" value="email_body"&gt;
+&lt;input type=hidden name="target_url" value="/fullpath/email-send.tcl"&gt;
+
+&lt;input type=text name="email_to" size=30&gt;
+&lt;input type=text name="email_subject" size=40&gt;
+&lt;textarea name="email_body" rows=10 cols=50&gt;&lt;/textarea&gt;
+&lt;input type=submit value="Send"&gt;
+
+&lt;/form&gt;
+
+</pre>
+</blockquote>
+
+The user will have the chance to correct any misspellings and then
+they'll be redirected, with all form variables intact, to the
+<code>target_url</code>.
+
+</blockquote>
+
+Make sure that all scripts are executable and that the UNIX utility
+<code>ispell</code> is in <code>/usr/local/bin/</code>.  Also, the file
+<code>ispell-words</code> should contain the same words as the table
+<code>ispell_words</code> (it's fine if they both start out empty).
+
+<p>
+
+The lovely spell checker was written by Jin Choi (<a href="mailto:jsc@arsdigita.com">jsc@arsdigita.com</a>) with some finishing touches by Eve Andersson 
+(<a href="eveander@arsdigita.com">eveander@arsdigita.com</a>).
+
+</ol>
+
+<hr>
+<a href="http://eveander.com/"><address>eveander@arsdigita.com</address></a>
+</body>
+</html>

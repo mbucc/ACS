@@ -1,0 +1,150 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>User Session Tracking</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>User Session Tracking</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="http://photo.net/philg/">Philip Greenspun</a> and <a href=http://teadams.com>Tracy Adams</a>
+
+<hr>
+
+<ul>
+<li>User-accessible directory:  none
+<li>really important file:  /tcl/ad-last-visit.tcl
+<li>Site administrator directory:  linked from 
+<a href="/admin/users/">/admin/users/</a>
+<li>data model :  inside <a href="/doc/sql/display-sql.tcl?url=/doc/sql/community-core.sql">/doc/sql/community-core.sql</a>
+
+</ul>
+
+<h3>What we said in the book</h3>
+
+<blockquote>
+<i>
+(where "the book" = <a href="http://photo.net/wtr/thebook/">Philip and
+Alex's Guide to Web Publishing</a>)
+</i>
+</blockquote>
+<p>
+
+In many areas of a community site, we will want to distinguish "new
+since your last visit" content from "the stuff that you've already seen"
+content.  The obvious implementation of storing a single
+<code>last_visit</code> column is inadequate.  Suppose that a user
+arrives at the site and the ACS sets the <cite>last_visit</cite> column
+to the current date and time.  <a href="http://photo.net/wtr/thebook/glossary.html#HTTP">HTTP</a> is
+a stateless protocol.  If the user clicks to visit a discussion forum,
+the ACS queries the <code>users</code> table and finds that the last
+visit was 3 seconds ago.  Consequently, none of the content will be
+highlighted as new.
+
+<p>
+
+The ACS stores <code>last_visit</code> and
+<code>second_to_last_visit</code> columns.  We take advantage of the
+AOLserver filter facility to specify a Tcl program that runs before
+every request is served.  The program does the following:
+
+<blockquote>
+
+IF a request comes with a user_id cookie, but the last_visit cookie is
+either not present or more than one day old, THEN the filter proc
+augments the AOLserver output headers with a persistent (expires in year
+2010) set-cookie of last_visit to the current time (HTTP format).  It
+also grabs an Oracle connection, and sets
+
+<blockquote>
+<pre>
+last_visit = sysdate, 
+second_to_last_visit = last_visit
+</pre>
+</blockquote>
+
+We set a persistent second_to_last_visit cookie with the
+<code>last_visit</code> time, either from the last_visit cookie or, if
+that wasn't present, with the value we just put into the
+<code>second_to_last_visit</code> column of the database.
+
+</blockquote>
+
+We do something similar for non-registered users, using pure browser
+cookies rather than the database.
+
+<h3>Stuff that we've added since</h3>
+
+A lot of <a href="http://arsdigita.com">arsdigita.com</a> customers
+wanted to know the total number of user sessions, the number of repeat
+sessions, and how this was evolving over time.  So we added:
+
+<ul>
+<li>an <code>n_sessions</code> column in the <code>users</code> table.
+<li>a table:
+<blockquote>
+<pre><code>
+create table session_statistics (
+	session_count	integer default 0 not null,
+	repeat_count	integer default 0 not null,
+	entry_date	date not null
+);
+</code></pre>
+</blockquote>
+<li>new code in ad-last-visits to stuff this table
+</ul>
+
+<h3>Rules</h3>
+
+<table border=1>
+<tr>
+<td>last_visit cookie present?</td>
+<td>log a  session</td> 
+<td>log repeat session </td> 
+<td>update last_visit cookie</td>
+<td>update second_to_last_visit_cookie</td>
+</tr>
+<tr>
+<td>Yes</td>
+<td>Yes if date - last_visit > LastVisitExpiration</td>
+<td>Yes if date - last_visit > LastVisitExpiration</td>
+<td>Yes if date - last_visit > LastVisitUpdateInterval</td>
+<td>Yes if date - last_visit > LastVisitExpiration</td>
+<td></td>
+</tr>
+<tr>
+<td>No</td>
+<td>Yes if the IP address has not been seen in the LastVisitCacheUpdateInterval seconds </td>
+<td>No</td>
+<td>Yes if the IP address has not been seen in the LastVisitCacheUpdateInterval seconds </td>
+<td>No</td>
+</tr>
+</table>
+<P>
+
+Upon login, a repeat session (but not an extra session) is logged
+if the <code>second_to_last_visit</code> is not present. 
+Logic: The user is a repeat user since they are logging in 
+instead of registering. 
+He either lost his cookies or is using a different
+browser.  On the first page load, the <code>last_visit</code> 
+cookie is set and a session is recorded.  When the user logs in, 
+we learn that he is a repeat visiter
+and log the repeat session.  (If the user was only missing a 
+<code>user_id</code> cookie, both the <code>last_visit</code> 
+and <code>second_to_last_visit</code> cookies would been updated on the
+initial hit.)
+
+
+<h3>Parameters</h3>
+
+<ul>
+<li><code>LastVisitUpdateInterval</code> - The <code>last_visit</code> cookie represents the date of the most recent visit, inclusive of the current visit. If the user remains on the site longer than the <code>LastVisitUpdateInterval</code>, the <code>last_visit</code> cookie is updated.  The database stores the <code>last_visit</code> date as well for using tracking and to display "who's online now".
+<li><code>LastVisitExpiration</code> - The minimum time interval separating 2 sessions.
+<li><code>LastVisitCacheUpdateInterval</code> - The period of time non-cookied hits from an individual IP is considered the same user for the  purpose of session tracking. (IP tracking and caching is necessary to not overcount browsers that do not take cookies.)
+</ul>
+<hr>
+<a href="http://photo.net/philg/"><address>philg@mit.edu</address></a>
+</body>
+</html>

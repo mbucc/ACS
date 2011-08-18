@@ -1,0 +1,271 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+  <head>
+    <title>Web-based Email</title>
+  </head>
+
+<body bgcolor=#ffffff text=#000000>
+    <h2>Web-based Email</h2>
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="mailto:jsc@arsdigita.com">Jin Choi</a>
+
+<hr>
+
+<ul>
+<li> User-accessible directory: <a href="/webmail/">/webmail/</a>
+<li> Site adminstrator directory: <a href="/admin/webmail/">/admin/webmail/</a>
+<li> data model: <a href="/doc/sql/display-sql.tcl?url=/doc/sql/webmail.sql">/doc/sql/webmail.sql</a>
+<li> procedures: /tcl/webmail-defs.tcl
+</ul>
+
+<h3>The big picture</h3>
+
+In the beginning, email would get sent to your big Unix box and
+delivered to a central mail queue, where you would pick it up from
+time to time with your mail reader and store it permanently in your
+home directory somewhere. You telnetted to the machine, used your
+favorite mail reader, all your mail was available from one place, it
+got backed up every night along with everything else on the machine,
+and life was good.
+
+<p>
+
+Then along came POP. Mail was sent to your big Unix box where it got
+delivered to a central mail queue, from where you would pick it up
+from time to time with your mail reader. Only now, it would get stored
+on whatever machine you happened to be at the time that you decided to
+read it. You could tell it to keep all the mail on the server, but
+then every time you read your email, you would see things you'd
+already seen before, even mail you had deleted elsewhere. If you
+didn't tell it to keep your mail on the server it would get deleted as
+soon as you picked it up, and the only copy would be on your desktop
+machine or your laptop, with no backups whatsoever.
+
+<p>
+
+IMAP was invented to address this problem, giving both the benefits of
+POP along with the centralized mail reading convenience of the
+old-school style of doing things. True, probably your favorite mail
+reader didn't support IMAP just yet, but you could get by with what
+was available, and more readers were adding support all the
+time. Still, you might be stuck somewhere without a readily available
+IMAP client, and in today's hostile net environment, telnetting to the
+server in the clear is a no-no. This is where web-based email
+shines. Constant access to your email store wherever you may be, as
+long as a web browser is available. Combined with an IMAP interface to
+the same store, you can have the benefits of both worlds, and be
+almost as happy as when you were telnetting to your mail server.
+
+<p>
+
+This architecture is available today. You can sign up for an account
+at criticalpath.net, and they will set you up with an IMAP and
+web-based email account. You can install Oracle email server from a CD
+and get the same thing. Why yet another system? Ease of modification
+and flexibility. If you find yourself missing a feature from Critical
+Path's system that you would dearly love, you can request it of them
+and they might deign to provide it in the indeterminate future. You
+may or may not be able to modify the Oracle email system to your
+particular needs, but I wouldn't know as I haven't been able to figure
+out how it works. This module is flexible, easy to extend, and easy to
+understand. Or if not, at least all the source is there for you to
+look at.
+
+<h3>Architecture</h3>
+
+As far as possible, I've tried to avoid getting into implementing
+systems that have been done well before. That means no reinventing of
+mail software; no implementing of IMAP or SMTP protocols; no worrying
+about file locking and mail delivery. <a
+href="http://www.qmail.org/">qmail</a> and the UW IMAP server were
+written years ago by people who dedicated lots of effort to make sure
+they were done correctly. This module doesn't even look at email until
+it has been delivered by qmail as it would be to any user.
+
+<p>
+
+Once the mail has been delivered, it is parsed and inserted into
+Oracle by some Java code running inside Oracle. Using a relational
+database as the message store has many benefits. It provides a
+standard data model for multiple interfaces to hook up to. It makes it
+easy to do the web interface. It is fast and scalable. It makes
+implementing powerful email search facilities easy. Using Java lets us
+leverage the JavaMail API to do the hard work of parsing the
+messages. It also has the benefit of tight integration to Oracle
+through the JServer JSQL interface. For example, messages are read
+into a CLOB column by being streamed from the file system in bite
+sized chunks. If we were using, say, a perl DBI program to do the
+insertion, we would have to read the entire message into memory before
+writing it to the CLOB. With multi-megabyte emails becoming more
+common in today's media-rich environment, this has obvious benefits.
+
+<p>
+
+On the front end, we provide a more or less traditional ACS web module
+for the web-based front end, and an Oracle "driver" (mail store
+hookup) for the UW IMAP server to provide the IMAP interface (not yet
+written).
+
+
+<h4>Receiving Mail</h4>
+
+The webmail module interfaces with qmail to receive mail. All of the
+heavy lifting involved in getting email delivered reliably and in a
+standards-conformant manner is done by qmail.
+
+<p>
+
+The webmail system defines <i>domains</i> and <i>email accounts</i>. A
+domain is defined by a host name and a short string to be able to
+refer to it easily. The full domain name must correspond to a virtual
+domain that qmail is set up to receive email for. In the following,
+let us assume that "webmail.arsdigita.com" is the full domain name and
+"wm" is the short name.
+
+<ul>
+<li>Set up DNS so that the full domain name resolves to the host on
+which you are setting up this system (or set up an appropriate MX
+record).
+
+<li>Add a line consisting of the full domain name to
+/var/qmail/control/rcpthosts so that qmail knows to receive email for
+this domain.
+
+<li>Select a name for an email account that will be used to handle all
+the email for this system. This can be arbitrary, so we will just use
+"webmail" (if you want to use something else, you must edit the Java code).
+
+<li>Create a virtual user by adding the following line to /var/qmail/users/assign:
+<pre>
++webmail-:oracle:101:102:/home/nsadmin/qmail/alias:-::
+</pre>
+This says any email intended for "webmail-*@webmail.arsdigita.com"
+will be handled by the Unix user "oracle" (uid 101, gid 102) according
+to the alias files in the directory /home/nsadmin/qmail/alias. Make
+sure that directory exists, and can be written to by the nsadmin user:
+<pre>
+(as root):
+mkdirhier /home/nsadmin/qmail/alias
+chown nsadmin /home/nsadmin/qmail/alias
+</pre>
+The location of this alias directory can be changed by setting the
+AliasDirectory parameter in the webmail section of the ACS .ini file
+for this server.
+
+<li>Run /var/qmail/bin/qmail-newu to have the previous change take effect.
+
+<li>Add the following to /var/qmail/control/virtualdomains:
+<pre>
+webmail.arsdigita.com:webmail-wm
+</pre>
+
+This tells qmail that any mail sent to "*@webmail.arsdigita.com" will
+be handled by the webmail virtual user, and have "-wm" appended to the
+username portion of the email address. So, mail sent to
+"foo@webmail.arsdigita.com" will be delivered to the webmail user as
+"webmail-wm@webmail.arsdigita.com".
+
+<li>Register this domain with the webmail system by using the
+administration pages, with (again, just for this example) "wm" as the
+short name and "webmail.arsdigita.com" as the domain name. (You will
+need to load the data model file to do this, which requires that the
+Java libraries be loaded, see below).
+
+<li>Create a queue directory for deliveries to the webmail user. Make
+sure it is writable and readable by the oracle Unix account (or
+whatever user Oracle runs at):
+<pre>
+(as root:)
+/var/qmail/bin/maildirmake /home/nsadmin/qmail/queue
+chown -R oracle /home/nsadmin/qmail/queue
+</pre>
+The location of the queue directory can be changed by setting the
+QueueDirectory parameter in webmail section of the ACS .ini file for
+this server.
+</ul>
+
+<p>
+
+Once the domain has been set up, you can start adding email
+accounts. An email account is tied to an ACS user; an ACS user can
+receive email at any number of different accounts, on any domains that
+this host receives email for. Once received, they are treated
+identically, and are indistinguishable other than from the email
+headers. Email accounts can be assigned to users by using the
+administration pages.
+
+<p>
+
+When an email account is added, a file is created automatically in the
+alias directory of the form ".qmail-[short domain name]-username"
+(e.g., ".qmail-wm-jsc") that contains one line with the full path to
+the queue directory (/home/nsadmin/qmail/queue/). This file specifies
+that mail sent to "webmail-wm-jsc@webmail.arsdigita.com" be delivered
+to the maildir directory that we have set up. All email to be handled
+by the webmail system ends up in the same place
+(/home/nsadmin/qmail/queue/new). The system uses the RFC822
+Delivered-To header to distinguish who it should be displayed to. The
+indirection through the .qmail alias files is done so that only email
+sent to valid accounts will be received. Email sent to an address that
+does not have a .qmail file set up for it will bounce normally.
+
+<p>
+
+Once every minute, Oracle polls the new directory of the maildir queue
+and picks up any mail that has been delivered. Using the JavaMail
+library running inside Oracle, it stores and parses the message, and
+saves off various pieces of information (parsed headers, attachments,
+etc.; see the <a
+href="/doc/sql/display-sql.tcl?url=/doc/sql/webmail.sql">data
+model</a>).
+
+<p>
+
+To install the Java portion of this module, download the JavaMail
+library from <a
+href="http://java.sun.com/products/javamail/">http://java.sun.com/products/javamail/</a>
+and the JavaBeans Activation Framework from <a
+href="http://java.sun.com/beans/glasgow/jaf.html">http://java.sun.com/beans/glasgow/jaf.html</a>.
+Unpack the distributions and load activation.jar and mail.jar into Oracle:
+<pre>
+loadjava -user dbuser/dbpasswd -resolve -verbose activation.jar
+loadjava -user dbuser/dbpasswd -resolve -verbose mail.jar
+</pre>
+(You may get a verification warning attempting to resolve
+javax/activation/ActivationDataFlavor which you can ignore.) The
+database user must have been granted the JAVASYSPRIV role.
+
+<p>
+
+Then load the various Java files in the /webmail/java directory:
+
+<pre>
+loadjava -user dbuser/dbpasswd -resolve -verbose BlobDataSource.java ClobDataSource.java MessageParser.sqlj MessageComposer.sqlj
+</pre>
+Make sure you create the PL/SQL bindings in the data model file and
+create the job which will poll the mail queue.
+
+<p>
+
+To test that you are receiving mail properly, send a message to
+user@full_domain_name. A new file should immediately be created in
+/home/nsadmin/qmail/queue/new. If one does not appear, check out the
+qmail error logs (usually /var/log/qmail/current) to see what the
+problem might be. If you have started the polling job, the file should
+disappear in less than a minute, and the message should be waiting in
+the user's INBOX.
+
+<h4>Reading Email</h4>
+
+The web interface should be self-explanatory and documented with Help
+links. The IMAP interface isn't yet written, so there is no
+documentation for it.
+
+    <hr>
+    <address><a href="mailto:jsc@arsdigita.com"></a></address>
+<!-- Created: Mon Feb 28 08:45:15 EST 2000 -->
+<!-- hhmts start -->
+Last modified: Wed Mar  1 05:16:54 EST 2000
+<!-- hhmts end -->
+  </body>
+</html>

@@ -1,0 +1,287 @@
+<html>
+<!--AD_DND-->
+<!--$Id: installation.html,v 3.1.4.4 2000/03/17 05:26:04 gregh Exp $-->
+<HEAD>
+<TITLE>ArsDigita Community System Installation Instructions</TITLE></HEAD>
+<BODY bgcolor=#ffffff text=#000000>
+<h2>ArsDigita Community System Installation</h2>
+by <A href="http://photo.net/philg/">Philip Greenspun</a>
+
+<hr>
+
+<ul>
+<li>source: <a href="http://software.arsdigita.com">http://software.arsdigita.com</a>
+<li>bug reports: <a href="mailto:acs-bugs@arsdigita.com">acs-bugs@arsdigita.com</a>
+<li>philosophy:  <a
+href="http://photo.net/wtr/thebook/community.html">http://photo.net/wtr/thebook/community.html</a>
+(the community chapter of <cite>Philip and Alex's Guide to Web
+Publishing</cite>)
+<li>technical background: <a
+href="http://photo.net/wtr/thebook/">http://photo.net/wtr/thebook/</a>
+</ul>
+
+<h3>Prerequisites</h3>
+
+<ul>
+<li>Unix server
+<li><a href="http://www.oracle.com">Oracle 8 relational database
+management system</a>
+<li><a href="http://www.aolserver.com">AOLserver</a> (free)
+<li><a
+href="http://arsdigita.com/free-tools/oracle-driver.html">ArsDigita
+Oracle driver for AOLserver</a> (free)
+</ul>
+
+It is helpful if you have Oracle interMedia Text for full-text
+searches.  We're also trying to make our system work with the PLS
+System, available free from <a
+href="http://www.pls.com">http://www.pls.com</a>.
+
+<h3>Your Oracle installation</h3>
+
+The ACS requires that Oracle's NLS_DATE_FORMAT parameter be set to
+'YYYY-MM-DD', as God intended it to be.  See 
+<a
+href="http://photo.net/wtr/oracle-tips.html">http://photo.net/wtr/oracle-tips.html</a>
+for more details on how to bring Oracle into the ANSI age...
+
+<p>
+
+The "nuke a user" admin page and Intermedia won't run unless you set
+<code>open_cursors = 500</code> in the same Oracle init file.
+
+<h3>Creating a <code>chroot</code>'ed environment</h3>
+
+As of the arrival of AOLserver 3.0, we recommend running AOLserver and the
+ACS in a <code>chroot</code> "jail."  This enhances security, limiting the
+likelihood of a rogue intruder damaging your system.
+
+<p>
+
+This will require that all binaries you may need to access and all libraries
+those binaries may linked against be found under the jail's perimeter.  We
+recommend this be located in the directory /webroot.
+
+
+<h3>Your AOLserver installation</h3>
+
+All ArsDigita software packages, including the ACS, rely on a basket
+of utility procedures that are generally part of the AOLserver
+installation. This used to be distributed separately and put in the
+shared Tcl directory (/home/nsadmin/modules/tcl), but is now a part of
+the ACS and exists in [acsdir]/tcl/ad-utilities.tcl.preload. Note that many
+other files in the tcl directory depend on utility functions defined
+in this file, which is why it is named as it is, so that it will be
+loaded before any of the other files.
+
+<p>
+
+We place our entire AOLserver directory structure in /webroot/aol30.
+
+
+<h3>Getting Ready to Untar</h3>
+
+We recommend rooting webserver content in /webroot/web.  
+Since most servers these days are expected to run multiple 
+services from multiple IP addresses, each server gets a subdirectory from 
+/webroot/web.  For example, http://scorecard.org would be rooted at 
+/webroot/web/scorecard on one of our machines and if http://jobdirect.com were 
+on the same box then it would be at /webroot/web/jobdirect.
+
+<p>
+
+For the sake of argument, we're going to assume that your service is
+called "yourdomain", is going to be at http://yourdomain.com and is
+rooted at /webroot/web/yourdomain in the Unix file system.  Note that you'll
+find our definitions files starting out with "yourdomain.com".
+
+
+
+<ul>
+<li>download acs.tar into /tmp/acs.tar
+<li>cd /webroot/web/
+<li>tar xvf /tmp/acs.tar (creates a directory "acs")
+<li>mv acs yourdomain
+<li>chmod 777 yourdomain/users (if you plan on using the homepage module)
+</ul>
+
+You'll now find that /webroot/web/yourdomain/www contains the document root
+and /webroot/web/yourdomain/tcl contains Tcl scripts that are loaded when the
+AOLserver starts up.
+
+<h3>Feeding Oracle the Data Model</h3>
+
+The entire server will behave in an unhappy manner if it connects to
+Oracle and finds that, for example, the users table does not exist.
+Thus you need to connect to Oracle as whatever user the AOLserver will
+connect as, and feed Oracle the table definitions.
+
+<ul>
+
+<li>load the <code>states</code>, <code>country_codes</code> and <code>counties</code> tables
+using the <code>load-geo-tables</code> shell script in the 
+/webroot/web/yourdomain/www/install
+directory.  This relies on the Oracle SQL*Loader utility, documented 
+at <a
+href="http://photo.net/sql/ref/utilities">http://photo.net/sql/ref/utilities</a>
+
+<li>cd to /webroot/web/yourdomain/www/doc/sql/  and feed Oracle the .sql files that
+you find there. There is a meta-loader file, load-data-model.sql, that includes
+the other files in the proper order. To use it, run
+<blockquote>
+<code>
+sqlplus foo/foopassword < load-data-model.sql
+</code>
+</blockquote>
+
+<li>If you have interMedia installed, while still in /webroot/web/yourdomain/www/doc/sql/, run
+<blockquote>
+<code>
+./load-site-wide-search foo foopassword ctxsys-password
+</code>
+</blockquote>
+Note that there's no slash between foo and foopassword here. The third
+argument, ctxsys-password, is (obviously) the password for interMedia
+Text's special ctxsys user.
+
+</ul>
+
+<h3>Configuring AOLServer</h3>
+
+
+<b>Note: Because we're <code>chroot</code>'ing the webserver, it's view
+of the filesystem begins at /webroot.  So, it will actually see its 
+content at /web.</b>
+
+<ul>
+<li>the community system depends on the existence of three database
+pools:  main, subquery, and log.  They must be named as such.  The
+default pool will be "main".
+<li>you can only have one ArsDigita Community System running from a
+single nsd process (though you can have as many ACS servers as you like
+on a physical machine; each just needs its own process).  A big reason
+for this is that in the [ns/parameters] section of the AOLserver .ini
+file you need  to say 
+<blockquote>
+<tt>auxconfigdir=/web/yourdomain/parameters</tt>
+</blockquote>
+<li>Tell AOLserver that its pageroot is /web/yourdomain/www/
+<li>Tell AOLserver that the TclLibrary is /web/yourdomain/tcl
+(this will be the server's Private Tcl library)
+<li>in the [ns/parameters] section of your AOLServer .ini file, add
+the following:
+<blockquote>
+<tt>StackSize=500000</tt>
+</blockquote>
+
+This allows your to recurse a bit in Tcl and still use our Oracle
+driver (which allocates 40,000 bytes on the stack when called).
+
+<li>in the [ns/server/yourservername] section, if you want to use our
+fancy custom error responses and such, put in 
+
+<blockquote><pre>
+NotFoundResponse=/global/file-not-found.html
+ServerBusyResponse=/global/busy.html
+ServerInternalErrorResponse=/global/error.html
+ForbiddenResponse=/global/forbidden.html
+UnauthorizedResponse=/global/unauthorized.html
+</pre></blockquote>
+
+then go into the /www/global/ directory and edit these files to suit.
+
+</ul>
+
+
+<h3>Configuring ACS itself</h3>
+
+If you want a system that works, you have to copy
+/web/yourdomain/parameters/ad.ini to /web/yourdomain/parameters/yourdomain.ini
+(or any other name different from ad.ini).  You don't actually have to
+delete the ad.ini file.  Each section has a hardcoded "yourservername"
+in the name.  This means that the <code>ad_parameter</code>  will ignore
+everything in ad.ini unless your AOLserver name happens to be
+"yourservername".
+
+<p>
+
+Once you've got a private copy of the aux .ini file, make sure to change
+"yourservername" to whatever you're calling this particular AOLserver
+(look at the server name in the main .ini file for a reference).
+
+<p>
+
+Unless you want pages that advertise a community called "Yourdomain
+Network" owned by "webmaster@yourdomain.com", you'll probably want to
+edit the text of /web/yourdomain/parameters/yourdomain.ini file to
+change system-wide parameters.  If you want to change how some of these
+are used, a good place to look is /web/yourdomain/tcl/ad-defs.tcl.
+
+<h3>Configuring Permissions</h3>
+
+Now, you need to protect the proper administration directories of the
+ACS. You decide the policy. Here are the directories to consider
+protecting:
+
+<ul>
+<li> /doc (or at least /doc/sql/ since some AOLserver configurations
+will allow a user to execute SQL files)
+<li> /admin
+<li> any private admin dirs for a module you might have written that are
+not underneath the /admin directory
+</ul>
+
+<h3>Adding Yourself as a User and Making Yourself a Sysadmin</h3>
+
+The ArsDigita Community System will define two users:  system and
+anonymous.  It will also define a user group of system administrators.
+You'll want to add yourself as a user (at /register/ ) and then add
+yourself as as member of the site-wide administration group.  Start by
+logging out as yourself and logging in as the system user (email of
+"system").  Change the system user's password.  Visit the 
+the https://yourservername.com/admin/ug/ directory and add your personal
+user as a site-wide administrator.  Now you're bootstrapped!
+
+
+<h3>Closing Down Access</h3>
+
+The ACS ships with a user named "anonymous" (email "anonymous") to
+serve as a content owner.  If you're operating a restricted-access
+site, make sure to change the anonymous user's password.
+
+<h3>Where to Find What</h3>
+
+A few pointers: 
+
+<ul>
+<li> the /register directory contains the login and registration scripts. You
+can easily redirect someone to /register/index.tcl to have them login
+or register.
+
+<li> the /pvt directory is for user-specific pages. They can only be accessed by people who have logged in.
+
+</ul>
+
+<h3>Making sure that it works</h3>
+
+Run the acceptance tests in <a href="/doc/acceptance-test.html">/doc/acceptance-test.html</a>
+
+<h3>Reversing the whole process!</h3>
+
+If you want to take an operating ArsDigita Community System and use it
+as the basis of a new toolkit release, then what you want is the script
+at /admin/conversion/make-acs-dist (only works if you have zsh
+installed).  It plays some neat tricks such as 
+
+<ul>
+<li>leaving backup files behind
+<li>leaving random custom .ini files from the /parameters dir behind
+<li>rerooting the files at "acs" (rather than "yourservername")
+
+</ul>
+
+
+<hr>
+<a href="mailto:philg@mit.edu"><address>philg@mit.edu</address></a>
+</body>
+</html>
