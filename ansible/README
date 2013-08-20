@@ -1,0 +1,11 @@
+Try and use Ansible to build an ACS 3.0 server
+Created: Tue Aug 20 19:14:30 EDT 2013
+
+
+1. Set up vagrant box and point ansible to the box.
+
+   http://mbucc.blogspot.com/2013/08/setup-oracle-112g-virtualbox-for-ansible.html
+
+2. Run: ansible-playbook playbook.yml.  (This step is "Under Construction".)
+
+
