@@ -1,5 +1,6 @@
 - hosts: vagrant
   sudo: yes
   tasks:
-  - name: Test task.
-    command: /bin/echo "Hello World!"
+
+  - name: Set up .bashrc for oracle user.
+    copy: src=oracle.bashrc dest=/home/oracle/.bashrc owner=oracle group=oracle

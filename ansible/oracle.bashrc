@@ -6,9 +6,11 @@ if [ -f /etc/bashrc ]; then
 fi
 
 # User specific aliases and functions
-export ORACLE_HOME=/home/oracle/app/oracle/product/11.2.0/dbhome_2
+export ORACLE_BASE=/home/oracle/app/oracle
+export ORACLE_HOME=$ORACLE_BASE/product/11.2.0/dbhome_2
 export LD_LIBRARY_PATH=$ORACLE_HOME/lib
-export ORACLE_SID=orcl
+export ORACLE_SID=ora10
+export ORA_NLS10=$ORACLE_HOME/nls/data
 export JAVA_HOME=/usr/java/latest
 
 export PATH=$JAVA_HOME/bin:$PATH:$ORACLE_HOME/bin
@@ -22,4 +24,4 @@ cat ~/Desktop/README.txt
 
 /sbin/ifconfig | grep "inet addr"
 
-
+umask 022
