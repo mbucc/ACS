@@ -3,6 +3,7 @@
 
 connect / as sysdba
 
+-- XXX: Should not need to specify PFILE (but Oracle was using init.ora).
 startup nomount PFILE={{ ORACLE_HOME }}/dbs/init{{ SID }}.ora
 
 CREATE DATABASE {{ SID }}
