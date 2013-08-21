@@ -1,5 +1,5 @@
 db_name='ora11'
-memory_target=1G
+memory_target=100M
 processes = 150
 audit_file_dest='/home/oracle/app/oracle/admin/orcl/adump'
 audit_trail ='db'
