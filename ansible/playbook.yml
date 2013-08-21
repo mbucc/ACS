@@ -10,9 +10,8 @@
     REDO_DIR2: $ROOT_DIR/u02/logs/my
   tasks:
 
-  # XXX: Dry up the ORACLE_* values (use template + variable substitution).
   - name: Set up .bashrc for oracle user.
-    copy: src=oracle.bashrc dest=/home/oracle/.bashrc owner=oracle group=oracle
+    template: src=oracle.bashrc.j2 dest=/home/oracle/.bashrc owner=oracle group=oracle
 
   - name: Copy over initialization paramters for ora11
     copy: src=initora11.ora dest={{ORACLE_HOME}}/dbs owner=oracle group=oracle
