@@ -3,6 +3,11 @@
   vars:
     ORACLE_BASE: /home/oracle/app/oracle
     ORACLE_HOME: $ORACLE_BASE/product/11.2.0/dbhome_2
+    SID: ora11
+    ROOT_DIR: /$SID
+    DATA_DIR: $ROOT_DIR/u01/app/oracle/oradata/$SID
+    REDO_DIR1: $ROOT_DIR/u01/logs/my
+    REDO_DIR2: $ROOT_DIR/u02/logs/my
   tasks:
 
   # XXX: Dry up the ORACLE_* values (use template + variable substitution).
@@ -11,3 +16,20 @@
 
   - name: Copy over initialization paramters for ora11
     copy: src=initora11.ora dest={{ORACLE_HOME}}/dbs owner=oracle group=oracle
+
+  - name: Create directory to hold data.
+    file: path=$DATA_DIR state=directory
+
+  - name: Create directory to hold first set of redo logs.
+    file: path=$REDO_DIR1 state=directory
+
+  - name: Create directory to hold second set of redo logs.
+    file: path=$REDO_DIR2 state=directory
+
+  - name: Set user.group to oracle.dba on new directories.
+    file: path=$ROOT_DIR state=directory owner=oracle group=dba recurse=yes
+
+#  - name: Copy over script to create the database
+#    copy: src=create.sql
+#          dest=/home/oracle/create.sql
+#          owner=oracle group=oracle
