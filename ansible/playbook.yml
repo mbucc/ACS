@@ -8,13 +8,18 @@
     DATA_DIR: $ROOT_DIR/u01/app/oracle/oradata/$SID
     REDO_DIR1: $ROOT_DIR/u01/logs/my
     REDO_DIR2: $ROOT_DIR/u02/logs/my
+    ORA_SYS_PASSWORD: oracle
+    ORA_SYSTEM_PASSWORD: oracle
+    UNDO_TABLESPACE_NAME: undotbs
   tasks:
 
   - name: Set up .bashrc for oracle user.
-    template: src=oracle.bashrc.j2 dest=/home/oracle/.bashrc owner=oracle group=oracle
+    template: src=oracle.bashrc.j2 dest=/home/oracle/.bashrc 
+        owner=oracle group=oracle
 
   - name: Copy over initialization paramters for ora11
-    copy: src=initora11.ora dest={{ORACLE_HOME}}/dbs owner=oracle group=oracle
+    template: src=init{{SID}}.ora.j2 dest={{ORACLE_HOME}}/dbs/init{{SID}}.ora
+        owner=oracle group=oracle
 
   - name: Create directory to hold data.
     file: path=$DATA_DIR state=directory
@@ -28,7 +33,19 @@
   - name: Set user.group to oracle.dba on new directories.
     file: path=$ROOT_DIR state=directory owner=oracle group=dba recurse=yes
 
-#  - name: Copy over script to create the database
-#    copy: src=create.sql
-#          dest=/home/oracle/create.sql
-#          owner=oracle group=oracle
+  - name: Create audit file directory.
+    file: path={{ ORACLE_BASE }}/admin/{{ SID }}/adump state=directory
+        owner=oracle group=oracle
+
+  - name: Set user.group to oracle.dba on audit file directory.
+    file: path={{ ORACLE_BASE }}/admin/{{ SID }} state=directory 
+        owner=oracle group=dba recurse=yes
+
+  - name: Copy over script to create the database
+    template: src=create.sql.j2 dest=/home/oracle/create.sql 
+        owner=oracle group=oracle
+
+  - name: Run SQL to create database
+    command: su - oracle -c "sqlplus /nolog @create.sql"
+        chdir=/home/oracle 
+        creates={{ DATA_DIR }}//system01.dbf

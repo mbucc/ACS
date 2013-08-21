@@ -1,19 +1,20 @@
 db_name='ora11'
 memory_target=100M
 processes = 150
-audit_file_dest='/home/oracle/app/oracle/admin/orcl/adump'
+audit_file_dest='{{ ORACLE_BASE }}/admin/{{ SID }}/adump'
 audit_trail ='db'
 db_block_size=8192
 db_domain=''
-db_recovery_file_dest='/home/oracle/app/oracle/flash_recovery_area'
+db_recovery_file_dest='{{ ORACLE_BASE }}/flash_recovery_area'
 db_recovery_file_dest_size=2G
-diagnostic_dest='/home/oracle/app/oracle'
+diagnostic_dest='{{ ORACLE_BASE }}'
 dispatchers='(PROTOCOL=TCP) (SERVICE=ORCLXDB)'
 open_cursors=500
 remote_login_passwordfile='EXCLUSIVE'
-undo_tablespace='UNDOTBS1'
+undo_tablespace={{ UNDO_TABLESPACE_NAME }}
 # You may want to ensure that control files are created on separate physical
 # devices
-control_files = (ora_control1, ora_control2)
+control_files ='{{ DATA_DIR }}/control1.ctl'
+control_files ='{{ DATA_DIR }}/control2.ctl'
 compatible ='11.2.0'
 nls_date_format="YYYY-MM-DD"

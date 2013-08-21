@@ -9,3 +9,12 @@ Created: Tue Aug 20 19:14:30 EDT 2013
 2. Run: ansible-playbook playbook.yml.  (This step is "Under Construction".)
 
 
+
+Useful links:
+
+http://docs.oracle.com/cd/E11882_01/server.112/e25494/create003.htm
+  Creating an 11.2 Oracle database.
+
+http://docs.oracle.com/cd/E11882_01/server.112/e25494/create005.htm#i1013946
+  About init.ora.
+
