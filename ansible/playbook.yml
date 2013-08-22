@@ -13,6 +13,7 @@
     UNDO_TABLESPACE_NAME: undotbs
   tasks:
 
+  # XXX: Runs, even if already deleted.
   - include: delete_orcl.yml
 
   - name: Set up .bashrc for oracle user.
@@ -54,7 +55,8 @@
   - name: Shutdown oracle.
     service: name=oracle state=stopped pattern=/bin/tnslsnr
 
+  # XXX: Does not fail if database is not created.
   - name: Run SQL to create database
     command: su - oracle -c "sqlplus /nolog @create.sql"
         chdir=/home/oracle 
-        creates={{ DATA_DIR }}//system01.dbf
+        creates={{ DATA_DIR }}/system01.dbf
