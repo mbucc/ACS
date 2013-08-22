@@ -30,4 +30,18 @@ CREATE DATABASE {{ SID }}
       DATAFILE '{{ DATA_DIR }}/undotbs01.dbf'
       SIZE 200M REUSE AUTOEXTEND ON MAXSIZE UNLIMITED;
 
+CREATE TABLESPACE apps_tbs LOGGING
+     DATAFILE '{{ DATA_DIR}}/apps01.dbf'
+     SIZE 500M REUSE AUTOEXTEND ON NEXT  1280K MAXSIZE UNLIMITED
+     EXTENT MANAGEMENT LOCAL;
+-- create a tablespace for indexes, separate from user tablespace (optional)
+CREATE TABLESPACE indx_tbs LOGGING
+     DATAFILE '{{ DATA_DIR}}/indx01.dbf'
+     SIZE 100M REUSE AUTOEXTEND ON NEXT  1280K MAXSIZE UNLIMITED
+     EXTENT MANAGEMENT LOCAL;
+
+@?/rdbms/admin/catalog.sql
+@?/rdbms/admin/catproc.sql
+@?/sqlplus/admin/pupbld.sql
+
 exit
