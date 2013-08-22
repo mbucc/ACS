@@ -13,8 +13,14 @@
     UNDO_TABLESPACE_NAME: undotbs
   tasks:
 
+  - include: delete_orcl.yml
+
   - name: Set up .bashrc for oracle user.
     template: src=oracle.bashrc.j2 dest=/home/oracle/.bashrc 
+        owner=oracle group=oracle
+
+  - name: Copy over oratab with our SID in it.
+    template: src=oratab.j2 dest=/etc/oratab
         owner=oracle group=oracle
 
   - name: Copy over initialization paramters for ora11
@@ -44,6 +50,9 @@
   - name: Copy over script to create the database
     template: src=create.sql.j2 dest=/home/oracle/create.sql 
         owner=oracle group=oracle
+
+  - name: Shutdown oracle.
+    service: name=oracle state=stopped pattern=/bin/tnslsnr
 
   - name: Run SQL to create database
     command: su - oracle -c "sqlplus /nolog @create.sql"

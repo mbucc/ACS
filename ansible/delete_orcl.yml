@@ -1,0 +1,12 @@
+---
+- name: Shutdown oracle.
+  service: name=oracle state=stopped pattern=/bin/tnslsnr
+
+- name: Delete data directory for the orcl sid.
+  file: path=/home/oracle/app/oracle/oradata/orcl state=absent 
+
+- name: Delete the init.ora for the orcl sid.
+  file: path={{ ORACLE_HOME }}/dbs/initorcl.ora state=absent
+
+- name: Restart oracle.
+  service: name=oracle state=started pattern=/bin/tnslsnr
