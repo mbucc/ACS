@@ -10,3 +10,4 @@ REDO_DIR2: $ROOT_DIR/u02/logs/my
 ORA_SYS_PASSWORD: oracle
 ORA_SYSTEM_PASSWORD: oracle
 UNDO_TABLESPACE_NAME: undotbs
+ORA_PS_MARKER: ora_pmon  # If present in ps listing, Oracle is running.

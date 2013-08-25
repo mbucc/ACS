@@ -13,7 +13,7 @@
   ignore_errors: True
 
 - name: Shutdown oracle.
-  service: name=oracle state=stopped pattern=/bin/tnslsnr
+  service: name=oracle state=stopped pattern={{ ORA_PS_MARKER }}
   when: found_orcl_data.rc == 0 or found_orcl_initora.rc == 0
 
 - name: Delete data directory for the orcl sid.
@@ -25,5 +25,5 @@
   when: found_orcl_initora|success
 
 - name: Restart oracle.
-  service: name=oracle state=started pattern=/bin/tnslsnr
+  service: name=oracle state=started pattern={{ ORA_PS_MARKER }}
   when: found_orcl_data.rc == 0 or found_orcl_initora.rc == 0

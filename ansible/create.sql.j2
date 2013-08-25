@@ -1,6 +1,9 @@
 -- Create Oracle database for ACS.
 -- Created: Tue Aug 20 20:38:29 EDT 2013
 
+WHENEVER OSERROR EXIT 9;
+WHENEVER SQLERROR EXIT SQL.SQLCODE;
+
 connect / as sysdba
 
 startup nomount
