@@ -1,15 +1,29 @@
 ---
 # The VirtualBox appliance supplied by Oracle includes a database
 # with sid "orcl" that we don't need.  This play deletes that db.
+#
+
+# Only run these commands if the directory exists.
+- command: /usr/bin/test -d {{ ORACLE_HOME }}/oradata/orcl
+  register: found_orcl_data
+  ignore_errors: True
+
+- command: /usr/bin/test -f {{ ORACLE_HOME }}/dbs/initorcl.ora
+  register: found_orcl_initora
+  ignore_errors: True
 
 - name: Shutdown oracle.
   service: name=oracle state=stopped pattern=/bin/tnslsnr
+  when: found_orcl_data.rc == 0 or found_orcl_initora.rc == 0
 
 - name: Delete data directory for the orcl sid.
-  file: path=/home/oracle/app/oracle/oradata/orcl state=absent 
+  file: path={{ ORACLE_HOME }}/oradata/orcl state=absent
+  when: found_orcl_data|success
 
 - name: Delete the init.ora for the orcl sid.
   file: path={{ ORACLE_HOME }}/dbs/initorcl.ora state=absent
+  when: found_orcl_initora|success
 
 - name: Restart oracle.
   service: name=oracle state=started pattern=/bin/tnslsnr
+  when: found_orcl_data.rc == 0 or found_orcl_initora.rc == 0
