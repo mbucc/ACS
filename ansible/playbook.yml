@@ -1,62 +1,8 @@
 - hosts: vagrant
   sudo: yes
-  vars:
-    ORACLE_BASE: /home/oracle/app/oracle
-    ORACLE_HOME: $ORACLE_BASE/product/11.2.0/dbhome_2
-    SID: ora11
-    ROOT_DIR: /$SID
-    DATA_DIR: $ROOT_DIR/u01/app/oracle/oradata/$SID
-    REDO_DIR1: $ROOT_DIR/u01/logs/my
-    REDO_DIR2: $ROOT_DIR/u02/logs/my
-    ORA_SYS_PASSWORD: oracle
-    ORA_SYSTEM_PASSWORD: oracle
-    UNDO_TABLESPACE_NAME: undotbs
+  vars_files:
+    - ora_vars.yml
   tasks:
 
-  # XXX: Runs, even if already deleted.
-  - include: delete_orcl.yml
-
-  - name: Set up .bashrc for oracle user.
-    template: src=oracle.bashrc.j2 dest=/home/oracle/.bashrc 
-        owner=oracle group=oracle
-
-  - name: Copy over oratab with our SID in it.
-    template: src=oratab.j2 dest=/etc/oratab
-        owner=oracle group=oracle
-
-  - name: Copy over initialization paramters for ora11
-    template: src=init{{SID}}.ora.j2 dest={{ORACLE_HOME}}/dbs/init{{SID}}.ora
-        owner=oracle group=oracle
-
-  - name: Create directory to hold data.
-    file: path=$DATA_DIR state=directory
-
-  - name: Create directory to hold first set of redo logs.
-    file: path=$REDO_DIR1 state=directory
-
-  - name: Create directory to hold second set of redo logs.
-    file: path=$REDO_DIR2 state=directory
-
-  - name: Set user.group to oracle.dba on new directories.
-    file: path=$ROOT_DIR state=directory owner=oracle group=dba recurse=yes
-
-  - name: Create audit file directory.
-    file: path={{ ORACLE_BASE }}/admin/{{ SID }}/adump state=directory
-        owner=oracle group=oracle
-
-  - name: Set user.group to oracle.dba on audit file directory.
-    file: path={{ ORACLE_BASE }}/admin/{{ SID }} state=directory 
-        owner=oracle group=dba recurse=yes
-
-  - name: Copy over script to create the database
-    template: src=create.sql.j2 dest=/home/oracle/create.sql 
-        owner=oracle group=oracle
-
-  - name: Shutdown oracle.
-    service: name=oracle state=stopped pattern=/bin/tnslsnr
-
-  # XXX: Does not fail if database is not created.
-  - name: Run SQL to create database
-    command: su - oracle -c "sqlplus /nolog @create.sql"
-        chdir=/home/oracle 
-        creates={{ DATA_DIR }}/system01.dbf
+  - include: ora_delete_orcl_sid.yml
+  - include: ora_create_our_database.yml

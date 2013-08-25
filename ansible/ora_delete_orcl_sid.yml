@@ -1,6 +1,7 @@
 ---
 # The VirtualBox appliance supplied by Oracle includes a database
 # with sid "orcl" that we don't need.  This play deletes that db.
+
 - name: Shutdown oracle.
   service: name=oracle state=stopped pattern=/bin/tnslsnr
 

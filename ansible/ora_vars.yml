@@ -1,0 +1,12 @@
+---
+# Oracle variables
+ORACLE_BASE: /home/oracle/app/oracle
+ORACLE_HOME: $ORACLE_BASE/product/11.2.0/dbhome_2
+SID: ora11
+ROOT_DIR: /$SID
+DATA_DIR: $ROOT_DIR/u01/app/oracle/oradata/$SID
+REDO_DIR1: $ROOT_DIR/u01/logs/my
+REDO_DIR2: $ROOT_DIR/u02/logs/my
+ORA_SYS_PASSWORD: oracle
+ORA_SYSTEM_PASSWORD: oracle
+UNDO_TABLESPACE_NAME: undotbs
