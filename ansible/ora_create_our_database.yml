@@ -1,0 +1,63 @@
+---
+# Create the ArsDigita Community System Oracle database.
+
+- name: Set up .bashrc for oracle user.
+  template: src=oracle.bashrc.j2 dest=/home/oracle/.bashrc 
+      owner=oracle group=oracle
+
+- command: /usr/bin/test -f {{ ORA_CONTROL_FILE1 }}
+  register: our_database_exists
+  ignore_errors: True
+
+- name: Copy over oratab with our SID in it.
+  template: src=oratab.j2 dest=/etc/oratab
+      owner=oracle group=oracle
+  register: oratab
+
+- name: Copy over initialization paramters for ora11
+  template: src=init{{SID}}.ora.j2 dest={{ORACLE_HOME}}/dbs/init{{SID}}.ora
+      owner=oracle group=oracle
+  register: initora
+
+- name: Create directory to hold data.
+  file: path=$DATA_DIR state=directory
+  when: our_database_exists|failed
+
+- name: Create directory to hold first set of redo logs.
+  file: path=$REDO_DIR1 state=directory
+  when: our_database_exists|failed
+
+- name: Create directory to hold second set of redo logs.
+  file: path=$REDO_DIR2 state=directory
+  when: our_database_exists|failed
+
+- name: Set user.group to oracle.dba on new directories.
+  file: path=$ROOT_DIR state=directory owner=oracle group=dba recurse=yes
+  when: our_database_exists|failed
+
+- name: Create audit file directory.
+  file: path={{ ORACLE_BASE }}/admin/{{ SID }}/adump state=directory
+      owner=oracle group=oracle
+  when: our_database_exists|failed
+
+- name: Set user.group to oracle.dba on audit file directory.
+  file: path={{ ORACLE_BASE }}/admin/{{ SID }} state=directory 
+      owner=oracle group=dba recurse=yes
+  when: our_database_exists|failed
+
+- name: Copy over script to create the database
+  template: src=create.sql.j2 dest=/home/oracle/create.sql 
+      owner=oracle group=oracle
+  when: our_database_exists|failed
+
+- name: Shutdown oracle.
+  service: name=oracle state=stopped pattern={{ ORA_PS_MARKER }}
+  when: our_database_exists|failed or oratab.changed or initora.changed
+
+- name: Run SQL to create database
+  command: su - oracle -c "sqlplus /nolog @create.sql > create.sql.log" 
+  when: our_database_exists|failed
+
+- name: And start it back up.
+  service: name=oracle state=stopped pattern={{ ORA_PS_MARKER }}
+  when: our_database_exists|failed or oratab.changed or initora.changed

@@ -14,7 +14,7 @@ remote_login_passwordfile='EXCLUSIVE'
 undo_tablespace={{ UNDO_TABLESPACE_NAME }}
 # You may want to ensure that control files are created on separate physical
 # devices
-control_files ='{{ DATA_DIR }}/control1.ctl'
-control_files ='{{ DATA_DIR }}/control2.ctl'
+control_files ='{{ ORA_CONTROL_FILE1 }}'
+control_files ='{{ ORA_CONTROL_FILE2 }}'
 compatible ='11.2.0'
 nls_date_format="YYYY-MM-DD"

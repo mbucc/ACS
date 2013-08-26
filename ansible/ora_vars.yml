@@ -11,3 +11,5 @@ ORA_SYS_PASSWORD: oracle
 ORA_SYSTEM_PASSWORD: oracle
 UNDO_TABLESPACE_NAME: undotbs
 ORA_PS_MARKER: ora_pmon  # If present in ps listing, Oracle is running.
+ORA_CONTROL_FILE1: $DATA_DIR/control1.ctl
+ORA_CONTROL_FILE2: $DATA_DIR/control2.ctl
