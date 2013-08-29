@@ -1,0 +1,74 @@
+---
+# Install AOL server.
+# ref: http://www.eveandersson.com/arsdigita/acs-install/aolserver
+
+# XXX: Figure out how to build tarball if needed.
+# Output from the following was:
+#     failed: [192.168.67.10] => {"failed": true, "item": "", "parsed": false}
+#     invalid output was: [sudo via ansible, key=jyinfugcmdnbbiirxftevlslhnjgvkbz] password:
+#     Sorry, try again.
+#- name: Check if we need to fetch tarball.
+#  command: test -f aolserver-3.3.0.tgz
+#  delegate_to: 127.0.0.1
+#  register: need_tarball
+#  ignore_errors: True
+
+- name: Add nsadmin group
+  group: name=nsadmin state=present
+
+- name: Add web group
+  group: name=web state=present
+
+- name: Create the nsadmin user, which runs AOL Server.
+  user: name=nsadmin group=nsadmin groups=dba,web home={{ AOL_HOME }}
+
+- name: Copy over .bashrc for nsadmin user.
+  template: src=bashrc.j2 dest={{ AOL_HOME }}/.bashrc 
+      owner=nsadmin group=nsadmin
+
+- name: Set user.group on nsadmin home to nsadmin.web.
+  file: path={{ AOL_HOME }} state=directory recurse=yes
+          owner=nsadmin group=web mode=755
+
+- name: Create /web directory, where web server files will live.
+  file: path=/web owner=nsadmin group=web mode=755 state=directory
+
+# TCL 8.4
+- name: Copy over TCL source.
+  copy: src={{ AOL_TCL_TARBALL }}
+          dest=/tmp owner=nsadmin group=nsadmin mode=644
+
+- name: Extract TCL source.
+  command: tar -zxf /tmp/{{ AOL_TCL_TARBALL }} -C /tmp --overwrite
+
+- name: Configure TCL.
+  shell: ./configure --enable-threads --prefix={{ AOL_SERVER_PREFIX }} 
+          chdir=/tmp/{{ AOL_TCL }}/unix
+
+- name: Compile and install TCL.
+  shell: make install chdir=/tmp/{{ AOL_TCL }}/unix
+
+#
+#
+#- name: Copy over AOL Server source code.
+#  copy: src=aolserver-{{ AOL_TAG }}.tgz dest=/tmp 
+#          owner=nsadmin group=nsadmin mode=644
+#
+#- name: Copy over AOL Server Oracle driver source code.
+#  copy: src=nsoracle-{{ AOL_ORACLEDRIVER_TAG }}.tgz dest=/tmp 
+#          owner=nsadmin group=nsadmin mode=644
+#
+#- name: Extract AOL Server sources.
+#  command: tar -zxf /tmp/aolserver-{{ AOL_TAG }}.tgz -C /tmp --overwrite
+#
+#- name: Extract AOL Oracle driver sources.
+#  command: tar -zxf /tmp/nsoracle-{{ AOL_ORACLEDRIVER_TAG }}.tgz 
+#          -C /tmp --overwrite
+#
+#- name: Create directory where compiles AOL Server files will live.
+#  file: path=/usr/local/aolserver state=directory
+#          owner=nsadmin group=web mode=755
+#
+#- name: Compile AOL Server.
+#  shell: make all chdir=/tmp/aolserver
+#

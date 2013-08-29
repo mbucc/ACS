@@ -2,7 +2,7 @@
 # Create the ArsDigita Community System Oracle database.
 
 - name: Set up .bashrc for oracle user.
-  template: src=oracle.bashrc.j2 dest=/home/oracle/.bashrc 
+  template: src=bashrc.j2 dest=/home/oracle/.bashrc 
       owner=oracle group=oracle
 
 - command: /usr/bin/test -f {{ ORA_CONTROL_FILE1 }}
