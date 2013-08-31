@@ -33,42 +33,52 @@
 - name: Create /web directory, where web server files will live.
   file: path=/web owner=nsadmin group=web mode=755 state=directory
 
-# TCL 8.4
+- name: Create directory where compiles AOL Server files will live.
+  file: path=/usr/local/aolserver state=directory
+          owner=nsadmin group=web mode=755
+
+#---------------------------------------------------------------------------
+#
+#                             A O L   S E R V E R 
+#
+#---------------------------------------------------------------------------
+- name: Copy over AOL Server source code.
+  copy: src=aolserver-{{ AOL_TAG }}.tgz dest=/tmp 
+          owner=nsadmin group=nsadmin mode=644
+
+- name: Delete old AOL extrated sources.
+  file: path=/tmp/aolserver state=absent
+
+- name: Extract AOL Server sources.
+  command: tar -zxf /tmp/aolserver-{{ AOL_TAG }}.tgz -C /tmp
+
 - name: Copy over TCL source.
   copy: src={{ AOL_TCL_TARBALL }}
           dest=/tmp owner=nsadmin group=nsadmin mode=644
 
 - name: Extract TCL source.
-  command: tar -zxf /tmp/{{ AOL_TCL_TARBALL }} -C /tmp --overwrite
+  command: tar -zxf /tmp/{{ AOL_TCL_TARBALL }} -C /tmp/aolserver --overwrite
 
-- name: Configure TCL.
-  shell: ./configure --enable-threads --prefix={{ AOL_SERVER_PREFIX }} 
-          chdir=/tmp/{{ AOL_TCL }}/unix
+- name: Copy over AOL patch so build uses TCL 8.4.20.
+  copy: src=aol_tcl8.4.20.patch
+          dest=/tmp/aolserver/include owner=nsadmin group=nsadmin mode=644
 
-- name: Compile and install TCL.
-  shell: make install chdir=/tmp/{{ AOL_TCL }}/unix
+- name: Apply AOL/TCL patch.
+  shell: /usr/bin/patch -p0 Makefile.global < aol_tcl8.4.20.patch 
+          chdir=/tmp/aolserver/include
 
-#
-#
-#- name: Copy over AOL Server source code.
-#  copy: src=aolserver-{{ AOL_TAG }}.tgz dest=/tmp 
-#          owner=nsadmin group=nsadmin mode=644
-#
+- name: Copy over thin Makfile to TCL rootdir, which AOL build expects.
+  copy: src=aol_tcl8.4.20.Makfile dest=/tmp/aolserver/tcl8.4.20/Makefile
+          owner=nsadmin group=nsadmin mode=644
+
+- name: Compile AOL Server.
+  shell: make chdir=/tmp/aolserver
+
+
 #- name: Copy over AOL Server Oracle driver source code.
 #  copy: src=nsoracle-{{ AOL_ORACLEDRIVER_TAG }}.tgz dest=/tmp 
 #          owner=nsadmin group=nsadmin mode=644
-#
-#- name: Extract AOL Server sources.
-#  command: tar -zxf /tmp/aolserver-{{ AOL_TAG }}.tgz -C /tmp --overwrite
-#
 #- name: Extract AOL Oracle driver sources.
 #  command: tar -zxf /tmp/nsoracle-{{ AOL_ORACLEDRIVER_TAG }}.tgz 
 #          -C /tmp --overwrite
-#
-#- name: Create directory where compiles AOL Server files will live.
-#  file: path=/usr/local/aolserver state=directory
-#          owner=nsadmin group=web mode=755
-#
-#- name: Compile AOL Server.
-#  shell: make all chdir=/tmp/aolserver
 #

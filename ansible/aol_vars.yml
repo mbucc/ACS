@@ -1,6 +1,6 @@
 ---
 # AOL Server variables
-AOL_TAG: 3.3.0
+AOL_TAG: 3.3
 AOL_HOME: /home/aol33
 AOL_SERVER_PREFIX: /usr/local/aolserver
   

@@ -1,0 +1,6 @@
+264,265c264,265
+< TCL8X_DIR=tcl8.3.2
+< TCL8X_LIB=libtcl8.3g.a
+---
+> TCL8X_DIR=tcl8.4.20
+> TCL8X_LIB=libtcl8.4.a
