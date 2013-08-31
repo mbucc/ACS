@@ -61,18 +61,13 @@
 
 - name: Copy over AOL patch so build uses TCL 8.4.20.
   copy: src=aol_tcl8.4.20.patch
-          dest=/tmp/aolserver/include owner=nsadmin group=nsadmin mode=644
+          dest=/tmp/aolserver owner=nsadmin group=nsadmin mode=644
 
 - name: Apply AOL/TCL patch.
-  shell: /usr/bin/patch -p0 Makefile.global < aol_tcl8.4.20.patch 
-          chdir=/tmp/aolserver/include
+  shell: /usr/bin/patch -p0 < aol_tcl8.4.20.patch chdir=/tmp/aolserver
 
-- name: Copy over thin Makfile to TCL rootdir, which AOL build expects.
-  copy: src=aol_tcl8.4.20.Makfile dest=/tmp/aolserver/tcl8.4.20/Makefile
-          owner=nsadmin group=nsadmin mode=644
-
-- name: Compile AOL Server.
-  shell: make chdir=/tmp/aolserver
+- name: Compile and install AOL Server.
+  shell: make install chdir=/tmp/aolserver
 
 
 #- name: Copy over AOL Server Oracle driver source code.

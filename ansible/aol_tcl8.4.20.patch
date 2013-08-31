@@ -1,6 +1,59 @@
-264,265c264,265
-< TCL8X_DIR=tcl8.3.2
-< TCL8X_LIB=libtcl8.3g.a
----
-> TCL8X_DIR=tcl8.4.20
-> TCL8X_LIB=libtcl8.4.a
+        To apply,
+
+                $ cd /tmp/aolserver
+                $ patch -p0 < this.patch
+
+--- Makefile.orig   2013-08-31 13:25:57.000000000 -0700
++++ Makefile        2013-08-31 13:27:03.000000000 -0700
+@@ -49,7 +49,7 @@
+	$(MKDIR)                    $(INSTTCL)
+	$(MKDIR)                    $(INSTLIB)
+	$(MKDIR)                    $(INSTLIB)/tcl8.3
+-	( cd tcl8.3.2/library && $(CP) -r . $(INSTLIB)/tcl8.3 || exit 1; )
++	( cd $(TCL8X_DIR)/library && $(CP) -r . $(INSTLIB)/$(TCL8X_DIR) || exit 1; )
+	$(MKDIR)                    $(INSTSRVMOD)
+	$(MKDIR)                    $(INSTSRVPAG)
+	$(CP) -r tcl                $(INSTMOD)
+
+--- include/Makefile.global.orig  2013-08-31 13:42:48.000000000 -0700
++++ include/Makefile.global       2013-08-31 13:22:03.000000 000 -0700
+@@ -261,8 +261,8 @@
+ #
+ #    Note:  Tcl 7.6 on *BSD has a different name for no apparent reason.
+ #
+-TCL8X_DIR=tcl8.3.2
+-TCL8X_LIB=libtcl8.3g.a
++TCL8X_DIR=tcl8.4.20
++TCL8X_LIB=libtcl8.4.a
+ TCL76_DIR=tcl7.6
+ ifeq (bsd, $(findstring bsd, $(PLATFORM)))
+   TCL76_LIB=libtcl76.a
+
+--- tcl8.4.20/Makefile.orig 2013-08-31 13:41:17.000000000 -0700
++++ tcl8.4.20/Makefile      2013-08-31 13:22:03.000000000 -0700
+@@ -0,0 +1,25 @@
++#
++# Tcl   8.4 Library Makefile
++#
++
++NSHOME   = ..
++
++include $(NSHOME)/include/Makefile.global
++
++
++ifeq (gcc,$(CC))
++    ENABLE_GCC=--enable-gcc
++endif
++
++TCLDIR   = $(shell pwd)/unix
++
++all: $(TCLDIR)/Makefile
++	(cd $(TCLDIR); $(MAKE) CFLAGS='$(CFLAGS)' $(TCL8X_LIB))
++
++$(TCLDIR)/Makefile: $(TCLDIR)/Makefile.in $(TCLDIR)/configure
++	(cd $(TCLDIR); ./configure $(ENABLE_GCC) --enable-threads --disable-shared)
++
++clean:
++	(cd $(TCLDIR); $(MAKE) - f Makefile.in distclean)
++
++install: all
