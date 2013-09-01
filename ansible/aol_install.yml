@@ -129,10 +129,10 @@
   command: tar -zxf /tmp/nsoracle-{{ AOL_ORACLEDRIVER_TAG }}.tgz -C /tmp
 
 - name: Copy over nsoracle patch so build.
-  copy: src=nsoracle.patch dest=/tmp/nsoracle
+  copy: src=aol_nsoracle.patch dest=/tmp/nsoracle
 
 - name: Apply nsoracle patch.
-  shell: /usr/bin/patch -p0 < nsoracle.patch chdir=/tmp/nsoracle
+  shell: /usr/bin/patch -p0 < aol_nsoracle.patch chdir=/tmp/nsoracle
 
 - name: Compile and install Oracle driver for AOL Server.
   shell: ORACLE_HOME={{ ORACLE_HOME }} make install chdir=/tmp/nsoracle
