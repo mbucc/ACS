@@ -10,12 +10,12 @@
   ignore_errors: True
 
 - name: Copy over oratab with our SID in it.
-  template: src=oratab.j2 dest=/etc/oratab
+  template: src=ora_oratab.j2 dest=/etc/oratab
       owner=oracle group=oracle
   register: oratab
 
 - name: Copy over initialization paramters for ora11
-  template: src=init{{SID}}.ora.j2 dest={{ORACLE_HOME}}/dbs/init{{SID}}.ora
+  template: src=ora_init{{SID}}.ora.j2 dest={{ORACLE_HOME}}/dbs/init{{SID}}.ora
       owner=oracle group=oracle
   register: initora
 
@@ -46,7 +46,7 @@
   when: our_database_exists|failed
 
 - name: Copy over script to create the database
-  template: src=create.sql.j2 dest=/home/oracle/create.sql 
+  template: src=ora_create.sql.j2 dest=/home/oracle/create.sql 
       owner=oracle group=oracle
   when: our_database_exists|failed
 
