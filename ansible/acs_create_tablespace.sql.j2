@@ -1,0 +1,32 @@
+WHENEVER OSERROR EXIT 9;
+WHENEVER SQLERROR EXIT SQL.SQLCODE;
+
+-- DROP USER {{ ACS_USER_NAME }} CASCADE;
+-- DROP TABLESPACE {{ ACS_SERVICE_NAME }} INCLUDING CONTENTS;
+
+create  tablespace {{ ACS_SERVICE_NAME }} 
+        datafile '{{ ACS_DATA_DIR }}/{{ ACS_SERVICE_NAME }}.dbf' 
+        size 50m autoextend on default storage 
+        (pctincrease 1)
+;
+    
+create  user {{ ACS_USER_NAME }} 
+        identified by {{ ACS_USER_PASSWORD }} 
+        default tablespace {{ ACS_SERVICE_NAME }} 
+        temporary tablespace {{ TEMP_TABLESPACE_NAME }}
+        quota unlimited on {{ ACS_SERVICE_NAME }}
+;
+
+grant   connect
+        , resource
+        , query rewrite 
+        to {{ ACS_USER_NAME }}
+;
+
+revoke  unlimited tablespace from {{ ACS_SERVICE_NAME }};
+
+alter user {{ ACS_USER_NAME }} quota unlimited on {{ ACS_SERVICE_NAME }};
+
+commit;
+
+exit;

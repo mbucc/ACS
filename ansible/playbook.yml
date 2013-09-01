@@ -3,8 +3,10 @@
   vars_files:
     - ora_vars.yml
     - aol_vars.yml
+    - acs_vars.yml
   tasks:
 
-  - include: ora_delete_orcl_sid.yml
-  - include: ora_create_our_database.yml
-  - include: aol_install.yml
+#  - include: ora_delete_orcl_sid.yml
+#  - include: ora_create_our_database.yml
+#  - include: aol_install.yml
+  - include: acs_install.yml

@@ -1,0 +1,12 @@
+---
+# ArsDigita variables.
+
+ACS_SERVICE_NAME: acs
+ACS_USER_NAME: acs
+ACS_USER_PASSWORD: oracle
+
+# According to ../www/doc/architecture-install.html, this should
+# be on a different mount point from the Oracle system data files
+# (which live in DATA_DIR, defined in ora_vars.yml).
+ACS_DATA_DIR: $ROOT_DIR/u02/$SID/oradata
+

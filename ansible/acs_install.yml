@@ -1,0 +1,13 @@
+---
+# Install ArsDigita Community System (AC) and Oracle tablespace.
+# Created: Sun Sep  1 18:53:10 EDT 2013
+
+- name: Create directory to hold acs tablespace files.
+  file: path={{ ACS_DATA_DIR }} state=directory owner=oracle group=dba mode=0755
+
+- name: Copy over script to create the database
+  template: src=acs_create_tablespace.sql.j2 dest=/home/oracle/create_acs.sql 
+      owner=oracle group=oracle
+
+- name: Run SQL to create database
+  command: su - oracle -c "sqlplus system/{{ ORA_SYSTEM_PASSWORD }} @create_acs.sql > create_acs.sql.log" 
