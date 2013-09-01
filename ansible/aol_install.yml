@@ -23,7 +23,7 @@
   user: name=nsadmin group=nsadmin groups=dba,web home={{ AOL_HOME }}
 
 - name: Copy over .bashrc for nsadmin user.
-  template: src=bashrc.j2 dest={{ AOL_HOME }}/.bashrc 
+  template: src=bashrc.j2 dest={{ AOL_HOME }}/.bashrc
       owner=nsadmin group=nsadmin
 
 - name: Set user.group on nsadmin home to nsadmin.web.
@@ -39,11 +39,11 @@
 
 #---------------------------------------------------------------------------
 #
-#                             A O L   S E R V E R 
+#                             A O L   S E R V E R
 #
 #---------------------------------------------------------------------------
 - name: Copy over AOL Server source code.
-  copy: src=aolserver-{{ AOL_TAG }}.tgz dest=/tmp 
+  copy: src=aolserver-{{ AOL_TAG }}.tgz dest=/tmp
           owner=nsadmin group=nsadmin mode=644
 
 - name: Delete old AOL extrated sources.
@@ -59,6 +59,25 @@
 - name: Extract TCL source.
   command: tar -zxf /tmp/{{ AOL_TCL_TARBALL }} -C /tmp/aolserver --overwrite
 
+- name: Copy over new TCL header file to AOL Server include directory.
+  command: cp
+          /tmp/aolserver/{{ AOL_TCL }}/generic/tcl.h
+          /tmp/aolserver/include/tcl84.h
+
+- name: Copy over 8.4 TCL declarations header file to AOL Server include directory.
+  command: cp
+          /tmp/aolserver/{{ AOL_TCL }}/generic/tclDecls.h
+          /tmp/aolserver/include
+
+- name: Copy over 8.4 TCL declarations header file to AOL Server include directory.
+  command: cp
+          /tmp/aolserver/{{ AOL_TCL }}/generic/tclPlatDecls.h
+          /tmp/aolserver/include
+
+#tclIntDecls.h
+#tclIntPlatDecls.h
+#tclPlatDecls.h
+
 - name: Copy over AOL patch so build uses TCL 8.4.20.
   copy: src=aol_tcl8.4.20.patch
           dest=/tmp/aolserver owner=nsadmin group=nsadmin mode=644
@@ -69,11 +88,22 @@
 - name: Compile and install AOL Server.
   shell: make install chdir=/tmp/aolserver
 
+- name: Change user.group back to nsadmin.web
+  file: path=/usr/local/aolserver state=directory
+          owner=nsadmin group=web mode=755
 
-#- name: Copy over AOL Server Oracle driver source code.
-#  copy: src=nsoracle-{{ AOL_ORACLEDRIVER_TAG }}.tgz dest=/tmp 
-#          owner=nsadmin group=nsadmin mode=644
-#- name: Extract AOL Oracle driver sources.
-#  command: tar -zxf /tmp/nsoracle-{{ AOL_ORACLEDRIVER_TAG }}.tgz 
-#          -C /tmp --overwrite
+#---------------------------------------------------------------------------
 #
+#               A O L   S E R V E R    O R A C L E   D R I V E R
+#
+#---------------------------------------------------------------------------
+- name: Copy over AOL Server Oracle driver source code.
+  copy: src=nsoracle-{{ AOL_ORACLEDRIVER_TAG }}.tgz dest=/tmp
+          owner=nsadmin group=nsadmin mode=644
+
+- name: Delete old AOL extrated sources.
+  file: path=/tmp/nsadmin state=absent
+
+- name: Extract AOL Oracle driver sources.
+  command: tar -zxf /tmp/nsoracle-{{ AOL_ORACLEDRIVER_TAG }}.tgz -C /tmp
+

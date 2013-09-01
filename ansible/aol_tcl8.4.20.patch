@@ -1,19 +1,41 @@
+        ---------------------------------------------
         To apply,
 
                 $ cd /tmp/aolserver
                 $ patch -p0 < this.patch
 
---- Makefile.orig   2013-08-31 13:25:57.000000000 -0700
-+++ Makefile        2013-08-31 13:27:03.000000000 -0700
-@@ -49,7 +49,7 @@
-	$(MKDIR)                    $(INSTTCL)
-	$(MKDIR)                    $(INSTLIB)
-	$(MKDIR)                    $(INSTLIB)/tcl8.3
+        Description of each patch above each diff.
+        ---------------------------------------------
+
+        * Tcl subdirectory is 8.4.20, not 8.3.
+        * DRY it up; use existing variable for dirname.
+        * Zap tcl7x stuff.
+
+--- Makefile.orig	2013-09-01 07:32:28.000000000 -0700
++++ Makefile	2013-09-01 07:33:02.000000000 -0700
+@@ -34,7 +34,7 @@
+ #
+ # Main build rule.
+ #
+-all: libtcl76 libtcl8x libnsthread
++all: libtcl8x libnsthread
+ 	@for i in $(ALLDIRS); do \
+ 		$(ECHO) "building \"$$i\""; \
+ 		( cd $$i && $(MAKE) all ) || exit 1; \
+@@ -48,8 +48,8 @@
+ 	$(MKDIR)                    $(INSTLOG)
+ 	$(MKDIR)                    $(INSTTCL)
+ 	$(MKDIR)                    $(INSTLIB)
+-	$(MKDIR)                    $(INSTLIB)/tcl8.3
 -	( cd tcl8.3.2/library && $(CP) -r . $(INSTLIB)/tcl8.3 || exit 1; )
++	$(MKDIR)                    $(INSTLIB)/$(TCL8X_DIR)
 +	( cd $(TCL8X_DIR)/library && $(CP) -r . $(INSTLIB)/$(TCL8X_DIR) || exit 1; )
-	$(MKDIR)                    $(INSTSRVMOD)
-	$(MKDIR)                    $(INSTSRVPAG)
-	$(CP) -r tcl                $(INSTMOD)
+ 	$(MKDIR)                    $(INSTSRVMOD)
+ 	$(MKDIR)                    $(INSTSRVPAG)
+ 	$(CP) -r tcl                $(INSTMOD)
+
+
+        Use 8.4.20, not 8.3.2.
 
 --- include/Makefile.global.orig  2013-08-31 13:42:48.000000000 -0700
 +++ include/Makefile.global       2013-08-31 13:22:03.000000 000 -0700
@@ -28,6 +50,7 @@
  TCL76_DIR=tcl7.6
  ifeq (bsd, $(findstring bsd, $(PLATFORM)))
    TCL76_LIB=libtcl76.a
+
 
 --- tcl8.4.20/Makefile.orig 2013-08-31 13:41:17.000000000 -0700
 +++ tcl8.4.20/Makefile      2013-08-31 13:22:03.000000000 -0700
@@ -54,6 +77,144 @@
 +	(cd $(TCLDIR); ./configure $(ENABLE_GCC) --enable-threads --disable-shared)
 +
 +clean:
-+	(cd $(TCLDIR); $(MAKE) - f Makefile.in distclean)
++	(cd $(TCLDIR); $(MAKE) distclean)
 +
 +install: all
+
+
+
+        * Threading hack for 8.3 no longer needed in 8.4.
+
+--- thread/Makefile.orig	2013-09-01 05:25:18.000000000 -0700
++++ thread/Makefile	2013-09-01 06:59:16.000000000 -0700
+@@ -7,7 +7,7 @@
+ OBJS      = compat.o cs.o rwlock.o reentrant.o \
+             sema.o thread.o tls.o time.o memory.o debug.o \
+             pool.o error.o signal.o \
+-            mutex.o cond.o osthread.o fork.o tcl8x.o
++            mutex.o cond.o osthread.o fork.o
+
+ TEST      = test
+ TEST_OBJS = test.o
+
+        * Zap Tcl 7x references.
+  
+--- nsd/Makefile	2013-08-31 12:10:35.000000000 -0700
++++ /tmp/Makefile	2013-09-01 08:03:04.000000000 -0700
+@@ -20,26 +20,16 @@
+         tclxkeylist.o tclthread.o tclvar.o unix.o url.o \
+         urlencode.o urlopen.o urlspace.o
+ 
+-TCL76STUB = tclstub76.o
+ TCL8XSTUB = tclstub8x.o
+ 
+ 
+ #
+ # Name the executables
+ #
+-NSD7      = nsd76
+ NSD8      = nsd8x
+ 
+ 
+-all: $(NSD7) $(NSD8)
+-
+-#
+-# Tcl 7.6
+-#
+-$(NSD7): libtcl76 libnsthread $(TCL76STUB) $(OBJS) stamp.c
+-	$(CC) -c stamp.c
+-	$(CC) $(LDFLAGS) $(TCL76STUB) stamp.o $(OBJS) $(LIBTCL76) $(LIBNSTHREAD) $(LIBS) -o $@
+-
++all: $(NSD8)
+ 
+ #
+ # Tcl 8.x
+@@ -52,7 +42,7 @@
+ #
+ # Tcl-dependent objects
+ #
+-$(TCL76STUB) $(TCL8XSTUB): tclstubs.cpp tclnsshare.cpp tclinvoke.cpp
++$(TCL8XSTUB): tclstubs.cpp tclnsshare.cpp tclinvoke.cpp
+ 
+ $(OBJS): nsd.h nsconf.h
+ 
+@@ -60,19 +50,19 @@
+ #
+ # Installation
+ #
+-#   Tcl 7.6 is nsd76.  Tcl 8.x is nsd8x.
++#   Tcl 8.x is nsd8x.
+ #
+-install: $(NSD7) $(NSD8)
+-	$(RM) $(INSTBIN)/nsd82 $(INSTBIN)/nsd
+-	$(RM) $(INSTBIN)/$(NSD7) $(INSTBIN)/$(NSD8)
+-	$(CP) $(NSD7) $(NSD8) $(INSTBIN)
++install: $(NSD8)
++	$(RM) $(INSTBIN)/nsd
++	$(RM) $(INSTBIN)/$(NSD8)
++	$(CP) $(NSD8) $(INSTBIN)
+ 	cd $(INSTBIN) ; $(RM) nsd ; $(LN) ./$(NSD8) nsd
+ 
+ #
+ # Clean the directory to pre-built state.
+ #
+ clean:
+-	$(RM) $(NSD7) $(NSD8) $(OBJS) $(TCL76STUB) $(TCL8XSTUB) so_locations
++	$(RM) $(NSD8) $(OBJS) $(TCL8XSTUB) so_locations
+ 
+ clobber: clean
+ 	$(RM) *.so *.o *.a *~
+
+
+   
+
+          * Always use TCL 8
+          * Ignore 8.4's new const qualifiers, it breaks build.
+          * zap windows include, i'll never build there.
+
+--- /tmp/tcl.h.old	2013-09-01 08:20:18.000000000 -0700
++++ include/tcl.h	2013-09-01 08:23:25.000000000 -0700
+@@ -28,37 +28,22 @@
+  */
+ 
+ 
++// So AOL code builds with newly const-ified TCL 8.4 sources.
++#define USE_NON_CONST
++
+ /*
+  * tcl.h --
+  *
+- *      Stub to include one of tcl76.h or tcl83.h.  The default
+- *	is tcl76.h on Unix, tcl83.h on Win32.
++ *      Stub to include tcl84.h, handle const-correctness 
++ *      and add missing definition.
+  */
+ 
+ #ifndef _TCL
+ 
+-#ifdef WIN32
+-#ifndef USE_TCL8X
+ #define USE_TCL8X
+-#endif
+-#ifndef _CLIENTDATA
+-#define _CLIENTDATA
+-typedef void *ClientData;
+-#endif
+-#endif
+ 
+-#if defined(TCL82) || defined(_TCL82) || defined(TCL_81_PLEASE)
+-#define USE_TCL8X
+-#endif
+-
+-#if defined(USE_TCL8X)
+-#ifndef TCL_THREADS
+ #define TCL_THREADS 1
+-#endif
+-#include "tcl83.h"
+-#else
+-#include "tcl76.h"
+-#endif
++#include "tcl84.h"
+ 
+ /*
+  * The following definition is missing from the Tcl header files.
