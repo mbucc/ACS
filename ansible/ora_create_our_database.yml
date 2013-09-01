@@ -1,6 +1,13 @@
 ---
 # Create the ArsDigita Community System Oracle database.
 
+
+# This step seems extra, but I kept getting MEMORY_ERRORS.
+# Making 100% sure Oracle was shut down before I start copying
+# over the new configuration stuff fixed this. MKB, 9/1/2013
+- name: Shutdown oracle.
+  service: name=oracle state=stopped pattern={{ ORA_PS_MARKER }}
+
 - name: Set up .bashrc for oracle user.
   template: src=bashrc.j2 dest=/home/oracle/.bashrc 
       owner=oracle group=oracle
@@ -50,14 +57,9 @@
       owner=oracle group=oracle
   when: our_database_exists|failed
 
-- name: Shutdown oracle.
-  service: name=oracle state=stopped pattern={{ ORA_PS_MARKER }}
-  when: our_database_exists|failed or oratab.changed or initora.changed
-
 - name: Run SQL to create database
   command: su - oracle -c "sqlplus /nolog @create.sql > create.sql.log" 
   when: our_database_exists|failed
 
 - name: And start it back up.
-  service: name=oracle state=stopped pattern={{ ORA_PS_MARKER }}
-  when: our_database_exists|failed or oratab.changed or initora.changed
+  service: name=oracle state=started pattern={{ ORA_PS_MARKER }}

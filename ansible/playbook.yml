@@ -5,6 +5,6 @@
     - aol_vars.yml
   tasks:
 
-#  - include: ora_delete_orcl_sid.yml
-#  - include: ora_create_our_database.yml
+  - include: ora_delete_orcl_sid.yml
+  - include: ora_create_our_database.yml
   - include: aol_install.yml
