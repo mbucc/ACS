@@ -92,6 +92,27 @@
   file: path=/usr/local/aolserver state=directory
           owner=nsadmin group=web mode=755
 
+# To access from host machine.
+#
+#   1. Copy /usr/bin/aolserver/sample-config.tcl to config.tcl
+#   2. Apply this patch:
+#
+#     --- sample-config.tcl2013-08-31 12:10:35.000000000 -  0700
+#     +++ config.tcl
+#     --- sample-config.tcl2013-08-31 12:10:35.000000000 -0700
+#     +++ config.tcl2013-09-0   1 09:00:42.000000000 -0700
+#     @@ -20,7 +20,8 @@
+#    
+#      # The hostname and address should be set to actual values.
+#       set hostname               [ns_info hostname]
+#       -set address                [ns_info address]
+#       +#set address                [ns_info address]
+#       +set address                192.168.67.10
+#    
+#        set servername             "server1"
+#        set serverdesc             "Server Name"
+#
+
 #---------------------------------------------------------------------------
 #
 #               A O L   S E R V E R    O R A C L E   D R I V E R
@@ -102,8 +123,16 @@
           owner=nsadmin group=nsadmin mode=644
 
 - name: Delete old AOL extrated sources.
-  file: path=/tmp/nsadmin state=absent
+  file: path=/tmp/nsoracle state=absent
 
 - name: Extract AOL Oracle driver sources.
   command: tar -zxf /tmp/nsoracle-{{ AOL_ORACLEDRIVER_TAG }}.tgz -C /tmp
 
+- name: Copy over nsoracle patch so build.
+  copy: src=nsoracle.patch dest=/tmp/nsoracle
+
+- name: Apply nsoracle patch.
+  shell: /usr/bin/patch -p0 < nsoracle.patch chdir=/tmp/nsoracle
+
+- name: Compile and install Oracle driver for AOL Server.
+  shell: ORACLE_HOME={{ ORACLE_HOME }} make install chdir=/tmp/nsoracle

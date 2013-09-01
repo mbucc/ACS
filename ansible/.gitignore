@@ -6,3 +6,6 @@ nsoracle-2.7.tgz
 tcl8.4.20-src.tar.gz
 test.yml
 tk8.4.20-src.tar.gz
+*.tgz
+*.gz
+.*.swp
