@@ -9,8 +9,10 @@ REDO_DIR1: $ROOT_DIR/u01/logs/my
 REDO_DIR2: $ROOT_DIR/u02/logs/my
 ORA_SYS_PASSWORD: oracle
 ORA_SYSTEM_PASSWORD: oracle
+ORA_CTXSYS_PASSWORD: oracle
 UNDO_TABLESPACE_NAME: undotbs
 TEMP_TABLESPACE_NAME: tempts1
+SYSAUX_TABLESPACE_NAME: sysaux
 ORA_PS_MARKER: ora_pmon  # If present in ps listing, Oracle is running.
 ORA_CONTROL_FILE1: $DATA_DIR/control1.ctl
 ORA_CONTROL_FILE2: $DATA_DIR/control2.ctl

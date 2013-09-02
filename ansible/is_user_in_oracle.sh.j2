@@ -1,0 +1,24 @@
+#! /bin/sh -e
+
+if [ "x$1" = "x" ] ; then
+    echo "Usage: $0 <username>" >> /dev/stderr
+    exit 1
+fi
+
+FN=$0.$1.log
+
+cat > check_user.sql << EOF
+spool $FN
+SELECT USERNAME FROM ALL_USERS WHERE UPPER(USERNAME) = UPPER('$1');
+spool off
+EXIT;
+EOF
+
+sqlplus system/{{ ORA_SYSTEM_PASSWORD }} @check_user.sql
+! grep "no rows selected" $FN > /dev/null
+RVAL=$?
+
+# Clean up.
+rm -f check_user.sql
+
+exit $RVAL

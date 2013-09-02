@@ -1,8 +1,10 @@
 WHENEVER OSERROR EXIT 9;
 WHENEVER SQLERROR EXIT SQL.SQLCODE;
 
+spool create_acs.log
+
 -- DROP USER {{ ACS_USER_NAME }} CASCADE;
--- DROP TABLESPACE {{ ACS_SERVICE_NAME }} INCLUDING CONTENTS;
+-- DROP TABLESPACE {{ ACS_SERVICE_NAME }} INCLUDING CONTENTS AND DATAFILES;
 
 create  tablespace {{ ACS_SERVICE_NAME }} 
         datafile '{{ ACS_DATA_DIR }}/{{ ACS_SERVICE_NAME }}.dbf' 
@@ -19,7 +21,8 @@ create  user {{ ACS_USER_NAME }}
 
 grant   connect
         , resource
-        , query rewrite 
+        , ctxapp          -- free-text searching
+        , query rewrite   -- transform query to use materialized views
         to {{ ACS_USER_NAME }}
 ;
 
@@ -28,5 +31,7 @@ revoke  unlimited tablespace from {{ ACS_SERVICE_NAME }};
 alter user {{ ACS_USER_NAME }} quota unlimited on {{ ACS_SERVICE_NAME }};
 
 commit;
+
+spool off
 
 exit;

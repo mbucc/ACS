@@ -61,5 +61,5 @@
   command: su - oracle -c "sqlplus /nolog @create.sql > create.sql.log" 
   when: our_database_exists|failed
 
-- name: And start it back up.
+- name: And start Oracle back up.
   service: name=oracle state=started pattern={{ ORA_PS_MARKER }}
