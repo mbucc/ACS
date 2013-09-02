@@ -2,8 +2,9 @@ Try and use Ansible to build an ACS 3.0 server
 Created: Tue Aug 20 19:14:30 EDT 2013
 
 
-1. Set up vagrant box and point ansible to the box.
+  WARNING: Some of the SQL scripts may drop ACS data.
 
+1. Set up vagrant box and point ansible to the box.
    http://mbucc.blogspot.com/2013/08/setup-oracle-112g-virtualbox-for-ansible.html
 
 2. Run: ansible-playbook playbook.yml.  (This step is "Under Construction".)
@@ -20,3 +21,6 @@ http://docs.oracle.com/cd/E11882_01/server.112/e25494/create005.htm#i1013946
 
 http://www.dba-oracle.com/t_remove_database_instance.htm
   How to delete an Oracle database.
+
+https://forums.oracle.com/thread/2169244
+  Setting up Oracle Text (Oracle VirtualBox image didn't have it configured).
