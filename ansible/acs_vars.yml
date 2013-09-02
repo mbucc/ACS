@@ -2,8 +2,8 @@
 # ArsDigita variables.
 
 ACS_SERVICE_NAME: acs
-ACS_USER_NAME: acs
-ACS_USER_PASSWORD: oracle
+ACS_ORACLE_USER: acs
+ACS_ORACLE_PASSWORD: oracle
 ACS_VERSION: 3.3
 
 DOMAIN_NAME: example.com

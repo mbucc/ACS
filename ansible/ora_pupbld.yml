@@ -1,0 +1,9 @@
+---
+# ACS expects PRODUCT_USER_PROFILE, so run script to build it.
+# Created: Mon Sep  2 17:41:42 EDT 2013
+
+- name: Copy over SQL to setup Oracle PRODUCT_USER_PROFILE.
+  template: src=ora_pupbld.sql.j2 dest=/home/oracle/pupbld.sql owner=oracle group=oracle
+
+- name: Run SQL to configure Oracle text.
+  command: su - oracle -c "sqlplus system/{{ ORA_SYSTEM_PASSWORD }} @pupbld" 

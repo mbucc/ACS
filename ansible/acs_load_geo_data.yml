@@ -1,0 +1,7 @@
+---
+# Load the ACS initial geographicsl data
+# Created: Mon Sep  2 18:17:03 EDT 2013
+
+- name: Load the data.
+  shell: su - nsadmin -c "cd {{ AOL_SERVER_WEBROOT }}/{{ DOMAIN_NAME }}/www/install && ./load-geo-tables {{ ACS_ORACLE_USER }}/{{ ACS_ORACLE_PASSWORD }} > /tmp/load-geo-tables.log" 
+

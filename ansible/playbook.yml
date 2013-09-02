@@ -9,6 +9,9 @@
 #  - include: ora_delete_orcl_sid.yml
 #  - include: ora_create_our_database.yml
   - include: ora_ctx.yml
+  - include: ora_pupbld.yml
 #  - include: aol_install.yml
   - include: acs_tablespace.yml
   - include: acs_sources.yml
+  - include: acs_load_geo_data.yml
+  - include: acs_load_data.yml
