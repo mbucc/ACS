@@ -14,28 +14,28 @@
 #  ignore_errors: True
 
 - name: Add nsadmin group
-  group: name=nsadmin state=present
+  group: name={{ AOL_SERVER_USER }} state=present
 
 - name: Add web group
-  group: name=web state=present
+  group: name={{ WEB_GROUP }} state=present
 
 - name: Create the nsadmin user, which runs AOL Server.
-  user: name=nsadmin group=nsadmin groups=dba,web home={{ AOL_HOME }}
+  user: name={{ AOL_SERVER_USER }} group={{ AOL_SERVER_USER }} groups=dba,{{ WEB_GROUP }} home={{ AOL_HOME }}
 
 - name: Copy over .bashrc for nsadmin user.
   template: src=bashrc.j2 dest={{ AOL_HOME }}/.bashrc
-      owner=nsadmin group=nsadmin
+      owner={{ AOL_SERVER_USER }} group={{ AOL_SERVER_USER }}
 
 - name: Set user.group on nsadmin home to nsadmin.web.
   file: path={{ AOL_HOME }} state=directory recurse=yes
-          owner=nsadmin group=web mode=755
+          owner={{ AOL_SERVER_USER }} group={{ WEB_GROUP }} mode=755
 
 - name: Create /web directory, where web server files will live.
-  file: path=/web owner=nsadmin group=web mode=755 state=directory
+  file: path={{ AOL_SERVER_WEBROOT }} owner={{ AOL_SERVER_USER }} group={{ WEB_GROUP }} mode=755 state=directory
 
 - name: Create directory where compiles AOL Server files will live.
   file: path=/usr/local/aolserver state=directory
-          owner=nsadmin group=web mode=755
+          owner={{ AOL_SERVER_USER }} group={{ WEB_GROUP }} mode=755
 
 #---------------------------------------------------------------------------
 #
@@ -44,7 +44,7 @@
 #---------------------------------------------------------------------------
 - name: Copy over AOL Server source code.
   copy: src=aolserver-{{ AOL_TAG }}.tgz dest=/tmp
-          owner=nsadmin group=nsadmin mode=644
+          owner={{ AOL_SERVER_USER }} group={{ AOL_SERVER_USER }} mode=644
 
 - name: Delete old AOL extrated sources.
   file: path=/tmp/aolserver state=absent
@@ -54,7 +54,7 @@
 
 - name: Copy over TCL source.
   copy: src={{ AOL_TCL_TARBALL }}
-          dest=/tmp owner=nsadmin group=nsadmin mode=644
+          dest=/tmp owner={{ AOL_SERVER_USER }} group={{ AOL_SERVER_USER }} mode=644
 
 - name: Extract TCL source.
   command: tar -zxf /tmp/{{ AOL_TCL_TARBALL }} -C /tmp/aolserver --overwrite
@@ -80,7 +80,7 @@
 
 - name: Copy over AOL patch so build uses TCL 8.4.20.
   copy: src=aol_tcl8.4.20.patch
-          dest=/tmp/aolserver owner=nsadmin group=nsadmin mode=644
+          dest=/tmp/aolserver owner={{ AOL_SERVER_USER }} group={{ AOL_SERVER_USER }} mode=644
 
 - name: Apply AOL/TCL patch.
   shell: /usr/bin/patch -p0 < aol_tcl8.4.20.patch chdir=/tmp/aolserver
@@ -90,7 +90,7 @@
 
 - name: Change user.group back to nsadmin.web
   file: path=/usr/local/aolserver state=directory
-          owner=nsadmin group=web mode=755
+          owner={{ AOL_SERVER_USER }} group={{ WEB_GROUP }} mode=755
 
 # To access from host machine.
 #
@@ -120,7 +120,7 @@
 #---------------------------------------------------------------------------
 - name: Copy over AOL Server Oracle driver source code.
   copy: src=nsoracle-{{ AOL_ORACLEDRIVER_TAG }}.tgz dest=/tmp
-          owner=nsadmin group=nsadmin mode=644
+          owner={{ AOL_SERVER_USER }} group={{ AOL_SERVER_USER }} mode=644
 
 - name: Delete old AOL extrated sources.
   file: path=/tmp/nsoracle state=absent

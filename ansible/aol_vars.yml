@@ -3,6 +3,9 @@
 AOL_TAG: 3.3
 AOL_HOME: /home/aol33
 AOL_SERVER_PREFIX: /usr/local/aolserver
+AOL_SERVER_USER: nsadmin
+AOL_SERVER_WEBROOT: /web
+WEB_GROUP: web
   
 AOL_ORACLEDRIVER_TAG: 2.7
 

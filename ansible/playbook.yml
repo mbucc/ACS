@@ -10,4 +10,5 @@
 #  - include: ora_create_our_database.yml
   - include: ora_ctx.yml
 #  - include: aol_install.yml
-  - include: acs_install.yml
+  - include: acs_tablespace.yml
+  - include: acs_sources.yml

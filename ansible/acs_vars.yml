@@ -4,6 +4,9 @@
 ACS_SERVICE_NAME: acs
 ACS_USER_NAME: acs
 ACS_USER_PASSWORD: oracle
+ACS_VERSION: 3.3
+
+DOMAIN_NAME: example.com
 
 # According to ../www/doc/architecture-install.html, this should
 # be on a different mount point from the Oracle system data files
