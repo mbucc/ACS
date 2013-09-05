@@ -8,5 +8,5 @@
 #  ignore_errors: True
 
 - name: Load the data.
-  shell: su - nsadmin -c "cd {{ AOL_SERVER_WEBROOT }}/{{ DOMAIN_NAME }}/www/doc/sql && sqlplus {{ ACS_ORACLE_USER }}/{{ ACS_ORACLE_PASSWORD }} < load-data-model.sql > /tmp/load-data-model.log" 
+  shell: su - nsadmin -c "cd {{ AOL_SERVER_WEBROOT }}/{{ ACS_DOMAIN_NAME }}/www/doc/sql && sqlplus {{ ACS_ORACLE_USER }}/{{ ACS_ORACLE_PASSWORD }} < load-data-model.sql > /tmp/load-data-model.log" 
 
