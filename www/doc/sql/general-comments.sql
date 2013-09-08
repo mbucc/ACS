@@ -92,7 +92,7 @@ begin
    insert into table_acs_properties
     (table_name, module_key, section_name, user_url_stub, admin_url_stub)
     values
-    ('news', 'news', 'News','/news/item.tcl?news_item_id=','/news/admin/item.tcl?news_item_id=');
+    ('news_items', 'news', 'News','/news/item.tcl?news_item_id=','/news/admin/item.tcl?news_item_id=');
  end if;
  select count(*) into n_calendar_rows from table_acs_properties where table_name = 'calendar';
  if n_calendar_rows = 0 then 

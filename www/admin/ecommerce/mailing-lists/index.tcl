@@ -1,7 +1,10 @@
-# $Id: index.tcl,v 3.0 2000/02/06 03:18:42 ron Exp $
-ReturnHeaders
+ad_page_contract {
+    @cvs-id index.tcl,v 3.1.6.4 2000/09/22 01:34:56 kevin Exp
+} {
+}
 
-ns_write "[ad_admin_header "Mailing Lists"]
+
+set page_html "[ad_admin_header "Mailing Lists"]
 
 <h2>Mailing Lists</h2>
 
@@ -12,16 +15,16 @@ ns_write "[ad_admin_header "Mailing Lists"]
 <h3>Mailing Lists with Users</h3>
 "
 
-set db [ns_db gethandle]
 
-ns_write "[ec_mailing_list_widget $db "f"]
+
+append page_html "[ec_mailing_list_widget "f"]
 
 <h3>All Mailing Lists</h3>
 
 <blockquote>
-<form method=post action=one.tcl>
+<form method=post action=one>
 
-[ec_category_widget $db]
+[ec_category_widget]
 <input type=submit value=\"Go\">
 </form>
 
@@ -29,3 +32,4 @@ ns_write "[ec_mailing_list_widget $db "f"]
 
 [ad_admin_footer]
 "
+doc_return  200 text/html $page_html

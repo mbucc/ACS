@@ -1,16 +1,14 @@
-# $Id: list.tcl,v 3.0 2000/02/06 03:20:18 ron Exp $
-# list.tcl
-# 
-# by philg@mit.edu on July 18, 1999
-#
-# lists a class of products, ordered to the user's taste
-# 
+#  www/admin/ecommerce/products/list.tcl
+ad_page_contract {
+  Lists a class of products, ordered to the user's taste.
 
-set_the_usual_form_variables 0 
-
-# category_id (optional), order_by (optional)
-
-set db [ns_db gethandle]
+  @author Philip Greenspun (philg@mit.edu)
+  @creation-date July 18, 1999
+  @cvs-id list.tcl,v 3.1.6.2 2000/07/22 07:57:40 ron Exp
+} {
+  category_id:integer,notnull,optional
+  order_by:optional
+}
 
 if { ![info exists category_id] || [empty_string_p $category_id] } {
     # we're going to give the user all products
@@ -18,10 +16,10 @@ if { ![info exists category_id] || [empty_string_p $category_id] } {
     set menubar_stub "list.tcl?"
     set category_exclusion_clause ""
 } else {
-    set category_name [database_to_tcl_string $db "select category_name from ec_categories where category_id = $category_id"]
+    set category_name [db_string category_name_select "select category_name from ec_categories where category_id = :category_id"]
     set title "$category_name Products"
     set menubar_stub "list.tcl?category_id=$category_id&"
-    set category_exclusion_clause "\nand exists (select 1 from ec_category_product_map map where map.product_id = ep.product_id and map.category_id = $category_id)"
+    set category_exclusion_clause "\nand exists (select 1 from ec_category_product_map map where map.product_id = ep.product_id and map.category_id = :category_id)"
 }
 
 if { ![info exists order_by] || [empty_string_p $order_by] || $order_by == "name"} {
@@ -39,9 +37,7 @@ if { ![info exists order_by] || [empty_string_p $order_by] || $order_by == "name
     set ordering_options "<a href=\"${menubar_stub}order_by=sales\">sales</a> | <a href=\"${menubar_stub}order_by=name\">name</a> | age | <a href=\"${menubar_stub}order_by=comments\">comments</a>"
 }
 
-ReturnHeaders
-
-ns_write "[ad_admin_header $title]
+doc_body_append "[ad_admin_header $title]
 
 <h2>$title</h2>
 
@@ -54,33 +50,30 @@ order by $ordering_options
 <ul>
 "
 
-set selection [ns_db select $db "select ep.product_id, ep.product_name, ep.available_date, count(distinct eir.item_id) as n_items_ordered, count(distinct epc.comment_id) as n_comments
+set list_items ""
+
+db_foreach product_select "select ep.product_id, ep.product_name, ep.available_date, count(distinct eir.item_id) as n_items_ordered, count(distinct epc.comment_id) as n_comments
 from ec_products ep, ec_items_reportable eir, ec_product_comments epc
 where ep.product_id = eir.product_id(+) 
 and ep.product_id = epc.product_id(+) $category_exclusion_clause
 group by ep.product_id, ep.product_name, ep.available_date
-$order_by_clause"]
-
-set list_items ""
-
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
-    append list_items "<li><a href=\"one.tcl?[export_url_vars product_id]\">$product_name</a>
+$order_by_clause" {
+    append list_items "<li><a href=\"one?[export_url_vars product_id]\">$product_name</a>
 <font size=-1>(available since [util_AnsiDatetoPrettyDate $available_date]; $n_items_ordered sold"
     if { $n_comments > 0 } {
-	append list_items "; <a href=\"../customer-reviews/index-2.tcl?[export_url_vars product_id]\">$n_comments customer reviews</a>"
+	append list_items "; <a href=\"../customer-reviews/index-2?[export_url_vars product_id]\">$n_comments customer reviews</a>"
     }
     append list_items ")</font>\n"
 
 }
 
 if { [empty_string_p $list_items] } {
-    ns_write "No products found.\n"
+    doc_body_append "No products found.\n"
 } else {
-    ns_write $list_items
+    doc_body_append $list_items
 }
 
-ns_write "</ul>
+doc_body_append "</ul>
 
 [ad_admin_footer]
 "

@@ -1,50 +1,70 @@
 #!/usr/local/bin/perl
 
 ##########################################################
-### ArsDigita Context Server
-###    mbryzek@arsdigita.com
-###    1/20/2000
+# ArsDigita Context Server
+#    mbryzek@arsdigita.com
+#    1/20/2000
 ##########################################################
-### MOTIVATION:
-### Updating Intermedia indexes sucks. Intermedia
-### Context server is deprecated according to the people
-### at Intermedia. And aolserver restarts itself making
-### it very difficult to ensure that two alter index
-### statements are not running at the same time.
+# Revision History:
+# 
+# 04/24/2000  mbryzek  Revised documentation
+##########################################################
+# MOTIVATION:
+# Updating Intermedia indexes sucks. Intermedia
+# Context server is deprecated according to some people
+# at Intermedia. And aolserver with keepalive can restart 
+# itself making it very difficult to ensure that two alter 
+# index statements are not running at the same time.
 ### 
-### FUNCTION:
-### This script is intended to run as a cron job on 
-### each machine that is running Intermedia. We 
-### recommend running it no more frequently than once
-### an hour. This script generates a list of intermedia 
-### indexes that are awaiting updates, and updates them.
+# FUNCTION:
+# This script is intended to run as a cron job on 
+# each machine that is running Intermedia. We 
+# recommend running it no more frequently than once
+# an hour. This script generates a list of intermedia 
+# indexes that are awaiting updates, and updates them.
+#
+# This scripts connects to the database as the ctxsys user,
+# generates a list of indexes to updates, and then issues
+# alter index statements on all of those indexes. All sql
+# queries run and the total run time are logged in 
+# /tmp/ad-context-server.log
+#
+# Note that this script does NOT need to be run as 
+# root, but it doesn't hurt.
 ###
-### Note that this script does NOT need to be run as 
-### root, but it doesn't hurt.
-### 
-### SETUP
-### 1. Put the username for your service in @services
-###
-### 2. Set variables in USER CONFIGURATION
-###    a. Make sure $username = ctxsys and $password is 
-###       the current password for the ctxsys user. 
-###    b. Make sure $ps_path points to ps on your box
-###    c. Make sure the environment variables are correct
-### 
-### 3. Put script in crontab:
-### 
-###    # ad-context-server monitors all Intermedia indexes
-###    # on the system, updating those that need it.
-###    # DO NOT RUN ad-context-server.pl IN PARALLEL 
-###    # WITH INTERMEDIA CONTEXT SERVER (ctxsrv) AND DO 
-###    # NOT EVER ISSUE AN ALTER INDEX STATEMENT ON AN
-###    # INTERMEDIA INDEX WHILE THIS IS RUNNING.
-###    # Currently runs every hour on the hour
-###    0 *    * * *     /usr/local/bin/ad-context-server.pl > /dev/null 2>&1
-###
+# SETUP
+# 1. Install the perl DBI and Oracle DBD
+#
+# 2. Put the username for your service in @services
+#
+# 3. Set variables in USER CONFIGURATION
+#    a. Make sure $username = ctxsys and $password is 
+#       the current password for the ctxsys user. 
+#    b. Make sure $ps_path points to ps on your box
+#    c. Make sure the environment variables are correct
+# 
+# 4. Put script in crontab:
+# 
+#    # ad-context-server monitors all Intermedia indexes
+#    # on the system, updating those that need it.
+#    # DO NOT RUN ad-context-server.pl IN PARALLEL 
+#    # WITH INTERMEDIA CONTEXT SERVER (ctxsrv) AND DO 
+#    # NOT EVER ISSUE AN ALTER INDEX STATEMENT ON AN
+#    # INTERMEDIA INDEX WHILE THIS IS RUNNING.
+#    # Currently runs every hour on the hour
+#    0 *    * * *     /usr/local/bin/ad-context-server.pl > /dev/null 2>&1
+#
+##########################################################
+# MISCELLANEOUS NOTES
+# 
+# Jerry Asher (<jerry@hollyjerry.org>) had to explicitly set up the
+# include path to get ad-context-server up and running on Red Hat 6.1
+#
+#   push(@INC, '/usr/lib/perl5/site_perl/5.005/i386-linux');
+#
 ##########################################################
 
-### USER CONFIGURATION
+# USER CONFIGURATION
 
 # You have to list every service's username for which you want to update
 # the intermedia indexes. The oracle username must be in uppercase
@@ -56,10 +76,10 @@ my @services = qw(YOURSERVICENAME);
 my $username = 'ctxsys';
 my $password = 'ctxsucks';
 
-### We need to run ps -p PID... where is ps?
+# We need to run ps -p PID... where is ps?
 my $ps_path = '/bin/ps';
 
-### ORACLE ENVIRONMENT CONFIGURATION
+# ORACLE ENVIRONMENT CONFIGURATION
 $ENV{ORACLE_HOME} = "/ora8/m01/app/oracle/product/8.1.5";
 $ENV{ORACLE_BASE} = "/ora8/m01/app/oracle";
 $ENV{LD_LIBRARY_PATH} = "$ENV{ORACLE_HOME}/lib:$ENV{ORACLE_HOME}/ctx/lib:/usr/lib:/lib:/usr/openwin/lib:/usr/ucblib";
@@ -68,9 +88,9 @@ $ENV{ORACLE_SID} = 'ora8';
 $ENV{ORACLE_TERM} = 'vt100';
 $ENV{ORAENV_ASK} = 'NO';
 
-### END USER CONFIGURATION
-# Make this local so ad_context_server_exit can see the 
-# filename and can clean it up
+# END USER CONFIGURATION
+# Make this local so ad_context_server_exit 
+# can see the filename to clean it up
 local $pid_file = '/tmp/ad-context-server.pid';
 
 # Exit if there are no services to update
@@ -90,6 +110,7 @@ if ( -e $pid_file ) {
     # Now let's see if the pid is in the output of ps
     ad_context_server_exit(0) if $ps =~ /$pid/;
 }
+
 # Print the current process id to $pid_file
 open PID, ">$pid_file" || ad_context_server_exit(0);
 print PID $$;
@@ -104,8 +125,8 @@ $service_sql .= "'";
 use DBI;
 my $dbh = DBI->connect('dbi:Oracle:', $username, $password) || die "Couldn't connect to oracle\n";  
 
-# Grab all index owners and names that need update. Create a temporary _file 
-# to source the alter index statements
+# Grab all index owners and names that need update. Create a temporary 
+# file to source that contains the alter index statements
 
 my $sql_query = << "eof";
 select distinct pnd_index_owner||'.'||pnd_index_name 
@@ -154,3 +175,4 @@ sub ad_context_server_exit {
     unlink $pid_file if -e $pid_file;
     exit(0);
 }
+

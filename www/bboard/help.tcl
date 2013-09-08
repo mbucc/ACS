@@ -1,19 +1,22 @@
-# $Id: help.tcl,v 3.0 2000/02/06 03:33:53 ron Exp $
-set_the_usual_form_variables
+ad_page_contract {
+    displays information about a particular topic - display based on parameters passed 
 
-# topic required
-
-set db [bboard_db_gethandle]
-if { $db == "" } {
-    bboard_return_error_page
-    return
+    @param topic_id - topic id
+    @param topic    -  topic name
+    @param presentation_type - display look 
+    @cvs-id help.tcl,v 3.0.12.3 2000/09/22 01:36:50 kevin Exp    
+} {
+    topic_id:integer
+    topic:trim 
+    presentation_type
 }
+
  
 if  {[bboard_get_topic_info] == -1} {
     return
 }
 
-ns_return 200 text/html "[bboard_header "Help for the $topic Forum"]
+set page_content "[bboard_header "Help for the $topic Forum"]
 
 <h2>Help</h2>
 
@@ -37,6 +40,7 @@ posted a response to a question.  We use email also to send instant
 notifications or periodic summaries of forum activity (you can <a
 href=\"add-alert.tcl?[export_url_vars topic topic_id]\">request
 to be notified</a> if you'd like to follow the forum via email).
-
 [bboard_footer]
 "
+
+doc_return  200 text/html $page_content

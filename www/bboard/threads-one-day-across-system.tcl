@@ -1,29 +1,29 @@
-# $Id: threads-one-day-across-system.tcl,v 3.0 2000/02/06 03:34:47 ron Exp $
-# /bboard/threads-one-day-across-system.tcl
-#
-# by philg@mit.edu on October 8, 1999
-#
+# /www/bboard/threads-one-day-across-system.tcl
 
-
-set_the_usual_form_variables
-
-# kickoff_date, maybe julian_date
-
-set db [bboard_db_gethandle]
-if { $db == "" } {
-    bboard_return_error_page
-    return
+ad_page_contract {
+    
+    @author philg@mit.edu
+    @creation-date 8 Oct 1999
+    @cvs-id threads-one-day-across-system.tcl,v 3.1.2.6 2000/09/22 01:36:56 kevin Exp
+} {
+    kickoff_date:optional
+    julian_date:optional
 }
 
-if { [info exists julian_date] && ![empty_string_p $julian_date] } {
+# -----------------------------------------------------------------------------
+
+# it's okay if the user isn't logged in; in that case they will only be shown 
+# bboard topics with public read access.
+set user_id [ad_verify_and_get_user_id]
+
+if { [exists_and_not_null julian_date] } {
     set kickoff_date [calendar_convert_julian_to_ansi $julian_date]
 }
 
 set pretty_date [util_AnsiDatetoPrettyDate $kickoff_date]
 
-ReturnHeaders
 
-ns_write "[bboard_header "Threads started on $pretty_date"]
+append page_content "[bboard_header "Threads started on $pretty_date"]
 
 <h2>Threads started on $pretty_date</h2>
 
@@ -35,39 +35,41 @@ ns_write "[bboard_header "Threads started on $pretty_date"]
 
 "
 
-set selection [ns_db select $db "select bboard.topic, msg_id, one_line, sort_key, email, first_names || ' ' || last_name as name, users.user_id as poster_id, bboard_topics.presentation_type
-from bboard, users, bboard_topics
-where bboard.user_id = users.user_id 
-and bboard.topic = bboard_topics.topic
-and refers_to is null
-and bboard_topics.restricted_p = 'f' 
-and bboard_topics.restrict_to_workgroup_p = 'f'
-and trunc(posting_time) = '$kickoff_date'
-order by upper(bboard_topics.topic), sort_key"]
-
-set items ""
-set n_rows 0
 set last_topic ""
 
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
-    incr n_rows 
-    if { $topic != $last_topic } {
+db_foreach messages_for_one_day "
+select topic, 
+       msg_id, 
+       one_line, 
+       sort_key, 
+       email, 
+       first_names || ' ' || last_name as name, 
+       users.user_id as poster_id, 
+       bboard_topics.presentation_type
+from   bboard, users, bboard_topics
+where  bboard.user_id = users.user_id 
+and    bboard.topic_id = bboard_topics.topic_id
+and    refers_to is null
+and    bboard_topics.restricted_p = 'f' 
+and    bboard_user_can_view_topic_p(:user_id, bboard.topic_id) = 't'
+and    trunc(posting_time) = :kickoff_date
+order by upper(bboard_topics.topic), sort_key" {
+
+    if ![string equal $topic $last_topic] {
 	set last_topic $topic
-	append items "\n<h4>$topic</h4>\n"
+	append page_content "\n<h4>$topic</h4>\n"
     }
-    append items "<li><a href=\"[bboard_msg_url $presentation_type $msg_id $topic]\">$one_line</a> ($name)\n"
+    append page_content "<li><a href=\"[bboard_msg_url $presentation_type $msg_id $topic]\">$one_line</a> ($name)\n"
+
+} if_no_rows {
+    append page_content "no new threads were started on $pretty_date"
 }
 
-if { $n_rows == 0 } {
-    ns_write "no new threads were started on $pretty_date"
-} else {
-    ns_write $items
-}
-
-ns_write "
+append page_content "
 
 </ul>
 
 [bboard_footer]
 "
+
+doc_return  200 text/html $page_content

@@ -1,14 +1,21 @@
-# $Id: track.tcl,v 3.0.4.1 2000/04/28 15:10:04 carsten Exp $
-set_form_variables
-# shipment_id
-# possibly usca_p
+#  www/ecommerce/track.tcl
+ad_page_contract {
+    @param shipment_id The ID of the shipment to track
+    @param ucsa_p User session begun or not
+
+    @author
+    @creation-date
+    @cvs-id track.tcl,v 3.2.2.6 2000/08/18 21:46:37 stevenp Exp
+} {
+    shipment_id:notnull,naturalnum
+    ucsa_p:optional
+}
 
 set user_id [ad_verify_and_get_user_id]
-set db [ns_db gethandle]
 
 if {$user_id == 0} {
-    set return_url "[ns_conn url]"
-    ad_returnredirect "/register.tcl?[export_url_vars return_url]"
+    set return_url "[ad_conn url]"
+    ad_returnredirect "/register?[export_url_vars return_url]"
     return
 }
 
@@ -20,23 +27,21 @@ ec_create_new_session_if_necessary [export_url_vars shipment_id]
 ec_log_user_as_user_id_for_this_session
 
 # Make sure this order belongs to the user.
-if { [database_to_tcl_string $db "select user_id from ec_orders o, ec_shipments s
+if { [db_string assure_order_is_this_user "select user_id from ec_orders o, ec_shipments s
 where o.order_id = s.order_id
-  and s.shipment_id = $shipment_id"] != $user_id } {
+and s.shipment_id = :shipment_id"] != $user_id } {
     ad_return_error "Invalid Order ID" "Invalid Order ID"
     return
 }
 
-set selection [ns_db 1row $db "select to_char(shipment_date, 'MMDDYY') as ship_date_for_fedex, to_char(shipment_date, 'MM/DD/YYYY') as pretty_ship_date, carrier, tracking_number
+db_1row get_order_info "select to_char(shipment_date, 'MMDDYY') as ship_date_for_fedex, to_char(shipment_date, 'MM/DD/YYYY') as pretty_ship_date, carrier, tracking_number
 from ec_shipments
-where shipment_id = $shipment_id"]
-
-set_variables_after_query
+where shipment_id = :shipment_id"
 
 set carrier_info ""
 
 if { $carrier == "FedEx" } {
-    set fedex_url "http://www.fedex.com/cgi-bin/track_it?airbill_list=$tracking_number&kurrent_airbill=$tracking_number&language=english&cntry_code=us&state=0"
+    set fedex_url "http://www.fedex.com/cgi-bin/track_it?airbill_list=$tracking_number&current_airbill=$tracking_number&language=english&cntry_code=us&state=0"
     with_catch errmsg {
 	set page_from_fedex [ns_httpget $fedex_url]
 	regexp {<!-- BEGIN TRACKING INFORMATION -->(.*)<!-- END TRACKING INFORMATION -->} $page_from_fedex match carrier_info
@@ -65,5 +70,6 @@ if { $carrier == "FedEx" } {
     } 
     
 }
+db_release_unused_handles
 
 ad_return_template

@@ -1,0 +1,56 @@
+<template>
+
+  <name>contacts</name>
+  <title>Company Contacts</title>
+  <comment>List contact names and adressses.</comment>
+  <author>karlg@arsdigita.com</author>
+  <style>
+    ns_queryget company_code
+  </style> 
+
+  <process>
+
+  <datasource>
+
+    <name>contacts</name>
+    <type>query</type>
+    <structure>multirow</structure>
+    <condition>
+	select 
+	  first_name, last_name, address1, address2, city, state 
+	from 
+	  ad_template_sample_users 
+    </condition>
+    <comment>Basic contact information.</comment>
+
+    <variable>
+      <name>first_name</name>
+      <comment>The contact's first name.</comment>
+    </variable>
+    <variable>
+      <name>last_name</name>
+      <comment>The contact's last name.</comment>
+    </variable>
+    <variable>
+      <name>address1</name>
+      <comment>First line of the contact's address.</comment>
+    </variable>
+    <variable>
+      <name>address2</name>
+      <comment>Second line of the contact's address.</comment>
+    </variable>
+    <variable>
+      <name>city</name>
+      <comment>The contact's city of residence.</comment>
+    </variable>
+    <variable>
+      <name>state</name>
+      <comment>The contact's state of residence.</comment>
+    </variable>
+
+  </datasource>
+
+  </process>
+
+</template>
+

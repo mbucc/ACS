@@ -1,67 +1,78 @@
-# $Id: edit-simple-css.tcl,v 3.0 2000/02/06 03:16:30 ron Exp $
-# File:     /admin/css/edit-simple-css.tcl
-# Date:     12/26/99
-# Author:   gtewari@mit.edu (revised by tarik@arsdigita.com)
-# Contact:  tarik@arsdigita.com
-# Purpose:  setting up cascaded style sheet properties
-#
-# Note: if page is accessed through /groups pages then group_id and group_vars_set are already set up in 
-#       the environment by the ug_serve_section. group_vars_set contains group related variables (group_id, 
-#       group_name, group_short_name, group_admin_email, group_public_url, group_admin_url, group_public_root_url,
-#       group_admin_root_url, group_type_url_p, group_context_bar_list and group_navbar_list)
+# /www/admin/display/edit-simple-css.tcl
 
-set_form_variables 0
-# maybe return_url
-# maybe scope, maybe scope related variables (group_id, user_id)
+ad_page_contract {
+    setting up cascaded style sheet properties
+    @param Note: if page is accessed through /groups pages then group_id and group_vars_set are 
+    already set up in the environment by the ug_serve_section. group_vars_set contains group 
+    elated variables (group_id, group_name, group_short_name, group_admin_email, 
+    group_public_url, group_admin_url, group_public_root_url, group_admin_root_url, 
+    group_type_url_p, group_context_bar_list and group_navbar_list)
+    
+    @author gtewari@mit.edu, tarik@arsdigita.com
+    @creation-date 12/26/1999
+
+    @cvs-id edit-simple-css.tcl,v 3.2.2.7 2000/09/22 01:34:42 kevin Exp
+} {
+    return_url:optional
+    scope:optional
+    group_id:optional,integer
+    user_id:optional,integer
+}
+
+
 
 ad_scope_error_check
 
-set db [ns_db gethandle]
-
-ReturnHeaders
-
 set page_title "Edit Display Settings "
 
-ns_write "
-[ad_scope_admin_header $page_title $db]
-[ad_scope_admin_page_title $page_title $db]
+set page_content "
+[ad_scope_admin_header $page_title]
+[ad_scope_admin_page_title $page_title]
 [ad_scope_admin_context_bar [list "index.tcl?[export_url_scope_vars]" "Display Settings"] "Edit"]
 <hr>
 
 [help_upper_right_menu]
 "
 
-set selection [ns_db 0or1row $db "
-select css_bgcolor, css_textcolor, css_unvisited_link, css_visited_link, css_link_text_decoration, css_font_type
-from css_simple
-where [ad_scope_sql]
-"]
-
-if { [empty_string_p $selection] }  {
+if { [db_0or1row display_select_query "
+     select css_bgcolor, 
+            css_textcolor, 
+            css_unvisited_link, 
+            css_visited_link, 
+            css_link_text_decoration, 
+            css_font_type 
+     from css_simple 
+     where [ad_scope_sql]"] } {
+    # the correct variables should be set now
+} else {
     # there is no entry for this scope, let's go and create the default one
-    ns_db dml $db "
-    insert into css_simple
-    (css_id, [ad_scope_cols_sql], css_bgcolor, css_textcolor, css_unvisited_link, css_visited_link, 
-     css_link_text_decoration, css_font_type)
-    values
-    (css_simple_id_sequence.nextval, [ad_scope_vals_sql], 'white', 'black', 'blue', 'purple', 'none', 'arial')
-    "
+    set css_id [db_string display_get_id_query "select css_simple_id_sequence.nextval from dual"]
+    db_dml display_insert_query "insert into css_simple 
+    (css_id, [ad_scope_cols_sql], css_bgcolor, css_textcolor, css_unvisited_link, 
+     css_visited_link, css_link_text_decoration, css_font_type) 
+    values 
+    ($css_id, [ad_scope_vals_sql], 'white', 'black', 'blue', 
+     'purple', 'none', 'arial')"
 
-    set selection [ns_db 1row $db "
-    select css_bgcolor, css_textcolor, css_unvisited_link, css_visited_link, css_link_text_decoration, css_font_type
-    from css_simple
-    where [ad_scope_sql]
-    "]
+    db_1row display_select_query "
+    select css_bgcolor, 
+           css_textcolor, 
+           css_unvisited_link, 
+           css_visited_link, 
+           css_link_text_decoration, 
+           css_font_type 
+    from css_simple 
+    where [ad_scope_sql]"
 }
- 
-set_variables_after_query
+
+db_release_unused_handles
 
 set color_names_list { "choose new color" Black Blue Cyan Gray Green Lime Magenta Maroon Navy Olive Purple Red Silver Teal White Yellow }
 set color_values_list { "" black blue cyan gray green lime magenta maroon navy olive purple red silver teal white yellow }
 
 #present the user with graphical options:
 append html "
-<form method=post action=\"edit-simple-css-2.tcl\">
+<form method=post action=\"edit-simple-css-2\">
 [export_form_scope_vars return_url]
 
 <table>
@@ -131,13 +142,11 @@ append html "
 </form>
 "
 
-ns_write "
+append page_content "
 <blockquote>
 $html
 </blockquote>
 [ad_scope_admin_footer]
 "
 
-
-
-
+doc_return  200 text/html $page_content

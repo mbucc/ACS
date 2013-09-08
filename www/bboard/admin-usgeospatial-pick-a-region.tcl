@@ -1,34 +1,30 @@
-# $Id: admin-usgeospatial-pick-a-region.tcl,v 3.0 2000/02/06 03:33:28 ron Exp $
-set_the_usual_form_variables
+# /www/bboard/admin-usgeospatial-pick-a-region.tcl
+ad_page_contract {
+    Provide a choice of regions for a topic in the geospatial bboard system
 
-# topic required
+    @param topic the name of the bboard topic
 
-set db [bboard_db_gethandle]
-if { $db == "" } {
-    bboard_return_error_page
-    return
+    @cvs-id admin-usgeospatial-pick-a-region.tcl,v 3.2.2.3 2000/09/22 01:36:47 kevin Exp
+} {
+    topic:notnull
 }
+
+# -----------------------------------------------------------------------------
 
 bboard_get_topic_info
 
-ReturnHeaders
-
-ns_write "[bboard_header "Pick a Region"]
+append page_content "
+[bboard_header "Pick a Region"]
 
 <h2>Pick a region</h2>
 
-for the $topic forum in <a href=\"index.tcl\">Discussion Forums</a> section of
+for the $topic forum in <a href=\"index\">Discussion Forums</a> section of
 <a href=\"[ad_pvt_home]\">[ad_system_name]</a>
 
 <hr>
 "
 
 set region_text "<ul>\n"
-set selection [ns_db select $db "select epa_region, usps_abbrev, description 
-from bboard_epa_regions
-order by epa_region, usps_abbrev"]
-
-
 # Construct the string to display at the bottom for "Ten Geographic Regions"
 # as "region_text".
 
@@ -37,23 +33,27 @@ order by epa_region, usps_abbrev"]
 
 set last_region ""
 
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+db_foreach bboard_regions "
+select epa_region, usps_abbrev, description 
+from   bboard_epa_regions
+order by epa_region, usps_abbrev" {
+
     if { $epa_region != $last_region } {
         if { ![empty_string_p $last_region] } {
             append region_text ")\n"
         }
 	set last_region $epa_region
-	append region_text "<li><a href=\"admin-usgeospatial-one-region.tcl?[export_url_vars topic epa_region]\">Region $epa_region</a>: <b>$description</b> ("
+	append region_text "<li><a href=\"admin-usgeospatial-one-region?[export_url_vars topic epa_region]\">Region $epa_region</a>: <b>$description</b> ("
     }
     append region_text "$usps_abbrev "
 }
 append region_text "</ul>"
 
-
-ns_write "
+append page_content "
 <h3><a name=regions>Ten Geographic Regions</a></h3>
 $region_text
-"
 
-ns_write "[bboard_footer]"
+[bboard_footer]"
+
+doc_return  200 text/html $page_content
+

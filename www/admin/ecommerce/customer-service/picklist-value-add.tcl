@@ -1,13 +1,29 @@
-# $Id: picklist-value-add.tcl,v 3.0.4.1 2000/04/28 15:08:40 carsten Exp $
-set_the_usual_form_variables
-# table_name, col_to_insert, val_to_insert
+# picklist-value-add.tcl
 
-set db [ns_db gethandle]
+ad_page_contract {
+    @param table_name
+    @param col_to_insert
+    @param val_to_insert
 
-ns_db dml $db "insert into $table_name
+    @author
+    @creation-date
+    @cvs-id picklist-value-add.tcl,v 3.1.6.3 2000/07/21 03:56:58 ron Exp
+} {
+    table_name
+    col_to_insert
+    val_to_insert
+}
+
+
+
+
+
+
+db_dml insert_new_picklist_value "insert into $table_name
 ($col_to_insert)
 values
-('$QQval_to_insert')
+(:val_to_insert)
 "
+db_release_unused_handles
 
 ad_returnredirect picklists.tcl

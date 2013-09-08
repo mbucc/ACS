@@ -1,24 +1,38 @@
-# $Id: shut-up.tcl,v 3.2 2000/02/16 23:41:30 bdolicki Exp $
-set_form_variables
+# /www/bboard/shut-up.tcl
+ad_page_contract {
+    removes a thread alert
 
-# row_id is the key
+    @param row_id the Oracle ROWID for the row in the alerts table.  
+           This is a phenomenally stupid thing to do.
 
-set db [bboard_db_gethandle]
-if { $db == "" } {
-    bboard_return_error_page
-    return
+    @cvs-id shut-up.tcl,v 3.4.2.6 2000/09/22 01:36:55 kevin Exp
+    @change-log Lars Pind 20 July 2000
+    Modified so you can only delete your own email alerts. That's useful
+    because people often forward bboard spams, so if we didn't do this check, 
+    the person you forward to could shut up your email alert.
+} {
+    row_id:integer,notnull
 }
+
+# -----------------------------------------------------------------------------
 
 # In case a forgotten-to-be-urlencoded "+" expands to a space...
 regsub " " $row_id "+" row_id
 
-set sql "delete from bboard_thread_email_alerts
-where rowid = '$row_id'"
+# We require that users only delete alerts for themselves
 
-with_transaction $db {
-    ns_db dml $db $sql
-} {
-	ns_return 200 text/html "<html>
+ad_maybe_redirect_for_registration
+set user_id [ad_get_user_id]
+
+if [catch {
+    db_dml alert_delete {
+	delete from bboard_thread_email_alerts
+	where rowid = :row_id
+	and user_id = :user_id
+    }   
+} errmsg] {
+
+	doc_return  200 text/html "<html>
 <head>
 <title>Database Update Failed</title>
 </head>
@@ -46,11 +60,8 @@ $sql
     return
 }
 
-    ns_return 200 text/html "<html>
-<head>
-<title>Database Update Complete</title>
-</head>
-<body bgcolor=[ad_parameter bgcolor "" "white"] text=[ad_parameter textcolor "" "black"]>
+doc_return 200 text/html "
+[bboard_header "Database Update Complete"]
 
 <h3>Database Update Complete</h3>
 
@@ -65,3 +76,4 @@ Here was the SQL:
 
 [bboard_footer]
 "
+

@@ -49,11 +49,11 @@ $DEBUG = 1;
 $debug_logfile = "/tmp/intranet-mailhandler-log.txt"; # 
 
 # Oracle access
-$ENV{'ORACLE_HOME'} = "/ora8/m01/app/oracle/product/8.1.5";
+$ENV{'ORACLE_HOME'} = "/ora8/m01/app/oracle/product/8.1.6";
 $ENV{'ORACLE_BASE'} = "/ora8/m01/app/oracle";
 $ENV{'ORACLE_SID'} = "ora8";
 
-$archive_mail_directory = "/web/intranet/mail-archive";
+$archive_mail_directory = "/web/arsdigita/mail-archive";
 
 if (!defined $db_datasrc) {
     $db_datasrc = 'dbi:Oracle:';

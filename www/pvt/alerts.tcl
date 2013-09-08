@@ -1,10 +1,11 @@
-# $Id: alerts.tcl,v 3.2 2000/03/10 01:41:17 mbryzek Exp $
+ad_page_contract {
+    @cvs-id alerts.tcl,v 3.3.6.4 2000/09/22 01:39:09 kevin Exp
+} {
+}
+
 set user_id [ad_verify_and_get_user_id]
 
-set db [ns_db gethandle]
-
-set selection [ns_db 1row $db "select first_names, last_name, email, url from users where user_id=$user_id"]
-set_variables_after_query
+db_1row name_get "select first_names, last_name, email, url from users where user_id=:user_id" -bind [ad_tcl_vars_to_ns_set user_id]
 
 if { ![empty_string_p $first_names] || ![empty_string_p $last_name] } {
     set full_name "$first_names $last_name"
@@ -28,25 +29,24 @@ for $full_name in [ad_system_name]
 
 set wrote_something_p 0
 
-if [ns_table exists $db "bboard_email_alerts"] {
-    set selection [ns_db select $db "select bea.valid_p, bea.frequency, bea.keywords, bt.topic, bea.rowid
+if { [db_table_exists "bboard_email_alerts"] } {
+    set sql "select bea.valid_p, bea.frequency, bea.keywords, bt.topic, bea.rowid
     from bboard_email_alerts bea, bboard_topics bt
-    where bea.user_id = $user_id
+    where bea.user_id = :user_id
     and bea.topic_id = bt.topic_id
-    order by bea.frequency"]
+    order by bea.frequency"
 
     set counter 0
-    while {[ns_db getrow $db $selection]} {
-	set_variables_after_query
+    db_foreach alerts_list $sql {
 	incr counter
 	if { $valid_p == "f" } {
 	    # alert has been disabled for some reason
 	    set status "Disabled"
-	    set action "<a href=\"/bboard/alert-reenable.tcl?rowid=[ns_urlencode $rowid]\">Re-enable</a>"
+	    set action "<a href=\"/bboard/alert-reenable?rowid=[ns_urlencode $rowid]\">Re-enable</a>"
 	} else {
 	    # alert is enabled
 	    set status "<font color=red>Enabled</font>"
-	    set action "<a href=\"/bboard/alert-disable.tcl?rowid=[ns_urlencode $rowid]\">Disable</a>"
+	    set action "<a href=\"/bboard/alert-disable?rowid=[ns_urlencode $rowid]\">Disable</a>"
 	}
 	append existing_alert_rows "<tr><td>$status</td><td>$action</td><td>$topic</td><td>$frequency</td>"
 	if { [bboard_pls_blade_installed_p] == 1 } {
@@ -75,31 +75,38 @@ if [ns_table exists $db "bboard_email_alerts"] {
     }
 }
 
-
-if [ns_table exists $db "classified_email_alerts"] {
-    set selection [ns_db select $db "select cea.*,rowid
-    from classified_email_alerts cea
-    where user_id=$user_id
-    and sysdate <= expires
-    order by expires desc"]
+if { [db_table_exists "classified_email_alerts"] } {
+    set sql "
+    select cea.valid_p,
+           ad.domain,
+           cea.alert_id,
+           cea.expires,
+           cea.frequency,
+           cea.alert_type,
+           cea.category,
+           cea.keywords
+    from   classified_email_alerts cea, ad_domains ad
+    where  user_id = :user_id
+    and    ad.domain_id = cea.domain_id
+    and    sysdate <= expires
+    order by expires desc"
 
     set alert_rows ""
     set counter 0
 
-    while {[ns_db getrow $db $selection]} {
-	set_variables_after_query
+    db_foreach alerts_list_2 $sql {
 	incr counter
 	if { $valid_p == "f" } {
 	    # alert has been disabled for some reason
 	    set status "Off"
-	    set action "<a href=\"/gc/alert-reenable.tcl?rowid=$rowid\">Re-enable</a>"
+	    set action "<a href=\"/gc/alert-reenable?alert_id=$alert_id\">Re-enable</a>"
 	} else {
 	    # alert is enabled
 	    set status "<font color=red>On</font>"
-	    set action "<a href=\"/gc/alert-disable.tcl?rowid=$rowid\">Disable</a>"
+	    set action "<a href=\"/gc/alert-disable?rowid=$rowid\">Disable</a>"
 	}
-	append alert_rows "<tr><td>$status</td><td>$action</td><td>$domain</td>
-	<td><a href=\"/gc/alert-extend.tcl?rowid=$rowid\">$expires</a></td>
+ 	append alert_rows "<tr><td>$status</td><td>$action</td><td>$domain</td>
+	<td><a href=\"/gc/alert-extend?rowid=$rowid\">$expires</a></td>
 	<td>[gc_PrettyFrequency $frequency]</td><td>$alert_type</td>"
 	if { $alert_type == "all" } {
 	    append alert_rows "<td>--</td></tr>\n"
@@ -113,13 +120,13 @@ if [ns_table exists $db "classified_email_alerts"] {
     if { $counter > 0 } {
 	set wrote_something_p 1
 	append page_content "<h3>Your [gc_system_name] alerts</h3>
-	<table border><tr><th>Status</th></tr><th>Action</th><th>Domain</th><th>Expires</th><th>Frequency</th><th>Alert Type</th><th>type-specific info</th></tr>
+	<table border><tr><th>Status</th><th>Action</th><th>Domain</th><th>Expires</th><th>Frequency</th><th>Alert Type</th><th>type-specific info</th></tr>
 	$alert_rows
 	</table>"
     }
 }
 
-set ticket_alerts [ticket_alert_manage $db $user_id] 
+set ticket_alerts [ticket_alert_manage $user_id] 
 
 if {![empty_string_p $ticket_alerts]} { 
     set wrote_something_p 1
@@ -135,8 +142,6 @@ append page_content "
 [ad_footer]
 "
 
-ns_db releasehandle $db
+db_release_unused_handles
+doc_return 200 text/html $page_content
 
-
-ReturnHeadersNoCache
-ns_write $page_content

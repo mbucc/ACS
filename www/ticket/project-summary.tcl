@@ -1,21 +1,30 @@
-# $Id: project-summary.tcl,v 3.1 2000/02/20 21:21:56 davis Exp $
-# project-summary.tcl
-#
-# hqm@arsdigita.com
-#
-# Summarize all projects
-#
+# /www/ticket/project-summary.tcl
+ad_page_contract {
+    Summarize all projects
 
-ad_page_variables {{orderby {title}} {return_url {/ticket/index.tcl?}}}
+    @param orderby heading to sort on
+    @param return_url where to send them back to
 
-set db [ns_db gethandle]
+    @author hqm@arsdigita.com
+    @author Kevin Scaldeferri (kevin@caltech.edu)
+    @cvs-id project-summary.tcl,v 3.3.2.5 2000/09/22 01:39:24 kevin Exp
+} {
+    {orderby "title"} 
+    {return_url "/ticket/index.tcl?"}
+}
 
-ReturnHeaders
+# -----------------------------------------------------------------------------
 
-ns_write "[ad_header "Project Summaries"]
- <h2>Project Summaries</h2>
- [ad_context_bar_ws_or_index [list $return_url "Ticket Tracker"]  "Project Summaries"]
- <hr>"
+set page_content "
+[ad_header "Project Summaries"]
+
+<h2>Project Summaries</h2>
+
+[ad_context_bar_ws_or_index [list $return_url "Ticket Tracker"]  "Project Summaries"]
+ 
+<hr>
+"
+
 
 set dimensional {
     {projectstate "Project State" open {
@@ -28,7 +37,7 @@ set dimensional {
         {no "no"  {where "tp.public_p = 'f'"}}
         {all "all"  {}}
     }}
-    {public "In the last" all {
+    {posted "In the last" all {
         {year "year" {where "ti.posting_time + 365 > sysdate"}}
         {3month "3 months"  {where "ti.posting_time + 90 > sysdate"}}
         {month "month"  {where "ti.posting_time + 30 > sysdate"}}
@@ -45,7 +54,7 @@ set table_def {
     {lastmod "Last Mod" {} bz}
     {oldest "Oldest" {} bz}
     {viewby "View" no_sort {<td>
-        <a href="domain-summary.tcl?[uplevel export_url_vars return_url]&project_id=$project_id">by feature area</a>
+        <a href="domain-summary?[uplevel export_url_vars return_url]&project_id=$project_id">by feature area</a>
         | <a href=\"[uplevel set return_url]&project_id=$project_id\">project tickets</a></td>}
 
     }
@@ -67,11 +76,14 @@ set sql "select
  group by tp.project_id, tp.title, tp.version
  [ad_order_by_from_sort_spec $orderby $table_def]\n"
 
+append page_content "
+[ad_dimensional $dimensional]<br> 
+<blockquote>
 
-
-
-ns_write "[ad_dimensional $dimensional]<br> <blockquote>"
-set selection [ns_db select $db $sql]
-ns_write "[ad_table -Torderby $orderby $db $selection $table_def]
+[ad_table -Torderby $orderby project_summary_table $sql $table_def]
  </blockquote>
- [ad_footer]"
+
+ [ad_footer]
+"
+
+doc_return  200 text/html $page_content

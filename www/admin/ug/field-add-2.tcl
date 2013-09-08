@@ -1,10 +1,53 @@
-# $Id: field-add-2.tcl,v 3.0 2000/02/06 03:28:35 ron Exp $
-set_the_usual_form_variables
+#www/admin/ug/field-add-2.tcl 
 
-# group_type, column_name, pretty_name, column_type, column_actual_type
-# column_extra, after (optional)
+ad_page_contract {
+    @cvs-id field-add-2.tcl,v 3.2.2.12 2000/12/16 01:51:42 cnk Exp
+    @param group_type the group type
+    @param group_type_pretty_name pretty name for the group type
+    @param column_name name of the column
+    @param pretty_name display name
+    @param column_type the pretty column type
+    @param column_actual_type SQL column type 
+    @param column_extra extra info (not null, identity)
+    @param after optional to do afterwards 
+} {
+    group_type:notnull
+    group_type_pretty_name:notnull
+    column_name:notnull,sql_identifier
+    pretty_name:notnull
+    column_type:notnull
+    column_actual_type:notnull
+    column_extra
+    after:optional
+} -validate {
+    not_null_and_special -requires {column_type:notnull column_extra} {
+	if { [regexp -nocase {not null} $column_extra ] && [ string match $column_type "special"] } {
+	    ad_complain "You may not define a column as \"not null\"
+and then define the column type as \"special\". The \"special\" column
+type does not have any input widget associated with it; it is used for
+columns that you do not want to be hand editable - such as those that
+are filled by triggers or other automatic events."
+	}
+    }
+}
 
-set db [ns_db gethandle]
+
+# putting this semi-private error return here so that the transaction
+# code is a little more readable
+
+proc my_error_return {} {
+    upvar errmsg errmsg
+    ad_return_error "Insert failed" "Insertion of your group type field in the database failed.  Here's what the RDBMS had to say:
+<blockquote>
+<pre>
+$errmsg
+</pre>
+</blockquote>
+You should back up, edit the form to fix whatever problem is mentioned 
+above, and then resubmit.
+"
+   ad_script_abort
+}
 
 set table_name [ad_user_group_helper_table_name $group_type]
 
@@ -14,56 +57,42 @@ if { [exists_and_not_null after] } {
     set sort_key [expr $after + 1]
     set update_sql "update user_group_type_fields
 set sort_key = sort_key + 1
-where group_type = '$QQgroup_type'
-and sort_key > $after"
+where group_type = :group_type
+and sort_key > :after"
 } else {
-    set sort_key 1
+    set sort_key [db_string max_sort_key "select nvl(max(sort_key)+1,1) from user_group_type_fields where group_type = :group_type"]
     set update_sql ""
 }
 
-
 set insert_sql "insert into user_group_type_fields (group_type, column_name, pretty_name, column_type, column_actual_type, column_extra, sort_key)
 values
-( '$QQgroup_type', '$QQcolumn_name', '$QQpretty_name','$QQcolumn_type', '$QQcolumn_actual_type', [ns_dbquotevalue $column_extra text], $sort_key)"
+( :group_type, :column_name, :pretty_name,:column_type, :column_actual_type, :column_extra, :sort_key)"
 
-with_transaction $db {
-    ns_db dml $db $alter_sql
+
+# first alter the table
+if [ catch { db_dml alter_table_add_field $alter_sql } errmsg ] {
+    my_error_return
+}
+
+# then try the meta date and sort order updates
+db_transaction {
+    db_dml insert_new_ugt_fields $insert_sql
     if { ![empty_string_p $update_sql] } {
-	ns_db dml $db $update_sql
+	db_dml update_ug_type_fields $update_sql
     }
-    ns_db dml $db $insert_sql
-} {
+} on_error {
     # an error
-    ad_return_error "Database Error" "Error while trying to customize $group_type.
-	
-Tried the following SQL:
-	    
-<blockquote>
-<pre>
-$alter_sql
-$update_sql
-$insert_sql    
-</pre>
-</blockquote>	
-
-and got back the following:
-	
-<blockquote>
-<pre>
-$errmsg
-</pre>
-</blockquote>	
-	
-[ad_admin_footer]"
-    return
+    # need to TRY to reverse the alter table statement
+    catch {db_dml reverse_column_add "alter table $table_name drop column $column_name"}
+    my_error_return
 }
 
 # database stuff went OK
-ns_return 200 text/html "[ad_admin_header "Field Added"]
+set page_html "[ad_admin_header "Field Added"]
 
 <h2>Field Added</h2>
 
-to <a href=\"group-type.tcl?[export_url_vars group_type]\">the $pretty_name group type</a>
+to <a href=\"group-type?[export_url_vars group_type]\">the $group_type_pretty_name</a> group type
 
 <hr>
 
@@ -94,3 +123,4 @@ reflecting that
 
 [ad_admin_footer]
 "
+doc_return  200 text/html $page_html

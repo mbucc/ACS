@@ -1,24 +1,35 @@
 # File: /general-links/link-add.tcl
-# Date: 2/01/2000
-# Author: tzumainn@arsdigita.com 
-#
-# Purpose: 
-#  Step 1 of 4 in adding link and its association
-#
-# $Id: link-add.tcl,v 3.0 2000/02/06 03:44:26 ron Exp $
-#--------------------------------------------------------
+
+ad_page_contract {
+    Step 1 of 4 in adding link and its association.
+
+    @param on_which_table the table to associate the link with
+    @param on_what_id the ID column on the table
+    @param item the item that the link is associated with
+    @param module the associated module (optional)
+    @param return_url the URL to return to
+    
+    @Creation-date: 2/01/2000
+    @Author: tzumainn@arsdigita.com 
+    @cvs-id link-add.tcl,v 3.2.2.4 2000/09/22 01:38:04 kevin Exp
+} {
+    on_which_table:notnull
+    on_what_id:notnull
+    item:notnull
+    {module ""} 
+    return_url:notnull
+}
 
 if {[ad_read_only_p]} {
     ad_return_read_only_maintenance_message
     return
 }
 
-ad_page_variables {on_which_table on_what_id item {module ""} return_url}
 
 #check for the user cookie
 set user_id [ad_maybe_redirect_for_registration]
 
-ns_return 200 text/html "
+doc_return  200 text/html "
 [ad_header "Add a Link to $item (Step 1 of 3)"]
 
 <h2>Add a Link to $item (Step 1 of 3)</h2>
@@ -28,7 +39,7 @@ ns_return 200 text/html "
 <hr>
 
 <blockquote>
-<form action=link-add-2.tcl method=post>
+<form action=link-add-2 method=post>
 [export_form_vars on_which_table on_what_id item return_url module]
 
 <table>
@@ -53,7 +64,4 @@ ns_return 200 text/html "
 </form>
 [ad_footer]
 "
-
-
-
 

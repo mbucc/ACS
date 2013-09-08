@@ -1,71 +1,86 @@
-# $Id: ed-com-msg.tcl,v 3.0 2000/02/06 03:33:48 ron Exp $
-set_form_variables
+# /www/bboard/ed-com-msg.tcl
+ad_page_contract {
+    Form for the editor to submit commentary
 
-# msg_id is the key
+    @param msg_id the ID of the bboard posting
+
+    @cvs-id ed-com-msg.tcl,v 3.1.6.6 2000/09/22 01:36:49 kevin Exp
+} {
+    msg_id:notnull
+    topic:optional
+    topic_id:optional
+}
+
+# -----------------------------------------------------------------------------
+
 # make a copy because it is going to get overwritten by 
 # some subsequent queries
 
 set this_msg_id $msg_id
 
-set db [ns_db gethandle]
-
-set selection [ns_db 0or1row $db "select to_char(posting_time,'Month dd, yyyy') as posting_date,bboard.*, users.user_id as poster_id,  users.first_names || ' ' || users.last_name as name
-from bboard, users
-where bboard.user_id = users.user_id
-and msg_id = '$msg_id'"]
-
-if { $selection == "" } {
-    # message was probably deleted
-    ns_return 200 text/html "Couldn't find message $msg_id.  Probably it was deleted by the forum maintainer."
-    return
+page_validation {
+    if {![db_0or1row msg_info "
+    select  to_char(posting_time,'Month dd, yyyy') as posting_date,
+	    bb.msg_id,
+	    bb.topic_id,
+	    bb.one_line,
+	    bb.message,
+	    bb.html_p,
+    	    users.user_id as poster_id,  
+    	    users.first_names || ' ' || users.last_name as name
+    from    bboard bb, users
+    where   bb.user_id = users.user_id
+    and     msg_id = :msg_id"] } {
+	
+	# message was probably deleted
+	error "Couldn't find message $msg_id.  Probably it was deleted by the forum maintainer."
+    }
 }
 
-set_variables_after_query
 set this_one_line $one_line
 
-# now variables like $message and $topic are defined
-
-if [catch {set selection [ns_db 1row $db "select bt.*, u.email as maintainer_email 
-from bboard_topics bt, users u 
-where bt.topic='[DoubleApos $topic]'
-and bt.primary_maintainer_id = u.user_id"]} errmsg] {
+if {![db_0or1row topic_info "
+select bt.topic_id, bt.topic, u.email as maintainer_email
+from   bboard_topics bt, users u 
+where  bt.topic=:topic
+and    bt.primary_maintainer_id = u.user_id"]} {
     bboard_return_cannot_find_topic_page
     return
 }
-set_variables_after_query
 
-ReturnHeaders
-
-ns_write "[bboard_header "$one_line"]
+append page_content "
+[bboard_header "$one_line"]
 
 <h3>$one_line</h3>
 
 by [ad_present_user $poster_id $name] on $posting_date in
-<a href=\"q-and-a.tcl?[export_url_vars topic topic_id]\">$topic</a>
+<a href=\"q-and-a?[export_url_vars topic topic_id]\">$topic</a>
 
 <hr>"
 
+set msg_id_base "$msg_id%"
+set num_responses [db_string n_replies "select count(*) from bboard 
+where sort_key like :msg_id_base"]
 
-set num_responses [database_to_tcl_string $db "select count(*) from bboard 
-where sort_key like '$msg_id%'"]
+db_release_unused_handles
 
-ns_write "
+append page_content "
 <table width=100%>
 <tr>
    <td align = right>"
       if { $num_responses != 1 } {
-         ns_write "
-         <a href=\"ed-com-response.tcl?msg_id=$this_msg_id\">View commentary</a>"
+	  append page_content "
+         <a href=\"ed-com-response?msg_id=$this_msg_id\">View commentary</a>"
       } else {
-         ns_write "
-         <a href=\"q-and-a-post-reply-form.tcl?refers_to=$this_msg_id\">Submit your comment</a>"
+	  append page_content "
+         <a href=\"q-and-a-post-reply-form?refers_to=$this_msg_id\">Submit your comment</a>"
       }
-ns_write "
+
+append page_content "
   </td>
 </tr>
-</table>"
+</table>
 
-ns_write "
 <blockquote>
 [util_maybe_convert_to_html $message $html_p]
 </blockquote>
@@ -75,3 +90,5 @@ ns_write "
 
 [bboard_footer]"
 
+
+doc_return  200 text/html $page_content

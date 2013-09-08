@@ -1,33 +1,30 @@
-# $Id: one-case.tcl,v 3.0.4.1 2000/03/17 23:16:18 tzumainn Exp $
-set_form_variables
+# www/registry/one-case.tcl
 
-# stolen_id is the only one
+ad_page_contract {
+    @cvs-id one-case.tcl,v 3.2.6.4 2000/09/22 01:39:16 kevin Exp
+} {
+    stolen_id:integer
+}
 
-set db [ns_db gethandle]
-
-set selection [ns_db 1row $db "select stolen_id,
+db_1row one_case "select stolen_id,
  additional_contact_info, manufacturer, model, serial_number,
  value, recovered_p, recovered_by_this_service_p, posted,
  story, s.deleted_p, u.user_id, u.email, u.first_names, u.last_name
-from stolen_registry s, users u
-where stolen_id=$stolen_id
-and u.user_id = s.user_id"]
+ from stolen_registry s, users u
+ where stolen_id=:stolen_id
+ and u.user_id = s.user_id" -bind [ad_tcl_vars_to_ns_set stolen_id]
 
-set_variables_after_query
+set comments_list [ad_general_comments_list $stolen_id stolen_registry $model registry]
 
-set comments_list [ad_general_comments_list $db $stolen_id stolen_registry $model registry]
+db_release_unused_handles
 
-ns_db releasehandle $db
-
-ReturnHeaders
-
-ns_write "[ad_header "$manufacturer $model $serial_number"]
+set html "[ad_header "$manufacturer $model $serial_number"]
 
 <h2>$manufacturer $model</h2>
 
 serial number  $serial_number<p>
 
-recorded in the <a href=index.tcl>Stolen Equipment Registry</a>
+recorded in the <a href=index>Stolen Equipment Registry</a>
 
 <hr>
 
@@ -35,7 +32,7 @@ recorded in the <a href=index.tcl>Stolen Equipment Registry</a>
 
 if { $story != "" } {
 
-    ns_write "<h3>Story</h3>
+    append html "<h3>Story</h3>
 
 $story
 
@@ -43,22 +40,24 @@ $story
 
 }
 
-ns_write "<h3>Contact</h3>
+append html "<h3>Contact</h3>
 Reported on $posted by 
-<a href=\"/shared/community-member.tcl?user_id=$user_id\">$first_names $last_name</a>
+<a href=\"/shared/community-member?user_id=$user_id\">$first_names $last_name</a>
 (<a href=\"mailto:$email\">$email</a>)
 "
 
 if { $additional_contact_info != "" } {
 
-    ns_write ", who may also be reached at <blockquote><pre>
+    append html ", who may also be reached at <blockquote><pre>
 $additional_contact_info
 </pre></blockquote>"
 
 }
 
-ns_write "
+append html "
 <p>
 $comments_list
 
 [ad_footer]\n"
+
+doc_return  200 text/html $html

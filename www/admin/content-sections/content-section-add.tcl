@@ -1,53 +1,52 @@
-# $Id: content-section-add.tcl,v 3.0 2000/02/06 03:15:07 ron Exp $
-# File:     /admin/content-sections/content-section-add.tcl
-# Date:     22/12/99
-# Contact:  tarik@arsdigita.com
-# Purpose:  adding a content section
-#
-# Note: if page is accessed through /groups pages then group_id and group_vars_set are already set up in 
-#       the environment by the ug_serve_section. group_vars_set contains group related variables (group_id, 
-#       group_name, group_short_name, group_admin_email, group_public_url, group_admin_url, group_public_root_url,
-#       group_admin_root_url, group_type_url_p, group_context_bar_list and group_navbar_list)
+# /www/admin/content-sections/content-section-add.tcl
+ad_page_contract {
+    Adding a content section
 
-set_the_usual_form_variables 0
-# maybe scope, maybe scope related variables (user_id, group_id, on_which_group, on_what_id)
+    Scope aware. scope := (public|group). Scope related variables are passed implicitly in 
+    the local environment and checked with ad_scope_error_check.
 
-ad_scope_error_check
+    @author Contact:  tarik@arsdigita.com
+    @creation-date  22/12/99
+    @cvs-id content-section-add.tcl,v 3.2.2.9 2001/01/10 17:16:14 khy Exp
 
-set db [ns_db gethandle]
-ad_scope_authorize $db $scope admin group_admin none
+    @param type
 
-
-if { ![info exists type] } {
-    set type section
+} {
+    {type static}
 }
 
-set section_id [database_to_tcl_string $db "select content_section_id_sequence.nextval from dual"]
 
-ReturnHeaders 
+ad_scope_error_check
+ad_scope_authorize $scope admin group_admin none
 
+set section_id [db_string get_next_content_section_id "select content_section_id_sequence.nextval from dual"]
+
+# type is (static|module|custom), anything else is silently changed to static
 switch $type {
-    module {
-	set page_title "Add Module"
-    }
+    default
+           -
     static {
 	set page_title "Add Static Section"
+	set type "static"
+    }
+    module {
+	set page_title "Add Module"
     }
     custom {
 	set page_title "Add Custom Section"
     }
 }
 
-ns_write "
-[ad_scope_admin_header $page_title $db]
-[ad_scope_admin_page_title $page_title $db]
-[ad_scope_admin_context_bar [list "index.tcl?[export_url_scope_vars]" "Content Sections"] $page_title]
+set page_body "
+[ad_scope_admin_header $page_title]
+[ad_scope_admin_page_title $page_title]
+[ad_scope_admin_context_bar [list "index" "Content Sections"] $page_title]
 <hr>
 "
 
 append html "
-<form method=post action=\"content-section-add-2.tcl\"> 
-[export_form_scope_vars section_id]
+<form method=post action=\"content-section-add-2\"> 
+[export_form_vars -sign section_id]
 
 <table>
 <tr><th valign=top align=left>Section key</th>
@@ -57,52 +56,44 @@ append html "
 <td><input type=text size=40 name=section_pretty_name MAXLENGTH=200></td></tr>
 "
 
-if { [string compare $type static]==0 } {
-    set section_type static
-    append html "
-    [export_form_scope_vars section_type ]
-    "
-}
-if { [string compare $type custom]==0 } {
-    set section_type custom
-    append html "
-    [export_form_scope_vars section_type]
-    "
-}
-
-if { [string compare $type static]==0 } {
-    append html "
-    <tr><th valign=top align=left>Section url stub</th>
-    <td><input type=text size=40 name=section_url_stub MAXLENGTH=200></td></tr>
-    "
-}
-
-
-
-if { $type=="module"} {
-
-    set selection [ns_db select $db "
-    select module_key, pretty_name 
-    from acs_modules
-    where supports_scoping_p='t'
-    and module_key not in (select module_key
-                           from content_sections
-                           where [ad_scope_sql]
-                           and (section_type='system' or section_type='admin'))
-    "]
-
-    while { [ns_db getrow $db $selection] } {
-	set_variables_after_query
-
-	lappend name_list $pretty_name
-	lappend key_list $module_key
+switch $type {
+    static {
+	set section_type static
+	append html "
+	[export_form_vars section_type ]
+	<tr><th valign=top align=left>Section url stub</th>
+	<td><input type=text size=40 name=section_url_stub MAXLENGTH=200></td></tr>
+	"
     }
+    custom {
+	set section_type custom
+	append html "
+	[export_form_vars section_type]
+	"
+    }
+    module {
+	set query_sql "
+	select module_key, pretty_name 
+	from acs_modules
+	where supports_scoping_p='t'
+	and module_key not in (select module_key
+	                       from content_sections
+                               where [ad_scope_sql]
+                               and (section_type='system' or section_type='admin'))
+	"
+	db_foreach select_query $query_sql  {
+	    lappend name_list $pretty_name
+	    lappend key_list $module_key
+	}
 
-    append html "
-    <tr><th valign=top align=left>Module</th>
-    <td>[ns_htmlselect -labels $name_list module_key $key_list]</td></tr>
-    "
+	append html "
+	<tr><th valign=top align=left>Module</th>
+	<td>[ns_htmlselect -labels $name_list module_key $key_list]</td></tr>
+	"
+    }
 }
+
+db_release_unused_handles
 
 append html "
 <tr><th valign=top align=left>Sort key</th>
@@ -137,9 +128,9 @@ append html "
 <p>
 "
 
-ns_write "
+append page_body "
 $html
 [ad_scope_admin_footer]
 "
 
-
+doc_return  200 text/html $page_body

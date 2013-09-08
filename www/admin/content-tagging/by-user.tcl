@@ -1,9 +1,16 @@
-# $Id: by-user.tcl,v 3.0 2000/02/06 03:15:26 ron Exp $
-ReturnHeaders
+# File: /www/admin/comment-tagging/by-user.tcl
+ad_page_contract {
+    Displays naughtiness by user
+    @param none
+    @author unknown
+    @cvs-id by-user.tcl,v 3.1.6.4 2000/09/22 01:34:35 kevin Exp
+} {
+}
+
 
 set title "Naughtiness by user"
 
-ns_write "[ad_admin_header $title]
+append page_content "[ad_admin_header $title]
 
 <h2>$title</h2>
 
@@ -14,29 +21,38 @@ ns_write "[ad_admin_header $title]
 <ul>
 "
 
-set db [ns_db gethandle]
 
-set selection [ns_db select $db "select offensive_text, naughty_events.table_name, the_key, creation_date, user_id, first_names, last_name, url_stub
+db_foreach select_offensive_text "select offensive_text, naughty_events.table_name, the_key, creation_date, user_id, first_names, last_name, url_stub
 from naughty_events, users, naughty_table_to_url_map
 where creation_user = users.user_id
 and naughty_events.table_name=naughty_table_to_url_map.table_name(+)
-order by creation_date, upper(last_name), upper(first_names)"]
-
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
-    ns_write "<li><a href=\"/admin/users/one.tcl?user_id=$user_id\">$first_names $last_name</a> \n
+order by creation_date, upper(last_name), upper(first_names)" {
+    append page_content "<li><a href=\"/admin/users/one?user_id=$user_id\">$first_names $last_name</a> \n
     <br>$offensive_text <br> " 
     
     if {[empty_string_p $url_stub]} {
-	ns_write "<b>Date:</b> [util_AnsiDatetoPrettyDate $creation_date]<p>" 
+	append page_content "<b>Date:</b> [util_AnsiDatetoPrettyDate $creation_date]<p>" 
     } else {
-	ns_write "<b>Date:</b> [util_AnsiDatetoPrettyDate $creation_date]<br>
+	append page_content "<b>Date:</b> [util_AnsiDatetoPrettyDate $creation_date]<br>
 	<a href=\"$url_stub[ns_urlencode $the_key]\">Edit</a><p>" 
     }
 }
+    
+
+
  
-ns_write "
+append page_content "
 </ul>
 
 [ad_admin_footer]
 "
+
+
+
+doc_return  200 text/html $page_content
+
+
+
+
+
+

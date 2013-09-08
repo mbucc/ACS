@@ -1,60 +1,54 @@
-# $Id: q-and-a-post-reply-form.tcl,v 3.0.4.1 2000/04/28 15:09:43 carsten Exp $
-# q-and-a-post-reply-form.tcl
-#
-# philg@arsdigita.com, hqm@arsdigita.com
-#
+# /www/bboard/q-and-a-post-reply-form.tcl
+ad_page_contract {
+    Form to reply to a posting
 
+    @param refers_to the message being replied to
+
+    @author philg@arsdigita.com
+    @author hqm@arsdigita.com
+    @cvs-id q-and-a-post-reply-form.tcl,v 3.2.6.5 2000/09/22 01:36:52 kevin Exp
+} {
+    refers_to:notnull
+}
+
+# -----------------------------------------------------------------------------
 
 if {[ad_read_only_p]} {
     ad_return_read_only_maintenance_message
     return
 }
 
-set form_refers_to [ns_queryget refers_to]
-
-# we can't just use set_form_variables because that would set
-# "refers_to" which is about to be overwritten by the db query
-
-set db [bboard_db_gethandle]
-if { $db == "" } {
-    bboard_return_error_page
-    return
-}
-
 set user_id [ad_verify_and_get_user_id]
+ad_maybe_redirect_for_registration
 
-if {$user_id == 0} {
-   ad_returnredirect /register.tcl?return_url=[ns_urlencode "[bboard_partial_url_stub]q-and-a-post-reply-form.tcl?refers_to=$form_refers_to"]
-    return
-}
+if { ![db_0or1row original_message "
+select users.user_id, 
+       users.first_names || ' ' || users.last_name as name, 
+       bboard.topic_id, 
+       bboard_topics.topic, 
+       bboard.category, 
+       bboard.one_line, 
+       bboard.message, 
+       bboard.html_p
+from   bboard, users, bboard_topics
+where  bboard_topics.topic_id = bboard.topic_id 
+and    users.user_id = bboard.user_id
+and    msg_id = :refers_to"] } {
 
-set selection [ns_db 0or1row $db "select users.user_id, users.first_names || ' ' || users.last_name as name, 
-bboard.topic_id, bboard_topics.topic, bboard.category, bboard.one_line, bboard.message, bboard.html_p
-from bboard, users, bboard_topics
-where bboard_topics.topic_id = bboard.topic_id 
-and users.user_id = bboard.user_id
-and msg_id = '$form_refers_to'"]
-
-if { $selection == "" } {
     # message was probably deleted
-    ns_return 200 text/html "Couldn't find message $form_refers_to.  Probably the message to which you are currently trying to reply has deleted by the forum maintainer."
+    doc_return  200 text/html "Couldn't find message $refers_to.  Probably the message to which you are currently trying to reply has deleted by the forum maintainer."
     return
 }
 
-
-set_variables_after_query
-
-if [catch {set selection [ns_db 1row $db "select unique * from bboard_topics where topic_id=$topic_id"]} errmsg] {
+if {![db_0or1row topic_info "
+select unique * from bboard_topics where topic_id=:topic_id"]} {
     bboard_return_cannot_find_topic_page
     return
 }
-set_variables_after_query
 
 
-
-ReturnHeaders 
-
-ns_write "[bboard_header "Post Answer"]
+append page_content "
+[bboard_header "Post Answer"]
 
 
 <h3>Post an Answer</h3>
@@ -78,10 +72,10 @@ Subject: $one_line
 <h3>Your Response</h3>
 
 <blockquote>
-<form method=post action=\"confirm.tcl\">
+<form method=post action=\"confirm\">
 [export_form_vars topic topic_id category]
 <input type=hidden name=q_and_a_p value=t>
-<input type=hidden name=refers_to value=$form_refers_to>
+<input type=hidden name=refers_to value=$refers_to>
 <input type=hidden name=notify value=f>
 
 
@@ -111,3 +105,10 @@ The above text is:
 </body>
 </html>
 "
+
+doc_return 200 text/html $page_content
+
+
+
+
+

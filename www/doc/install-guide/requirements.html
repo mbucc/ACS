@@ -1,0 +1,181 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html><head><title>Requirements</title></head>
+<body bgcolor="#FFFFFF">
+
+<table width="100%">
+<tr><td width="33%" align="left" valign="top">
+<b>Previous</b>: <a href="start.html">Getting Started</a></td>
+<td width="34%" align="center" valign="top"><h1>Requirements</h1>
+<td width="33%" align="right" valign="top">
+<b>Next</b>: <a href="redhat.html">Installing Red Hat Linux 6.2</a></td>
+</tr>
+</table>
+<a href="/doc/">ACS Documentation</a> :
+<a href="">ACS Installation Guide</a> :
+Requirements
+<hr>
+
+There are three chief requirements for successfully installing and using 
+the ArsDigita Community System:
+<ul>
+<li> Adequate hardware
+<li> Necessary software
+<li> Experience with an Unix environment.
+</ul>
+
+<h2>Hardware Requirements</h2>
+At a minimum, you need a hardware platform that allows you to run
+the <a href="http://www.oracle.com/">Oracle</a> RDBMS comfortably.
+You can do this on a wide variety of hardware platforms.  At ArsDigita, we
+are most familiar with running production servers using the ArsDigita Community System on Sun and HP hardware.  However, the software can also be run comfortably on Linux and even Windows 2000.<p>
+
+The emphasis of this document is currently on a Linux installation.  Installing
+this software on other Unix systems, such as Solaris, is much the same.  If 
+you are not installing onto Linux, you can still follow this documentation,
+but you will need to substitute commands native to your Unix system if the
+Red Hat Linux version does not work.  For example, there is a standard tool
+for creating new users under Solaris and Red Hat, <code>useradd</code>.  If
+your system does not support this, you will need to substitute the appropriate
+command.<p>
+
+Installing the ArsDigita Community System under Windows 2000 is a
+different matter that this document does not address.  Please see the 
+<a href="/doc/win2k-installation">Windows 2000 installation guide</a> for instructions.<p>
+
+<blockquote>
+<h3>Minimum Hardware Requirements for Installing onto Linux</h3>
+<ul>
+    <li>An IBM-PC compatible with a Pentium processor or better.
+    <li>128 Mb RAM (256 Mb recommended) with 400 Mb swap file
+    <li>3.5 Gb Hard Drive space
+    <li>A network connection.  Have your network configuration information
+(such as IP address) handy when following this guide.
+</ul>
+</blockquote>
+<h2>Software Requirements</h2>
+The ArsDigita Community System requires:
+<ul>
+<li>A Unix operating system (e.g. Solaris, Linux, HP-UX) or Windows 2000
+<li>The Oracle8i RDBMS 
+<li>The Open Source AOLServer 3.0 Web Server running with the 8.3 Tcl interpreter (<code>nsd8x</code>)
+</ul>
+ 
+There are also initiatives to create versions of ACS that work with
+other databases (see the <a href="http://openacs.org">OpenACS</a> project) and
+with other web servers (see the <a href="http://apache.arsdigita-dev.com/">mod_aolserver</a> package for Apache).  However, this guide presumes a Unix
+operating system, specifically Red Hat Linux, Oracle 8.1.6, and AOLServer 3.0.
+This information may be useful for other platforms, but please exercise 
+careful judgment in following any of the instructions.<p>
+
+<h2>Experience with an Unix Environment</h2>
+
+Running a reliable database-backed web server requires experience with the 
+server's environment, in this case Unix.  Unix is
+not always an intuitive environment and this guide cannot hope to explain
+every nuance.  You should be comfortable
+with the following tasks before attempting an installation:
+<ul>
+<li>Adding users, groups, setting passwords.
+<li>Starting an X server and running an X program remotely.
+<li>Basic file management using <code>cp, rm, mv,</code> and <code>cd</code>.
+<li>Compiling a program using a Makefile.
+</ul>
+
+If you've never done these things before, consider exploring Unix at greater
+depth before installing the ArsDigita Community System.  Some useful 
+resources for doing this taken from <a href="http://philip.greenspun.com/">Philip Greenspun's</a> bookshelf are listed below.
+
+<p>
+
+An excellent introduction to the command line tools and basic programs 
+of Unix is  <a
+href="http://www.amazon.com/exec/obidos/ISBN=1565922603/photonetA/">Unix
+Power Tools</a>.  An excellent online resource is <a 
+href="http://www.geek-girl.com/unix.html">The Unix Reference Desk
+</a>. However, you need to read further to get a firm grasp on 
+System Administration.
+<p>
+
+For System Administration:<p>
+
+<ul>
+<li><a href="http://www.amazon.com/exec/obidos/ASIN/0131510517/photonetA">Unix
+System Administration Handbook</a> (the "red book"; a classic but dated)
+
+<li><a
+href="http://www.amazon.com/exec/obidos/ASIN/1565921275/photonetA">Essential
+System Administration</a> (typical O'Reilly book; also dated)
+
+<li><a
+href="http://www.amazon.com/exec/obidos/ASIN/076453162X/photonetA">Unix
+System Administrator's Bible</a> (LePage and Iarerra 1998; IDG)
+</ul>
+
+For Solaris:<p>
+
+<ul>
+<li>
+<a
+href="http://www.amazon.com/exec/obidos/ASIN/0130952494/photonetA">Sun
+Performance and Tuning</a>
+<li><a
+href="http://www.amazon.com/exec/obidos/ASIN/0133499529/photonetA">Configuration
+and Capacity Planning for Solaris Servers</a>
+<li><a href="http://www.amazon.com/exec/obidos/ASIN/1566901502/photonetA">Solaris 2.X for Managers and Administrators</a>.
+</ul>
+
+
+<p>
+For HP-UX:
+
+<ul>
+<li>
+<a
+href="http://www.amazon.com/exec/obidos/ISBN=0070572771/photonetA/">Jay
+Shah's HP-UX System and Administration Guide</a>.  
+</ul>
+
+<p>
+For Linux:
+<ul>
+<li><a href="http://www.linuxdoc.org/">The Linux Documentation Project</a>.
+<li>
+<a
+href="http://www.amazon.com/exec/obidos/ASIN/1565921518/photonetA">Running
+Linux</a> 
+<li>
+<a
+href="http://www.amazon.com/exec/obidos/ASIN/1565925858/photonetA">Linux
+in a Nutshell</a>
+</ul>
+<p>
+
+Above basic system administration, you need a good text editor.  While
+<code>vi</code> is functional, Emacs offers more features and is arguably
+more extensive than any other text editor available today.  These two books are excellent.
+
+<ul>
+<li>
+<a
+href="http://www.amazon.com/exec/obidos/ASIN/1565921526/photonetA">Learning
+Gnu Emacs</a>
+<li>
+<a href="http://www.amazon.com/exec/obidos/ASIN/1565922611/photonetA">Writing Gnu Emacs Extensions</a>.
+</ul>
+<p>
+<hr>
+<table width="100%">
+<tr><td width="33%" align="left" valign="top">
+<b>Previous</b>: <a href="start.html">Getting Started</a></td>
+<td width="34%" align="center" valign="top"><b>Requirements</b>
+<br>part of the
+<a href="index.html">ACS Installation Guide</a>
+<td width="33%" align="right" valign="top">
+<b>Next</b>: <a href="redhat.html">Installing Red Hat Linux 6.2</a></td>
+</tr>
+</table>
+<hr>
+<a href="mailto:bquinn@arsdigita.com">bquinn@arsdigita.com</a>
+
+</body>
+</html>

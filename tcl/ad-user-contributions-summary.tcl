@@ -1,37 +1,38 @@
-# $Id: ad-user-contributions-summary.tcl,v 3.1 2000/02/20 17:04:39 davis Exp $
-# 
-# ad-user-contributions-summary.tcl
-#
-# by philg@mit.edu on October 31, 1999
-#  (spending Halloween holiday engaged in the typically
-#   ghoulish activity of Tcl programming)
-#
+# /tcl/ad-user-contributions-summary.tcl
 
-# this is similar in spirit to what you see in ad-new-stuff.tcl
+ad_library {
 
-# the big idea here is to have a modular way of each part of ACS
-# reporting what User #47 has contributed to the community
-# This is used by /admin/users/one.tcl and /shared/community-member.tcl
+    this is similar in spirit to what you see in ad-new-stuff.tcl
 
-# this system scales as modules are added to the ACS either by
-# ArsDigita or publishers.  The basic mechanism by which modules buy
-# into this system is to lappend a data structure to the ns_share
-# variable ad_user_contributions_summary_proc_list (a Tcl list)
+    the big idea here is to have a modular way of each part of ACS
+    reporting what User 47 has contributed to the community
+    This is used by /admin/users/one.tcl and /shared/community-member.tcl
+    
+    this system scales as modules are added to the ACS either by
+    ArsDigita or publishers.  The basic mechanism by which modules buy
+    into this system is to lappend a data structure to the ns_share
+    variable ad_user_contributions_summary_proc_list (a Tcl list)
 
-# each element of this list is itself a list.  Here's the data
-# structure for the sublist:
-#   module_name proc_name priority 
-# a priority of 0 is higher than a priority of 1 (expect
-# values between 0 and 10); items of the same priority 
-# sort by which is shorter
+    each element of this list is itself a list.  Here's the data
+    structure for the sublist:
+    module_name proc_name priority 
+    a priority of 0 is higher than a priority of 1 (expect
+    values between 0 and 10); items of the same priority 
+    sort by which is shorter
+    
+    @creation-date October 31, 1999
+    @author philg@mit.edu
+    @cvs-id ad-user-contributions-summary.tcl,v 3.3.2.2 2000/07/25 11:27:48 ron Exp
 
-util_report_library_entry
+}
 
-# assumes we're sorting a list of sublists, each of which 
-# has priority as its first element, a title as the second, 
-# and content as the third element 
+ad_proc ad_user_contributions_summary_sort {sublist1 sublist2} {
+    
+    assumes we're sorting a list of sublists, each of which 
+    has priority as its first element, a title as the second, 
+    and content as the third element 
 
-proc ad_user_contributions_summary_sort {sublist1 sublist2} {
+} {
     set priority1 [lindex $sublist1 0]
     set priority2 [lindex $sublist2 0]
     if { $priority1 < $priority2 } {
@@ -50,7 +51,15 @@ proc ad_user_contributions_summary_sort {sublist1 sublist2} {
     }
 }
 
-proc_doc ad_summarize_user_contributions {db user_id {purpose "web_display"}} "Returns a string of a user's contributed stuff on the site.  The PURPOSE argument can be \"web_display\" (intended for an ordinary user) or \"site_admin\" (to help the owner of a site nuke stuff).  These arguments are passed down to the procedures on the ns_share'd ad_user_contributions_summary_proc_list." {
+ad_proc ad_summarize_user_contributions {user_id {purpose "web_display"}} {
+
+Returns a string of a user's contributed stuff on the site.  
+The PURPOSE argument can be \"web_display\" (intended for an ordinary user) or 
+\"site_admin\" (to help the owner of a site nuke stuff).  
+These arguments are passed down to the procedures on the ns_share'd 
+ad_user_contributions_summary_proc_list.
+
+} {
     ns_share ad_user_contributions_summary_proc_list
     set result_list [list]
     foreach sublist $ad_user_contributions_summary_proc_list {
@@ -61,10 +70,10 @@ proc_doc ad_summarize_user_contributions {db user_id {purpose "web_display"}} "R
 
         # Put here so I get a traceback when subquery not released JCD
         #ns_log Notice "contibutions for $module_name via $module_proc"
-        #set dbx [ns_db gethandle subquery] 
-        #ns_db releasehandle $dbx
 
-	if [catch { set one_module_result [eval [list $module_proc $db $user_id $purpose]] } errmsg] {
+        db_release_unused_handles
+
+	if [catch { set one_module_result [eval [list $module_proc $user_id $purpose]] } errmsg] {
 	    ns_log Notice "ad_summarize_user_contributions got an error calling $module_proc:  $errmsg"
 	    # got an error, let's continue to the next iteration
 	    continue
@@ -95,32 +104,44 @@ if { ![info exists ad_user_contributions_summary_proc_list] || [util_search_list
     lappend ad_user_contributions_summary_proc_list [list "Related Links" ad_related_links_user_contributions 1]
 }
 
-
-proc_doc ad_related_links_user_contributions {db user_id purpose} "Only produces a report for the site administrator; the assumption is that random users won't want to see out-of-context links" {
+ad_proc ad_related_links_user_contributions {user_id purpose} {
+    Only produces a report for the site administrator; 
+    the assumption is that random users won't want to see out-of-context links
+} {
     if { $purpose != "site_admin" } {
 	return [list]
     }
-    set selection [ns_db select $db "select links.page_id, links.link_title, links.link_description, links.url, links.status, posting_time, page_title, url_stub
-from links, static_pages sp
-where links.page_id = sp.page_id
-and links.user_id = $user_id
-order by posting_time asc"]
+    
     set items ""
-    while { [ns_db getrow $db $selection] } {
-	set_variables_after_query
+    db_foreach ad_user_contributions_related_links_user_contributions_links {
+	select links.page_id, 
+               links.link_title, 
+               links.link_description, 
+               links.url, 
+               links.status, 
+               posting_time, 
+               page_title, 
+               url_stub
+	from   links, 
+	       static_pages sp
+        where  links.page_id = sp.page_id
+        and    links.user_id = :user_id
+	order by posting_time asc
+    } {
 	append items "<li>[util_AnsiDatetoPrettyDate $posting_time] 
-to 
-<a href=\"$url_stub\">$url_stub</a>: 
-<ul>
-<li>Url:  <a href=\"$url\">$url</a> ($link_title)
-"
-        if ![empty_string_p $link_description] {
+                      to 
+	<a href=\"$url_stub\">$url_stub</a>: 
+	<ul>
+	<li>Url:  <a href=\"$url\">$url</a> ($link_title)
+	"
+        
+	if ![empty_string_p $link_description] {
 	    append items "<li>Description:  $link_description\n"
 	}
 	append items "<li>Status:  $status
-<li>Actions: &nbsp; &nbsp; <a href=\"/admin/links/edit.tcl?[export_url_vars url page_id]\">edit</a> &nbsp; &nbsp;  <a href=\"/admin/links/delete.tcl?[export_url_vars url page_id]\">delete</a>
-</ul>
-"
+	<li>Actions: &nbsp; &nbsp; <a href=\"/admin/links/edit?[export_url_vars url page_id]\">edit</a> &nbsp; &nbsp;  <a href=\"/admin/links/delete?[export_url_vars url page_id]\">delete</a>
+	</ul>"
+
     }
     if [empty_string_p $items] {
 	return [list]
@@ -133,27 +154,38 @@ if { ![info exists ad_user_contributions_summary_proc_list] || [util_search_list
     lappend ad_user_contributions_summary_proc_list [list "Static Page Comments" ad_static_comments_user_contributions 1]
 }
 
-
-proc_doc ad_static_comments_user_contributions {db user_id purpose} "Returns a list of priority, title, and an unordered list HTML fragment.  All the static comments posted by a user." {
+ad_proc ad_static_comments_user_contributions {user_id purpose} {
+    Returns a list of priority, title, and an unordered list HTML fragment.  All the static comments posted by a user.
+} {
     if { $purpose == "site_admin" } {
-	return [ad_static_comments_user_contributions_for_site_admin $db $user_id]
+	return [ad_static_comments_user_contributions_for_site_admin $user_id]
     } else {
-	return [ad_static_comments_user_contributions_for_web_display $db $user_id]	
+	return [ad_static_comments_user_contributions_for_web_display $user_id]	
     }
 	
 }
 
 
-# need to go the helper route 
-proc ad_static_comments_user_contributions_for_site_admin {db user_id} {
-    set selection [ns_db select $db "select comments.comment_id, comments.page_id, comments.message, comments.posting_time, comments.comment_type, comments.rating, page_title, url_stub
-from static_pages sp, comments_not_deleted comments
-where comments.page_id = sp.page_id
-and comments.user_id = $user_id
-order by posting_time asc"]
+ad_proc ad_static_comments_user_contributions_for_site_admin {user_id} {
+    need to go the helper route 
+} {
     set items ""
-    while { [ns_db getrow $db $selection] } {
-	set_variables_after_query
+
+    db_foreach ad_user_contributions_summary_static_comment_user_contributions_for_site_admin_comment {
+	select comments.comment_id, 
+               comments.page_id, 
+               comments.message, 
+               comments.posting_time, 
+               comments.comment_type, 
+               comments.rating, 
+	       page_title, 
+	       url_stub
+	from  static_pages sp, 
+	      comments_not_deleted comments
+        where comments.page_id = sp.page_id
+        and   comments.user_id = :user_id
+        order by posting_time asc
+    } {
 	append items "<li>[util_AnsiDatetoPrettyDate $posting_time]; $comment_type on <a href=\"$url_stub\">$url_stub</a>:
 	<blockquote>
 	"
@@ -161,12 +193,13 @@ order by posting_time asc"]
 	    append items "Rating:  $rating<br><br>\n\n"
 	}    
 	append items "
-$message
-<br>
-<br>
-\[ <a href=\"/admin/comments/persistent-edit.tcl?[export_url_vars comment_id]\">edit</a> &nbsp; | &nbsp; <a href=\"/admin/comments/delete.tcl?[export_url_vars comment_id page_id]\">delete</a> \]
-</blockquote>"
+	$message
+	<br>
+	<br>
+	\[ <a href=\"/admin/comments/persistent-edit?[export_url_vars comment_id]\">edit</a> &nbsp; | &nbsp; <a href=\"/admin/comments/delete?[export_url_vars comment_id page_id]\">delete</a> \]
+	</blockquote>"
     }
+    
     if [empty_string_p $items] {
 	return [list]
     } else {
@@ -174,28 +207,34 @@ $message
     }
 }
 
-proc ad_static_comments_user_contributions_for_web_display {db user_id} {
-    set selection [ns_db select $db "select comments.page_id, comments.message, posting_time, decode(page_title, null, url_stub, page_title) page_title, url_stub 
-from static_pages sp, comments_not_deleted comments
-where sp.page_id = comments.page_id
-and comments.user_id = $user_id
-and comments.comment_type = 'alternative_perspective'
-order by posting_time asc"]
+ad_proc ad_static_comments_user_contributions_for_web_display {user_id} "" {
     set comment_items ""
-    while { [ns_db getrow $db $selection] } {
-	set_variables_after_query
+    db_foreach ad_user_contribution_summaary_static_comments_user_contributions_for_web_display_comments {
+	select comments.page_id, 
+	       comments.message, 
+	       posting_time, 
+	       decode(page_title, null, url_stub, page_title) page_title, 
+	       url_stub 
+        from   static_pages sp, 
+	       comments_not_deleted comments
+        where  sp.page_id = comments.page_id
+        and    comments.user_id = :user_id
+	and    comments.comment_type = 'alternative_perspective'
+	order by posting_time asc
+    } {
+
 	if { [string length $message] > 1000 } {
 	    set complete_message "[string range $message 0 1000]... "
 	} else {
 	    set complete_message $message
 	}
 	append comment_items "<li>[util_AnsiDatetoPrettyDate $posting_time], on <a href=\"$url_stub\">$page_title</a>: 
-<blockquote>
-$complete_message
-</blockquote>
-<p>
-"
+	<blockquote>
+	$complete_message
+	</blockquote>
+	<p>"
     }
+
     if [empty_string_p $comment_items] {
 	return [list]
     } else {
@@ -204,4 +243,9 @@ $complete_message
 }
 
 
-util_report_successful_library_load
+
+
+
+
+
+

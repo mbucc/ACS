@@ -1,50 +1,55 @@
 # /www/download/admin/download/spam-all-downloaders.tcl
-#
-# Date:     01/04/2000
-# Author :  ahmeds@mit.edu
-# Purpose: spams all users who downloaded this file 
-#
-# $Id: spam-all-downloaders.tcl,v 3.0.6.2 2000/05/18 00:05:17 ron Exp $
-# -----------------------------------------------------------------------------
+ad_page_contract {
+    spams all users who downloaded this file 
 
-set_the_usual_form_variables
-# maybe scope, maybe scope related variables (group_id)
-# download_id
+    @param download_id the download we are spamming about
+    @param scope
+    @param group_id
+    
+    @author ahmeds@mit.edu
+    @creation-date 4 Jan 2000
+    @cvs-id spam-all-downloaders.tcl,v 3.10.2.6 2000/09/24 22:37:17 kevin Exp
+} {
+    download_id:integer,notnull
+    scope:optional
+    group_id:optional
+}
+
+# -----------------------------------------------------------------------------
 
 ad_scope_error_check
 
-set db [ns_db gethandle]
-set user_id [download_admin_authorize $db $download_id]
+set user_id [download_admin_authorize $download_id]
 
-set download_name [database_to_tcl_string $db "
+db_1row download_name "
 select download_name
 from   downloads 
-where  download_id = $download_id"]
+where  download_id = :download_id"
 
-set from_address [database_to_tcl_string $db \
-	"select email from users where user_id = $user_id"]
-
-ns_db releasehandle $db
+set from_address [db_string from_email "
+select email from users where user_id = :user_id"]
 
 # -----------------------------------------------------------------------------
 
+db_release_unused_handles
+
 set page_title "Spam All Users who downloaded $download_name"
 
-ns_return 200 text/html "
-[ad_scope_header $page_title $db]
-[ad_scope_page_title $page_title $db]
+doc_return 200 text/html "
+[ad_scope_header $page_title]
+[ad_scope_page_title $page_title]
 [ad_scope_context_bar_ws \
-	[list "/download/" "Download"] \
-	[list "/download/admin/" "Admin"] \
-	[list "download-view.tcl?[export_url_scope_vars download_id]" "$download_name"] \
-	[list "view-versions-report.tcl?[export_url_scope_vars download_id]" "Report"] \
+	[list "/download/index?[export_url_scope_vars]" "Download"] \
+	[list "/download/admin/index?[export_url_scope_vars]" "Admin"] \
+	[list "download-view?[export_url_scope_vars download_id]" "$download_name"] \
+	[list "view-versions-report?[export_url_scope_vars download_id]" "Report"] \
 	"Spam" ]
 
 <hr>
 [help_upper_right_menu]
 
 <blockquote>
-<form method=post action=spam-all-downloaders-1.tcl>
+<form method=post action=spam-all-downloaders-1>
 [export_form_scope_vars download_id]
 
 <table>
@@ -78,3 +83,10 @@ ns_return 200 text/html "
 </blockquote>
 [ad_scope_footer]
 "
+
+
+
+
+
+
+

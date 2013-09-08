@@ -1,0 +1,357 @@
+<html><head><title>The Hitchikers Guide to the ACS</title></head>
+<body bgcolor=#ffffff>
+<table>
+<tr>
+<td>
+<a href="http://photo.net/photo/pcd0074/josh-7.tcl">
+    <img src="http://photo.net/photo/pcd0074/josh-7.1.jpg"></a>
+<td>
+
+<h2>The Hitchhiker's Guide to the ACS</h2>
+by <a href="mailto:bquinn@arsdigita.com">Bryan Quinn</a>,
+<a href="mailto:docwolf@arsdigita.com">Adam Farkas</a>,
+<a href="mailto:dhoffman@arsdigita.com">Doug Hoffman</a>, 
+<a href="mailto:iwashima@mit.edu">Hiroyoshi Iwashima</a>,
+<a href="mailto:ryanlee@mit.edu">Ryan Lee</a> and
+<a href="mailto:rjasuja@arsdigita.com">Ravi Jasuja</a>,
+</tr>
+</table>
+<hr>
+
+<! -- Insert text here>
+<a name="ACS"></a>
+<h3>Installing the ArsDigita Community System</h3>
+
+<ol>
+  <li>Downloading the ACS.<p>
+  This step should be done as <b>nsadmin</b>.
+  <ul>
+      <li>Download the following components from the ArsDigita 
+      <a href="http://www.arsdigita.com/download/" >download</a> 
+       page to the <b>/web</b> directory:<p>
+  <ul>
+
+    <li>ArsDigita Community System<p>
+
+  </ul>
+
+  <li>Uncompress the downloaded components<p>
+<pre>
+$ tar -xzf acs-3.2.3.tar.gz
+</pre>
+
+    <li>You should have a <em>acs</em> directory tree in <b>/web</b>.  Rename
+    this directory to whatever you want your web service to be identified as.
+    For example, we renamed ours to <b><em>service_name</em>.ini</b> after Philip Greenspun's
+    famous dog.
+<pre>
+$ cd /web
+$ mv acs <em>service_name</em>.ini
+</pre>
+
+    <li>If you want to setup multiple ACS communities, say with the names
+<b><em>service_name</em>.ini</b> and another community for development, say 
+<b><em>service_name-dev</em>.ini</b>, do
+this:
+<pre>
+$ cp -r acs /web/<em>service_name</em>.ini
+$ cp -r acs /web/<em>service_name-dev</em>.ini
+</pre>
+If you choose to do this, you will need to create multiple Oracle tablespaces
+(read: lots of disk space).
+  </ul>
+
+<li>Prepare Oracle for ACS<p>
+    You should be logged on as <b>nsadmin</b> for this step and you
+    should make sure that <b>nsadmin</b> is in the <b>dba</b> group.
+    You can verify this by typing <b>groups</b> when you login.
+    <ul>
+    <li>
+
+  <li>Connect to oracle using <code>svrmgrl</code> <p>
+<pre>
+$ svrmgrl
+    
+Oracle Server Manager Release 3.1.5.0.0 - Production
+    
+(c) Copyright 1997, Oracle Corporation.  All Rights Reserved.
+
+Oracle8i Enterprise Edition Release 8.1.5.0.0 - Production
+With the Partitioning and Java options
+PL/SQL Release 8.1.5.0.0 - Production
+
+SVRMGR> connect internal
+Connected.
+</pre>
+
+    <li>Find where the tablespaces are stored
+<pre>
+SVRMGR>  select file_name from dba_data_files;
+</pre>
+Example results:
+<pre>
+/ora8/m01/app/oracle/oradata/ora8/system01.dbf
+/ora8/m01/app/oracle/oradata/ora8/tools01.dbf
+/ora8/m01/app/oracle/oradata/ora8/rbs01.dbf
+/ora8/m01/app/oracle/oradata/ora8/temp01.dbf
+/ora8/m01/app/oracle/oradata/ora8/users01.dbf
+/ora8/m01/app/oracle/oradata/ora8/indx01.dbf
+/ora8/m01/app/oracle/oradata/ora8/drsys01.dbf
+</pre>
+
+<li>Using the above output, you should determine where to store your 
+tablespace.  As a general rule, you'll want to store your tablespace on a 
+mount point (the <code>m0<i>n</i></code> subdirectories in the above listing)
+ separate from the Oracle system data files. In this example, we'll use 
+<code>/ora8/m02/oradata/ora8/</code>.
+     <li> Create a tablespace for the service.  It is important that
+the tablespace can <code>autoextend</code>.  This allows the tablespace's 
+storage capacity to grow as the size of the data grows. We set the 
+pctincrease to be a very low value so that our extents won't grow 
+geometrically. We do not set it to 0 at the tablespace level because this 
+would affect Oracle's ability to automatically coalesce free space in the
+ tablespace.
+<pre>
+SVRMGR> create tablespace <i>service_name</i> datafile '/ora8/m02/oradata/ora8/<i>service_name</i>01.dbf' size
+50m autoextend on default storage ( pctincrease 1);
+</pre>
+    <li> Create a database user for this service. Give the user access to the tablespace and rights to connect. (Substitute <code>database_password</code> with the appropriate password.)
+<pre>
+SVRMGR> create user <i>service_name</i> identified by <i>database_password</i> default tablespace <i>service_name</i>
+temporary tablespace temp quota unlimited on <i>service_name</i>;
+
+SVRMGR> grant connect, resource, ctxapp, javasyspriv to <i>service_name</i>;
+
+SVRMGR> revoke unlimited tablespace from <i>service_name</i>;
+
+SVRMGR> alter user <i>service_name</i> quota unlimited on <i>service_name</i>;
+
+</pre>
+
+   <li> Run "sqlplus <i>service-name</i>" to make sure your Oracle user works correctly. (Very bad things can happen to Oracle if AOLServer repeated tries to connect with a misconfigured Oracle account).
+<P>
+   <li> <b>Transfer data:</b> If you are moving the service from one location to another, export code for the old database and import into the new.
+
+To export:<pre>
+exp <i>service_name</i>/<i>database_password</i> file=foo.dmp consistent=y full=y
+</pre>
+<p>
+To  import:
+<pre>
+imp <i>service_name</i>/<i>database_password</i> file=foo.dmp [fromuser=olduser touser=<i>service_name</i>]
+</pre>
+
+
+    <li>Should it become necessary to rebuild a tablespace from scratch, you can use the <code>drop user</code> command with the <code>cascade</code> option.  This command will drop the user and every database object the user owns.
+<code>drop user <i>service_name</i> cascade </code>
+<p>If this does not work because svrmgrl "cannot drop a user that is currently connected", make sure to kill the AOLserver using this user.  If it still does not work, do:
+<p>
+<code> select username, sid, serial# from v$session where username='<i>service_name</i>'; </code> <p>
+and then 
+<p>
+<code>alter system kill session '<i>sid</i>,<i>serial#</i>';</code>
+<p>
+where <i>sid</i> and <i>serial#</i> are replaced with the corresponding values for the open session.
+<p><b>Use with caution!</b><p>
+If you feel the need to delete <i>everything</i> related to the service, you can also issue the following:
+<pre>
+drop tablespace <i>service_name</i> including contents cascade constrains;
+</pre></code>
+</ul>
+
+<li>Set up <b>nightly Oracle exports</b><p>
+You should do this step as <b>root</b>.
+<ul>
+<li> Find out if oracle exports are running on the machine.
+
+<code>
+crontab -l | grep export-oracle
+</code>
+
+You should see a line similar to the following:
+
+<pre>
+0 23 * * * /usr/local/sbin/export-oracle
+</pre>
+
+
+If you don't see it, you should add it:
+<pre>EDITOR=emacs crontab -e</pre></code>
+
+<li>Make sure <code>/usr/local/sbin/export-oracle</code> has the correct environmental variables.<p>
+
+<li>Choose a location for the dump files and modify /usr/local/sbin/export-oracle</code> accordingly.  Your complete export_oracle</code> file should look something like this:
+
+<pre>
+#!/bin/sh
+HOME=/home/oracle
+HZ=
+LOGNAME=oracle
+ORACLE_BASE=/ora8/m01/app/oracle
+ORACLE_HOME=$ORACLE_BASE/product/8.1.6
+PATH=$PATH:$ORACLE_HOME/bin
+LD_LIBRARY_PATH=$ORACLE_HOME/lib:/lib:/usr/lib
+ORACLE_SID=ora8
+ORACLE_TERM=vt100
+ORA_NLS33=$ORACLE_HOME/ocommon/nls/admin/data
+PATH=/ora8/m01/app/oracle/product/8.1.5/bin:/ora8/m01/app/oracle/product/8.1.5/bin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/ccs/bin:/usr/ucb:/usr/dt/bin:/usr/openwin/bin:/usr/local/bin:/usr/sbin
+SHELL=/bin/sh
+TERM=vt100
+TZ=US/Eastern
+
+exportdir=/<i>export_root</i>/oracle-exports
+file=$exportdir/oraexport-<i>service_name</i>.dmp
+mv -f $file.gz $file.old.gz
+exp <i>service_name</i>/<i>database_password</i> file=$file owner=<i>service_name</i> consistent=Y
+gzip $file
+</pre>
+
+</ul>
+
+
+<li>Set up the <b>Arsdigita Community System</b> on your virtual server
+<ul>
+<li>Alot an IP address
+<ol>
+ <li> Find out which of the system's IP addresses aren't being used by 
+another service (ignoring <code>localhost (127.0.0.1)</code>): 
+<pre>
+netstat -in | awk '{ print $4 }' | xargs -i% sh -c 'if [ `grep % /home/aol30/*.ini > /dev/null` $? -eq "1" ]; then echo %; fi'
+</pre>
+ <li> Select the first of the available IP addresses for your service.  Once 
+you create the appropriate .ini file with the IP address, you should notify 
+your syadmin that you have claimed this IP. 
+(ArsDigitans should do this by adding a ticket to the sysadmin ticket tracker
+ on the intranet.)
+</ol>
+
+
+<li> Installing a virtual server<p>
+You should do this as <b>nsadmin</b>.
+<ol>
+<li>Create /home/aol30/<i>service_name</i>.ini owned by <code>nsadmin</code>
+using <a href="template-ini.ini">template-ini.ini</a> as a template.
+
+<li> Replace the following variables in the file as dictated below:
+<table>
+<tr><th>Variable to replace<th>Target Value
+
+<tr><td> ${service_database_username} <td> service_name
+<tr><td> ${service_database_password} <td> master
+<tr><td> ${AOL_HOME}		       <td> /home/aol30
+<tr><td> ${service_short_name}	       <td> service_name
+<tr><td> ${service_short_description} <td> a description of your service
+<tr><td> ${service_email} <td>the email address of the maintainer
+<tr><td> ${ACS_HOME}                  <td> /web/service_name
+<tr><td> ${service_ip_address}	       <td> your ip address
+<tr><td> ${service_ip_name}	       <td> your dns name
+<tr><td> ${service_port}	       <td> what port to use (80 by default)
+<tr><td> ${service_ip_address_ssl}    <td> disabled by default
+<tr><td> ${service_ip_name_ssl}       <td> disabled by default
+<tr><td> ${service_port_ssl}	       <td> disabled by default
+</table>
+<li>Copy this <a href="nsd-oracle.txt">nsd-oracle</a> script into <b>/home/
+aol30/bin/nsd-oracle</b></a>.  
+<pre>
+chmod 700 /home/aol30/bin/nsd-oracle
+</pre>
+Now edit <b>nsd-oracle</b> as necessary, making sure that all of the
+variables are set properly.
+<li> Execute <code>/home/aol30/bin/nsd-oracle -c /home/aol30/servername.ini
+</code> to test out your server setup. View your error log 
+(<b>/home/aol30/log/servername-error.log</b>) to make sure the 
+service is starting without any problems.  Attempt to connect to the service 
+from a web browser.
+
+<li>Ensure that your service automatically starts on boot (or any other time 
+the service dies).<p>
+You should run this step as root.  This can break every service on your
+machine, so proceed with caution.<p>
+<ul>
+<li>Open <code>/etc/inittab </code> for editing.
+<li>Copy this line into the bottom of the file as a template, making sure
+that the first field <b>nss</b> is unique.
+<pre>
+nss:234:respawn:/home/nsadmin/bin/nsd-oracle -i -c /home/nsadmin/<i>service_name</i>.ini
+</pre>
+<li><font color=red>Important:</font> Make sure there is a newline at the end 
+of the file.  If there is not a newline at the end of the file, the system 
+may suffer catastrophic failures.
+<li> Use <code>/sbin/init q</code> to start the server. 
+<li> <font color=red>Important:</font> See if it works by killing your nsd 
+process.  The process should be restarted by the system.  If this doesn't 
+work, you have probabably destroyed all the services on the machine.
+</ol></ol>
+</ul><p>
+
+
+
+<li>Configure the AOLServer Virtual Server Configuration Files.
+You should do these steps as <b>nsadmin</b>.
+<ol>
+    <li>Start with the <a href="ini-template.ini">ini-template.ini</a> 
+template and copy it to /home/aol30/{service_name}.ini<p>
+
+    <li>Change each occurance of User=service_name to:<p>
+    <ul>
+      <li>User=web in <i>service_name</i>.ini<p>
+      <li>User=web-dev in <i>service_name</i>-dev.ini ( remember this oracle account needs to be created! )<p>
+
+      <li><b>Note:</b> we should really change this in the template to service_database_username...<p>
+    </ul>
+    <li>Change each occurance of Password=service_database_password to:<p>
+    <ul>
+      <li>User=web in <i>service_name</i>.ini<p>
+      <li>User=web-dev in <i>service_name</i>-dev.ini ( or whatever oracle password was assigned to web-dev! )<p>
+    </ul>
+    <li>Change each occurance of Hostname=service_domain to:<p>
+    <ul>
+      <li>Hostname=www.arfdigita.org in <i>service_name</i>.ini<p>
+      <li>Hostname=dev.arfdigita.org in <i>service_name</i>-dev.ini<p>
+
+      <li><b>Note:</b> we should really change this in the template to service_ipname...<p>
+    </ul>
+    <li>Change each occurance of service_name=service_domain community system to:<p>
+    <ul>
+      <li>service_name=<I>Service_Name</I>'s community system in <i>service_name</i>.ini<p>
+      <li>service_name=<I>Service_Name</I>-Dev's community system in <i>service_name</i>-dev.ini<p>
+
+      <li><b>Note:</b> we should really change this in the template to service_pretty_name_for_acs...<p>
+    </ul>
+
+    <li>Change each occurance of ServerLog=/home/nsadmin/log/service_name-error.log to:<p>
+    <ul>
+      <li>ServerLog=/webroot/aol30/log/<i>service_name</i>-error.log in <i>service_name</i>.ini<p>
+      <li>ServerLog=/webroot/aol30/log/<i>service_name</i>-dev--error.log in <i>service_name</i>-dev.ini<p>
+
+    </ul>
+
+    <li><b>Note:</b> this needs to be automated!!!!<p>
+  </ul>
+
+  <li>Feed the geography tables into oracle via sqlloader
+
+  <ul>
+
+    <li> make sure your bashrc is correct for the web account!!!<p>
+
+    <li>cd /webroot/<i>service_name</i>/www/install<p>
+
+    <li>./load-geo-tables web/web ( for each server with the right accnts...  =) <p>
+
+    <li>cd /webroot/<i>service_name</i>/www/doc/sql<p>
+
+    <li>./load-site-wide-search web web changeme
+
+</ul>
+
+</body>
+</html>
+
+
+
+
+
+
+
+

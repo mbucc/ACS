@@ -1,15 +1,30 @@
-# $Id: picklist-item-swap.tcl,v 3.0.4.1 2000/04/28 15:08:40 carsten Exp $
-set_the_usual_form_variables
-# picklist_item_id, next_picklist_item_id, sort_key, next_sort_key
+# picklist-item-swap.tcl
 
-set db [ns_db gethandle]
+ad_page_contract {
+    @param picklist_item_id
+    @param next_picklist_item_id
+    @param sort_key
+    @param next_sort_key
+
+    @author
+    @creation-date
+    @cvs-id picklist-item-swap.tcl,v 3.1.6.3 2000/07/21 03:56:58 ron Exp
+} {
+    picklist_item_id
+    next_picklist_item_id
+    sort_key
+    next_sort_key
+}
+#
+
+
 
 # check that the sort keys are the same as before; otherwise the page
 # they got here from is out of date
 
-set item_match [database_to_tcl_string $db "select count(*) from ec_picklist_items where picklist_item_id=$picklist_item_id and sort_key=$sort_key"]
+set item_match [db_string get_item_match "select count(*) from ec_picklist_items where picklist_item_id=:picklist_item_id and sort_key=:sort_key"]
 
-set next_item_match [database_to_tcl_string $db "select count(*) from ec_picklist_items where picklist_item_id=$next_picklist_item_id and sort_key=$next_sort_key"]
+set next_item_match [db_string get_next_item_match "select count(*) from ec_picklist_items where picklist_item_id=:next_picklist_item_id and sort_key=:next_sort_key"]
 
 if { $item_match != 1 || $next_item_match != 1 } {
     ad_return_complaint 1 "<li>The page you came from appears to be out-of-date;
@@ -19,9 +34,10 @@ if { $item_match != 1 || $next_item_match != 1 } {
     return
 }
 
-ns_db dml $db "begin transaction"
-ns_db dml $db "update ec_picklist_items set sort_key=$next_sort_key where picklist_item_id=$picklist_item_id"
-ns_db dml $db "update ec_picklist_items set sort_key=$sort_key where picklist_item_id=$next_picklist_item_id"
-ns_db dml $db "end transaction"
+db_transaction {
+db_dml update_current_item "update ec_picklist_items set sort_key=:next_sort_key where picklist_item_id=:picklist_item_id"
+db_dml update_next_item "update ec_picklist_items set sort_key=:sort_key where picklist_item_id=:next_picklist_item_id"
+}
+db_release_unused_handles
 
 ad_returnredirect "picklists.tcl"

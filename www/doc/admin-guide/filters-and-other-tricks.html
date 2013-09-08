@@ -1,0 +1,89 @@
+<html>
+
+<head>
+<title>Filters and Other Tricks</title>
+<link rel="stylesheet" type="text/css" href="admin-guide.css">
+</head>
+
+<body>
+
+<h2>Filters and Other Tricks</h2>
+
+<a href="/doc/">ACS Documentation</a> :
+<a href="">ACS Administrator's Guide</a> :
+Filters and Other Tricks
+
+<hr>
+
+To be sure that you're getting them all on a particular server, do:
+
+<blockquote><pre>
+cd /web/yourservername/tcl/ 
+grep 'ad_register_filter' *
+</pre>
+</blockquote>
+
+<ul>
+
+<li>service of all /* files follows the following sequence:
+<ol>
+
+<li>the ad_verify_identity filter from /tcl/ad-security may run to
+abort service of the page, depending on which directories are specified
+for protection in /tcl/ad-security
+
+<li>ad_serve_html_page in /tcl/ad-html delivers the page, with
+included comments and related links 
+
+<li>ad_maintain_user_content_map from /tcl/ad-user-content-map runs
+after the page has been served, to insert rows into the
+<code>user_content_map</code> table
+
+<li>ad_pics_filter from /tcl/ad-pics will add a PICS header saying
+"I'm a naughty page" (or whatever else you've put in the ad.ini file) to
+the directories and files specified in ad.ini
+
+</ol>
+
+<p>
+
+<li>/tcl/ad-admin defines filters to restrict /admin pages to SSL
+(when available) and to registered users in the site-wide administration
+group
+
+<p>
+
+<li>/tcl/ad-last-visit defines a filter to maintain the last visit
+cookie and database rows 
+
+<p>
+
+<li>/tcl/ad-referer defines a filter to update referral counters in
+the database
+
+<p>
+
+<li>/tcl/ad-robot-defs may define a filter to look for robots
+visiting particular directories
+
+<p>
+
+<li>/tcl/ad-user-content-map defines a trace filter to enter rows
+into the <code>user_content_map</code>
+
+<P>
+
+<li>/tcl/curriculum defines a filter to maintain the curriculum
+cookie 
+
+</ul>
+
+<hr>
+
+<a href="mailto:michael@arsdigita.com">
+<address>michael@arsdigita.com</address>
+</a>
+
+</body>
+
+</html>

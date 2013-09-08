@@ -1,4 +1,25 @@
-# $Id: category-enable-toggle.tcl,v 3.0.4.1 2000/04/28 15:09:49 carsten Exp $
+# www/calendar/admin/category-enable-toggle.tcl
+ad_page_contract {
+    Flips the enabled_p bit
+
+    Number of dml: 1
+
+    @author Philip Greenspun (philg@mit.edu)
+    @author Sarah Ahmed (ahmeds@arsdigita.com)
+    @creation-date 1998-11-18
+    @cvs-id category-enable-toggle.tcl,v 3.2.2.3 2000/07/21 03:59:03 ron Exp
+    
+} {
+    category_id:integer
+    {scope public}
+    {user_id ""}
+    {group_id ""}
+    {on_what_id ""}
+    {on_which_group ""}
+}
+
+
+# category-enable-toggle.tcl,v 3.2.2.3 2000/07/21 03:59:03 ron Exp
 # File:     /calendar/admin/category-enable-toggle.tcl
 # Date:     1998-11-18
 # Contact:  philg@mit.edu, ahmeds@arsdigita.com
@@ -9,18 +30,21 @@
 #       group_name, group_short_name, group_admin_email, group_public_url, group_admin_url, group_public_root_url,
 #       group_admin_root_url, group_type_url_p, group_context_bar_list and group_navbar_list)
 
-set_the_usual_form_variables 0
 # category_id
 # maybe scope, maybe scope related variables (user_id, group_id, on_which_group, on_what_id)
 
-ad_scope_error_check
-set db [ns_db gethandle]
-ad_scope_authorize $db $scope admin group_admin none
 
-ns_db dml $db "
+ad_scope_error_check
+
+ad_scope_authorize $scope admin group_admin none
+
+set query_toggle "
 update calendar_categories 
 set enabled_p = logical_negation(enabled_p) 
-where category_id = $category_id"
+where category_id = :category_id"
+
+db_dml toggle $query_toggle
 
 ad_returnredirect "category-one.tcl?[export_url_scope_vars category_id]"
 
+## END FILE category-enable-toggle.tcl

@@ -1,0 +1,47 @@
+# /www/wap/intranet/employees/phone.wap
+#
+
+ad_page_contract {
+    WML employee phone directory
+
+    @author aegrumet@arsdigita.com, 
+    @creation-date Wed May 24 03:44:20 2000  
+    @cvs-id phone.wap,v 1.2.2.2 2000/07/24 14:23:32 aegrumet Exp
+} {}
+
+wap_maybe_redirect_for_registration
+
+# Prompt user for first few letters.
+set wml_doc "
+<wml>
+"
+
+append wml_doc {
+<card>
+  <do type="accept">
+    <go href="#card2"/>
+  </do>
+  <p>Phone lookup</p>
+  <p>
+  <select name="tosearch">
+    <option value="last_name">last name</option>
+    <option value="email">email</option>
+    <option value="first_names">first name</option>
+  </select>
+  </p>
+</card>
+<card id="card2">
+  <do type="accept">
+    <go href="phone-2.wap">
+      <postfield name="firstfew" value="$(firstfew)"/>
+      <postfield name="tosearch" value="$(tosearch)"/>
+    </go>
+  </do>
+  <p>First few letters:
+    <input type="text" name="firstfew"/>
+  </p>
+</card>
+</wml>
+}
+
+wml_return $wml_doc

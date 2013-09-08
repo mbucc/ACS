@@ -1,29 +1,19 @@
-# $Id: admin-bulk-delete.tcl,v 3.0 2000/02/06 03:32:37 ron Exp $
-set_form_variables
-
-# msg_id, deletion_ids (we get the topic_id by querying the message)
-
-set db [bboard_db_gethandle]
-if { $db == "" } {
-    bboard_return_error_page
-    return
+ad_page_contract {
+    @cvs-id admin-bulk-delete.tcl,v 3.0.12.5 2000/09/22 01:36:43 kevin Exp
+} {
+    msg_id
+    deletion_ids
 }
 
-set selection [ns_db 1row $db "select topic_id from bboard_topics where
-topic_id = (select topic_id from bboard where msg_id = '$msg_id')"]
 
-set_variables_after_query
-
-
+db_1row topic_id_get "select topic_id from bboard_topics
+where topic_id = (select topic_id from bboard where msg_id = :msg_id)"
  
 if  {[bboard_get_topic_info] == -1} {
     return}
 
 if {[bboard_admin_authorization] == -1} {
 	return}
-
-
-
 
 # OK, user is authorized to edit the root message
 # let's check the messages to be deleted
@@ -36,7 +26,7 @@ messages to be deleted."
     return
 }
 
-set sort_keys [database_to_tcl_list $db "select sort_key 
+set sort_keys [db_list sort_keys_get "select sort_key 
 from bboard 
 where msg_id in ('[join $deletion_ids "','"]')"]
 
@@ -85,26 +75,26 @@ security risk.
 
 # we're authorized for all the submessages too
 
-with_transaction $db {
-
-if {[bboard_file_uploading_enabled_p]} {
-    set list_of_files_to_delete [database_to_tcl_list $db "select filename_stub from bboard_uploaded_files where msg_id IN ('[join $deletion_ids "','"]')"]
-
-    ns_db dml $db "delete from bboard_uploaded_files where msg_id in ('[join $deletion_ids "','"]')"
-
-    # ADD THE ACTUAL DELETION OF FILES
-    if { [llength $list_of_files_to_delete] > 0 } {
-	ns_atclose "bboard_delete_uploaded_files $list_of_files_to_delete"    
+db_transaction {
+    if {[bboard_file_uploading_enabled_p]} {
+	set list_of_files_to_delete [db_list unused "select filename_stub from bboard_uploaded_files where msg_id IN ('[join $deletion_ids "','"]')"]
+	
+	db_dml unused "delete from bboard_uploaded_files where msg_id in ('[join $deletion_ids "','"]')"
+	
+	# ADD THE ACTUAL DELETION OF FILES
+	if { [llength $list_of_files_to_delete] > 0 } {
+	    ns_atclose "bboard_delete_uploaded_files $list_of_files_to_delete"    
+	}
     }
+
+    db_dml unused "delete from bboard_thread_email_alerts where thread_id in ('[join $deletion_ids "', '"]')"
+    
+    db_dml unused "delete from bboard where msg_id in ('[join $deletion_ids "','"]')"
 }
 
-    ns_db dml $db "delete from bboard_thread_email_alerts where thread_id in ('[join $deletion_ids "', '"]')"
 
-ns_db dml $db "delete from bboard where msg_id in ('[join $deletion_ids "','"]')"
-} {
-}
 
-ns_return 200 text/html "<html>
+doc_return  200 text/html "<html>
 <head>
 <title>Success</title>
 </head>

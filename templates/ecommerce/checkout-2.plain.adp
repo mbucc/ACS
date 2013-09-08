@@ -27,6 +27,10 @@ Quantity field to remove a particular item from your order.
 
 <%= $shipping_options %>
 
+<p>
+
+<%= $tax_exempt_options %>
+
 </ol>
 
 <center>

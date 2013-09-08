@@ -1,57 +1,70 @@
-# $Id: delete-msg.tcl,v 3.1.4.1 2000/04/28 15:09:42 carsten Exp $
-set_form_variables
+# /www/bboard/delete-msg.tcl
+ad_page_contract {
+    Page to delete a message
 
-# msg_id is the key
+    @param msg_id the ID of the message being deleted
 
-set db [bboard_db_gethandle]
-if { $db == "" } {
-    bboard_return_error_page
-    return
+    @cvs-id delete-msg.tcl,v 3.4.2.4 2000/09/22 01:36:49 kevin Exp
+} {
+    msg_id:notnull
 }
 
+# -----------------------------------------------------------------------------
 
-set selection [ns_db 1row $db "select bboard_topics.topic, bboard.one_line, bboard.message, bboard.html_p, bboard.sort_key, bboard.user_id as miscreant_user_id, users.email, bboard.topic_id
-from bboard, users, bboard_topics
-where bboard.user_id = users.user_id
-and bboard_topics.topic_id = bboard.topic_id
-and msg_id = '$msg_id'"]
-set_variables_after_query
+db_1row message_info "
+select bboard_topics.topic, 
+       bboard.one_line, 
+       bboard.message, 
+       bboard.html_p, 
+       bboard.sort_key, 
+       bboard.user_id as miscreant_user_id, 
+       users.email, 
+       bboard.topic_id
+from   bboard, 
+       users, 
+       bboard_topics
+where  bboard.user_id = users.user_id
+and    bboard_topics.topic_id = bboard.topic_id
+and    msg_id = :msg_id"
 
 set thread_id [string range $sort_key 0 5]
 
-set notify [database_to_tcl_string $db "select decode(count(*), 0, 'f', 't') from bboard_thread_email_alerts where thread_id='$thread_id'"]
+# Begin with security
+
+set admin_user_id [ad_verify_and_get_user_id]
+ad_maybe_redirect_for_registration
+
+if { ![bboard_user_is_admin_for_topic $admin_user_id $topic_id] } {
+    ad_return_error "Unauthorized" "We think you aren't authorized to delete messages"
+    return
+}
+
+# Security passed
+
+# -----------------------------------------------------------------------------
+
+set notify_p [db_string notify_p "
+select decode(count(*), 0, 'f', 't') 
+from bboard_thread_email_alerts 
+where thread_id= :thread_id"]
 
 if { [bboard_get_topic_info] == -1 } {
     return
 }
 
-
-set admin_user_id [ad_verify_and_get_user_id]
-
-if {$admin_user_id == 0} {
-   ad_returnredirect /register.tcl?return_url=[ns_urlencode "[bboard_hardwired_url_stub]admin-q-and-a-fetch-msg.tcl?msg_id=$msg_id"]
-    return
-}
-
-if { ![bboard_user_is_admin_for_topic $db $admin_user_id $topic_id] } {
-    ad_return_error "Unauthorized" "We think you aren't authorized to delete messages"
-    return
-}
-
-set authenticated_user_email_address [database_to_tcl_string $db "select email from users where user_id = $admin_user_id"]
-
+set authenticated_user_email_address [db_string user_info "
+select email from users where user_id = :admin_user_id"]
 
 set dependent_key_form [dependent_sort_key_form $sort_key]
 
-set dependent_ids [database_to_tcl_list $db "select msg_id from bboard where sort_key like '$dependent_key_form'"]
+set dependent_ids [db_list dependents "
+select msg_id from bboard where sort_key like :dependent_key_form"]
 
 set n_dependents [llength $dependent_ids]
 
 set deletion_list [lappend dependent_ids $msg_id]
 
-
-
-if { $notify == "f" } {
+if { $notify_p == "f" } {
     set notify_warning "<blockquote><font color=red>
 Warning: this user has turned off notification; 
 he or she might not have been emailed any responses.
@@ -91,7 +104,7 @@ if [ad_parameter EnabledP "member-value"] {
     set member_value_section ""
 }
 
-ns_return 200 text/html "[ad_admin_header "Confirm Delete"]
+doc_return  200 text/html "[ad_admin_header "Confirm Delete"]
 
 <h3>Confirm Delete</h3>
 
@@ -116,7 +129,7 @@ $one_line (from $email)
 and its $n_dependents dependent messages from the bulletin
 board?
 
-<form method=post action=\"do-delete.tcl\">
+<form method=post action=\"do-delete\">
 
 [export_form_vars topic topic_id]
 <input type=hidden name=explanation_to value=\"$email\">

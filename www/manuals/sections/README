@@ -1,0 +1,3 @@
+This directory stores the section content for manuals.  There is a sub-
+directory for each manual_id, and the html file are stored inside that
+subdirectory.

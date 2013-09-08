@@ -1,4 +1,10 @@
-# $Id: cassandracle-defs.tcl,v 3.1 2000/02/20 10:27:06 ron Exp $
+# /tcl/cassandracle-defs.tcl
+
+ad_library {
+    Routines used by Cassandracle (the Oracle monitoring part of /admin/monitoring)
+
+    @cvs-id cassandracle-defs.tcl,v 3.2.2.1 2000/07/12 16:32:15 luke Exp
+}
 
 proc cassandracle_header { page_title } {
     return [ad_header $page_title]
@@ -33,7 +39,6 @@ proc cassandracle_format_data_type_column {column_data} {
     #
     # I do various nested ifs, each of which
     # returns a formatted data string
-
 
     # NUMBER ---------------------------------------------
 
@@ -92,7 +97,6 @@ proc cassandracle_format_data_type_column {column_data} {
     # NCHAR VARYING
     # LONG VARCHAR
 
-
     if {[regexp "CHAR" $data_type]} {
 	# trying to keep Tcl from thinking I have an array
 	set ret_val "$data_type"
@@ -101,7 +105,6 @@ proc cassandracle_format_data_type_column {column_data} {
 	append ret_val ")"
 	return $ret_val
     }
-
 
     # -------------------------------------------------
     # not a NUMBER, nor *CHAR*, so we just return datatype
@@ -116,9 +119,6 @@ proc cassandracle_format_data_type_column {column_data} {
     return $data_type
 }
 
-
-
-
 proc book_link_to_amazon {isbn {click_ref "photonetA"}} {
     return "http://www.amazon.com/exec/obidos/ISBN=${isbn}/${click_ref}/ "
 }
@@ -130,29 +130,5 @@ by Kevin Loney and Rachel Carmichael, page $page_number.
 </font>
 </blockquote>
 "
-}
-
-
-proc db_query_to_vars {db query {name_prefix ""} args} {
-    set selection [ns_db 0or1row $db $query]
-    if {$selection==""} {
-	return
-    }
-    set i 0
-    set limit [ns_set size $selection]
-    while {$i<$limit} {
-	set command "set ${name_prefix}[ns_set key $selection $i] {[ns_set value $selection $i]}"
-	uplevel $command
-	foreach function $args {
-	    set next_command "set ${name_prefix}[ns_set key $selection $i] \[$function \$${name_prefix}[ns_set key $selection $i]\]"
-	    uplevel $next_command
-	}
-	incr i
-    }
-}
-
-
-proc cassandracle_gethandle {} {
-    return [ns_db gethandle]
 }
 

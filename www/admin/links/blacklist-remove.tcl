@@ -1,4 +1,17 @@
-# $Id: blacklist-remove.tcl,v 3.0.4.1 2000/04/28 15:09:09 carsten Exp $
+# /admin/links/blacklist-remove.tcl
+
+ad_page_contract {
+    Remove a link from the blacklist.
+
+    @param pattern_id The ID of the pattern to remove from blacklisting
+
+    @author Original Author Unknown
+    @creation-date Original Date Unknown
+    @cvs-id blacklist-remove.tcl,v 3.2.2.5 2000/07/21 03:57:27 ron Exp
+} {
+    pattern_id:naturalnum
+}
+
 set admin_id [ad_verify_and_get_user_id]
 
 if { $admin_id == 0 } {
@@ -6,12 +19,8 @@ if { $admin_id == 0 } {
     return
 }
 
-set_the_usual_form_variables
+db_dml delete_pattern "delete from link_kill_patterns where pattern_id=:pattern_id"
 
-# rowid
+db_release_unused_handles
 
-set db [ns_db gethandle]
-
-ns_db dml $db "delete from link_kill_patterns where rowid='$QQrowid'"
-
-ad_returnredirect blacklist-all.tcl
+ad_returnredirect blacklist-all

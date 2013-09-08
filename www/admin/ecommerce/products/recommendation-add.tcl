@@ -1,19 +1,18 @@
-# $Id: recommendation-add.tcl,v 3.0 2000/02/06 03:20:39 ron Exp $
-set_the_usual_form_variables
-# product_name_query
+#  www/admin/ecommerce/products/recommendation-add.tcl
+ad_page_contract {
+  Search for a product to recommend.
 
-set db [ns_db gethandle]
-set selection [ns_db select $db "select product_name, product_id
-from ec_products
-where upper(product_name) like '%[string toupper $QQproduct_name_query]%'"]
+  @author eveander@arsdigita.com
+  @creation-date Summer 1999
+  @cvs-id recommendation-add.tcl,v 3.1.6.2 2000/07/22 07:57:41 ron Exp
+} {
+  product_name_query
+}
 
 set header_to_print "Please choose the product you wish to recommend.
 <ul>
 "
-
-ReturnHeaders
-
-ns_write "[ad_admin_header "Add a Product Recommendation"]
+doc_body_append "[ad_admin_header "Add a Product Recommendation"]
 
 <h2>Add a Product Recommendation</h2>
 
@@ -23,20 +22,23 @@ ns_write "[ad_admin_header "Add a Product Recommendation"]
 "
 
 set header_written_p 0
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
-    if { $header_written_p == 0 } {
-	ns_write $header_to_print
-	incr header_written_p
-    }
-    ns_write "<li>$product_name \[<a href=\"one.tcl?[export_url_vars product_id]\">view</a> | <a href=\"recommendation-add-2.tcl?[export_url_vars product_name product_id]\">recommend</a>\] ($product_id)\n"
+db_foreach product_search_select "
+select product_name, product_id
+from ec_products
+where upper(product_name) like '%' || upper(:product_name_query) || '%'
+" {
+  if { $header_written_p == 0 } {
+    doc_body_append $header_to_print
+    incr header_written_p
+  }
+  doc_body_append "<li>$product_name \[<a href=\"one?[export_url_vars product_id]\">view</a> | <a href=\"recommendation-add-2?[export_url_vars product_name product_id]\">recommend</a>\] ($product_id)\n"
 }
 
 if { $header_written_p } {
-    ns_write "</ul>"
+  doc_body_append "</ul>"
 } else {
-    ns_write "No matching products were found."
+  doc_body_append "No matching products were found."
 }
 
-ns_write "[ad_admin_footer]
+doc_body_append "[ad_admin_footer]
 "

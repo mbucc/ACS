@@ -1,0 +1,146 @@
+<html>
+<head>
+<title>Toolkit Extensions</title>
+</head>
+
+<body bgcolor=white fgcolor=black>
+
+<h2>Toolkit Extensions</h2>
+
+<h4>A repository for contributed code outside of official ACS releases.</h4>
+
+<p>Part of the ArsDigita Developer Community
+<hr>
+
+<ul>
+  <li>User-accessible directory: 
+      <a href=/extensions/>/extensions/</a>
+  <li>Admin directory:
+      <a href=/extensions/admin/>/extensions/admin/</a>
+  <li>Data model: 
+      <a href=/doc/sql/display-sql?url=/doc/sql/extensions.sql>
+      /doc/sql/extensions.sql</a>
+  <li>TCL procs: /tcl/extensions
+</ul>
+
+
+<h3>The Big Picture</h3>
+
+<p>The existance of this repository is based on two facts.  One,
+ArsDigita does not employ every talented programmer in the world.
+Two, while incorporating every feature and extension used for any web
+service into the ACS would make it bloated and unmanageable, people
+shouldn't have to recreate the wheel all the time either.  Thus, this
+repository exists to allow people to contribute code that extends the
+ACS in useful ways which may be interesting and valuable to the rest
+of the community of developers using the ACS.
+
+<h3>Specification</h3>
+
+<p>This repository will accept submissions of code to complement the
+ArsDigita Community System (ACS).  These are pieces of code that, for
+one reason or another, are not a part of the main ArsDigita releases.
+This could be because the application is too specialized for the
+general release, or because it is a modification to a version of the
+ACS other than the current release, or even because it is a complete
+module that wasn't written by an ArsDigita employee but should be
+incorporated into the ACS in a future release.
+
+<p>Technical issues will prevent this from being a CVS repository, at
+least initially.  However, the value of being able to view the
+evolution of a piece of work or of being able to access an older
+version is indisputable.  For this reason, a version history of each
+submission will be maintained and previous versions will be stored and
+made availible in addition to the most current.
+
+<p>Anyone may upload code they have written and anyone may download
+any submission (as long as they are logged in to www.arsdigita.com).
+The original submitter may specify that a piece of code is public,
+meaning anyone may upload modified versions of the code, or limit the
+power to make modifications to a group of individuals.
+
+<p>The interface to the repository will be similar to the ticket
+tracker.  We will provide controls to limit the display according to
+the type of the submission (complete module, individual procedure,
+etc.), the category of the submission (site administration tools, user
+services, graphical enhancements, etc), how recently the submission
+was made, etc.  The results will be sortable according to user
+ratings, submitting user or any of the restriction criteria.
+
+<p>The page displaying an individual submission will give information
+about the submission, a version history, a link to download it, an
+opportunity for users who have previously downloaded it to submit a
+rating, and user submitted links and comments.  We will use the ticket
+tracker to keep track of bugs and feature requests for submission.
+
+<p>The storage scheme on the server is similar to the download module,
+but simplified and human readable.  A submission gets stored as
+/web/developer/extensions/shortname/shortname-version_name.tar.gz. 
+
+
+<h3>Legal Transactions</h3>
+
+<p>The user/admin dichotomy here is essentially that of download/upload.
+
+<p>From the <a href=/extensions/>user pages</a> people can:
+<ul>
+  <li>View a listing of contributions, restricted and sorted by various
+      criteria.
+  <li>View a specific contribution, including documentation, a README
+      file, version history, download statistics, comments and known bugs.
+  <li>Download a contribution.
+  <li>Submit a comment, rating, bug or feature request.
+</ul>
+
+<p>From the <a href=/extensions/admin/>admin pages</a> people can:
+<ul>
+  <li>Upload a new contribution.
+  <li>Upload a new version of an existing contribution if they have
+      permission to do so.
+  <li>Specify a group of people allowed to submit modified versions of
+      a piece of code owned by the user.
+</ul>
+
+
+<h3>Submissions</h3>
+
+<p>Submissions require the following items to be uploaded:
+
+<ul>
+
+  <li>A text README file with a short description of the submission
+  and instructions for installation.
+
+  <li>The HTML documentation file that would go in the /doc/
+  directory.
+
+  <li>A tarfile containing these two files and, as appropriate for the
+  type of submission, the SQL data model, any TCL library files, a
+  section to be added to the server.ini file, all user and admin
+  pages, and an acceptance test.
+
+</ul>
+
+<p>Submitters are strongly encouraged to provide the URL to an example
+of the work in use.
+
+<p>While there will be no formal code review of submissions (unless
+the decision is made to roll them into the ACS), an attempt should be
+made to conform to ArsDigita standards for comments, documentation and
+naming conventions.
+
+
+<h3>Future Improvements</h3>
+
+<ul>
+  <li>Email alerts - awaiting general alerts module
+  <li>CVS - maybe.  Unclear if it's really necessary.
+</ul>
+
+<hr>
+<a href=mailto:kevin@arsdigita.com><address>kevin@arsdigita.com</address></a>
+
+
+
+
+

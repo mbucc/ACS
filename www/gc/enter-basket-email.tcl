@@ -1,9 +1,14 @@
-# $Id: enter-basket-email.tcl,v 3.1 2000/03/10 23:58:26 curtisg Exp $
-set_form_variables
+# /www/gc/enter-basket-email.tcl
 
-# ad_id is the only interesting one
+ad_page_contract {
+    @author
+    @creation-date
+    @cvs-id enter-basket-email.tcl,v 3.2.6.3 2000/09/22 01:37:53 kevin Exp
+} {
+    ad_id:integer
+}
 
-ns_return 200 text/html "<html>
+doc_return  200 text/html "<html>
 <head>
 <title>Enter Email Address</title>
 </head>
@@ -13,7 +18,7 @@ ns_return 200 text/html "<html>
 <p>
 We need your email address before we can build you a shopping basket.
 
-<form method=POST action=enter-basket-email-final.tcl>
+<form method=POST action=enter-basket-email-final>
 <input type=hidden name=ad_id value=$ad_id>
 Your full Internet email address: <input type=text name=email size=30>
 </form>

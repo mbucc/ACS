@@ -1,15 +1,26 @@
-# $Id: interaction-add.tcl,v 3.0.4.1 2000/04/28 15:08:39 carsten Exp $
-set_form_variables 0
-# possibly issue_id, user_identification_id
+# interaction-add.tcl
+
+ad_page_contract { 
+    @param issue_id:optional
+    @param user_identification_id:optional
+
+    @author
+    @creation-date
+    @cvs-id interaction-add.tcl,v 3.3.2.6 2000/09/22 01:34:52 kevin Exp
+} {
+    issue_id:optional
+    user_identification_id:optional
+}
+
 
 # the customer service rep must be logged on
 
-set return_url "[ns_conn url]"
+set return_url "[ad_conn url]"
 
 set customer_service_rep [ad_get_user_id]
 
 if {$customer_service_rep == 0} {
-    ad_returnredirect "/register.tcl?[export_url_vars return_url]"
+    ad_returnredirect "/register?[export_url_vars return_url]"
     return
 }
 
@@ -20,35 +31,34 @@ if { [info exists user_identification_id] } {
     set c_user_identification_id $user_identification_id
 }
 
-ReturnHeaders
+set insert_id 0
 
-ns_write "[ad_admin_header "New Interaction"]
+append doc_body "[ad_admin_header "New Interaction"]
 <h2>New Interaction</h2>
 
 [ad_admin_context_bar [list "../index.tcl" "Ecommerce"] [list "index.tcl" "Customer Service Administration"] "New Interaction"]
 
-
 <hr>
 
-<form method=post action=interaction-add-2.tcl>
-[export_form_vars issue_id return_to_issue c_user_identification_id]
+<form method=post action=interaction-add-2>
+[export_form_vars issue_id return_to_issue c_user_identification_id insert_id]
 <blockquote>
 <table>
 "
 
-set db [ns_db gethandle]
+
 
 if { [info exists user_identification_id] } {
-    ns_write "<tr>
+    append doc_body "<tr>
     <td>Customer:</td>
-    <td>[ec_user_identification_summary $db $user_identification_id]</td>
+    <td>[ec_user_identification_summary $user_identification_id]</td>
     </tr>
     "
 }
 
-ns_write "<tr>
+append doc_body "<tr>
 <td>Customer Service Rep:</td>
-<td>[database_to_tcl_string $db "select first_names || ' ' || last_name from users where user_id=$customer_service_rep"] (if this is wrong, please <a href=\"/register.tcl?[export_url_vars return_url]\">log in</a>)</td>
+<td>[db_string get_full_name "select first_names || ' ' || last_name from users where user_id=:customer_service_rep"] (if this is wrong, please <a href=\"/register?[export_url_vars return_url]\">log in</a>)</td>
 </tr>
 <tr>
 <td>Date &amp; Time:</td>
@@ -57,7 +67,7 @@ ns_write "<tr>
 <tr>
 <td>Inquired via:</td>
 <td>
-[ec_interaction_type_widget $db]
+[ec_interaction_type_widget]
 </td>
 </tr>
 <tr>
@@ -73,7 +83,7 @@ ns_write "<tr>
 "
 
 if { ![info exists user_identification_id] } {
-    ns_write "<p>
+    append doc_body "<p>
     Fill in any of the following information, which the system can use to try to identify the customer:
     <p>
     <blockquote>
@@ -99,7 +109,7 @@ if { ![info exists user_identification_id] } {
     "
 }
 
-ns_write "</blockquote>
+append doc_body "</blockquote>
 
 <center>
 <input type=submit value=\"Continue\">
@@ -109,3 +119,6 @@ ns_write "</blockquote>
 
 [ad_admin_footer]
 "
+
+
+doc_return  200 text/html $doc_body

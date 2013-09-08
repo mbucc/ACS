@@ -1,23 +1,29 @@
-# $Id: track.tcl,v 3.0 2000/02/06 03:19:34 ron Exp $
-set_the_usual_form_variables
-# shipment_id
+# /www/admin/ecommerce/orders/track.tcl
+ad_page_contract {
+  Track a shipment.
 
-ReturnHeaders
-ns_write "[ad_admin_header "Track Shipment"]
+  @author Eve Andersson (eveander@arsdigita.com)
+  @creation-date Summer 1999
+  @cvs-id track.tcl,v 3.0.12.3 2000/08/17 15:19:16 seb Exp
+} {
+  shipment_id:integer,notnull
+}
+
+doc_body_append "[ad_admin_header "Track Shipment"]
 
 <h2>Track Shipment</h2>
 
-[ad_admin_context_bar [list "../" "Ecommerce"] [list "index.tcl" "Orders"] [list "one.tcl?[export_url_vars order_id]" "One Order"] "Track Shipment"]
+[ad_admin_context_bar [list "../" "Ecommerce"] [list "index" "Orders"] [list "one?[export_url_vars order_id]" "One Order"] "Track Shipment"]
 
 <hr>
 "
 
-set db [ns_db gethandle]
-set selection [ns_db 1row $db "select to_char(shipment_date, 'MMDDYY') as ship_date_for_fedex, to_char(shipment_date, 'MM/DD/YYYY') as pretty_ship_date, carrier, tracking_number
-from ec_shipments
-where shipment_id = $shipment_id"]
 
-set_variables_after_query
+db_1row shipment_select "
+select to_char(shipment_date, 'MMDDYY') as ship_date_for_fedex, to_char(shipment_date, 'MM/DD/YYYY') as pretty_ship_date, carrier, tracking_number
+from ec_shipments
+where shipment_id = :shipment_id
+"
 
 set carrier_info ""
 
@@ -51,7 +57,7 @@ if { $carrier == "FedEx" } {
     } 
 }
 
-ns_write "<ul>
+doc_body_append "<ul>
 <li>Shipping Date: $pretty_ship_date
 <li>Carrier: $carrier
 <li>Tracking Number: $tracking_number

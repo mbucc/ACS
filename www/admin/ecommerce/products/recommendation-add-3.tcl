@@ -1,6 +1,18 @@
-# $Id: recommendation-add-3.tcl,v 3.0 2000/02/06 03:20:36 ron Exp $
-set_the_usual_form_variables
-# product_id product_name user_class_id recommendation_text categorization
+#  www/admin/ecommerce/products/recommendation-add-3.tcl
+ad_page_contract {
+  Recommend a product.
+
+  @author eveander@arsdigita.com
+  @creation-date Summer 1999
+  @cvs-id recommendation-add-3.tcl,v 3.2.2.3 2001/01/12 18:47:37 khy Exp
+} {
+  product_id:integer,notnull
+  user_class_id:integer
+  recommendation_text:html
+  categorization
+}
+
+set product_name [ec_product_name $product_id]
 
 # deal w/categorization for display purposes
 set category_list [list]
@@ -19,12 +31,9 @@ for { set counter 0 } { $counter < [llength $categorization] } {incr counter} {
 }
 
 
-set db [ns_db gethandle]
-set recommendation_id [database_to_tcl_string $db "select ec_recommendation_id_sequence.nextval from dual"]    
+set recommendation_id [db_string recommendation_id_select "select ec_recommendation_id_sequence.nextval from dual"]    
 
-ReturnHeaders
-
-ns_write "[ad_admin_header "Confirm Product Recommendation"]
+doc_body_append "[ad_admin_header "Confirm Product Recommendation"]
 
 <h2>Confirm Product Recommendation</h2>
 
@@ -45,23 +54,23 @@ Please confirm your product recommendation:
 <td>Recommended For:</td>
 "
 if { ![empty_string_p $user_class_id] } {
-    ns_write "<td>[database_to_tcl_string $db "select user_class_name from ec_user_classes where user_class_id=$user_class_id"]</td>
+    doc_body_append "<td>[db_string user_class_select "select user_class_name from ec_user_classes where user_class_id=:user_class_id"]</td>
     "
 } else {
-    ns_write "<td>All Users</td>
+    doc_body_append "<td>All Users</td>
     "
 }
-ns_write "</tr>
+doc_body_append "</tr>
 <tr>
 <td>Display Recommendation In:</td>
 "
 if { [empty_string_p $categorization] } {
-    ns_write "<td>Top Level</td>"
+    doc_body_append "<td>Top Level</td>"
 } else {
-    ns_write "<td>[ec_category_subcategory_and_subsubcategory_display $db $category_list $subcategory_list $subsubcategory_list]</td>"
+    doc_body_append "<td>[ec_category_subcategory_and_subsubcategory_display $category_list $subcategory_list $subsubcategory_list]</td>"
 }
 
-ns_write "</tr>
+doc_body_append "</tr>
 <tr>
 <td>Accompanying Text<br>(HTML format):</td>
 <td>$recommendation_text</td>
@@ -70,9 +79,9 @@ ns_write "</tr>
 
 </blockquote>
 
-<form method=post action=\"recommendation-add-4.tcl\">
-[export_form_vars product_id product_name user_class_id recommendation_text recommendation_id categorization]
-
+<form method=post action=\"recommendation-add-4\">
+[export_form_vars product_id product_name user_class_id recommendation_text categorization]
+[export_form_vars -sign recommendation_id]
 <center>
 <input type=submit value=\"Confirm\">
 </center>

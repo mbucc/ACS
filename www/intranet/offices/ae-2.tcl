@@ -1,16 +1,41 @@
-# $Id: ae-2.tcl,v 3.0.4.2 2000/04/28 15:11:08 carsten Exp $
-# File: /www/intranet/offices/ae-2.tcl
-#
-# Author: mbryzek@arsdigita.com, Jan 2000
-# 
-# Saves office info to db
-#
+# /www/intranet/offices/ae-2.tcl
 
-set user_id [ad_verify_and_get_user_id]
-ad_maybe_redirect_for_registration
+ad_page_contract {
+    Saves office info to db
 
-set_form_variables
-# group_id, group_name, short_name, Bunch of stuff for dp
+    @param group_id The group_id of the office.
+    @param group_name The group_name of the office.
+    @param short_name The shor_name of the office.
+    @param return_url The url to go to.
+    @param dp.im_offices.facility_id
+    @param dp.im_offices.public_p
+
+    @author mbryzek@arsdigita.com
+    @creation-date Jan 2000
+
+    @cvs-id ae-2.tcl,v 3.4.2.10 2001/01/12 08:27:58 khy Exp
+} {
+    group_id:optional,integer,verify
+    group_name:optional
+    short_name:optional
+    dp.im_offices.facility_id:optional
+    dp.im_offices.public_p:optional
+    dp.im_offices.group_id:optional
+    dp_ug.user_groups.group_id:optional
+    dp_ug.user_groups.group_type:optional
+    dp_ug.user_groups.approved_p:optional
+    dp_ug.user_groups.new_member_policy:optional
+    dp_ug.user_groups.parent_group_id:optional
+    dp_ug.user_groups.group_name:optional
+    dp_ug.user_groups.short_name:optional
+
+    dp_ug.user_groups.creation_user:optional
+    dp_ug.user_groups.creation_ip_address:optional
+
+    {return_url index}
+}
+
+set user_id [ad_maybe_redirect_for_registration]
 
 if { ![exists_and_not_null group_id] }  {
     ad_return_error "We've lost the office's group id" "Please back up, hit reload, and try again."
@@ -19,7 +44,8 @@ if { ![exists_and_not_null group_id] }  {
  
 set required_vars [list \
 	[list group_name "You must specify the office's name"] \
-	[list short_name "You must specify the office's short name"]]
+	[list short_name "You must specify the office's short name"] \
+        [list dp.im_offices.facility_id "You must specify a facility where the office is located"]]
 
 set errors [im_verify_form_variables $required_vars]
 
@@ -28,16 +54,15 @@ if { ![empty_string_p $errors] } {
     set exception_count 1
 }
 
-set db [ns_db gethandle]
 
 # Make sure short name is unique - this is enforced in user groups since short_name 
 # must be unique for different UI stuff
 if { ![empty_string_p $short_name] } {
-    set exists_p [database_to_tcl_string $db \
+    set exists_p [db_string intranet_offices_check_for_uniqueness \
 	    "select decode(count(1),0,0,1) 
                from user_groups 
-              where lower(trim(short_name))=lower(trim('[DoubleApos ${short_name}]'))
-                and group_id != $group_id"]
+              where lower(trim(short_name))=lower(trim(:short_name))
+                and group_id != :group_id" ]
 
     if { $exists_p } {
 	incr exception_count
@@ -65,18 +90,16 @@ ns_set put $form_setid "dp_ug.user_groups.short_name" $short_name
 # Put the group_id into the office information
 ns_set put $form_setid "dp.im_offices.group_id" $group_id
 
-ns_db dml $db "begin transaction"
+db_transaction {
 
-# Update user_groups
-dp_process -db $db -form_index "_ug" -where_clause "group_id=$group_id"
-
-# Now update im_offices
-dp_process -db $db -where_clause "group_id=$group_id"
-
-ns_db dml $db "end transaction"
-
-if { [exists_and_not_null return_url] } {
-    ad_returnredirect $return_url
-} else {
-    ad_returnredirect index.tcl
+    # Update user_groups
+    dp_process -form_index "_ug" -where_clause "group_id=:group_id"
+    
+    # Now update im_offices
+    dp_process -where_clause "group_id=:group_id"
+    
 }
+
+db_release_unused_handles
+
+ad_returnredirect $return_url

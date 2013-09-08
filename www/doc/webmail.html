@@ -6,7 +6,7 @@
 
 <body bgcolor=#ffffff text=#000000>
     <h2>Web-based Email</h2>
-part of the <a href="index.html">ArsDigita Community System</a>
+part of the <a href="index">ArsDigita Community System</a>
 by <a href="mailto:jsc@arsdigita.com">Jin Choi</a>
 
 <hr>
@@ -14,8 +14,8 @@ by <a href="mailto:jsc@arsdigita.com">Jin Choi</a>
 <ul>
 <li> User-accessible directory: <a href="/webmail/">/webmail/</a>
 <li> Site adminstrator directory: <a href="/admin/webmail/">/admin/webmail/</a>
-<li> data model: <a href="/doc/sql/display-sql.tcl?url=/doc/sql/webmail.sql">/doc/sql/webmail.sql</a>
-<li> procedures: /tcl/webmail-defs.tcl
+<li> data model: <a href="/doc/sql/display-sql?url=/doc/sql/webmail.sql">/doc/sql/webmail.sql</a>
+<li> procedures: /tcl/webmail-defs
 </ul>
 
 <h3>The big picture</h3>
@@ -123,9 +123,61 @@ let us assume that "webmail.arsdigita.com" is the full domain name and
 "wm" is the short name.
 
 <ul>
-<li>Set up DNS so that the full domain name resolves to the host on
-which you are setting up this system (or set up an appropriate MX
-record).
+<li>Set up DNS so that the full domain name resolves to the host on which
+you are setting up this system (or set up an appropriate MX record).
+Check the DNS entry.  Usually the sysadmin first gives you only a C
+name, and you'll see that <code>nslookup yourservername</code> gives
+you Name: <em>some other name</em>, Address: <em>your ip address</em>,
+and Alias <em>your server name</em>.  If this happens, put in another
+ticket to have this fixed, so you get an A record. You should get
+Name: <em>your server name</em> and Address: <em>your ip
+address</em>.  (An MX record should theoretically work too, and is the
+preferred way to do it.)
+
+<li>
+Check the qmail installation.
+<ul>
+  <li>Make sure the hostname is spelled correctly in
+	    <code>
+	    <ul>
+	      <li>/var/qmail/control/me
+	      <li>/var/qmail/control/locals
+	      <li>/var/qmail/etc/smtp.txt
+	      <li>/var/qmail/control/rcpthosts  <em>(optional; you'll
+add to this file)</em>
+	    </ul></code>
+  <li>Make sure the users <code>qmaild</code>,
+	    <code>qmaill</code>, <code>qmailp</code>, and
+	    <code>alias</code> are in the group <code>nofiles</code>.
+  In tcsh, you might do <blockquote><pre>
+foreach i (alias qmail{d,l,p,q,r,s})
+  id $i
+end</pre></blockquote>
+and you should get something like
+<blockquote><pre>uid=7790(alias) gid=103(nofiles)
+uid=7791(qmaild) gid=103(nofiles)
+uid=7792(qmaill) gid=103(nofiles)
+uid=7793(qmailp) gid=103(nofiles)
+uid=7794(qmailq) gid=2107(qmail)
+uid=7795(qmailr) gid=2107(qmail)
+uid=7796(qmails) gid=2107(qmail)
+</pre></blockquote> although the id numbers will likely be different.
+	    If you need to change them, a command like &nbsp;
+<code>sudo usermod -g nofiles alias</code> &nbsp; should do it.
+	  <li>If you had to change things, stop and restart qmail:
+<ul>
+<li>kill the qmail-send process.  (Hint: <code>ps -e | grep qmail-se</code>)
+<li>Wait for 'exiting' to show op in the log, which typically is in
+<code>/var/log/qmail/current</code>.
+
+<li>To start up qmail, &nbsp; <code>sudo /var/qmail/boot/home &</code><br>According to <a
+href="http://jsc.arsdigita.com/knowledge/qmail.html ">All About
+Qmail</a> -- run <code>csh -cf '/var/qmail/rc &'</code>, or
+<code>/etc/rc2.d/S88qmail start</code>.  The latter is sometimes
+installed as <code>S99qmail</code>, though.  Be sure the log goes to the
+file, not onto your terminal.
+	</ul>
+</ul>
 
 <li>Add a line consisting of the full domain name to
 /var/qmail/control/rcpthosts so that qmail knows to receive email for
@@ -133,77 +185,228 @@ this domain.
 
 <li>Select a name for an email account that will be used to handle all
 the email for this system. This can be arbitrary, so we will just use
-"webmail" (if you want to use something else, you must edit the Java code).
+"webmail" (you probably want to use something else, and you must edit
+the Java code).  This name should be distinct from any that might
+already be in <code>/var/qmail/users/assign</code>
 
 <li>Create a virtual user by adding the following line to /var/qmail/users/assign:
-<pre>
+<blockquote><pre>
 +webmail-:oracle:101:102:/home/nsadmin/qmail/alias:-::
-</pre>
+</pre></blockquote>
+Make sure this file is ended by a line consisting of a single dot (.).
 This says any email intended for "webmail-*@webmail.arsdigita.com"
 will be handled by the Unix user "oracle" (uid 101, gid 102) according
 to the alias files in the directory /home/nsadmin/qmail/alias. Make
 sure that directory exists, and can be written to by the nsadmin user:
-<pre>
+<blockquote><pre>
 (as root):
 mkdirhier /home/nsadmin/qmail/alias
 chown nsadmin /home/nsadmin/qmail/alias
-</pre>
+</pre></blockquote>
 The location of this alias directory can be changed by setting the
 AliasDirectory parameter in the webmail section of the ACS .ini file
-for this server.
+for this server.  It is ok to share this directory with other
+virtual servers running on the same machine.
 
 <li>Run /var/qmail/bin/qmail-newu to have the previous change take effect.
 
 <li>Add the following to /var/qmail/control/virtualdomains:
-<pre>
+<blockquote><pre>
 webmail.arsdigita.com:webmail-wm
-</pre>
+</pre></blockquote>
 
 This tells qmail that any mail sent to "*@webmail.arsdigita.com" will
-be handled by the webmail virtual user, and have "-wm" appended to the
-username portion of the email address. So, mail sent to
+be handled by the webmail virtual user, and have "webmail-wm-" prepended to the
+email address. So, mail sent to
 "foo@webmail.arsdigita.com" will be delivered to the webmail user as
-"webmail-wm@webmail.arsdigita.com".
+"webmail-wm-foo@webmail.arsdigita.com".
 
-<li>Register this domain with the webmail system by using the
-administration pages, with (again, just for this example) "wm" as the
-short name and "webmail.arsdigita.com" as the domain name. (You will
-need to load the data model file to do this, which requires that the
-Java libraries be loaded, see below).
-
-<li>Create a queue directory for deliveries to the webmail user. Make
+<li>Choose a queue directory for deliveries to the webmail user.  This 
+directory must not be shared with any other virtual server running on
+the same machine;
+<code>/home/nsadmin/servers/<em>yourservername</em>/qmail/queue</code> 
+should be a safe choice.  Create the directory and make
 sure it is writable and readable by the oracle Unix account (or
 whatever user Oracle runs at):
-<pre>
-(as root:)
-/var/qmail/bin/maildirmake /home/nsadmin/qmail/queue
-chown -R oracle /home/nsadmin/qmail/queue
-</pre>
-The location of the queue directory can be changed by setting the
-QueueDirectory parameter in webmail section of the ACS .ini file for
-this server.
-</ul>
+<blockquote><pre>
+mkdir /home/nsadmin/servers/<em>yourservername</em>/qmail
+<i>(as root:)</i>
+/var/qmail/bin/maildirmake /home/nsadmin/servers/<em>yourservername</em>/qmail/queue
+chown -R oracle /home/nsadmin/servers/<em>yourservername</em>/qmail/queue
+</pre></blockquote>
+Set the QueueDirectory parameter in the webmail section of the ACS
+.ini file for this server to the location of the queue directory.
+
+Once every minute, Oracle polls the new directory of the maildir queue
+and picks up any mail that has been delivered. Using the JavaMail
+library running inside Oracle, it stores and parses the message, and
+saves off various pieces of information (parsed headers, attachments,
+etc.; see the <a
+href="/doc/sql/display-sql?url=/doc/sql/webmail.sql">data
+model</a>).
 
 <p>
 
+To install the Java portion of this module, download the JavaMail
+library from <a
+href="http://java.sun.com/products/javamail/">http://java.sun.com/products/javamail/</a>
+and the JavaBeans Activation Framework from <a
+href="http://java.sun.com/beans/glasgow/jaf">http://java.sun.com/beans/glasgow/jaf</a>.
+Unpack the distributions and load activation.jar and mail.jar into Oracle:
+<blockquote><pre>
+loadjava -user dbuser/dbpasswd -resolve -verbose activation.jar
+loadjava -user dbuser/dbpasswd -resolve -verbose mail.jar
+</pre></blockquote>
+
+(Note: <code>loadjava</code> takes about 5 minutes to install
+<code>activation</code> and 14 minutes for <code>mail</code>.  You may
+get a verification warning attempting to resolve
+javax/activation/ActivationDataFlavor which you can ignore.)
+
+<p>
+
+<blockquote>
+<i>
+If you are using Oracle 8.1.5, you will not be able to load the JAF
+and the JavaMail packages into a user's schema, even with JAVASYSPRIV.
+You must load them into the SYS schema:
+<blockquote><pre>
+loadjava -user internal/internalpasswd -synonym -resolve -verbose activation.jar
+loadjava -user internal/internalpasswd -synonym -resolve -verbose mail.jar
+</pre></blockquote>
+Also, the activation.jar and mail.jar files come with some of the files compressed.
+You must unpack and repack the files without compression:
+<blockquote><pre>
+jar xvf activation.jar; rm activation.jar
+jar cf0 activation.jar META-INF javax com
+rm -rf META-INF javax com
+jar xvf mail.jar; rm mail.jar
+jar cf0 mail.jar META-INF javax com
+rm -rf META-INF javax com
+</pre></blockquote>
+</i>
+</blockquote>
+
+<p>
+
+Then load the various Java files in the /webmail/java directory:
+
+<blockquote><pre>
+loadjava -user dbuser/dbpasswd -resolve -verbose BlobDataSource.java ClobDataSource.java MessageParser.sqlj MessageComposer.sqlj
+</pre></blockquote>
+Make sure you create the PL/SQL bindings in the data model file and
+create the job which will poll the mail queue (if you decide to do so
+-- see next item).
+
+<blockquote>
+In 8.1.5, add a resolver spec to the above loadjava statement:
+<blockquote><pre>-resolver "((* dbuser) (* public) (* -))"</pre></blockquote>
+</blockquote>
+
+<li>Webmail by default schedules <em>wm_process_queue</em> with Oracle
+to run every minute.  For some webmail installations this results in
+messages without bodies, only headers.  The problem is not understood,
+but the fix is to schedule with AOLserver instead of Oracle.  If you
+want this, comment or delete the following lines from
+<code>www/doc/sql/webmail.sql</code>, <blockquote><pre>
+-- Parse the queue every minute. Queue directory is hardcoded.
+-- Only works for some people (Karl Goldstein, Jin Choi) under Oracle 8.1.5
+-- and 8.1.6.  Does not work for others.  Hence commented out.  Christian
+  declare
+    job number;
+  begin
+    dbms_job.submit(job,
+                    'wm_process_queue(''/home/nsadmin/qmail/queue/new'');',
+  		  interval => 'sysdate + 1/24/60');
+  end;
+  /</pre></blockquote> and put the following into
+<code>tcl/webmail-defs.tcl</code>:<blockquote><pre>
+proc_doc gt_cs_process_email {directory} "
+Looks in the directory variable and processes all the emails there.
+This is a fix/hack for the normal webmail processing where oracle does
+it.  Oracle 8.1.5 doesn't process scheduled jobs correctly, and 8.1.6
+loses the message bodies.
+
+Originally by Richard Perng for Greentravel/Customer Service (hence gt_cs)
+" {
+    
+    ns_db exec $db "call wm_process_queue('[DoubleApos $directory]')"
+    db_release_unused_handles
+}
+
+ns_share -init {set gt_cs_process_email_run -1} gt_cs_process_email_run
+
+if {$gt_cs_process_email_run < 0} {
+    set gt_cs_process_email_run \
+	[ ns_schedule_proc -thread 60 gt_cs_process_email \
+	      [ad_parameter QueueDirectory webmail]new/]
+}
+</pre></blockquote>
+The file must be <code>source</code>d by the AOLserver to have
+effect.
+
+<li>Either way, make the argument of <code>wm_process_queue</code>
+indicate your queue directory.
+
+<li>Your tablespace might not have been set up with the assumed
+250M space, but rather like 50M (see also <a href =
+	  "http://sf.arsdigita.com/~jimg/new-tablespace.html" >Making a
+	  New Tablespace</a>.  In this case you should reduce the memory size from 250M to 50M (=52428800) in the
+	following two statements in
+	<code>/doc/sql/webmail.sql</code>.  <blockquote><pre>
+    -- interMedia index on body of message
+    create index wm_ctx_index on wm_messages (body)
+    indextype is ctxsys.context parameters ('memory 250M');
+    
+    -- INSO filtered interMedia index for attachments.
+    create index wm_att_ctx_index on wm_attachments (data)
+    indextype is ctxsys.context parameters ('memory 250M filter ctxsys.inso_filter format column format');
+	    </pre></blockquote>Otherwise both will throw the same error,<blockquote><pre>
+    *
+    ERROR at line 1:
+    ORA-29855: error occurred in the execution of ODCIINDEXCREATE routine
+    ORA-20000: interMedia Text error:
+    DRG-10754: memory size must be between 1024 and 52428800
+    ORA-06512: at "CTXSYS.DRUE", line 126
+    ORA-06512: at "CTXSYS.TEXTINDEXMETHODS", line 54
+    ORA-06512: at line 1
+	      </pre></blockquote>
+
+
+<li>Load the datamodel. For example,
+<blockquote><pre>
+cd www/doc/sql
+sqlplus <em>dbuser</em>/<em>dbpassword</em>
+  @ webmail
+</pre></blockquote>
+
+<li>Register this domain with the webmail system by using the
+administration pages, with (again, just for this example) "wm" as the
+short name and "webmail.arsdigita.com" as the domain name.
+
+</ul>
+
+<p>
 Once the domain has been set up, you can start adding email
 accounts. An email account is tied to an ACS user; an ACS user can
 receive email at any number of different accounts, on any domains that
 this host receives email for. Once received, they are treated
 identically, and are indistinguishable other than from the email
 headers. Email accounts can be assigned to users by using the
-administration pages.
+administration pages.  (An extension in the iluvCAMP project also
+lets you rename and delete email accounts.  There's a Tcl API for
+account creation, renaming, and removal.)
 
 <p>
 
 When an email account is added, a file is created automatically in the
 alias directory of the form ".qmail-[short domain name]-username"
 (e.g., ".qmail-wm-jsc") that contains one line with the full path to
-the queue directory (/home/nsadmin/qmail/queue/). This file specifies
+the queue directory (/home/nsadmin/servers/<em>yourservername</em>/qmail/queue/). This file specifies
 that mail sent to "webmail-wm-jsc@webmail.arsdigita.com" be delivered
 to the maildir directory that we have set up. All email to be handled
 by the webmail system ends up in the same place
-(/home/nsadmin/qmail/queue/new). The system uses the RFC822
+(/home/nsadmin/servers/<em>yourservername</em>/qmail/queue/new). The system uses the RFC822
 Delivered-To header to distinguish who it should be displayed to. The
 indirection through the .qmail alias files is done so that only email
 sent to valid accounts will be received. Email sent to an address that
@@ -221,35 +424,13 @@ model</a>).
 
 <p>
 
-To install the Java portion of this module, download the JavaMail
-library from <a
-href="http://java.sun.com/products/javamail/">http://java.sun.com/products/javamail/</a>
-and the JavaBeans Activation Framework from <a
-href="http://java.sun.com/beans/glasgow/jaf.html">http://java.sun.com/beans/glasgow/jaf.html</a>.
-Unpack the distributions and load activation.jar and mail.jar into Oracle:
-<pre>
-loadjava -user dbuser/dbpasswd -resolve -verbose activation.jar
-loadjava -user dbuser/dbpasswd -resolve -verbose mail.jar
-</pre>
-(You may get a verification warning attempting to resolve
-javax/activation/ActivationDataFlavor which you can ignore.) The
-database user must have been granted the JAVASYSPRIV role.
 
-<p>
-
-Then load the various Java files in the /webmail/java directory:
-
-<pre>
-loadjava -user dbuser/dbpasswd -resolve -verbose BlobDataSource.java ClobDataSource.java MessageParser.sqlj MessageComposer.sqlj
-</pre>
-Make sure you create the PL/SQL bindings in the data model file and
-create the job which will poll the mail queue.
 
 <p>
 
 To test that you are receiving mail properly, send a message to
 user@full_domain_name. A new file should immediately be created in
-/home/nsadmin/qmail/queue/new. If one does not appear, check out the
+/home/nsadmin/servers/<em>yourservername</em>/qmail/queue/new. If one does not appear, check out the
 qmail error logs (usually /var/log/qmail/current) to see what the
 problem might be. If you have started the polling job, the file should
 disappear in less than a minute, and the message should be waiting in
@@ -265,7 +446,7 @@ documentation for it.
     <address><a href="mailto:jsc@arsdigita.com"></a></address>
 <!-- Created: Mon Feb 28 08:45:15 EST 2000 -->
 <!-- hhmts start -->
-Last modified: Wed Mar  1 05:16:54 EST 2000
+Last modified: Wed May 31 22:25:30 EST 2000
 <!-- hhmts end -->
   </body>
 </html>

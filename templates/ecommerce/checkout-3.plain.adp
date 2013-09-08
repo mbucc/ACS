@@ -6,7 +6,7 @@
 
 <blockquote>
 
-<form method=post action=finalize-order.tcl>
+<form method=post action=finalize-order>
 <b>Push Submit to send us your order!</b>
 <input type=submit value="Submit">
 

@@ -1,13 +1,20 @@
-# $Id: add-section.tcl,v 3.0.4.1 2000/04/28 15:11:00 carsten Exp $
 # File:     /homepage/add-section.tcl
-# Date:     Tue Jan 25 02:26:37 EST 2000
-# Location: 42ÅÅ∞21'N 71ÅÅ∞04'W
-# Location: 80 PROSPECT ST CAMBRIDGE MA 02139 USA
-# Author:   mobin@mit.edu (Usman Y. Mobin)
-# Purpose:  Page to create an empty subsection
 
-set_form_variables
-# filesystem_node, section_type, master_type
+ad_page_contract {
+    Page to create an empty subsection
+
+    @param filesystem_node System variable for determining where redirects go
+    @param section_type Name of a section type to add
+    @param master_type Name of the master type to add to
+
+    @author Usman Y. Mobin (mobin@mit.edu)
+    @creation-date Tue Jan 25 02:26:37 EST 2000
+    @cvs-id add-section.tcl,v 3.3.2.6 2000/09/15 21:09:20 kevin Exp
+} {
+    filesystem_node:notnull,naturalnum
+    section_type:notnull,trim
+    master_type:notnull,trim
+}
 
 # ------------------------------ initialization codeBlock ----
 
@@ -21,14 +28,12 @@ if { $user_id == 0 } {
     return
 }
 
-set first_letter [string toupper [string range $section_type 0 0]]
-set others [string range $section_type 1 [expr [string length $section_type] - 1]]
-set section_type_2 "$first_letter$others"
+set section_type_2 [capitalize $section_type]
 
 # ------------------------------ htmlGeneration codeBlock ----
 
 set dialog_body " \
-<form method=post action=mksection-1.tcl> \
+<form method=post action=mksection-1> \
   <input type=hidden name=filesystem_node value=$filesystem_node> \
   <input type=hidden name=section_type value=$section_type> \
   <table cellpadding=0 border=0> \
@@ -45,14 +50,22 @@ set dialog_body " \
   </table> \
   <table border=0 cellpadding=0> \
   <tr><td><input type=submit value=Okay></form></td> \
-      <td><form method=get action=index.tcl> \
+      <td><form method=get action=index> \
           <input type=hidden name=filesystem_node value=$filesystem_node> \
           <input type=submit value=Cancel></form></td> \
   </tr></table>"
 
-
-ad_returnredirect "dialog-class.tcl?title=Content Management&text=$dialog_body"
+ad_returnredirect "dialog-class?title=Content Management&text=$dialog_body"
 return
+
+
+
+
+
+
+
+
+
 
 
 

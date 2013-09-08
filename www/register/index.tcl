@@ -1,11 +1,9 @@
-#
-# Prompt the user for email and password.
-#
-# $Id: index.tcl,v 3.2.2.1 2000/04/28 15:11:25 carsten Exp $
-#
-
-set_form_variables 0
-# return_url maybe
+ad_page_contract {
+    Prompt the user for email and password.
+    @cvs-id index.tcl,v 3.4.6.4 2000/09/22 01:39:14 kevin Exp
+} {
+    return_url:optional
+}
 
 set old_login_process [ad_parameter "SeparateEmailPasswordPagesP" "" "0"]
 
@@ -13,8 +11,8 @@ if {![info exists return_url]} {
     set return_url [ad_pvt_home]
 }
 
-ReturnHeaders
-ns_write "[ad_header "Log In"]
+
+append html_string "[ad_header -focus login.email "Log In"]
 
 <h2>Log In</h2>
 
@@ -28,27 +26,27 @@ registration process by entering a valid email address and a
 password for signing into the system.  We will direct you to another form to 
 complete your registration.</p>
 
-<FORM method=post action=user-login.tcl>
+<FORM method=post action=user-login name=login>
 [export_form_vars return_url]
 <table>
 <tr><td>Your email address:</td><td><INPUT type=text name=email></tr>
 "
 
 if { !$old_login_process } {
-    ns_write "<tr><td>Your password:</td><td><input type=password name=password></td></tr>\n"
+    append html_string "<tr><td>Your password:</td><td><input type=password name=password></td></tr>\n"
     if [ad_parameter AllowPersistentLoginP "" 1] {
 	if [ad_parameter PersistentLoginDefaultP "" 1] {
 	    set checked_option "CHECKED" 
 	} else {
 	    set checked_option "" 
 	}
-	ns_write "<tr><td colspan=2><input type=checkbox name=persistent_cookie_p value=t $checked_option> 
+	append html_string "<tr><td colspan=2><input type=checkbox name=persistent_cookie_p value=t $checked_option> 
 	Remember this address and password?
-	(<a href=\"explain-persistent-cookies.adp\">help</a>)</td></tr>\n"
+	(<a href=\"explain-persistent-cookies\">help</a>)</td></tr>\n"
     }
 }
 
-ns_write "
+append html_string "
 
 <tr><td colspan=2 align=center><INPUT TYPE=submit value=\"Submit\"></td></tr>
 </table>
@@ -69,3 +67,5 @@ In Netscape 4.0, you can enable cookies from Edit -&gt; Preferences
 
 [ad_footer]
 "
+
+doc_return  200 text/html $html_string

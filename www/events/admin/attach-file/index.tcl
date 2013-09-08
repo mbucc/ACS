@@ -2,21 +2,32 @@
 # This script allows a user to upload a file with a title
 # and attach that file to another table/id in acs
 
-set_form_variables 0
-# on_which_table on_what_id return_url
+ad_page_contract {
+    This script allows a user to upload a file with a title
+    and attach that file to another table/id in acs
+
+    @param on_which_table load file to which table
+    @param on_what_id load file to what table id
+    @param return_url where to return when done
+
+    @author Bryan Che (bryanche@arsdigita.com)
+    @cvs_id index.tcl,v 3.3.6.3 2000/09/22 01:37:41 kevin Exp
+} {
+    {on_which_table:optional}
+    {on_what_id:optional}
+    {return_url:optional}
+}
 
 set title "Upload a file"
 
-ReturnHeaders
-
-ns_write "
+doc_return  200 text/html "
 [ad_header $title]
 
 <h2> $title </h2>
 
 <hr>
 
-<form method=POST action=upload.tcl>
+<form method=POST action=upload>
 [export_form_vars return_url]
 1. Attach File to what table?
   <br><dd><input type=text size=30 name=on_which_table [export_form_value on_which_table]>

@@ -1,13 +1,17 @@
-# $Id: mapping.tcl,v 3.0 2000/02/06 03:27:48 ron Exp $
-set_form_variables 0
+# /www/admin/referer/mapping.tcl
+#
 
-ReturnHeaders
+ad_page_contract {
+    @cvs-id Id: mapping.tcl,v 3.3.2.2 2000/07/13 06:27:02 paul Exp $
+} {
+}
 
-ns_write "[ad_admin_header "Referral lumping patterns"]
+
+set page_content "[ad_admin_header "Referral lumping patterns"]
 
 <h2>Referral lumping patterns</h2>
 
-[ad_admin_context_bar [list "index.tcl" "Referrals"] "Lumping Patterns"]
+[ad_admin_context_bar [list "" "Referrals"] "Lumping Patterns"]
 
 <hr>
 
@@ -15,16 +19,14 @@ ns_write "[ad_admin_header "Referral lumping patterns"]
 
 "
 
-set db [ns_db gethandle]
-set selection [ns_db select $db "select rowid, rlgp.*
+
+set sql "select rowid, rlgp.*
 from referer_log_glob_patterns rlgp
 order by glob_pattern
-"]
-
+"
 
 set counter 0
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
+db_foreach referer_glob_pattern_count $sql {
     incr counter
     set description ""
  
@@ -40,28 +42,31 @@ to
 	    append description "  We look for the string that the user typed with the Regexp \"<code>$search_engine_regexp</code>\"."
 	}
     }
-    append description "<br><a href = \"mapping-change.tcl?[export_url_vars glob_pattern]\">edit</a> 
+    append description "<br><a href = \"mapping-change?[export_url_vars glob_pattern]\">edit</a> 
 |
-<a href=\"apply-to-old-data.tcl?[export_url_vars glob_pattern]&simulate_p=1\">simulate</a>
+<a href=\"apply-to-old-data?[export_url_vars glob_pattern]&simulate_p=1\">simulate</a>
 |
-<a href=\"apply-to-old-data.tcl?[export_url_vars glob_pattern]&simulate_p=0\">apply to legacy data (destructive)</a>
+<a href=\"apply-to-old-data?[export_url_vars glob_pattern]&simulate_p=0\">apply to legacy data (destructive)</a>
 
 <p>
 "
-    ns_write "$description\n"
+    append page_content "$description\n"
 }
 
 if { $counter == 0 } {
-    ns_write "no lumping patterns currently installed"
+    append page_content "no lumping patterns currently installed"
 }
 
-ns_write "
+append page_content "
 
 <p>
 
-<li><a href=\"mapping-add.tcl\">Add lumping pattern</a> 
+<li><a href=\"mapping-add\">Add lumping pattern</a> 
 </ul>
 
 [ad_admin_footer]
 "
+
+
+doc_return  200 text/html $page_content
 

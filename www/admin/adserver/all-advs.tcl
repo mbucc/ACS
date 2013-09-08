@@ -1,30 +1,37 @@
-# $Id: all-advs.tcl,v 3.0 2000/02/06 02:46:09 ron Exp $
+# /www/admin/adserver/all-advs.tcl
 
-set db [ns_db gethandle]
+ad_page_contract {
+    @param none
+    @author modified 07/13/200 by mchu@arsdigita.com
+    @cvs-id all-advs.tcl,v 3.1.6.5 2000/11/20 23:55:17 ron Exp
+} {
+    
+}
 
-ReturnHeaders
 
-ns_write "[ad_admin_header "Manage Ads"]
+set page_content "[ad_admin_header "Manage Ads"]
 <h2>Manage Ads</h2>
-at <A href=\"index.tcl\">AdServer Administration</a>
+at <A href=\"index\">AdServer Administration</a>
 <hr><p>
 
 <ul>
-<li> <a href=\"add-adv.tcl\">Add</a> a new ad.
+<li> <a href=\"add-adv\">Add</a> a new ad.
 <p>
 "
 
-set selection [ns_db select $db "select adv_key
+set sql_query "select adv_key
 from advs
-order by upper(adv_key)"]
+order by upper(adv_key)"
 
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
-    
-    ns_write "<li> <a href=\"one-adv.tcl?adv_key=$adv_key\">$adv_key</a>\n"
+db_foreach adv_select_advs_query $sql_query {
+    append page_content "<li> <a href=\"one-adv?[export_url_vars adv_key]\">$adv_key</a>\n"
 }
 
-ns_write "</ul>
+db_release_unused_handles
+
+append page_content "</ul>
 <p>
 [ad_admin_footer]
 "
+
+doc_return 200 text/html $page_content

@@ -1,14 +1,18 @@
-# $Id: edit.tcl,v 3.0 2000/02/06 03:21:45 ron Exp $
-set_the_usual_form_variables
-# template_id
+#  www/admin/ecommerce/templates/edit.tcl
+ad_page_contract {
+    @param template_id
+  @author
+  @creation-date
+  @cvs-id edit.tcl,v 3.1.6.5 2000/09/22 01:35:04 kevin Exp
+} {
+    template_id:integer
+}
 
-set db [ns_db gethandle]
-set selection [ns_db 1row $db "select template_name, template from ec_templates where template_id=$template_id"]
-set_variables_after_query
 
-ReturnHeaders
+db_1row get_template_info "select template_name, template from ec_templates where template_id=:template_id"
 
-ns_write "[ad_admin_header "Edit Template"]
+
+set page_html "[ad_admin_header "Edit Template"]
 
 <h2>Edit Template</h2>
 
@@ -16,7 +20,7 @@ ns_write "[ad_admin_header "Edit Template"]
 
 <hr>
 
-<form method=post action=edit-2.tcl>
+<form method=post action=edit-2>
 [export_form_vars template_id]
 
 Name: <input type=text name=template_name size=30 value=\"[philg_quote_double_quotes $template_name]\">
@@ -36,3 +40,5 @@ ADP template:<br>
 
 [ad_admin_footer]
 "
+db_release_unused_handles
+doc_return  200 text/html $page_html

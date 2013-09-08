@@ -1,50 +1,50 @@
-# $Id: admin-bozo-pattern-add.tcl,v 3.0 2000/02/06 03:32:29 ron Exp $
-set_the_usual_form_variables
+# /www/bboard/admin-bozo-pattern-add.tcl
+ad_page_contract {
+    Adds a new bozo pattern for a bboard forum
 
-# topic, topic_id
+    @param topic the name of the bboard topic
+    @param topic)id the ID of the bboard topic
 
-set db [bboard_db_gethandle]
-if { $db == "" } {
-    bboard_return_error_page
+    @cvs-id admin-bozo-pattern-add.tcl,v 3.2.2.3 2000/09/22 01:36:41 kevin Exp
+} {
+    topic:notnull
+    topic_id:integer,notnull
+}
+
+# -----------------------------------------------------------------------------
+
+if  {[bboard_get_topic_info] == -1} {
     return
 }
 
- 
-if  {[bboard_get_topic_info] == -1} {
-    return}
-
 if {[bboard_admin_authorization] == -1} {
-	return}
-
+	return
+}
 
 # cookie checks out; user is authorized
 
-if [catch {set selection [ns_db 0or1row $db "select bt.*,u.email as maintainer_email, u.first_names || ' ' || u.last_name as maintainer_name, presentation_type
- from bboard_topics bt, users u
- where bt.topic_id = $topic_id
- and bt.primary_maintainer_id = u.user_id"]} errmsg] {
+if { ![db_0or1row maintainer_info "
+select bt.*,u.email as maintainer_email, 
+       u.first_names || ' ' || u.last_name as maintainer_name, 
+       presentation_type
+from   bboard_topics bt, users u
+where  bt.topic_id = :topic_id
+and    bt.primary_maintainer_id = u.user_id"]} {
     [bboard_return_cannot_find_topic_page]
     return
 }
-# we found the data we needed
-set_variables_after_query
 
 
-ReturnHeaders
-
-ns_write "<html>
-<head>
-<title>Add Bozo Pattern to $topic</title>
-</head>
-<body bgcolor=[ad_parameter bgcolor "" "white"] text=[ad_parameter textcolor "" "black"]>
+append page_content "
+[ad_admin_header "Add Bozo Pattern to $topic"]
 
 <h2>Add Bozo Pattern</h2>
 
-for <a href=\"admin-home.tcl?[export_url_vars topic topic_id]\">$topic</a>
+for <a href=\"admin-home?[export_url_vars topic topic_id]\">$topic</a>
 
 <hr>
 
-<form method=POST action=\"admin-bozo-pattern-add-2.tcl\">
+<form method=POST action=\"admin-bozo-pattern-add-2\">
 [export_form_vars topic topic_id]
 
 <table>
@@ -84,7 +84,6 @@ for <a href=\"admin-home.tcl?[export_url_vars topic topic_id]\">$topic</a>
 <br>
 <br>
 
-
 <blockquote>
 
 Note: the regular expression should be in Tcl format.  If you just
@@ -97,3 +96,5 @@ you want something fancier, you probably have to read
 
 [bboard_footer]
 "
+
+doc_return  200 text/html $page_content

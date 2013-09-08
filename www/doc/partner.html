@@ -4,7 +4,7 @@
 </head>
 <body bgcolor=white>
 <h2>Partner Co-Branding</h2>
-part of the <a href="index.html">ArsDigita Community System</a>
+part of the <a href="index">ArsDigita Community System</a>
 by <a href="mailto:mbryzek@arsdigita.com">Michael Bryzek</a>
 
 <hr>
@@ -16,8 +16,8 @@ by <a href="mailto:mbryzek@arsdigita.com">Michael Bryzek</a>
 <ul>
 <li>User-accessible directory:  None (It's transparent to users)
 <li>Site administrator directory:  <a href="/admin/partner/">/admin/partner/</a>
-<li>data model :  <a href="/doc/sql/display-sql.tcl?url=/doc/sql/partner.sql">/doc/sql/partner.sql</a>
-<li>Tcl procs:  /tcl/partner.tcl
+<li>data model :  <a href="/doc/sql/display-sql?url=/doc/sql/partner.sql">/doc/sql/partner.sql</a>
+<li>Tcl procs:  /tcl/partner
 </ul>
 
 <B>Public demonstrations: </b>
@@ -42,7 +42,7 @@ more traffic. A lot of the big sites on the web will only partner with your puny
 service if you provide them with your site functionality but maintain the look-and-feel of their
 website. 
 <p>
-The brute force method to doing this is to use the <a href=style.html>ad-style</a> system and
+The brute force method to doing this is to use the <a href=style>ad-style</a> system and
 create a separate adp file for every single page you want to co-brand, and for every partner you
 want to support. This quickly gets out-of-hand if you support more than a couple partners and more
 than a couple pages.
@@ -62,7 +62,7 @@ Co-branding works by separating a page into three components:
        the features,
        results of database queries etc. For co-branding to work with the partner module, the
        Page Contents must be shared by all partners (If you need custom page contents for individual 
-       pages, the <a href=style.html>ad-style</a> system is for you.
+       pages, the <a href=style>ad-style</a> system is for you.
   <li> <b>The Footer</b>: This refers to the bottom and right side of the page including.
 </ol>
 
@@ -95,11 +95,11 @@ In fact, the entire <a href=/admin/partner>/admin/partner</a> directory uses the
 to generate it's own look and feel even though it is not necessary. (partner frees you from ever 
 having to think about page headers and footers while you write your pages).
 <p> 
-To Create your first partner page, simply put the following .tcl file anywhere in your file tree:
+To Create your first partner page, simply put the following  file anywhere in your file tree:
 <pre>
 ReturnHeaders
 set page_title "My first co-branded page"
-set context_bar [ad_context_bar [list "/index.tcl" "Home"] "Test Page"]
+set context_bar [ad_context_bar [list "/index" "Home"] "Test Page"]
 ns_write "
 [ad_partner_header]
 I just wanted to see what it's like to work with partner
@@ -139,7 +139,7 @@ To co-brand an existing acs file with:
 Note: There is another way to return co-branded pages, which I prefer:
 <pre>
 set page_title "My first co-branded page"
-set context_bar [ad_context_bar [list "/index.tcl" "Home"] "Test Page"]
+set context_bar [ad_context_bar [list "/index" "Home"] "Test Page"]
 set page_body "I just wanted to see what it's like to work with partner"
 ns_return 200 text/html [ad_partner_return_template]
 </pre>
@@ -201,7 +201,7 @@ proc_doc ad_partner_title_font { {props ""} } {Returns an html font tag with the
 </pre>
 
 I don't think there is anything particularly interesting about the 
-<a href=/doc/sql/display-sql.tcl?url=/doc/sql/partner.sql>Data Model</a> so I've left it in it's own file.
+<a href=/doc/sql/display-sql?url=/doc/sql/partner.sql>Data Model</a> so I've left it in it's own file.
 
 
 

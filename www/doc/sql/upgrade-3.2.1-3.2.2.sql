@@ -2,7 +2,7 @@
 --
 -- Script to upgrade an ACS 3.2.1 database to 3.2.2.
 -- 
--- $Id: upgrade-3.2.1-3.2.2.sql,v 3.1.2.1 2000/05/17 23:54:40 ron Exp $
+-- upgrade-3.2.1-3.2.2.sql,v 3.2 2000/07/07 23:34:46 ron Exp
 
 -- BEGIN INTRANET --
 
@@ -21,8 +21,11 @@ create table im_customer_types (
  alter table im_customers add ( customer_type_id	references im_customer_types);
 
 
-alter table im_project_url_map add (
-	machine_id 	references is_machines);
+-- removed by lars@pinds.com on 18 June 2000
+-- it seems the is_machines table weren't part of 3.2.1, so we can't 
+-- reference it here.
+--alter table im_project_url_map add (
+--	machine_id 	references is_machines);
 
 alter table im_employee_info add (termination_date          date);
 

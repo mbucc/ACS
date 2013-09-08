@@ -64,19 +64,27 @@ show errors
 
 --- create the administration group for the Events module
 begin
-   administration_group_add ('Events Administration', 'events', 'events', '', 'f', '/admin/events/'); 
+   administration_group_add ('Events Administration', 'events', 'events', '', 'f', '/events/admin/'); 
 end;
 /
 
 -- create a group type of "events"
 insert into user_group_types 
-(group_type, pretty_name, pretty_plural, approval_policy, group_module_administration)
+(group_type, pretty_name, pretty_plural, approval_policy, group_module_administration, user_group_types_id)
 values
-('event', 'Event', 'Events', 'closed', 'full');
+('event', 'Event', 'Events', 'closed', 'full', user_group_types_seq.nextval);
 
 create table event_info (
-       group_id primary key references user_groups
+       group_id primary key references user_groups,
+	-- the contact person for this event
+	contact_user_id	      integer references users
 );
+
+insert into user_group_type_fields 
+(group_type, column_name, pretty_name, column_type, 
+column_actual_type, sort_key)
+values
+('event', 'contact_user_id', 'Event Contact Person', 'integer', 'integer', 1);
 
 -- can't ever delete an event/activity because it might have been
 -- ordered and therefore the row in events_registrations would be hosed
@@ -89,7 +97,6 @@ create table events_activities (
 	activity_id	integer primary key,
 	-- activities are owned by user groups
 	group_id	integer references user_groups,
-	user_id		integer references users,
         creator_id      integer not null references users,
 	short_name	varchar(100) not null,
 	default_price   number default 0 not null,
@@ -99,7 +106,8 @@ create table events_activities (
         -- any new events to it.
         available_p	char(1) default 't' check (available_p in ('t', 'f')),
         deleted_p	char(1) default 'f' check (deleted_p in ('t', 'f')),
-        detail_url 	varchar(256) -- URL for more details,
+        detail_url 	varchar(256), -- URL for more details
+	default_contact_user_id integer references users
 );
 
 create sequence events_venues_id_sequence;
@@ -115,8 +123,12 @@ create table events_venues (
        postal_code	  varchar(20),
        iso		  char(2) default 'us' references country_codes,
        time_zone	  varchar(50),
+       -- some contact info for this venue
+       fax_number	  varchar(30),
+       phone_number	  varchar(30),
+       email		  varchar(100),
        needs_reserve_p	  char(1) default 'f' check (needs_reserve_p in ('t', 'f')),
-       max_people	  number,	
+       max_people	  integer,	
        description	  clob
 );
 
@@ -139,7 +151,7 @@ create table events_events (
         -- An event may have been cancelled.
         available_p	      char(1) default 't' check (available_p in ('t', 'f')),	
         deleted_p	      char(1) default 'f' check (deleted_p in ('t', 'f')),
-        max_people	      number,
+        max_people	      integer,
 	-- can someone cancel his registration?		
 	reg_cancellable_p     char(1) default 't' check (reg_cancellable_p in ('t', 'f')),
 	-- does a registration need approval to become finalized?
@@ -155,6 +167,8 @@ create table events_events (
         check (start_time < end_time),
 	check (reg_deadline <= start_time)
 );
+
+create index evnt_evnt_idx on events_events(event_id, activity_id, start_time, end_time);
 
 -- Each activity can have default custom fields registrants should enter.  
 create table events_activity_fields (
@@ -178,7 +192,8 @@ create table events_activity_fields (
 -- event's custom fields are actually stored in the table,
 -- event_{$event_id}_info.  For example, the event with event_id == 5
 -- would have a corresponding table of event_5_info.  Furthermore, this
--- table will contain a "user_id not null references users" column
+-- table will contain a "user_id integer primary key references users" 
+-- column
 
 -- This table describes the columns that go into event_{$event_id}_info
 create table events_event_fields (
@@ -197,13 +212,68 @@ create table events_event_fields (
 	sort_key	integer not null
 );
 
--- the organizers for events
-create table events_organizers_map (
-       event_id		      integer not null references events_events,  
-       user_id		      integer not null references users,
-       role		      varchar(200) default 'organizer' not null,
-       responsibilities	      clob
+-- create default organizer roles for an activity
+create sequence events_activity_org_roles_seq start with 1;
+create table events_activity_org_roles (
+       role_id			integer 
+				constraint evnt_act_org_roles_role_id_pk 
+				primary key ,
+       activity_id		integer 
+				constraint evnt_act_role_activity_id_fk 
+				references events_activities
+				constraint evnt_act_role_activity_id_nn
+				not null,  
+       role			varchar(200) 
+				constraint evnt_act_org_roles_role_nn
+				not null,
+       responsibilities		clob,
+       -- is this a role that we want event registrants to see?
+       public_role_p		char(1) default 'f' 
+				constraint evnt_act_role_public_role_p
+				check (public_role_p in ('t', 'f'))
 );
+
+-- create actual organizer roles for each event
+create sequence events_event_org_roles_seq start with 1;
+create table events_event_organizer_roles (
+       role_id			integer 
+				constraint evnt_ev_org_roles_role_id_pk 
+				primary key,
+       event_id			integer 
+				constraint evnt_ev_org_roles_event_id_fk 
+				references events_events
+				constraint evnt_ev_org_roles_event_id_nn
+				not null,  
+       role			varchar(200) 
+				constraint evnt_ev_org_roles_role_nn
+				not null,
+       responsibilities		clob,
+       -- is this a role that we want event registrants to see?
+       public_role_p		char(1) default 'f' 
+				constraint evnt_ev_roles_public_role_p
+				check (public_role_p in ('t', 'f'))
+);
+
+create table events_organizers_map (
+       user_id			   constraint evnt_org_map_user_id_nn
+				   not null
+				   constraint evnt_org_map_user_id_fk
+				   references users,
+       role_id			   integer 
+				   constraint evnt_org_map_role_id_nn
+				   not null 
+				   constraint evnt_org_map_role_id_fk
+				   references events_event_organizer_roles,
+       constraint events_org_map_pk primary key (user_id, role_id)
+);
+
+-- create a view to see event organizer roles and the people in those roles
+create or replace view events_organizers 
+as
+select eor.*, eom.user_id
+from events_event_organizer_roles eor, events_organizers_map eom
+where eor.role_id=eom.role_id(+);
+
 
 create sequence events_price_id_sequence;
 
@@ -225,6 +295,8 @@ create table events_prices (
     expire_date	      date not null,
     available_date    date not null
 );
+
+create index evnt_price_idx on events_prices(price_id, event_id);
 
 create sequence events_orders_id_sequence;
 
@@ -253,7 +325,7 @@ create table events_registrations(
 	-- the person registered for this reg_id (may not be the person
 	-- who made the order)
 	user_id		integer not null references users,
-	-- reg_states: pending, shipped, canceled, refunded
+	-- reg_states: pending, shipped, canceled, waiting
 	--pending: waiting for approval
 	--shipped: registration all set 
 	--canceled: registration canceled
@@ -263,8 +335,8 @@ create table events_registrations(
 	reg_date	date,
 	-- when the registration was shipped
 	shipped_date	date,
-	org		varchar(4000),
-	title_at_org	varchar(4000),
+	org		varchar(500),
+	title_at_org	varchar(500),
 	attending_reason  clob,
 	where_heard	varchar(4000),
 	-- does this person need a hotel?
@@ -275,6 +347,11 @@ create table events_registrations(
 	need_plane_p	char(1) default 'f' check (need_plane_p in ('t', 'f')),
 	comments	clob
 );
+
+create index evnt_reg_idx on events_registrations(reg_id, user_id, price_id, reg_state, org, title_at_org);
+
+-- need this index for speeding up /events/admin/order-history-one.tcl
+create index users_last_name_idx on users(lower(last_name), last_name, first_names, email, user_id);
 
 -- trigger for recording when a registration ships
 create or replace trigger event_ship_date_trigger
@@ -354,3 +431,144 @@ create table events_file_storage (
 create index events_file_storage_id_idx on events_file_storage(on_which_table, on_what_id);
 
 
+-- write functions for completely deleting an event (useful for dev/debug)
+
+-- completely deletes a user group.  Follows /admin/ug/group-delete-2.tcl
+create or replace procedure delete_user_group(v_group_id integer)
+IS
+	sql_stmt			varchar(500);
+	v_group_type_table		varchar(20);
+BEGIN
+	delete from user_group_map_queue 
+	where group_id = v_group_id;
+
+	delete from user_group_map
+	where group_id = v_group_id;
+
+	-- delete from the user group's info table
+	select trim(group_type) || '_info' into v_group_type_table
+	from user_groups
+	where group_id = v_group_id;
+
+	sql_stmt := 'delete from ' || v_group_type_table || 
+	' where group_id = :id';
+	EXECUTE IMMEDIATE sql_stmt using v_group_id;
+	
+	delete from user_group_member_fields where group_id = v_group_id;
+
+	delete from user_group_roles where group_id = v_group_id;
+
+	delete from user_group_action_role_map where group_id = v_group_id;
+
+	delete from user_group_actions where group_id = v_group_id;
+
+	delete from content_section_links
+	where from_section_id in (select section_id
+			      from content_sections
+			      where scope='group'
+			      and group_id=v_group_id)
+	or to_section_id in (select section_id
+			      from content_sections
+			      where scope='group'
+			      and group_id=v_group_id);
+
+        delete from content_files
+	       where section_id in (select section_id
+                          from content_sections
+                          where scope='group'
+                          and group_id=v_group_id);
+
+	delete from content_sections
+	where scope='group'
+	and group_id=v_group_id;
+
+	delete from faqs
+	where scope='group'
+	and group_id=v_group_id;
+
+	delete from page_logos
+	where scope='group'
+	and group_id=v_group_id;
+
+	delete from css_simple
+	where scope='group'
+	and group_id=v_group_id;
+
+	delete from downloads
+	where scope='group'
+	and group_id=v_group_id;
+
+	delete from user_groups 
+	where group_id = v_group_id;
+END delete_user_group;
+/
+show errors;
+
+-- create a function for deleting an event
+-- NOTE: this will delete all the event's registrants too!
+create or replace procedure events_delete_event (v_event_id IN integer)
+     IS 
+	sql_stmt		varchar(500);
+	i_group_id		integer;
+
+	-- get all the orders for this event
+	cursor c1 is
+	select distinct r.order_id
+	from events_prices p, events_registrations r
+	where p.event_id = v_event_id
+	and r.price_id = p.price_id;
+
+	-- get all the organizer roles for this event
+	cursor c2 is
+	select role_id 
+	from events_event_organizer_roles
+	where event_id = v_event_id;
+
+     BEGIN
+	-- delete all the registrations/orders for this event
+	FOR e in c1 LOOP
+		delete from events_registrations
+		where order_id = e.order_id;
+
+		delete from events_orders
+		where order_id = e.order_id;
+	END LOOP;
+
+	-- delete the event prices for this event
+	delete from events_prices
+	where event_id = v_event_id;
+
+	-- get the event's group_id
+	select group_id into i_group_id
+	from events_events
+	where event_id = v_event_id;
+
+	-- delete the event's event fields
+	delete from events_event_fields
+	where event_id = v_event_id;
+
+	-- delete the event's organizers and roles
+	FOR f in c2 LOOP
+	    -- delete the organizers with this role
+	    delete from events_organizers_map
+	    where role_id = f.role_id;
+
+	    -- delete this role
+	    delete from events_event_organizer_roles
+	    where role_id = f.role_id;
+	END LOOP;
+
+	-- drop the event_n_info table
+	sql_stmt := 'drop table event_' || v_event_id || '_info';
+	EXECUTE IMMEDIATE sql_stmt;
+
+	-- delete the event
+	delete from events_events
+	where event_id = v_event_id;
+
+	-- delete the event's user group
+	delete_user_group(i_group_id);
+
+END events_delete_event;
+/
+show errors;

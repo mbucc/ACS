@@ -1,17 +1,18 @@
 # admin/faq/faq-edit-2.tcl
 #
-#  Edits  faq in the database after checking the input
-#
-# by dh@arsdigita.com, Created on Dec 20, 1999
-# 
-# $Id: faq-edit-2.tcl,v 3.0.4.2 2000/04/28 15:08:59 carsten Exp $
-#-----------------------------------
 
-ad_page_variables {
-    {faq_id}
-    {faq_name "" qq}
-    {group_id}
+ad_page_contract {
+    Edits faq in the database after checking the input
+
+    @author dh@arsdigita.com
+    @creation-date Dec 20, 1999
+    @cvs-id faq-edit-2.tcl,v 3.3.2.7 2000/07/21 22:45:03 paul Exp
+} {
+    faq_id:integer,notnull
+    faq_name:optional
+    group_id:integer,optional
 }
+
 
 # -- form validation ------------------
 set error_count 0
@@ -27,32 +28,22 @@ if {$error_count > 0 } {
     return
 }
 
+
 #-------------------------------------
-
-set db [ns_db gethandle]
-
-
 if { [empty_string_p $group_id] } {
     set scope "public"
 } else {
     set scope "group"
 }
 
-ns_db dml $db "
+db_dml faq_edit "
     update faqs
-    set faq_name = '$QQfaq_name',
-        group_id = '$group_id',
-        scope    = '$scope'
-    where faq_id = $faq_id
-   "
+    set faq_name = :faq_name,
+        group_id = :group_id,
+        scope    = :scope
+    where faq_id = :faq_id"
 
-
-ns_db releasehandle $db 
+db_release_unused_handles 
 
 ad_returnredirect "one?faq_id=$faq_id"
-
-
-
-
-
 

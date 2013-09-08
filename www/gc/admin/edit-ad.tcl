@@ -1,44 +1,55 @@
-# $Id: edit-ad.tcl,v 3.1 2000/03/10 23:58:50 curtisg Exp $
-# /gc/admin/edit-ad.tcl 
-# a script for letting a domain administrator edit a user's classified
+# /gc/admin/edit-ad.tcl
+
+ad_page_contract {
+    a script for letting a domain administrator edit a user's classified
+    
+    @author
+    @creation-date
+    @cvs-id edit-ad.tcl,v 3.2.6.7 2000/09/22 01:38:00 kevin Exp
+
+    @param classified_ad_id
+} {
+    classified_ad_id
+}
 
 ad_maybe_redirect_for_registration
 
 set admin_id [ad_get_user_id]
 
-set_the_usual_form_variables
 
-# classified_ad_id
-
-set db [gc_db_gethandle]
-if [catch { set selection [ns_db 1row $db "select ca.*, ad.domain,
+set sql_query "
+select ca.*, ad.domain,
 to_char(expires,'YYYY-MM-DD') as ansi_expires
 from classified_ads ca, ad_domains ad
 where ad.domain_id = ca.domain_id and
-classified_ad_id = $classified_ad_id"] } errmsg] {
+classified_ad_id = :classified_ad_id
+"
+
+db_1row ad_get $sql_query
+
+set selection [ns_set create]
+
+if [catch { db_1row gc_admin_edit_ad_get $sql_query -column_set selection } errmsg] {
     ad_return_error "Could not find Ad $classified_ad_id" "Either you are fooling around with the Location field in your browser
-or my code has a serious bug.  The error message from the database was
+    or my code has a serious bug.  The error message from the database was
 
-<blockquote><code>
-$errmsg
-</blockquote></code>"
-       return
+    <blockquote><code>
+    $errmsg
+    </blockquote></code>"
+    return
 }
-
-# OK, we found the ad in the database if we are here...
-# the variable SELECTION holds the values from the db
-set_variables_after_query
 
 # now we know to what domain this ad belongs
 
-if ![ad_administration_group_member $db "gc" $domain $admin_id] {
+if { ![ad_administrator_p] && ![ad_administration_group_member "gc" $domain $admin_id]} {
     ad_return_error "Unauthorized" "Unauthorized" 
     return
 }
 
 # user wants to edit the ad
-set selection_domain [ns_db 1row $db "select full_noun, insert_form_fragments, wtb_common_p, geocentric_p, auction_p from ad_domains where domain_id = $domain_id"]
-set_variables_after_query_not_selection $selection_domain
+db_1row gc_admin_edit_ad_domain_data_get "select full_noun, insert_form_fragments, wtb_common_p, geocentric_p, auction_p 
+                         from ad_domains 
+                         where domain_id = :domain_id"
 
 if { [string first "full_ad" $insert_form_fragments] == -1 } {
     set insert_form_fragments  [concat "<tr><th align=left>Full Ad<br>
@@ -56,7 +67,7 @@ if { [string first "one_line" $insert_form_fragments] == -1 } {
     <td><input type=text name=one_line  size=50>
     </tr>" $insert_form_fragments]
 }
-set raw_form "<form method=post action=edit-ad-2.tcl>
+set raw_form "<form method=post action=edit-ad-2>
 <input type=hidden name=classified_ad_id value=$classified_ad_id>
 
 <table>
@@ -66,9 +77,9 @@ $insert_form_fragments
 
 if {$geocentric_p == "t"} {
     append raw_form "<tr><th align=left  valign=top>State</th>
-    <td align=left>[state_widget $db "" "state"]</td></tr>
+    <td align=left>[state_widget "" "state"]</td></tr>
     <tr><th align=left>Country</th>
-    <td align=left>[country_widget $db "" "country"]</td></tr>"
+    <td align=left>[country_widget "" "country"]</td></tr>"
 }
 
 if {$wtb_common_p == "t" && [string first "wanted_p" $insert_form_fragments] == -1 } {
@@ -87,8 +98,11 @@ if {$auction_p == "t"} {
     (this allows members to place bids) </td></tr>"
 }
 
+set selection [ns_set create]
+db_0or1row classified_ad_info $sql_query -column_set selection
 set selection_without_nulls [remove_nulls_from_ns_set $selection]
 set final_form [bt_mergepiece $raw_form $selection_without_nulls]
+
 
 if [ad_parameter EnabledP "member-value"] {
     set mistake_wad [mv_create_user_charge $user_id  $admin_id "classified_ad_mistake" $classified_ad_id [mv_rate ClassifiedAdMistakeRate]]
@@ -126,10 +140,10 @@ $final_form
 <input name=expires type=text size=11 value=\"$ansi_expires\"> YYYY-MM-DD \[format must be exact\]
 <tr><th>Category<td>
 <select name=primary_category>
-[db_html_select_options $db "select primary_category
+[db_html_select_options -select_option $primary_category -bind [ad_tcl_vars_to_ns_set domain_id] primary_categories_select_options "select primary_category
 from ad_categories
-where domain_id = $domain_id
-order by primary_category" $primary_category]
+where domain_id = :domain_id
+order by primary_category"]
 </select>
 </table>
 <P>
@@ -143,5 +157,5 @@ $member_value_section
 [ad_admin_footer]
 "
 
-ns_db releasehandle $db
-ns_return 200 text/html $html
+db_release_unused_handles
+doc_return  200 text/html $html

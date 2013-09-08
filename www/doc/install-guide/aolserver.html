@@ -1,0 +1,296 @@
+<html><head><title>Installing AOLServer 3.0</title></head>
+<body bgcolor="#FFFFFF">
+<table width="100%">
+<tr><td width="33%" align="left" valign="top">
+<b>Previous</b>: <a href="oracle.html">Installing Oracle 8.1.6</a></td>
+<td width="34%" align="center" valign="top"><h1>Installing AOLServer 3.0</h1>
+<td width="33%" align="right" valign="top">
+<b>Next</b>: <a href="acs.html">Installing the ArsDigita Community System v 3.3</a></td>
+</tr>
+</table>
+
+<a href="/doc/">ACS Documentation</a> :
+<a href="">ACS Installation Guide</a> :
+Installing AOLServer 3.0
+
+
+<hr>
+<p>
+
+<a name="top"></a>
+
+AOLServer is a fast, reliable, and scalable web server, and the server
+of choice for the ArsDigita Community System.  For more information
+on <a href="http://aolserver.com/">AOLServer</a>, you can read Philip Greenspun's introduction 
+<a href="http://www.arsdigita.com/asj/aolserver/introduction-1.html">part 1</a> and
+<a href="http://www.arsdigita.com/asj/aolserver/introduction-2.html">part 2</a>.
+
+<h3>Table of Contents</h3>
+<ol>
+<li><a href="#users">Setup User Accounts and Paths</a>
+<li><a href="#download">Download the distribution</a>
+<li><a href="#compile-aol">Compile AOLServer</a>
+<li><a href="#compile-oracle">Compile the Oracle Driver</a>
+<li><a href="#install">Install AOLServer</a>
+<li><a href="#troubleshooting">Troubleshooting the AOLServer Install</a>
+<li><a href="#defaults">Appendix: Defaults</a>
+
+</ol>
+
+
+  <a name="users"</a>
+  <h3>Setup User Accounts and Paths.</h3>
+  You will need a special user account for running the ACS.  We recommend
+  that you call this user <b>nsadmin</b>.  This user will have a special
+  home directory for storing AOLServer, <b>/home/aol30</b> and a special
+  group for the server files, <b>web</b> as well.  
+  You must execute this step as root.
+   <ul>
+   <li>Open up a terminal and run these commands.
+
+    <pre>
+$ su -
+; Enter ROOT password
+# groupadd nsadmin
+# groupadd web
+# mkdir /home/aol30
+# useradd -g nsadmin -G dba,web -d /home/aol30 nsadmin
+# passwd nsadmin
+; Set password
+       
+# mkdir /web
+# chown nsadmin.web /home/aol30 
+# chown nsadmin.web /web
+# chmod 775 /home/aol30
+# chmod 775 /web
+# exit    <i>{to logout}</i>
+</pre>
+  <li>At this point, you should customize the <b>nsadmin</b> login scripts.
+   Login as <b>nsadmin</b> and add the following lines to your 
+   <b>~nsadmin/.bash_profile</b>
+<pre>
+export ORACLE_BASE=/ora8/m01/app/oracle
+export ORACLE_HOME=$ORACLE_BASE/product/8.1.6
+export PATH=$PATH:$ORACLE_HOME/bin
+export LD_LIBRARY_PATH=$ORACLE_HOME/lib:/lib:/usr/lib
+export ORACLE_SID=ora8
+export ORACLE_TERM=vt100
+export ORA_NLS33=$ORACLE_HOME/ocommon/nls/admin/data
+</pre>
+
+Be absolutely certain that you have entered these lines correctly and
+that you have saved the file.  A slight error in these lines can lead to
+many inscrutable error messages.  Logout and log back in so these
+settings will take effect.
+
+</ul><p>
+  <a name="download"></a>
+  <a href="#top">TOP</a><br><h3>Download the distribution.</h3>
+      Login as <b>nsadmin</b> and save files to the <b>/tmp</b> directory.
+  <ul>
+
+  <li>Download the AOLServer distribution and the Oracle driver (needed for
+   db connectivity and the ACS.  You must download the <em>source</em> 
+   distribution of AOLServer in order to compile the Oracle driver.
+      
+
+  <ul>
+      <li><a href="http://www.aolserver.com/dist/3.0/">AOLServer 3.0
+	  Source Distribution</a><br><em>Do not download a binary!</em>
+      <li><a href="http://arsdigita.com/download/">Oracle Driver</a>
+  </ul><p>
+  We recommend saving these archives in the <b>/tmp</b> directory.<p>
+
+  <li>Uncompress the downloaded components (you may need to substitute
+different files names-- these were the files as of writing date):<p>
+<pre>
+$ cd /tmp    <i>{or wherever the archives are}</i>
+$ tar -xzf aolserver3_0.tar.gz
+$ tar -xzf oracle-2.1.tar.gz
+</pre>
+   <li>You should have two directory trees in the current directory:
+   <b>aolserver3_0</b> and <b>oracle</b>.  Move the oracle directory
+       to make compiling the Oracle driver easier.
+   <pre>
+$ mv oracle aolserver3_0
+   </pre>
+</ul><p>
+
+  <a name="compile-aol"></a>
+  <a href="#top">TOP</a><br><h3>Compile AOLServer</h3><p>
+  This step should be completed as the nsadmin user.  You will compile
+  the AOLServer distribution and prepare for install.
+  <ul>
+    <li>Login as <b>nsadmin</b> and cd into the aolserver3_0 directory 
+where you untarred the source.  You should be able to compile out of the box.
+<pre>
+$ su - nsadmin
+; Enter nsadmin password
+$ cd /tmp/aolserver3_0
+$ make all
+</pre>
+
+</ul><p>
+  <a name="compile-oracle"></a>
+  <a href="#top">TOP</a><br><h3>Compile the Oracle Driver</h3>
+   Now you need to compile the Oracle driver to enable database connectivity.
+   <ul>
+       <li>Change directories to the <b>aolserver3_0/oracle</b> directory.
+       and start the
+       compilation.<p>
+<pre>
+$ cd /tmp/aolserver3_0/oracle
+$ export NS_HOME=/tmp/aolserver3_0
+$ make all
+</pre>
+
+The following compiler warning may be ignored:
+
+<pre>
+ld: warning: type and size of dynamic symbol `sskgslgf' are not defined
+</pre>
+
+If the compilation failed, make sure the environment variables above
+actually point to where you installed the AOLServer source code.
+	   If you followed our instructions, this should not be a problem.
+You can check the directories by doing
+<pre>
+$ ls /tmp/aolserer3_0/include
+</pre>
+
+If you don't see any files, then you have the wrong directories.  Verify
+your installation of Oracle and AOLServer and try again.
+
+If compilation was successful, you should now have two files, <b>ora8.so</b>
+and <b>ora8cass.so</b>.<p>
+</ul><p>
+  <a name="install"></a>
+  <a href="#top">TOP</a><br><h3>Install AOLServer 3.0</h3><p>
+  You are now ready to install AOLServer.
+  <ul>
+      <li>Change directories to your AOLServer source distribution.
+<p>
+      <li>Run <b>make install</b> to install the files.
+      <pre> 
+$ cd /tmp/aolserver3_0
+$ make install
+</pre>
+      <li>You should now have a <b>/tmp/aolserver</b> directory with
+the binary distribution.  Copy the Oracle drivers into it.
+<pre>
+$ cp oracle/ora8.so /tmp/aolserver/bin
+$ cp oracle/ora8cass.so /tmp/aolserver/bin
+</pre>
+
+<li>The latest version of the ArsDigita Community System requires 
+Tcl 8.3.  Although this version of Tcl is included with AOLServer 3.0,
+it is not activated by default.  There is a symbolic link pointing from 
+<code>nsd</code> to <code>nsd76</code> in <code>/tmp/aolserver/bin</code>.  
+Change this to point to <code>nsd8x</code>.
+
+<pre>
+$ rm /tmp/aolserver/bin/nsd
+$ cd /tmp/aolserver/bin
+$ ln -s ./nsd8x ./nsd
+</pre>
+  <li> Finally, copy the distribution to the <b>home/aol30</b> directory.
+<pre>
+$ cp -a /tmp/aolserver/* /home/aol30
+</pre>
+
+   <li>You will now test to make sure AOLServer is running correctly.
+   You should be able to cd into your aolserver directory and simply
+   start the server.
+<pre>
+Login as nsadmin. (it helps to be in X at this point)
+$ cd /home/aol30
+$ ./bin/nsd -t nsd.tcl
+</pre>
+You should see a few normal warnings.  They are safe to ignore.  The
+first warning means that the server is missing files for running 
+<b>ssl</b>, a necessary module for encrypted HTTPS.  The second 
+warning  means that the AOLServer control panel, a special module for
+administering AOLServer could not be loaded.  If you're interested
+in configuring either of these modules, please see the <a href="http://www.aolserver.com/">
+AOLServer documentation</a>.  
+<pre>
+Warning: nsd.tcl: nsssl not loaded because key/cert files do not exist 
+Warning: nsd.tcl: nscp not loaded because user/password is not set. 
+</pre>
+   <li>Test to see if this worked by starting <code>netscape</code> or 
+<code>lynx</code>, and surfing over
+   to your web page.
+<pre>
+$ lynx localhost:8000
+</pre>
+       You should see a <b>Welcome to
+   AOLServer 3</b> page.  If this doesn't work, try 
+   <b>http://127.0.0.1:8000/</b>. <p>
+   <li> Shutdown the test server.  
+<pre>
+$ killall nsd
+</pre>
+
+The <code>killall</code> command will kill all processes with the name
+<code>nsd</code>.  Clearly this is not a good tool to use for managing
+your services in general.  We cover that in the <a href="acs.html#startup">
+ACS documentation</a>.
+
+</ul><p>
+That's it.  On to the <a href="acs.html">ArsDigita Community System</a>!<p>
+   <a name="troubleshooting"></a>
+   <a href="#top">TOP</a><br><h3>Troubleshooting the AOLServer Install</h3><p>
+   If you can't view the welcome page, there is a problem with your
+   server configuration.  Start by viewing your AOLServer log, which
+   is in <b>/home/aol30/log/server.log</b>.
+   You should also try to find lines of the form:
+<pre>
+[01/Jun/2000:12:11:20][5914.2051][-nssock-] Notice: nssock: listening on http://localhost.localdomain:8000 (127.0.0.1:8000)
+[01/Jun/2000:12:11:20][5914.2051][-nssock-] Notice: accepting connections
+</pre>
+If you can find these lines, try entering the URL the server is listening on.
+If you cannot find these lines, there must be an error somewhere in the
+file.  Scan for lines beginning with the word <b>Error</b> instead of 
+<b>Notice</b>.  
+<p>
+<hr>
+<a name="defaults"></a>
+<a href="#top">TOP</a><br><h3>Appendix: Defaults</h3>
+We used the following defaults while installing AOLServer.
+<p>
+<table>
+<tr><th>Variable</th><th>Value</th><th>Reason</tr>
+<tr><td valign=top>AOLServer Username<td valign=top>nsadmin<td valign=top>AOLServer used to be NaviServer
+and this was the standard username for the server.
+<tr><td valign=top>AOLServer Directory<td valign=top>/home/aol30<td valign=top>AOLServer 3.0 should be 
+installed to its own home directory and it is simplest if this is
+the home directory of the nsadmin user and is version specific in case
+you upgrade your web server.
+<tr><td valign=top>AOLServer Groups<td valign=top>nsadmin,web,dba<td valign=top>You should have a group for
+the server files, nsadmin, and a group for the web content, web.  In order
+to connect to Oracle using <b>svrmgrl</b>, your user must be part of
+the <b>dba</b> group and this capability is needed to install the ACS.
+<tr><td valign=top>AOLServer Source Directory<td valign=top>/tmp/aolserver3_0<td valign=top>This is simply
+a convenient place to uncompress the source.
+<tr><td valign=top>ORACLE_HOME<td valign=top>/ora8/m01/app/oracle/product/8.1.6<td valign=top>This is
+the default Oracle installation directory.
+<tr><td valign=top>NS_HOME<td valign=top>/tmp/aolserver3_0<td valign=top>This is where the source files are.
+</table><p>
+
+<hr>
+<table width="100%">
+<tr><td width="33%" align="left" valign="top">
+<b>Previous</b>: <a href="oracle.html">Installing Oracle 8.1.6</a></td>
+<td width="34%" align="center" valign="top"><b>Installing AOLServer 3.0</b>
+<br>part of the
+<a href="index.html">ACS Installation Guide</a>
+<td width="33%" align="right" valign="top">
+<b>Next</b>: <a href="acs.html">Installing the ArsDigita Community System</a></td>
+</tr>
+</table>
+<hr>
+<a href="mailto:bquinn@arsdigita.com">bquinn@arsdigita.com</a>
+
+
+</body>
+</html>

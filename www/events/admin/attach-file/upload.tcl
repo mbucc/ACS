@@ -2,8 +2,22 @@
 # This script allows a user to upload a file with a title
 # and attach that file to another table/id in acs
 
-set_form_variables 0
-# on_which_table on_what_id return_url
+ad_page_contract {
+    This script allows a user to upload a file with a title
+    and attach that file to another table/id in acs 
+
+    @param on_which_table the table to upload to
+    @param on_what_id the id in the table to upload to
+    @param return_url url to return to after finished
+
+    @author Bryan Che (bryanche@arsdigita.com)
+    @cvs_id upload.tcl,v 3.5.6.5 2001/01/10 18:22:50 khy Exp
+} {
+    {on_which_table:notnull}
+    {on_what_id:notnull}
+    {return_url:optional}
+}
+
 
 if { ![exists_and_not_null on_which_table] || \
 	![exists_and_not_null on_what_id] } {
@@ -11,23 +25,22 @@ if { ![exists_and_not_null on_which_table] || \
     return
 }
 
-set db [ns_db gethandle]
-set file_id [database_to_tcl_string $db \
+
+set file_id [db_string sel_file_id_seq \
 	"select events_fs_file_id_seq.nextVal from dual"]
-ns_db releasehandle $db
+db_release_unused_handles
 
 set title "Upload a File"
 
-ReturnHeaders
-
-ns_write "
+doc_return  200 text/html "
 [ad_header $title]
 <h2> $title </h2>
 [ad_context_bar_ws [list "../index.tcl" "Events Administration"] "Agenda File"]
 <hr>
 
-<form enctype=multipart/form-data method=POST action=upload-2.tcl>
-[export_form_vars on_which_table on_what_id return_url file_id]
+<form enctype=multipart/form-data method=POST action=upload-2>
+[export_form_vars on_which_table on_what_id return_url]
+[export_form_vars -sign file_id]
 <table>
 <tr>
 <td valign=top align=right>File: </td>

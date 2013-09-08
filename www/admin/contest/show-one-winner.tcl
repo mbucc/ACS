@@ -1,21 +1,23 @@
-# $Id: show-one-winner.tcl,v 3.1 2000/03/10 20:02:03 markd Exp $
-set_the_usual_form_variables
+# /www/admin/contest/show-one-winner.tcl
+ad_page_contract {
+    Displays one contest winner.
 
-# domain_id, user_id
+    @param domain_id which contest this is
+    @param user_id the winner
 
-# show the contest manager everything about one user_id
+    @author mbryzek@arsdigita.com
+    @cvs_id show-one-winner.tcl,v 3.3.2.3 2000/09/22 01:34:37 kevin Exp
+} {
+    domain_id:integer
+    user_id:integer
+}
 
-set db [ns_db gethandle]
 
-set selection [ns_db 1row $db "select unique * from contest_domains where domain_id='$QQdomain_id'"]
-set_variables_after_query
+db_1row contest_info "select unique pretty_name, entrants_table_name from contest_domains where domain_id = :domain_id"
 
-set selection [ns_db 1row $db "select first_names, last_name, email from users where user_id = $user_id"]
-set_variables_after_query
+db_1row user_info "select first_names, last_name, email from users where user_id = :user_id"
 
-ReturnHeaders
-
-ns_write "[ad_admin_header "$first_names $last_name entries to $pretty_name"]
+set page_content "[ad_admin_header "$first_names $last_name entries to $pretty_name"]
 
 <h2>One User</h2>
 
@@ -24,7 +26,7 @@ ns_write "[ad_admin_header "$first_names $last_name entries to $pretty_name"]
 <hr>
 
 <ul>
-<li>user: <a href=\"/admin/users/one.tcl?[export_url_vars user_id]\">$first_names $last_name</a>
+<li>user: <a href=\"/admin/users/one?[export_url_vars user_id]\">$first_names $last_name</a>
 <li>email: <a href=\"mailto:$email\">$email</a>
 
 </ul>
@@ -34,13 +36,13 @@ entries sorted by date
 <p>
 "
 
-set extra_column_info [database_to_tcl_list_list $db "select column_pretty_name, column_actual_name, column_type 
+set extra_column_info [db_list_of_lists extra_column_info "select column_pretty_name, column_actual_name, column_type 
 from contest_extra_columns
-where domain_ID = '$QQdomain_id'"]
+where domain_id = :domain_id"]
 
 # write the table headers
 
-ns_write "<table>
+append page_content "<table>
 <tr>
 <TH>Entry Date
 "
@@ -48,32 +50,32 @@ foreach custom_column_list $extra_column_info {
     set column_pretty_name [lindex $custom_column_list 0]
     set column_actual_name [lindex $custom_column_list 1]
     set column_type [lindex $custom_column_list 2]
-    ns_write "<th>$column_pretty_name"
+    append page_content "<th>$column_pretty_name"
 }
 
-
-set selection [ns_db select $db "select *
+db_foreach entry_info "select *
 from $entrants_table_name
-where user_id = $user_id
-order by entry_date desc"]
-
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
-    ns_write "<tr><td>$entry_date"
+where user_id = :user_id
+order by entry_date desc" {
+    append page_content "<tr><td>$entry_date"
     # we have to do the custom columns now
     foreach custom_column_list $extra_column_info {
 	set column_pretty_name [lindex $custom_column_list 0]
 	set column_actual_name [lindex $custom_column_list 1]
 	set column_type [lindex $custom_column_list 2]
-	ns_write "<td>[set $column_actual_name]"
+	append page_content "<td>[set $column_actual_name]"
     }
-    ns_write "</tr>\n"
+    append page_content "</tr>\n"
 }
 
-ns_write "
+append page_content "
 </table>
 
 [ad_contest_admin_footer]
 "
+
+db_release_unused_handles
+
+doc_return 200 text/html $page_content
 
 

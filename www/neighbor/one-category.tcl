@@ -1,11 +1,16 @@
-# $Id: one-category.tcl,v 3.0.4.1 2000/04/28 15:11:14 carsten Exp $
-# this is a legacy file purely for photo.net; it redirects people 
-# over to the relevant page in /one-subcategory.tcl (in case there were
-# bookmarks)
+# /www/neighbor/one-category.tcl
+ad_page_contract {
+    This is a legacy file purely for photo.net; it redirects people
+    over to the relevant page in /one-subcategory.tcl (in case there
+    were bookmarks).
 
-set_the_usual_form_variables
-
-# subcategory_1
+    @author Philip Greenspun (philg@mit.edu)
+    @creation-date 1 January 1998
+    @cvs-id one-category.tcl,v 3.2.2.1 2000/07/25 09:19:24 kevin Exp
+    @param subcategory_1 the subcategory to look for
+} {
+    subcategory_1:notnull
+}
 
 # we know that it is photographic
 set category_id 0
@@ -23,7 +28,7 @@ case $subcategory_1  {
 }
 
 if [info exists subcategory_id] {
-    ad_returnredirect "one-subcategory.tcl?category_id=$category_id&id=$subcategory_id"
+    ad_returnredirect "one-subcategory?category_id=$category_id&id=$subcategory_id"
 } else {
-    ad_returnredirect /neighbor/opc.tcl?category_id=0
+    ad_returnredirect /neighbor/opc?category_id=0
 }

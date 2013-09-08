@@ -1,30 +1,32 @@
-#
 # /www/gp/administer-permissions.tcl
-#
-# UI for editing the permissions for a specific database row
-#
-# created by michael@arsdigita.com, 2000-02-25
-#
-# $Id: administer-permissions.tcl,v 1.1.2.4 2000/03/24 01:57:47 michael Exp $
-#
 
-# Given that a row in the database typically represents an
-# object (e.g., a web page, a person), this page accepts
-# an object_name parameter which we use to build a meaningful
-# page title.
-#
-ad_page_variables {
-    on_what_id
-    on_which_table
-    {object_name "Row $on_what_id of Table $on_which_table"}
-    return_url
+ad_page_contract {
+    UI for editing the permissions for a specific database row
+
+    Given that a row in the database typically represents an
+    object (e.g., a web page, a person), this page accepts
+    an object_name parameter which we use to build a meaningful
+    page title.
+    
+    @author michael@arsdigita.com
+    @creation-date 2000-02-25
+    @cvs-id administer-permissions.tcl,v 3.2.6.9 2000/07/31 20:02:16 kevin Exp
+} {
+    on_what_id:naturalnum,notnull
+    on_which_table:notnull
+    {object_name ""}
+    return_url:notnull
+}
+
+# We'd like to just make this the default object_name, but we get
+# a variable not found error if vars are null.
+if {[empty_string_p $object_name] } {
+    set object_name "Row $on_what_id of Table $on_which_table"
 }
 
 set user_id [ad_verify_and_get_user_id]
 
-set db [ns_db gethandle]
-
-ad_require_permission $db $user_id "administer" \
+ad_require_permission $user_id "administer" \
 	$on_what_id $on_which_table $return_url
 
 # Fetch the permission grid for this database row and format it into
@@ -54,10 +56,11 @@ set all_users_scope_pretty_name "All Users"
 # 'all_users' scopes if no permissions have been granted to those
 # scopes (this is what the two queries UNIONed onto the end do).
 #
-set selection [ns_db select $db "select
+set sql "
+ select
  decode(pg.scope,
   'user',
-   '<a href=\"/shared/community-member.tcl?user_id=' || u.user_id ||
+   '<a href=\"/shared/community-member?user_id=' || u.user_id ||
    '\">' || u.first_names || ' ' || u.last_name || '</a>',
   'group_role', g.group_name || ' ' || pg.role,
   'group', g.group_name,
@@ -71,8 +74,8 @@ set selection [ns_db select $db "select
  decode(scope, 'user', 1, 'group_role', 2, 'group', 3,
         'registered_users', 4, 'all_users', 5) as display_order
 from general_permissions_grid pg, users u, user_groups g
-where pg.on_what_id = $on_what_id
-and pg.on_which_table = lower('$on_which_table')
+where pg.on_what_id = :on_what_id
+and pg.on_which_table = lower(:on_which_table)
 and pg.user_id = u.user_id (+)
 and pg.group_id = g.group_id (+)
 union
@@ -90,8 +93,8 @@ select
 from dual
 where not exists (select 1
                   from general_permissions_grid
-                  where on_what_id = $on_what_id
-                  and on_which_table = lower('$on_which_table')
+                  where on_what_id = :on_what_id
+                  and on_which_table = lower(:on_which_table)
                   and scope = 'registered_users')
 union
 select
@@ -108,14 +111,15 @@ select
 from dual
 where not exists (select 1
                   from general_permissions_grid
-                  where on_what_id = $on_what_id
-                  and on_which_table = lower('$on_which_table')
+                  where on_what_id = :on_what_id
+                  and on_which_table = lower(:on_which_table)
                   and scope = 'all_users')
-order by display_order asc"]
+order by display_order asc"
 
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+ns_log Notice $sql
 
+
+db_foreach permission_grants $sql {
     append permission_grid "<tr class=$row_class><td>$permission_owner</td>"
 
     foreach permission_type {read comment write administer} {
@@ -146,6 +150,6 @@ set grant_permission_to_group_link "<a href=\"permission-grant-to-group?[export_
 #
 set return_url $return_url_save
 
-ns_db releasehandle $db
+db_release_unused_handles
 
 ad_return_template

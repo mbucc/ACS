@@ -1,16 +1,21 @@
-# $Id: lump-into-about.tcl,v 3.0 2000/02/06 03:26:18 ron Exp $
-set_form_variables_string_trim_DoubleAposQQ
-set_form_variables
-   
-# subcategory_1
+#admin/neighbor/lup-into-about.tcl
+ad_page_contract {
+    not sure if this gets used, 
+    but its for lumping postings that are not categorized well
 
-ReturnHeaders
+    @csv-id: lump-into-about.tcl,v 3.1.6.2 2000/09/22 01:35:43 kevin Exp
+    
+} {
+    subcategory_1:sql_identifier
+}
 
-ns_write "[neighbor_header "Lumping $subcategory_1 Postings"] 
+# lump-into-about.tcl,v 3.1.6.2 2000/09/22 01:35:43 kevin Exp
+
+set doc_body "[neighbor_header "Lumping $subcategory_1 Postings"] 
 
 <h2>Lumping $subcategory_1 Postings</h2>
 
-together by the about column in <a href=\"index.tcl\">[neighbor_system_name]</a>
+together by the about column in <a href=\"index\">[neighbor_system_name]</a>
 
 <hr>
 
@@ -24,7 +29,7 @@ Pick what you want to be the canonical About value:
 
 <p>
 
-<form action=lump-into-about-2.tcl method=post>
+<form action=lump-into-about-2 method=post>
 <input type=text name=lump_about size=30>
 
 <input type=submit value=\"Submit\">
@@ -33,26 +38,24 @@ Pick what you want to be the canonical About value:
 
 "
 
-set db [neighbor_db_gethandle]
 
-set selection [ns_db select $db "select neighbor_to_neighbor_id, 
+set last_about ""
+set first_pass 1
+
+db_foreach neighbor_lumping_sql "select neighbor_to_neighbor_id, 
 users.email as poster_email, one_line, posted, about, upper(about) as sort_key
 from neighbor_to_neighbor, users
 where domain = 'photo.net' and
 primary_category = 'photographic' 
-and subcategory_1 = '[DoubleApos $subcategory_1]'
+and subcategory_1 = ':$subcategory_1'
 and (expires > sysdate or expires is NULL)
 and users.user_id = neighbor_to_neighbor.poster_user_id
-order by sort_key, posted desc"]
+order by sort_key, posted desc" {
 
-set last_about ""
-set first_pass 1
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
     if { $sort_key != $last_about } {
 	if { $first_pass != 1 } {
 	    # not first time through, separate
-	    ns_write "<p>\n"
+	    append doc_body "<p>\n"
 	}
 	set first_pass 0
 	set last_about $sort_key
@@ -62,12 +65,12 @@ while { [ns_db getrow $db $selection] } {
     } else {
 	set anchor "$about : $one_line"
     }
-    ns_write "<li><table>
-<tr>
-<td>
-<a href=\"../view-one.tcl?neighbor_to_neighbor_id=$neighbor_to_neighbor_id\">$anchor</a>
- (by $poster_email on $posted)
-<td>
+    append doc_body "<li><table>
+    <tr>
+    <td>
+    <a href=\"../view-one?neighbor_to_neighbor_id=$neighbor_to_neighbor_id\">$anchor</a>
+    (by $poster_email on $posted)
+    <td>
 <input type=checkbox name=lump_ids value=\"$neighbor_to_neighbor_id\"> Pick
 </tr>
 </table>
@@ -75,14 +78,17 @@ while { [ns_db getrow $db $selection] } {
 
 }
 
-ns_write "</ul>
+append doc_body "</ul>
 
 </form>
 
 <p>
 
 Please contribute to making this a useful service by
-<a href=\"post-new.tcl\">posting your own story</a>.
+<a href=\"post-new\">posting your own story</a>.
 
 [neighbor_footer]
 "
+db_release_unused_handles
+
+doc_return 200 text/html $doc_body

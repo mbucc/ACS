@@ -1,51 +1,71 @@
-# $Id: record-add.tcl,v 3.0 2000/02/06 02:44:21 ron Exp $
-# File:     /address-book/record-add.tcl
-# Date:     12/24/99
-# Contact:  teadams@arsdigita.com, tarik@arsdigita.com
-# Purpose:  adds an address book record
-#
-# Note: if page is accessed through /groups pages then group_id and group_vars_set are already set up in 
-#       the environment by the ug_serve_section. group_vars_set contains group related variables (group_id, 
-#       group_name, group_short_name, group_admin_email, group_public_url, group_admin_url, group_public_root_url,
-#       group_admin_root_url, group_type_url_p, group_context_bar_list and group_navbar_list)
+# /www/address-book/record-add.tcl
+
+ad_page_contract {
+    Adds an address book record
+
+    @param scope
+    @param user_id
+    @param group_id
+    @param return_url
+    @param name
+
+    @author teadams@arsdigita.com
+    @author tarik@arsdigita.com
+    @creation-date 12/24/99
+    @cvs-id record-add.tcl,v 3.3.2.15 2001/01/09 22:08:15 khy Exp
+} {
+    scope:optional
+    user_id:optional,integer
+    group_id:optional,integer
+    return_url:optional
+    name:optional
+}
 
 if {[ad_read_only_p]} {
     ad_scope_return_read_only_maintenance_message
     return
 }
 
-set_the_usual_form_variables 0
-# maybe scope, maybe scope related variables (user_id, group_id, on_which_group, on_what_id)
-# maybe return_url, name
-
 ad_scope_error_check user
-set db [ns_db gethandle]
 
-ad_scope_authorize $db $scope none group_admin user
 
-set name [address_book_name $db]
-set address_book_id [database_to_tcl_string $db "select address_book_id_sequence.nextval from dual"]
+ad_scope_authorize $scope none group_admin user
 
-ReturnHeaders
+set name [address_book_name]
+set address_book_id [db_nextval "address_book_id_sequence"]
 
-ns_write "
-[ad_scope_header "Add a Record" $db]
-[ad_scope_page_title "Add a record for $name" $db ]
+set page ""
 
+append page "
+[ad_scope_header "Add a Record"]
+[ad_scope_page_title "Add a record for $name"]
 
 [ad_scope_context_bar_ws [list "index.tcl?[export_url_scope_vars]" "Address book"] "Add"]
 
 <hr>
 [ad_scope_navbar]
-<form method=post action=\"record-add-2.tcl\">
-[export_form_scope_vars address_book_id return_url]
+<form method=post action=\"record-add-2\">
+[export_form_vars -sign address_book_id] 
+[export_form_scope_vars return_url]
 <table>
 <tr><td>Name</td><td><input type=text name=first_names size=15> <input type=text name=last_name size=25></td></tr>
 <tr><td>Email</td><td><input type=text name=email size=30></td></tr>
 <tr><td>Email #2</td><td><input type=text name=email2 size=30></td></tr>
 <tr><td valign=top>Address</td><td><input type=text name=line1 size=30><br>
 <input type=text name=line2 size=30></td></tr>
-<tr><td>City</td><td><input type=text name=city size=15> State <input type=text name=usps_abbrev size=2> Zip <input type=text name=zip_code size=10></td></tr>
+<tr><td>City</td><td><input type=text name=city size=15> 
+  State <select name=usps_abbrev>"
+
+
+db_foreach state_info {
+    select usps_abbrev, state_name from states
+} { 
+    append page "<option value=$usps_abbrev> $state_name"
+}	
+
+append page "
+</select>
+Zip <input type=text name=zip_code size=10></td></tr>
 <tr><td>Country</td><td><input type=text name=country size=30 value=\"USA\"></td></tr>
 <tr><td>Phone (home)</td><td><input type=text name=phone_home size=15></td></tr>
 <tr><td>Phone (work)</td><td><input type=text name=phone_work size=15></td></tr>
@@ -59,3 +79,7 @@ ns_write "
 </form>
 [ad_scope_footer]
 "
+
+
+
+doc_return  200 text/html $page

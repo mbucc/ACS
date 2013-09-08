@@ -4,7 +4,7 @@
 <BODY bgcolor=#ffffff text=#000000>
 <h2>Upgrading an ArsDigita Community System</h2>
 
-part of <a href="index.html">the ACS docs</a>
+part of <a href="index">the ACS docs</a>
 
 by <A href="http://photo.net/philg/">Philip Greenspun</a>
 
@@ -67,15 +67,15 @@ brand of RDBMS</h4>
 Suppose that you've built up a big collection of data in Sybase and
 understand the data model but need to move it to Oracle.  If you are an
 expert AOLserver developer, the easiest thing to do is configure a pool
-of connections to Sybase and a pool to Oracle.  Then write .tcl scripts
+of connections to Sybase and a pool to Oracle.  Then write  scripts
 to select from Sybase and insert into Oracle.
 
 
 <h3>Upgrading ACS</h3>
 
 We're not going to pretend that upgrading an ACS-backed site is trivial,
-even if you've followed the religion of /doc/patches.html and
-/doc/custom.html.  Does this mean that ACS is badly engineered?  Maybe.
+even if you've followed the religion of /doc/patches and
+/doc/custom.  Does this mean that ACS is badly engineered?  Maybe.
 But other major RDBMS-backed systems such as SAP suffer from the same
 problems.  People have had 20 years to attack this problem and nobody
 has come up with a silver bullet.  This is why IT departments tend to
@@ -106,7 +106,7 @@ useful if you are stopping and copying:
 <li><code>copy-acs-tables.sql</code> : a good model for copying data from an online
 system into a fresh development database for a new ACS version
 
-<li><code>sequence-update.tcl</code> : you'll want to make sure that all
+<li><code>sequence-update</code> : you'll want to make sure that all
 your sequences aren't still starting with 1 now that you have old data
 in your new tables
 

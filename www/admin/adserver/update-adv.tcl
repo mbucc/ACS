@@ -1,15 +1,34 @@
-# $Id: update-adv.tcl,v 3.0.4.1 2000/04/28 15:08:23 carsten Exp $
-set_the_usual_form_variables
+# /www/admin/adserver/update-adv.tcl
 
-# adv_key, target_url, adv_filename
+ad_page_contract {
+    @param target_url
+    @param track_clickthru_p
+    @param adv_filename 
+    @param local_image_p
+    @param adv_key:notnull
 
-set db [ns_db gethandle]
+    @author modified 07/13/200 by mchu@arsdigita.com
+    @cvs-id update-adv.tcl,v 3.2.2.5 2000/11/20 23:55:20 ron Exp
+} {
+    target_url 
+    track_clickthru_p
+    adv_filename 
+    local_image_p
+    adv_key:notnull
+}
 
-ns_db dml $db "update advs set 
-target_url='$QQtarget_url',
-adv_filename='$QQadv_filename',
-local_image_p='$QQlocal_image_p'
-where adv_key='$QQadv_key'"
+db_dml adv_update_query "update advs set 
+target_url = :target_url, 
+track_clickthru_p = :track_clickthru_p, 
+adv_filename = :adv_filename, 
+local_image_p = :local_image_p 
+where adv_key = :adv_key"
 
-ad_returnredirect one-adv.tcl?adv_key=$adv_key
+db_release_unused_handles
+
+ad_returnredirect one-adv.tcl?[export_url_vars adv_key]
+
+
+
+
 

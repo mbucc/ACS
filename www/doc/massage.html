@@ -1,0 +1,62 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>Massages</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Massages</h2>
+
+part of the <a href="">ArsDigita Community System</a>
+by <a href="mailto:audrey@arsdigita.com">Audrey McLoghlin</a>
+
+<hr>
+
+<ul>
+<li>User-accessible directory:  <a href="/reservations/massage/admin">/reservations/massage/admin/</a>
+<li>Data model :  <a href="/doc/sql/massage.sql?url=/doc/sql/massage.sql">/doc/sql/massage.sql</a>
+ 
+
+</ul>
+
+<h3>The Big Idea</h3>
+
+Everyone loves a nice relaxing massage. This module will enable each office to create massage sessions. Employees can then sign up for an available slot.
+
+<p>
+
+Any authorized user (an admin user) can create a new massage session and specify information such as which office it is associated with, the date and time, etc.
+<p>
+
+A user (any aD employee) can view a list of their current and future massage sessions as well as make a reservation from
+the user index page of the module. 
+
+
+<h3>The Medium Idea</h3>
+
+As an admin, you schedule massage sessions for the office of your choice (which is defaulted to the office you are associated with). You choose location, start time, end time, the length of each individual massage, how often the masseuse takes breaks, and how many weeks you would like this session to repeat itself.
+<p>
+From the admin index page, an admin can also view a list of current massage sessions already reserved. An admin has the ability to remove a session from here in which case anyone signed up for a massage during that session will be notified of the cancelation via emial. 
+<p>
+From the index page, an admin can also link to view the signup shedule for a particular session which lists the name of each person signed up for a massage. From there, the schedule can be printed out for the convenience of the masseuse.
+<p>
+From the users page, an employee can choose an office (which is defaulted to the office they are associated with) and also view a list of their current appointments.
+<p>
+An appointment can be canceled from this page in which case the option to sign up for another massage time on the same day is given. Or, another day can be chosen.
+<p>
+The schedule for any day that you are signed up for a massage can also be viewed from the index page
+<p>
+When you are ready to make an appointment, select a facility. You will then be asked to select from the dates available at that facility. You are then shown the schedule for the day and can sign up for any available slot. You will be emailed to remind you of your appointment.
+
+
+<h3>Under the Hood</h3>
+
+The  data model has tables for massage sessions and for massage appointments.
+
+<hr>
+
+<a href="mailto:audrey@arsdigita.com"><address>audrey@arsdigita.com</address></a>
+</body>
+</html>
+
+

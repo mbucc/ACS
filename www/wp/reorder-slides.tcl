@@ -1,21 +1,27 @@
-# $Id: reorder-slides.tcl,v 3.0 2000/02/06 03:55:30 ron Exp $
-# File:        reorder-slides.tcl
-# Date:        28 Nov 1999
-# Author:      Jon Salz <jsalz@mit.edu>
-# Description: Allows an author to change the order of slides.
-# Inputs:      presentation_id
+# /wp/reorder-slides.tcl
+ad_page_contract {
+    Allows an author to change the order of slides.
 
-set_the_usual_form_variables
+    @param presentation_id
 
-set db [ns_db gethandle]
+    @creation-date   28 Nov 1999
+    @author Jon Salz <jsalz@mit.edu>
+    @cvs-id reorder-slides.tcl,v 3.1.2.7 2000/09/22 01:39:34 kevin Exp
+} {
+    presentation_id:naturalnum,notnull
+}
+
+
 set user_id [ad_maybe_redirect_for_registration]
-wp_check_authorization $db $presentation_id $user_id "write"
+wp_check_authorization $presentation_id $user_id "write"
 
-set selection [ns_db 1row $db "select * from wp_presentations where presentation_id = $presentation_id"]
-set_variables_after_query
+db_1row presentation_info_sel "select 
+title, page_signature, copyright_notice, creation_date,
+creation_user, style, show_modified_p, public_p,
+audience, background, group_id
+from wp_presentations where presentation_id = :presentation_id"
 
-ReturnHeaders
-ns_write "[wp_header_form "name=f" \
+append whole_page "[wp_header_form "name=f" \
            [list "" "WimpyPoint"] [list "index.tcl?show_user=" "Your Presentations"] \
            [list "presentation-top.tcl?presentation_id=$presentation_id" "$title"] "Reorder Slides"]
 
@@ -41,7 +47,7 @@ function up() {
 
 function down() {
     with (document.f.slides) {
-        if (selectedIndex < length - 1) {
+        if (selectedIndex >= 0 && selectedIndex < length - 1) {
             var sel = selectedIndex;
             var selectedText = options\[sel\].text;
             var selectedValue = options\[sel\].value;
@@ -77,10 +83,10 @@ function done() {
 
 set counter 0
 
-wp_select $db "
+db_foreach slides_sel "
     select slide_id, title
     from wp_slides 
-    where presentation_id = $presentation_id
+    where presentation_id = :presentation_id
     and max_checkpoint is null
     order by sort_key
 " {
@@ -88,7 +94,7 @@ wp_select $db "
     append out "<option value=$slide_id>$counter. $title\n"
 }
 
-ns_write "$out
+append whole_page "$out
 </select>
 </td>
 <td align=center valign=middle><a href=\"javascript:up()\"><img src=\"pics/up.gif\" border=0></a></td>
@@ -104,3 +110,6 @@ ns_write "$out
 
 [wp_footer]
 "
+
+
+doc_return  200 text/html $whole_page

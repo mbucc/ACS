@@ -1,42 +1,39 @@
-
 # admin/faq/faq-add.tcl
 #
-#   A form for creating a new faq (just the name and associated group)
-#
-#  by dh@arsdigita.com,    Created on Dec 20, 1999
-#
-# $Id: faq-add.tcl,v 3.0.4.1 2000/03/16 03:16:52 dh Exp $
-#-------------------------------------------------
 
-set db [ns_db gethandle]
+ad_page_contract {
+    A form for creating a new faq (just the name and associated group)
+
+    @author dh@arsdigita.com
+    @creation-date Dec 20, 1999
+    @cvs-id faq-add.tcl,v 3.3.2.8 2001/01/10 18:37:45 khy Exp
+} {
+}
+
 
 # get the next faq_id
-set next_faq_id [database_to_tcl_string $db "select faq_id_sequence.nextval from dual"]
+set faq_id [db_string faq_id_get "select faq_id_sequence.nextval from dual"]
 
 # make and option list of all the group names
-set selection [ns_db select $db "
+set sql "
 select group_name, 
        group_id 
 from  user_groups
 where user_groups.group_type <> 'administration' 
-order by group_name "]
+order by group_name"
 
 set group_option_list "<select name=group_id> \n"
 append group_option_list "<option value=\"\">No group \n"
 
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
+db_foreach faq_group_get $sql {
     append group_option_list "<option value=$group_id>$group_name \n"
 }
 append group_option_list "</select>"
-ns_db releasehandle $db
+db_release_unused_handles
 
 
-# -- serve the page -------------------------------
-
-ns_return 200 text/html "
+set page_content "
 [ad_admin_header "Create a FAQ"]
-
 
 <h2>Create a FAQ</h2>
 
@@ -44,8 +41,8 @@ ns_return 200 text/html "
 
 <hr>
 
-<form action=faq-add-2.tcl  method=post>
-[export_form_vars next_faq_id]
+<form action=faq-add-2 method=post>
+[export_form_vars -sign faq_id]
 <table>
 <tr>
  <td><b>Name</b>:</td>
@@ -62,6 +59,8 @@ ns_return 200 text/html "
 </tr>
 </table>
 
-
 [ad_admin_footer]"
 
+
+
+doc_return  200 text/html $page_content

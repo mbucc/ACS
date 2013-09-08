@@ -1,40 +1,55 @@
-# $Id: mailing-list-remove.tcl,v 3.1.2.1 2000/04/28 15:10:01 carsten Exp $
-set_the_usual_form_variables
-# category_id, subcategory_id, and/or subsubcategory_id
-# possibly usca_p
+#  www/ecommerce/mailing-list-remove.tcl
+ad_page_contract {
+    @param category_id
+    @param subcategory_id:optional
+    @param subsubcategory_id:optional
+    @param usca_p:optional
+  
+
+    @author
+    @creation-date
+    @cvs-id mailing-list-remove.tcl,v 3.4.2.5 2000/08/18 21:46:34 stevenp Exp
+} {
+    category_id:integer
+    subcategory_id:optional
+    subsubcategory_id:optional
+    usca_p:optional
+
+}
+
+
 
 set user_id [ad_verify_and_get_user_id]
 
 if {$user_id == 0} {
     
-    set return_url "[ns_conn url]?[export_form_vars category_id subcategory_id subsubcategory_id]"
+    set return_url "[ad_conn url]?[export_form_vars category_id subcategory_id subsubcategory_id]"
 
-    ad_returnredirect "/register.tcl?[export_url_vars return_url]"
+    ad_returnredirect "/register?[export_url_vars return_url]"
     return
 }
 
 # user session tracking
 set user_session_id [ec_get_user_session_id]
 
-set db [ns_db gethandle]
+
 ec_create_new_session_if_necessary [export_entire_form_as_url_vars]
 # type2
 
-
-set delete_string "delete from ec_cat_mailing_lists where user_id=$user_id"
+set delete_string "delete from ec_cat_mailing_lists where user_id=:user_id"
 
 if { [info exists category_id] && ![empty_string_p $category_id] } {
-    append delete_string " and category_id=$category_id"
-    set mailing_list_name [database_to_tcl_string $db "select category_name from ec_categories where category_id=$category_id"]
+    append delete_string " and category_id=:category_id"
+    set mailing_list_name [db_string get_mailing_list_name "select category_name from ec_categories where category_id=:category_id"]
 
 } else {
     append delete_string " and category_id is null"
 }
 
 if { [info exists subcategory_id] && ![empty_string_p $subcategory_id] } {
-
-    append delete_string " and subcategory_id=$subcategory_id"
-    set mailing_list_name "[database_to_tcl_string $db "select category_name from ec_categories where category_id=$category_id"]: [database_to_tcl_string $db "select subcategory_name from ec_subcategories where subcategory_id=$subcategory_id"]"
+    validate_integer "subcategory_id" $subcategory_id
+    append delete_string " and subcategory_id=:subcategory_id"
+    set mailing_list_name "[db_string get_mailing_list_name "select category_name from ec_categories where category_id=:category_id"]: [db_string get_subcat_ml_name "select subcategory_name from ec_subcategories where subcategory_id=:subcategory_id"]"
 
 } else {
     append delete_string " and subcategory_id is null"
@@ -42,9 +57,10 @@ if { [info exists subcategory_id] && ![empty_string_p $subcategory_id] } {
  
 
 if { [info exists subsubcategory_id] && ![empty_string_p $subsubcategory_id] } {
+    validate_integer "subsubcategory_id" $subsubcategory_id
 
-    append delete_string " and subsubcategory_id=$subsubcategory_id"
-    set mailing_list_name "[database_to_tcl_string $db "select category_name from ec_categories where category_id=$category_id"]: [database_to_tcl_string $db "select subcategory_name from ec_subcategories where subcategory_id=$subcategory_id"]: [database_to_tcl_string $db "select subsubcategory_name from ec_subsubcategories where subsubcategory_id=$subsubcategory_id"]"
+    append delete_string " and subsubcategory_id=:subsubcategory_id"
+    set mailing_list_name "[db_string get_cat_ml_name "select category_name from ec_categories where category_id=:category_id"]: [db_string get_ml_subcat_name "select subcategory_name from ec_subcategories where subcategory_id=:subcategory_id"]: [db_string get_subsub_ml_name "select subsubcategory_name from ec_subsubcategories where subsubcategory_id=:subsubcategory_id"]"
 
 } else {
     append delete_string " and subsubcategory_id is null"
@@ -55,12 +71,13 @@ if { ![info exists mailing_list_name] } {
     return
 }
 
-ns_db dml $db $delete_string
+db_dml remove_user_from_mailing_list $delete_string
 
-set re_add_link "<a href=\"mailing-list-add.tcl?[export_url_vars category_id subcategory_id subsubcategory_id]\">[ec_insecure_url][ad_parameter EcommercePath ecommerce]mailing-list-add.tcl?[export_url_vars category_id subcategory_id subsubcategory_id]</a>"
+set re_add_link "<a href=\"mailing-list-add?[export_url_vars category_id subcategory_id subsubcategory_id]\">[ec_insecure_url][ad_parameter EcommercePath ecommerce]mailing-list-add?[export_url_vars category_id subcategory_id subsubcategory_id]</a>"
 
-set back_to_account_link "<a href=\"[ec_insecure_url][ad_parameter EcommercePath ecommerce]account.tcl\">Your Account</a>"
+set back_to_account_link "<a href=\"[ec_insecure_url][ad_parameter EcommercePath ecommerce]account\">Your Account</a>"
 
-set continue_shopping_options [ec_continue_shopping_options $db]
+set continue_shopping_options [ec_continue_shopping_options]
+db_release_unused_handles
 
 ad_return_template

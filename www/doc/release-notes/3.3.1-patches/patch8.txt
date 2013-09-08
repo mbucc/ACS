@@ -1,0 +1,13 @@
+In the file: /www/bboard/search-subject.tcl
+
+Add bboard_user_can_view_topic_p SQL contained in contributions.tcl patch.
+
+After
+  set_form_variables_string_trim_DoubleAposQQ
+add
+  set user_id [ad_verify_and_get_user_id]
+
+After
+  and topic_id = $topic_id
+Add
+  and bboard_user_can_view_topic_p($user_id,$topic_id) = 't'

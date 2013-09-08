@@ -1,36 +1,39 @@
 # /faq/one.tcl
 # 
-# dh@arsdigita.com, December 1999
-# 
-# displays the FAQ
-#
-# Note: if page is accessed through /groups pages then group_id and group_vars_set are already set up in 
-#       the environment by the ug_serve_section. group_vars_set contains group related variables (group_id, 
-#       group_name, group_short_name, group_admin_email, group_public_url, group_admin_url, group_public_root_url,
-#       group_admin_root_url, group_type_url_p, group_context_bar_list and group_navbar_list)
-#
-# $Id: one.tcl,v 3.1.2.1 2000/03/15 20:16:23 aure Exp $
+ad_page_contract {
+    @author dh@arsdigita.com
+    @creation-date December 1999
+    @cvs-id one.tcl,v 3.3.2.9 2000/09/22 01:37:42 kevin Exp
+ 
+    displays the FAQ
 
-set_the_usual_form_variables
-# faq_id
-# maybe scope, maybe scope related variables (group_id)
+    Note: if page is accessed through /groups pages then group_id and group_vars_set are already set up in 
+    the environment by the ug_serve_section. group_vars_set contains group related variables (group_id, 
+    group_name, group_short_name, group_admin_email, group_public_url, group_admin_url, group_public_root_url,
+    group_admin_root_url, group_type_url_p, group_context_bar_list and group_navbar_list)
+} {
+    faq_id:integer,notnull
+    scope:optional
+    group_id:integer,optional
+}
+
 
 ad_scope_error_check
 
-set db [ns_db gethandle]
 
 # check that this user can see the faq --------------
-faq_authorize $db $faq_id
+faq_authorize $faq_id
+
 
 # check if the user can maintain this faq and generate appropriate maintainers url --------
-if { [faq_maintaner_p $db $faq_id] } {
+if { [faq_maintaner_p $faq_id] } {
 
     if { $scope == "public" } {
 	set admin_url "/faq/admin"
     } else {
-	set short_name [database_to_tcl_string $db "select short_name
-                                                    from user_groups
-                                                     where group_id = $group_id"] 
+	set short_name [db_string faq_groupname_get "select short_name
+                                          from user_groups
+                                          where group_id = :group_id"]
 	set admin_url "/[ad_parameter GroupsDirectory ug]/[ad_parameter GroupsAdminDirectory ug]/[ad_urlencode $short_name]/faq"
     }
    
@@ -41,26 +44,24 @@ if { [faq_maintaner_p $db $faq_id] } {
 }
 
 # get the faq_name ----------------------------------
-set faq_name [database_to_tcl_string $db "
-select faq_name
-from faqs 
-where faq_id = $faq_id"]
+set faq_name [db_string faq_faqname_get "select faq_name
+                                from faqs
+                                where faq_id = :faq_id"]
 
 # get the faq from the database
-set selection [ns_db select $db "
+set sql "
 select question, 
        answer,
        entry_id,
        sort_key
 from   faq_q_and_a 
-where  faq_id = $faq_id
-order by sort_key"]
+where  faq_id = :faq_id
+order by sort_key"
 
 set q_and_a_list ""
 set q_list ""
 set question_number 0
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
+db_foreach faq_get $sql {
     incr question_number
     append q_list "<li><a href=#$question_number>$question</a>\n"
     append q_and_a_list "
@@ -68,13 +69,13 @@ while {[ns_db getrow $db $selection]} {
        <b>Q: </b><i>$question</i><p>
        <b>A: </b>$answer<p><br><p>"
 }
+db_release_unused_handles
 
 
-# --serve the page ----------
-append html "
-[ad_scope_header $faq_name $db]
-[ad_scope_page_title $faq_name $db]
-[ad_scope_context_bar_ws_or_index [list "index?[export_url_scope_vars]" "FAQs"] "One FAQ"]
+set page_content "
+[ad_scope_header $faq_name]
+[ad_scope_page_title $faq_name]
+[ad_scope_context_bar_ws_or_index [list "index?[export_url_vars]" "FAQs"] "One FAQ"]
 
 <hr>
 [help_upper_right_menu $helper_args]
@@ -83,7 +84,7 @@ append html "
 "
 
 if {![empty_string_p $q_list] } {
-    append html "
+    append page_content "
     Frequently Asked Questions:
     <ol>
     $q_list
@@ -91,25 +92,24 @@ if {![empty_string_p $q_list] } {
     <hr>
     "
     if {![empty_string_p $q_and_a_list] } {
-	append html "
+	append page_content "
 	Questions and Answers:
 	<ol>
 	$q_and_a_list
 	</ol>
 	<p>
-	"    }
+	"
+    }
 } else {
-    append html "
+    append page_content "
     <p>
     No Questions/Answers available
     <p>" 
 }
 
-append html "
-
+append page_content "
 [ad_scope_footer]"
 
-ns_db releasehandle $db
 
-ns_return 200 text/html $html
 
+doc_return  200 text/html $page_content

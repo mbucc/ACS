@@ -1,12 +1,17 @@
-# $Id: delete-category.tcl,v 3.1.2.1 2000/04/28 15:09:02 carsten Exp $
-set_the_usual_form_variables
+# /www/admin/gc/delete-category.tcl
+ad_page_contract {
+    Allows administrator to delete a primary category in a domain.
 
-# domain_id, primary_category
+    @param domain_id which domain
 
-set db [gc_db_gethandle]
+    @author philg@mit.edu
+    @cvs_id delete-category.tcl,v 3.2.6.4 2000/07/26 21:12:03 bryanche Exp
+} {
+    category_id:naturalnum,notnull
+    domain_id:naturalnum,notnull
+}
 
-ns_db dml $db "delete from ad_categories 
-where domain_id = $domain_id
-and primary_category = '$QQprimary_category'"
+db_dml category_delete "delete from ad_categories 
+where category_id=:category_id"
 
 ad_returnredirect "manage-categories-for-domain.tcl?domain_id=$domain_id"

@@ -1,14 +1,19 @@
-# $Id: make-default.tcl,v 3.0 2000/02/06 03:21:49 ron Exp $
-set_the_usual_form_variables
-# template_id
+#  www/admin/ecommerce/templates/make-default.tcl
+ad_page_contract {
+    @param template_id
+  @author
+  @creation-date
+  @cvs-id make-default.tcl,v 3.2.2.5 2000/09/22 01:35:04 kevin Exp
+} {
+    template_id:integer
+}
 
-set db [ns_db gethandle]
-set selection [ns_db 1row $db "select template_name, template from ec_templates where template_id=$template_id"]
-set_variables_after_query
 
-ReturnHeaders
 
-ns_write "[ad_admin_header "Set Default Template"]
+db_1row get_template_info "select template_name, template from ec_templates where template_id=:template_id"
+
+
+set page_html "[ad_admin_header "Set Default Template"]
 
 <h2>Set Default Template</h2>
 
@@ -20,13 +25,17 @@ Please confirm that you want this to become the default template that products w
 if no template has been specifically assigned to them.
 
 <p>
-<form method=post action=make-default-2.tcl>
+<form method=post action=make-default-2>
 [export_form_vars template_id]
 <center>
 <input type=submit value=\"Confirm\">
 </center>
 </form>
 
-
 [ad_admin_footer]
 "
+
+doc_return  200 text/html $page_html
+
+
+

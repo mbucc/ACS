@@ -1,11 +1,24 @@
-# $Id: poll-edit-2.tcl,v 3.0.4.1 2000/04/28 15:09:15 carsten Exp $
-# poll-edit-2.tcl -- commit changes to a poll
+# poll-edit-2.tcl
 
-set_the_usual_form_variables
-# expects poll_id name, description, start_date, end_date, require_registration_p
+ad_page_contract {
+    Commit changes to a poll.
 
-
-# expects poll_id name, description, start_date, end_date, require_registration_p
+    @param poll_id the ID of the poll
+    @param name the name of the poll
+    @param description the description given for the poll
+    @param start_date the date that the poll begins
+    @param end_date the date that the poll ends
+    @param require_registration_p does this poll require registration?
+    
+    @cvs-id poll-edit-2.tcl,v 3.3.2.9 2000/09/22 01:35:47 kevin Exp
+} {
+    poll_id:notnull,naturalnum
+    name:notnull
+    description:notnull
+    start_date:array,date
+    end_date:array,date
+    {require_registration_p "f"}
+}
 
 
 # random preliminaries
@@ -18,60 +31,33 @@ if {[ad_read_only_p]} {
 set user_id [ad_verify_and_get_user_id]
 ad_maybe_redirect_for_registration
 
-# sanity check
-
-set exception_count 0
-set exception_text ""
-
-if { ![info exists poll_id] || [empty_string_p $poll_id] } {
-    incr exception_count
-    append exception_text "<li> poll_id is missing.  This could mean there's a problem in our software"
-}
-
-if { ![info exists name] || [empty_string_p $name] } {
-    incr exception_count
-    append exception_text "<li> Please supply a poll name"
-}
-
-if { ![info exists description] || [empty_string_p $description] } {
-    incr exception_count
-    append exception_text "<li> Please supply a description"
-}
-
-
-if { $exception_count > 0 } {
-    ad_return_complaint $exception_count $exception_text
-    return
-}
-
+set starting $start_date(date)
+set ending $end_date(date)
 
 # prep the date and checkbox inputs
 
-ns_dbformvalue [ns_getform] start_date date start_date
-ns_dbformvalue [ns_getform] end_date date end_date
-
-if { ![info exists require_registration_p] || ($require_registration_p != "t") } {
-    set require_registration_p "f"
+if { [db_string get_date_in_correct_order "select 1 from dual where :starting < :ending" -default "0"] != 1} {
+    ad_return_complaint 1 "Start date is after or the same as end date"
+    return
 }
-
 
 # now update it
 
 set update_sql "
 update polls set
-    name = '$QQname',
-    description = '$QQdescription',
-    start_date = '$start_date',
-    end_date = '$end_date',
-    require_registration_p = '$require_registration_p'
+    name = :name,
+    description = :description,
+    start_date = :starting,
+    end_date = :ending,
+    require_registration_p = :require_registration_p
 where
-    poll_id = $poll_id
+    poll_id = :poll_id
 "
 
-set db [ns_db gethandle]
 
-if [catch { ns_db dml $db $update_sql } errmsg ] {
-    ns_return 200 text/html "
+
+if [catch { db_dml update_poll $update_sql } errmsg ] {
+    doc_return  200 text/html "
 [ad_admin_header "Error updating poll"]
 <h3>Error while updating a poll</h3>
 <hr>
@@ -86,11 +72,13 @@ $errmsg
     return
 }
 
+db_release_unused_handles
+
 # Update the memoized value
 
 util_memoize_flush "poll_info_internal $poll_id"
 
 # redirect back to the index
 
-ad_returnredirect "index.tcl"
+ad_returnredirect ""
 

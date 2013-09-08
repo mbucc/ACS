@@ -1,0 +1,137 @@
+<html>
+<!--AD_DND-->
+<!--file-manager.html,v 3.1.2.2 2000/08/24 23:39:43 ron Exp-->
+<head>
+<title>File Manager</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>File Manager</h2>
+
+part of the <a href=/doc/>ArsDigita Community System</a>
+by <a href=mailto:ron@arsdigita.com>Ron Henderson</a>
+and <a href=maito:karlg@arsdigita.com>Karl Goldstein</a>
+
+<hr>
+
+<ul>
+  <li>User-accessible directory: none
+  <li>Site administrator directory: <a href=/admin/file-manager/>/admin/file-manager/</a>
+  <li>data model: none
+</ul>
+
+<h3>The Big Picture</h3>
+
+<p>The ACS File Manager is a simple tool for allowing content managers
+to work on a site even if they don't access to the machine on which it
+runs, via FTP or SSH login. Through the File Manager's web-based user
+interface, text files can be edited using HTML forms, and new versions
+of binary files like images can be uploaded, to replace prior
+versions.  The set of files and directories that content managers are
+allowed to work on can be configured in the parameters file.  If your
+site uses version control, then File Manager will also take care of
+recording all changes in the version control system.
+
+<p>In addition to editing existing files, content managers can also
+add new files to the system and create directories.
+
+<p>The user interface looks like a file brower.  It uses the following
+icons to indicate file status and type for various items under the
+server's pageroot:</p>  
+
+<blockquote>
+<table>
+
+<tr>
+<td><img src=/graphics/file-manager/folder.gif></td>
+<td>Folder</td>
+</tr>
+
+<tr>
+<td><img src=/graphics/file-manager/text.gif></td>
+<td>Editable text file</td>
+</tr>
+
+<tr>
+<td><img src=/graphics/file-manager/image.gif></td>
+<td>Editable image file</td>
+</tr>
+
+<tr>
+<td><img src=/graphics/file-manager/locked.gif></td>
+<td>Locked file, e.g. a file under version control with local modifications</td>
+</tr>
+
+<tr>
+<td><img src=/graphics/file-manager/forbidden.gif></td>
+<td>Forbidden file that cannot be edited or uploaded using File Manager</td>
+</tr>
+
+</table>
+</blockquote>
+
+<p>You can click on text or image file icons to see a preview of the
+item, and you can click on file names to edit or upload new content.
+Clicking on a folder will navigate to that directory and display its
+contents.  Forbidden files cannot be operated on.
+
+<h3>Version Control</h3>
+
+<p>File Manager is fully integrated with CVS (the version control
+system used by all ArsDigita development projects).  All CVS
+transactions are handled by the <a href=/doc/version-control>version
+control</a> module.  If you want to use version control in conjuction
+with a remote repository, make sure you follow the instructions for
+setting up access to a remote repository.
+
+<h3>Permissions</h3>
+
+<p>Keep in mind that all file operations (uploads, edits, creating
+directories, etc.) are executed by the running AOLserver process.
+This means that permissions are determined by the umask of the
+corresponding account, usually nsadmin.  As a minor security check,
+File Manager does not allow file names with /'s or spaces, making it
+more difficult for users to create files outside of the server's
+pageroot.
+
+<h3>Parameters</h3>
+
+<p>The following set of parameters control the behavior of File Manager:
+
+<blockquote>
+<pre>
+[ns/server/yourservername/acs/file-manager]
+EnabledP=1
+; use version control?
+VersionControlP=1
+; extensions of files that be can edited/uploaded using File Manager
+Extensions=html,adp,jpg,gif
+; directories to ignore
+Ignore=admin,CVS
+; directories to manage (relative to www)
+ManagedDirectories=acs-examples,ads,graphics
+</pre>
+</blockquote>
+
+<p>The <code>VersionControlP</code> flag controls whether the <a
+href=/doc/vc>version control</a> module should be used to record all
+changes to files.  The <code>Extensions</code> parameter is a list of
+file extensions that correspond to editable files.  The
+<code>Ignore</code> parameter lists directory names that should never
+appear in the file listing. The <code>ManagedDirectories</code>
+parameter controls which directories will be accessible
+via file-manager.  If you leave this parameter out then all
+directories will be available.</p>
+
+<h3>Future Improvements</h3>
+
+<p>The ability to delete, rename, and move files and directories would
+be nice, and perhaps set permissions.</p>
+
+<hr>
+<address><a href="mailto:ron@galcit.caltech.edu">Ron Henderson</a></address>
+</body>
+</html>
+
+
+

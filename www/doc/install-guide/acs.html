@@ -1,0 +1,681 @@
+<html><head><title>Installing the ArsDigita Community System v 3.3</title></head>
+<body bgcolor="#FFFFFF">
+
+<a name="ACS"></a>
+<table width="100%">
+<tr><td width="33%" align="left" valign="top">
+<b>Previous</b>: <a href="aolserver.html">Installing AOLServer 3.0</a></td>
+<td width="34%" align="center" valign="top"><h1>Installing the ArsDigita Community System v 3.3</h1>
+<td width="33%" align="right" valign="top">
+<b>Next</b>: <a href="tests.html">Acceptance Tests</a></td>
+</tr>
+</table>
+
+<a href="/doc/">ACS Documentation</a> :
+<a href="">ACS Installation Guide</a> :
+Installing the ArsDigita Community System v 3.3
+
+<hr>
+<p>
+
+<a name="top"></a>
+This document covers the installation of the ArsDigita Community System (ACS)
+step by step.  It assumes that you have already installed <a href="oracle.html">Oracle</a>
+ and <a href="aolserver.html">AOLServer</a>.  
+<ol>
+<li><a href="#download">Downloading the ACS</a>
+<li><a href="#prepare">Prepare Oracle for the ACS</a>
+<li><a href="#exports">Setup nightly Oracle exports</a>
+<li><a href="#installing">Installing the ACS into Oracle</a>
+<li><a href="#configuring">Configuring AOLServer</a>
+<li><a href="#startup">Ensuring that your service starts automatically on boot.</a>
+<li><a href="#transfer">Appendix A: How to Transfer Data.</a>
+<li><a href="#port80">Appendix B: Running AOLServer on Port 80</a>
+<li><a href="#delete">Appendix C: Deleting a tablespace.</a>
+</ol>
+
+  <a name="download"></a>
+  <h3>Downloading the ACS.</h3>
+  <ul>
+      <li>Download the following components from the ArsDigita 
+      <a href="http://www.arsdigita.com/download/" >download</a> 
+       page to the <b>/tmp</b> directory:<p>
+  <ul>
+
+    <li>ArsDigita Community System v 3.3.<p>
+
+  </ul>
+  
+  <li>Login as nsadmin and uncompress the downloaded components into
+      <code>/web</code>.
+      Substitute the correct file 
+name into the line below.  If you type <code>acs-</code> and then press 
+the <b>TAB</b> key, your shell should complete the file name for you.  <p>
+<pre>
+$ su - nsadmin
+; Enter nsadmin's password.
+$ cd /tmp
+$ tar -xzvf acs-3.3.tar.gz --directory=/web
+
+; Stay logged in as <b>nsadmin</b>.
+</pre>
+
+    <li>You should now have a <em>acs</em> directory tree in <b>/web</b>.  Rename
+    this directory to whatever you want your web service to be identified as.
+    The name of your web service is referred as the <em>service_name</em>.  This identification
+    is used internally by AOLServer to differentiate your services from one another.  A service
+    name should be a single word <em>letters and numbers only</em>.  If the name of your site is one word,
+    that would be a good choice.   For example "arfdigita" is the service name for the <a href="http://arfdigita.org/">ArfDigita.org</a> community.
+<pre>
+$ cd /web
+$ mv acs <em>service_name</em>
+</pre>
+<li>
+The ACS is configured by a single parameter file which is always
+    stored in <code>/web/service_name/parameters/</code>.  The name
+    of the  configuration file is not important, as long as it is not
+    <code>ad.ini</code>.  This is the name of the default file shipped
+    with the ACS.  Make a copy of this file and modify it to taste.
+    You do not need to delete <code>ad.ini</code>.
+<pre>
+$ cd /web/<em>service_name</em>/parameters
+$ cp ad.ini <em>service_name</em>.ini
+Open <em>service_name</em>.ini your favorite editor.
+</pre>
+  
+Use a text replace command to replace instances of "yourservername"
+    with <em>service_name</em>.  You should also scan the file
+    and replace items such as 
+    "yourdomain Network" with a more appropriate setting.  Consider
+    at least setting the system name, the publisher name, and the email
+    address
+    of the system owner.  You should also set all e-mail addresses to an
+    actual e-mail account that can receive mail.  Many pages
+    display the system name at the top, so you should set this as well.
+    You can revisit this file at any time to update the configuration.
+ </ul><p>
+<a name="prepare"></a>
+<a href="#top">TOP</a><br><h3>Prepare Oracle for ACS</h3>
+    You should be logged on as <b>nsadmin</b> for this step and you
+    should make sure that <b>nsadmin</b> is in the <b>dba</b> group.
+<ul>
+  <li>
+ Verify this by typing <b>groups</b> when you login.
+    <pre>
+$ groups
+nsadmin dba web
+</pre>
+
+If you do not see these groups, take the following action:
+<pre>
+$ su -		# enter root password
+# usermod -g nsadmin -G dba,web nsadmin
+</pre>
+
+If you get an error about an undefined group, then add that group
+manually.
+<pre>
+# groupadd dba
+# groupadd nsadmin
+# groupadd web
+</pre>
+
+Make sure to logout as <code>root</code> when you are finished with this
+ step and log back in as <code>nsadmin</code>.
+<p>
+
+  <li>Connect to Oracle using <code>svrmgrl</code> and login.<p>
+<pre>
+$ svrmgrl
+
+SVRMGR> connect internal
+Connected.
+</pre>
+
+    <li>Determine where the system tablespaces are stored
+<pre>
+SVRMGR>  select file_name from dba_data_files;
+</pre>
+Example results:
+<pre>
+/ora8/m01/app/oracle/oradata/ora8/system01.dbf
+/ora8/m01/app/oracle/oradata/ora8/tools01.dbf
+/ora8/m01/app/oracle/oradata/ora8/rbs01.dbf
+/ora8/m01/app/oracle/oradata/ora8/temp01.dbf
+/ora8/m01/app/oracle/oradata/ora8/users01.dbf
+/ora8/m01/app/oracle/oradata/ora8/indx01.dbf
+/ora8/m01/app/oracle/oradata/ora8/drsys01.dbf
+</pre>
+
+<li>Using the above output, you should determine where to store your 
+tablespace.  As a general rule, you'll want to store your tablespace on a 
+separate mount point under the <code>/ora8</code> directory that is
+ 
+ separate from the Oracle system data files.  By default, the Oracle
+    system is on <code>m01</code>, so we will use <code>m02</code>.  This will enable you to
+separate your Oracle system and database files onto separate disks for
+optimized performance.  For more information on such a configuration, 
+see <a href="http://www.arsdigita.com/books/panda/databases-choosing">Chapter
+12</a> of <a href="http://www.arsdigita.com/books/panda/">the book</a>.
+For this example, we'll use <code>/ora8/m02/oradata/ora8/</code>.<p>
+     <li> Create the directory for the datafile.  <p>
+	 To do this, exit from <code>svrmgrl</code> and login as <b>root</b> for this step.
+<pre>
+SVRMGR> exit
+$ su -
+; Enter root password.
+# mkdir -p /ora8/m02/oradata/ora8/
+# chown nsadmin.web /ora8/m02/oradata/ora8
+# chmod 775 /ora8/m02/oradata/ora8
+# exit
+$
+</pre>
+
+     <li> As <b>nsadmin</b>, create a tablespace for the service.  It is important that
+the tablespace can <code>autoextend</code>.  This allows the tablespace's 
+storage capacity to grow as the size of the data grows. We set the 
+pctincrease to be a very low value so that our extents won't grow 
+geometrically. We do not set it to 0 at the tablespace level because this 
+would affect Oracle's ability to automatically coalesce free space in the
+ tablespace.
+<pre>
+$ svrmgrl
+
+SVRMGR> connect internal;
+SVRMGR> create tablespace <i>service_name</i> datafile '/ora8/m02/oradata/ora8/<i>service_name</i>01.dbf' size
+50m autoextend on default storage ( pctincrease 1);
+</pre>
+    <li> Create a database user for this service. Give the user access to the tablespace and rights to connect. (Substitute <code>database_password</code> with the appropriate password.)<p>
+<b> Write down what you specify as <i>service_name</i> and 
+<i>database_password</i></b>.  You will need this information for configuring
+exports exports AOLServer.
+<pre>
+SVRMGR> create user <i>service_name</i> identified by <i>database_password</i> default tablespace <i>service_name</i>
+temporary tablespace temp quota unlimited on <i>service_name</i>;
+SVRMGR> grant connect, resource, ctxapp, javasyspriv, query rewrite to <i>service_name</i>;
+SVRMGR> revoke unlimited tablespace from <i>service_name</i>;
+SVRMGR> alter user <i>service_name</i> quota unlimited on <i>service_name</i>;
+SVRMGR> exit;
+</pre>
+Your table space is now ready.  In case you are trying to delete a
+	previous ACS installation, consult these commands in the
+	<a href="#delete">appendix</a>.
+
+</ul>
+<a name="exports"></a>
+<a href="#top">TOP</a><br><h3>Set up nightly Oracle exports</h3>
+While you're working with Oracle, you should configure it to do automatic exports.  An
+export is a separate backup copy of the database.  This copy includes all of the database's state at
+the time that the export was initiated.  If your database is corrupted, you can restore from one of these
+backups (see <a href="#transfer">appendix</a>).  You should do this step as <b>root</b>.
+<ul>
+<li>Download the backup script.  Save the file <a href="export-oracle.txt">export-oracle.txt</a> 
+as <b>/tmp/export-oracle.txt</b>.
+<li>Login as root.  The following commands will install the export script.
+<pre>
+$ su -
+; Enter root password
+# cp /tmp/export-oracle.txt /usr/sbin/export-oracle
+# chmod 700 /usr/sbin/export-oracle
+</pre>
+
+<li> Setup the export directory.  This is the directory where backups will be stored.  We
+recommend the directory <code>/ora8/m02/oracle-exports</code>.
+<pre>
+# mkdir /ora8/m02/oracle-exports
+# chown oracle.dba /ora8/m02/oracle-exports
+# chmod 770 /ora8/m02/oracle-exports
+</pre>
+
+<li> Now edit <code>/usr/sbin/export-oracle</code> and 
+change the <code>SERVICE_NAME</code> and <code>DATABASE_PASSWORD</code> 
+fields to their correct values.  If you want to use
+a directory other than
+<code>/ora8/m02/oracle-exports</code>, you also need to change the
+<code>exportdir</code> setting.<p>
+Test the export procedure by running the command. 
+<pre>
+# /usr/sbin/export-oracle
+mv: /ora8/m02/oracle-exports/oraexport-service_name.dmp.gz: No such file or directory
+
+Export: Release 8.1.6.1.0 - Production on Sun Jun 11 18:07:45 2000
+
+(c) Copyright 1999 Oracle Corporation.  All rights reserved.
+
+
+Connected to: Oracle8i Enterprise Edition Release 8.1.6.1.0 - Production
+With the Partitioning option
+JServer Release 8.1.6.0.0 - Production
+Export done in US7ASCII character set and US7ASCII NCHAR character set
+. exporting pre-schema procedural objects and actions
+. exporting foreign function library names for user SERVICE_NAME 
+. exporting object type definitions for user SERVICE_NAME 
+About to export SERVICE_NAME's objects ...
+. exporting database links
+. exporting sequence numbers
+. exporting cluster definitions
+. about to export SERVICE_NAME's tables via Conventional Path ...
+. exporting synonyms
+. exporting views
+. exporting stored procedures
+. exporting operators
+. exporting referential integrity constraints
+. exporting triggers
+. exporting indextypes
+. exporting bitmap, functional and extensible indexes
+. exporting posttables actions
+. exporting snapshots
+. exporting snapshot logs
+. exporting job queues
+. exporting refresh groups and children
+. exporting dimensions
+. exporting post-schema procedural objects and actions
+. exporting statistics
+Export terminated successfully without warnings.
+</pre>
+
+If you don't have any warnings, proceed to automate the backups.    <p>
+    
+<li> Automating backups is accomplished using the UNIX <b>crontab</b> facility.<p>
+While still as <b>root</b> run the following command.  You can replace
+the <code>EDITOR="emacs -nw"</code> portion with whatever editor your
+prefer, such as <code>EDITOR=vi</code>.
+<pre>
+# export EDITOR="emacs -nw"
+# crontab -e</pre>
+Now add the following line on a line by itself
+<pre>
+0 23 * * * /usr/sbin/export-oracle
+</pre>
+
+Save the file, exit the editor.  Verify that the addition succeeded by
+checking the output of the following command.
+<pre>
+# crontab -l | grep export-oracle
+0 23 * * * /usr/sbin/export-oracle
+# exit
+; Logout
+</pre>
+If you see the line, go ahead and log out.
+    </ul>
+<a name="installing"></a>
+<a href="#top">TOP</a><br><h3>Installing the ACS into Oracle.</h3>
+This step should be completed as <b>nsadmin</b>.
+<ul>
+<li>Make sure that you can login to Oracle using your special <i>service_name</i> account created in step 1.  Login as <b>nsadmin</b>.
+<pre>
+$ sqlplus <i>service_name</i>/<i>database_password</i>
+SQL> select sysdate from dual;
+
+SYSDATE
+----------
+2000-06-11
+
+SQL> exit
+</pre>
+You should see today's date in a format 'YYYY-MM-DD.'  If you can't login,
+try redoing step 1 again.  If the date is in the wrong format, make sure
+you followed the steps outlined in the <a href="oracle.html#wrongdates">
+Oracle documentation</a>.<p>
+
+<li>Load the <code>states, country_codes</code> and <code>counties</code>
+tables using the <code>load-geo-tables</code> shell script in the
+<code>/web/<i>service_name</i>/www/install</code> directory.
+<pre>
+$ cd /web/<i>service_name</i>/www/install
+$ ./load-geo-tables <i>service_name</i>/<i>database_password</i>
+</pre>
+
+You should see a long set of text scroll by.  It should terminate with
+lines that look like this, but the numbers may be different.
+<pre>
+loading currency_codes.ctl...
+
+SQL*Loader: Release 8.1.6.1.0 - Production on Sun Jun 11 18:15:36 2000
+
+(c) Copyright 1999 Oracle Corporation.  All rights reserved.
+
+Commit point reached - logical record count 64
+Commit point reached - logical record count 128
+Commit point reached - logical record count 162
+loading states.ctl...
+
+SQL*Loader: Release 8.1.6.1.0 - Production on Sun Jun 11 18:15:44 2000
+
+(c) Copyright 1999 Oracle Corporation.  All rights reserved.
+
+Commit point reached - logical record count 64
+Commit point reached - logical record count 69
+</pre><p>
+    
+<li> Load the ACS data models.<p>
+    The data models are the heart of the ACS.  They define all
+    of the table structures, referential integrity constraints, and
+    procedures that enable the community system.  
+
+<pre>
+$ cd /web/<i>service_name</i>/www/doc/sql
+$ sqlplus <i>service_name</i>/<i>database_password</i> < load-data-model.sql
+; This should take about 15 minutes.  Ignore the vast lines of text
+; that will fill the screen.
+</pre>           
+
+<li>Load the site-wite-search module
+<pre>
+$ cd /web/<i>service_name</i>/www/doc/sql
+$ ./load-site-wide-search service_name database_password ctxsys_password
+SQL> exit
+</pre>
+
+Watch the screen carefully for errors.  If you see any errors, that means
+something went wrong and site wide search is not enabled.  Attempt to
+resolve the issue and then try the script again.<p>
+
+If you can't remember the password for the <code>ctxsys</code> user, do::
+<pre>
+$ svrmgrl
+SVRMGR> connect internal;
+SVRMGR> alter user ctxsys identified by ctxsys_password;
+SVRMGR> exit;
+</pre>
+<p>
+
+
+
+</ul>    
+<a name="configuring"></a>
+<a href="#top">TOP</a><br><h3>Configuring AOLServer</h3><p>
+The AOLServer architecture lets you run an arbitrary number of virtual
+servers.  A virtual server is an HTTP service running on a specific 
+port, e.g. port 80.  In order for the ACS to work, you need to 
+configure a virtual server.  Because the process is involved, we
+have prepared a sample virtual server configuration file.  
+
+
+
+<ul>
+<li>Allot an IP address
+
+You must know what IP address has been assigned to your system.  
+If you don't know, contact your system administrator and find out.
+If you do not have a network connection, use <code>localhost 127.0.0.1</code>
+Once you have installed a virtual server as described below, you should notify 
+your sysadmin that you have claimed this IP. 
+
+<p>
+<li> Save the template configuration file <a href="template-ini.ini">template-ini.ini</a>
+into <b>/tmp</b>.
+<p><li> Login as <b>nsadmin</b>.
+<pre>
+$ cp /tmp/template-ini.ini /home/aol30/<i>service_name</i>.ini
+</pre>
+
+<p><li> Replace the following variables in the file as dictated below
+    using a text editor.  You must specify a service port for your web server to run.  The standard HTTP
+port number is port 80.  If you are already running a web server (such as 
+<a href="http://www.apache.org/">Apache</a>, then port 80 is likely no longer available.
+We recommend setting the service port to <code>8080</code> for a first time installation.
+No other service uses this port and special access is not required to use it.  If you
+want to use port 80, please read this <a href="#port80">appendix</a>.
+<p>
+<table>
+<tr><th>Variable to replace<th>Target Value
+
+<tr><td> service_database_username <td> service_name
+<tr><td> service_database_password <td> database_password
+<tr><td> AOL_HOME		       <td> /home/aol30
+<tr><td> service_short_name	       <td> service_name
+<tr><td> service_short_description <td> a description of your service
+<tr><td> service_email <td>the email address of the maintainer
+<tr><td> ACS_HOME                  <td> /web/service_name
+<tr><td> service_ip_address	       <td> your ip address
+<tr><td> service_ip_name	       <td> your dns name
+<tr><td> service_port	       <td> what port to use (80 is standard HTTP port)
+<tr><td> service_ip_address_ssl    <td> disabled by default
+<tr><td> service_ip_name_ssl       <td> disabled by default
+<tr><td> service_port_ssl}	       <td> disabled by default
+</table>
+<p><li>Copy this <a href="nsd-oracle.txt">nsd-oracle</a> script into <b>/tmp/nsd-oracle.txt</b>.  
+<pre>
+$ cd /home/aol30/bin
+$ cp /tmp/nsd-oracle.txt nsd-oracle
+$ chmod 700 /home/aol30/bin/nsd-oracle
+</pre>
+If you deviated from the <a href="oracle.html#defaults">Oracle</a> installation defaults 
+we specified, edit <b>nsd-oracle</b> as necessary.
+
+<p><li> Kill any current running AOLServer processes and start a new one.
+<pre>
+$ killall -9 nsd
+; Should probably see:
+nsd: no process killed    
+$ /home/aol30/bin/nsd-oracle -c /home/aol30/servername.ini
+</pre>
+
+Attempt to connect to the service 
+from a web browser as you did in the <a href="aolserver.html#install">AOLServer
+documentation</a>.  You should specify a URL like:
+<pre>
+http://<i>ip_name</i>:<i>ip_port</i>/
+</pre>
+    
+    
+<p>    
+You should see a page that looks like <a href="acs-start.html">this</a>.
+If you do, try to login.  Specify a username of <b>system</b> and a
+    password of <b>changeme</b>.<p>
+    If you don't see the login page, view your error log
+(<b>/home/aol30/log/servername-error.log</b>) to make sure the service
+    is starting without any problems.  If you need to make changes,
+    don't forget to kill any running servers.
+<pre>
+$ killall -9 nsd
+</pre>    
+</ul>
+    <p>
+
+<a name="troubleshooting"></a>
+<a href="#top">TOP</a><br><h3>Troubleshooting</h3>
+
+If you can't get to the login page, check for one of the below errors:
+<p>
+<ul>
+<li>You see a page with the message <b>Error Serving Group Pages</b>.<p>
+Take the following actions:
+<ol>
+<li>Edit <code>/home/aol30/<i>service_name</i>.ini</code> Make sure that
+there is a line <code>auxconfigdir=/web/service_name/parameters</code> and that it
+is correct.
+<li>Make sure that there is a file <code>/web/service_name/parameters/service_name.ini</code>.
+Edit this file and replace the default values if necessary.
+<li>Kill your old AOLServer and restart it using the commands above for testing it.
+</ol><p>
+<li>If you don't see a page at all.<p>
+Check the log file.  Make sure there is a line like:
+<pre>
+Notice: nssock: listening on http://localhost.localdomain:8000
+</pre>
+If you can't find this line, look for a line specifying an error listening to a port.  Such errors
+are caused if another process is listening to that port or if you don't have permission
+to access the port.  Try using another port, perhaps 8086.  You specify the port in 
+<code>/home/aol30/service_name.ini</code> under <code>[ns/server/service_name/module/nssock]</code>
+Here is a sample for a computer programmed to listen to 127.0.0.1:8080.  Try replacing the entries
+in your file with this one.
+<pre>
+[ns/server/service_name/module/nssock]
+timeout=120
+Address=127.0.0.1
+Hostname=127.0.0.1
+Port=8080
+</pre>
+<li> Carefully scan the error log file for other entries flagged as errors.  If you
+can't figure out what is wrong, try posting to the <a href="http://www.arsdigita.com/bboard/q-and-a.tcl?topic_id=21">web/db bboard</a>.
+</ul>
+
+<p>
+
+<a name="startup"></a>
+<a href="#top">TOP</a><br><h3>Ensure that your service automatically starts on boot (or any other time 
+the service dies).</h3>
+This step should be completed as root.  This can break every service on your
+machine, so proceed with caution.<p>
+<ul>
+<li>Copy this <a href="restart-aolserver.txt">restart-aolserver</a> into 
+<b>/tmp/restart-aolserver.txt</b>.  <p>
+
+<li>
+This script needs to be SUID-root, which means that
+the script will run as root.   This is necessary to ensure that the 
+aolserver processes are killed regardless of who owns them.  However
+the script should be executable by the <b>web</b> group to ensure 
+that the users updating the web page can use the script, but that general system
+users cannot run the script.  You also need to have Perl installed
+and also a symbolic link to it in <code>/usr/local/bin</code>.
+<pre>
+$ su - 
+; Enter root password.    
+# cp /tmp/restart-aolserver.txt /usr/local/bin/restart-aolserver
+# chown root.web /usr/local/bin/restart-aolserver
+# chmod 4750 /usr/local/bin/restart-aolserver
+# ln -s /usr/bin/perl /usr/local/bin/perl
+# su - nsadmin
+</pre>
+
+<li>Test the <b>restart-aolserver</b> script by making sure all
+    servers are dead, starting a new server, and then killing it.
+    You should see the following lines.
+<pre>
+$ killall -9 nsd
+nsd: no process killed
+$ /home/aol30/bin/nsd-oracle -c /home/aol30/service_name.ini
+$ restart-aolserver service_name
+Killing 23727 23728 23729 23730
+$ killall -9 nsd
+nsd: no process killed
+</pre>
+The numbers indicate the process ids (PIDs) of the processes being
+killed.  It is important that no processes are killed by the second
+call to <code>killall</code>.  If there are processes being killed,
+it means that the script is not working.  <p>
+    
+<li>Assuming that the <b>restart-aolserver</b> script worked, login as
+root and open <code>/etc/inittab </code> for editing.
+<pre>
+$ su -
+; Enter root password
+# emacs -nw /etc/inittab    
+</pre>    
+<li>Copy this line into the bottom of the file as a template, making sure
+that the first field <b>nss</b> is unique.
+<pre>
+nss:2345:respawn:/home/aol30/bin/nsd-oracle -i -c /home/aol30/<i>service_name</i>.ini
+</pre>
+<li><font color=red>Important:</font> Make sure there is a newline at the end 
+of the file.  If there is not a newline at the end of the file, the system 
+may suffer catastrophic failures.
+<li> Still as root, enter the following command to re-initialize
+    <code>/etc/inittab</code>.
+<pre>
+# killall -9 nsd    
+# /sbin/init q
+</pre>    <p>
+
+<li> <font color=red>Important:</font> See if it worked by running the
+    restart-aolserver script again.
+<pre>
+# restart-aolserver <i>service_name</i>
+Killing 23750 23753 23754 23756
+</pre>    
+</ul>
+
+If the processes were killed, congratulations, your server is now
+automated for startup and shutdown.  On to the <a
+href="tests.html">Acceptance Tests!</a>!
+<p>
+<hr>
+
+<a name="transfer"></a>
+<a href="#top">TOP</a><br><h3>Appendix A: How to Transfer Data</h3> 
+
+If you are moving the service from one location to another, export code for the old database and 
+import into the new.  If your database has been hosed and you want to restore a backup, use
+the <code>imp</code> command.  These commands can be run from the shell, you don't need to 
+use <code>sqlplus</code>.
+
+To export:<pre>
+exp <i>service_name</i>/<i>database_password</i> file=foo.dmp consistent=y full=y
+</pre>
+<p>
+To  import:
+<pre>
+imp <i>service_name</i>/<i>database_password</i> file=foo.dmp [fromuser=olduser touser=<i>service_name</i>]
+</pre>
+
+
+<a name="port80"></a>
+<a href="#top">TOP</a><br><h3>Appendix B: Running AOLServer on Port 80</h3>
+
+If you want to run the service on port 80 (the default HTTP port), you
+need to add some additional settings to your <code>service_name.ini</code> file in <code>/home/aol30</code>.
+Under the <code>[ns/parameters]</code> section,  ensure that there is an entry
+<pre>
+User=nsadmin
+</pre>
+
+Moreover, you will need to start the service as <b>root</b>.  If you
+follow the instructions above for <a href="#startup">automating startup</a>, this will be 
+taken care of, but if you ever start the server from the command line,
+be sure to <b>su -</b> first.<p>
+
+These steps are required because port 80 is a <em> privileged</em> port.  Only certain users can claim 
+it.  When you start <b>nsd</b> as root, it obtains the port, and then changes to run as whatever 
+user you specify in the server configuration file.  This ensures a high level of security, as the server, 
+once started, is not running as <b>root</b>.  This mean that if someone was able to exploit 
+your web server to execute a command on your server, they would not be able to gain <b>root</b> access.
+
+<p>
+<a name="deleting"></a>
+<a href="#top">TOP</a><br><h3>Appendix C: Deleting a tablespace</h3>
+Should it become necessary to rebuild a tablespace from scratch, you
+can use the <code>drop user</code> command with the <code>cascade</code>
+option.  This command will drop the user and every database object the user owns.
+<pre>drop user <i>service_name</i> cascade; </pre>
+<p>If this does not work because svrmgrl "cannot drop a user that is
+currently connected", make sure to kill the AOLServer using this user.
+If it still does not work, do:
+<p>
+<pre> select username, sid, serial# from v$session where username='<i>service_name</i>'; </pre> <p>
+and then 
+<p>
+<pre>alter system kill session '<i>sid</i>,<i>serial#</i>';</pre>
+<p>
+where <i>sid</i> and <i>serial#</i> are replaced with the corresponding values for the open session.
+<p><b>Use with caution!</b><p>
+If you feel the need to delete <i>everything</i> related to the service, you can also issue the following:
+<pre>
+drop tablespace <i>service_name</i> including contents cascade constraints;
+</pre>
+
+<hr>
+<table width="100%">
+<tr><td width="33%" align="left" valign="top">
+<b>Previous</b>: <a href="aolserver.html">Installing AOLServer 3.0</a></td>
+<td width="34%" align="center" valign="top"><b>Installing the ArsDigita Community System v 3.3</b>
+<br>part of the
+<a href="index.html">ACS Installation Guide</a>
+<td width="33%" align="right" valign="top">
+<b>Next</b>: <a href="tests.html">Acceptance Tests</a></td>
+</tr>
+</table>
+<hr>
+<a href="mailto:bquinn@arsdigita.com">bquinn@arsdigita.com</a>
+
+
+</body>
+</html>
+
+
+
+
+
+

@@ -1,25 +1,33 @@
-# $Id: category-edit.tcl,v 3.1.2.2 2000/03/15 05:18:15 curtisg Exp $
-set_the_usual_form_variables
+# /www/admin/gc/category-edit.tcl
+ad_page_contract {
+    Allows administrator to edit a category.
 
-# domain_id, primary_category
+    @param domain_id which domain
+    @param category_id
 
-set db [gc_db_gethandle]
-set selection [ns_db 1row $db "select ac.*, ad.domain
+    @author philg@mit.edu
+    @cvs category-edit.tcl,v 3.4.2.5 2000/09/22 01:35:18 kevin Exp
+} {
+    domain_id:integer
+    category_id:naturalnum
+}
+
+db_1row category_info "select ac.ad_placement_blurb, ad.domain,
+ac.primary_category
 from ad_categories ac, ad_domains ad
-where ac.domain_id = $domain_id
+where ac.domain_id = :domain_id
 and ad.domain_id = ac.domain_id
-and primary_category = '$QQprimary_category'"]
-set_variables_after_query
+and ac.category_id = :category_id"
 
-append html "[ad_admin_header "Edit $primary_category"]
+set page_content "[ad_admin_header "Edit $primary_category"]
 
 <h2>Edit $primary_category</h2>
 
-in the <a href=\"domain-top.tcl?domain_id=$domain_id\">$domain classifieds</a>
+in the <a href=\"domain-top?domain_id=$domain_id\">$domain classifieds</a>
 
 <hr>
 
-<form method=post action=category-edit-2.tcl>
+<form method=post action=category-edit-2>
 <input type=hidden name=domain_id value=\"$domain_id\">
 <input name=old_primary_category type=hidden value=\"[philg_quote_double_quotes $primary_category]\">
 
@@ -32,9 +40,8 @@ Annotation for the ad placement page:<br>
 <br>
 <br>
 
-
 [ad_admin_footer]
 "
 
-ns_db releasehandle $db
-ns_return 200 text/html $html
+
+doc_return  200 text/html $page_content

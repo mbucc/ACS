@@ -1,11 +1,21 @@
-# $Id: add.tcl,v 3.1 2000/03/07 04:11:27 eveander Exp $
-ReturnHeaders
+# /www/admin/ecommerce/products/add.tcl
+ad_page_contract {
 
-ns_write "[ad_admin_header "Add a Product"]
+  Add a product.
+
+  @author eveander@arsdigita.com
+  @creation-date Summer 1999
+  @cvs-id add.tcl,v 3.4.2.5 2000/08/20 22:38:40 seb Exp
+  
+} {
+
+}
+
+doc_body_append "[ad_admin_header "Add a Product"]
 
 <h2>Add a Product</h2>
 
-[ad_admin_context_bar [list "../" "Ecommerce"] [list "index.tcl" "Products"] "Add Product"]
+[ad_admin_context_bar [list "../" "Ecommerce"] [list "index" "Products"] "Add Product"]
 
 <hr>
 
@@ -14,9 +24,9 @@ All fields are optional except Product Name.
 "
 set multiple_retailers_p [ad_parameter MultipleRetailersPerProductP ecommerce]
 
-set db [ns_db gethandle]
 
-ns_write "<form enctype=multipart/form-data method=post action=add-2.tcl>
+
+doc_body_append "<form enctype=multipart/form-data method=post action=add-2>
 <table>
 <tr>
 <td>Product Name</td>
@@ -30,21 +40,21 @@ internal product_id to uniquely distinguish products.</td>
 </tr>
 <tr>
 <td>Product Category</td>
-<td>[ec_category_widget $db t]</td>
+<td>[ec_category_widget t]</td>
 <td>Choose as many categories as you like.  The product will
 be displayed on the web site in each of the categories you select.</td>
 </tr>
 "
 if { !$multiple_retailers_p } {
-    ns_write "<tr>
+    doc_body_append "<tr>
     <td>Stock Status</td>
     <td colspan=2>[ec_stock_status_widget]</td>
     </tr>
     "
 } else {
-    ns_write "[philg_hidden_input stock_status ""]\n"
+    doc_body_append "[philg_hidden_input stock_status ""]\n"
 }
-ns_write "<tr>
+doc_body_append "<tr>
 <td>One-Line Description</td>
 <td colspan=2><input type=text name=one_line_description size=60></td>
 </tr>
@@ -80,12 +90,17 @@ when ordering.  If there are no choices, leave this blank.</td>
 when ordering.  If there are no choices, leave this blank.</td>
 </tr>
 <tr>
+<td>Email on Purchase</td>
+<td><input type=text name=email_on_purchase_list size=40></td>
+<td>This should be a comma-separated list of recipients to notify when a purchase is made. If you do not wish email to be sent, leave this blank.</td>
+</tr>
+<tr>
 <td>URL where the consumer can get more info on the product</td>
 <td colspan=2><input type=text name=url size=50 value=\"http://\"></td>
 </tr>
 "
 if { !$multiple_retailers_p } {
-    ns_write "<tr>
+    doc_body_append "<tr>
     <td>Regular Price</td>
     <td><input type=text size=6 name=price></td>
     <td>All prices are in [ad_parameter Currency ecommerce].  The price should
@@ -93,9 +108,17 @@ if { !$multiple_retailers_p } {
     </tr>
     "
 } else {
-    ns_write "[philg_hidden_input price ""]\n"
+    doc_body_append "[philg_hidden_input price ""]\n"
 }
-ns_write "<tr>
+doc_body_append "<tr>
+<td>Is this product shippable?</td>
+<td><input type=radio name=no_shipping_avail_p value=\"f\" checked>Yes
+&nbsp;&nbsp;
+<input type=radio name=no_shipping_avail_p value=\"t\">No
+</td>
+<td>You might choose \"No\" if this product is actually a service.</td>
+</tr>
+<tr>
 <td>Should this product be displayed when the user does a search?</td>
 <td><input type=radio name=present_p value=\"t\" checked>Yes
 &nbsp;&nbsp;
@@ -109,12 +132,12 @@ ns_write "<tr>
 </tr>
 "
 if { !$multiple_retailers_p } {
-    ns_write "<tr>
+    doc_body_append "<tr>
     <td>Shipping Price</td>
     <td><input type=text size=6 name=shipping></td>
     <td rowspan=3 valign=top>The \"Shipping Price\", \"Shipping Price - Additional\", and \"Weight\" fields
     may or may not be applicable, depending on the 
-    <a href=\"../shipping-costs/index.tcl\">shipping rules</a> you have set up for
+    <a href=\"../shipping-costs/index\">shipping rules</a> you have set up for
     your ecommerce system.</td>
     </tr>
     <tr>
@@ -123,9 +146,9 @@ if { !$multiple_retailers_p } {
     </tr>
     "
 } else {
-    ns_write "[philg_hidden_input shipping ""]\n[philg_hidden_input shipping_additional ""]\n"
+    doc_body_append "[philg_hidden_input shipping ""]\n[philg_hidden_input shipping_additional ""]\n"
 }
-ns_write "<tr>
+doc_body_append "<tr>
 <td>Weight ([ad_parameter WeightUnits ecommerce])</td>
 <td><input type=text size=3 name=weight></td>
 </tr>
@@ -134,59 +157,61 @@ ns_write "<tr>
 <p>
 "
 
-set n_user_classes [database_to_tcl_string $db "select count(*) from ec_user_classes"]
+set n_user_classes [db_string num_user_classes_select "select count(*) from ec_user_classes"]
 if { $n_user_classes > 0 && !$multiple_retailers_p} {
-    ns_write "<h3>Special Prices for User Classes</h3>
+    doc_body_append "<h3>Special Prices for User Classes</h3>
     
     <p>
 
     <table noborder>
     "
     
-    set selection [ns_db select $db "select user_class_id, user_class_name from ec_user_classes order by user_class_name"]
-
     set first_class_p 1
-
-    while { [ns_db getrow $db $selection] } {
-	set_variables_after_query
-	ns_write "<tr><td>$user_class_name</td>
-	<td><input type=text name=price$user_class_id size=6></td>
+    db_foreach user_class_select "
+    select user_class_id, 
+           user_class_name 
+    from ec_user_classes 
+    order by user_class_name" {
+	doc_body_append "<tr><td>$user_class_name</td>
+	<td><input type=text name=\"user_class_prices.$user_class_id\" size=6></td>
 	"
 
 	if { $first_class_p } {
 	    set first_class_p 0
-	    ns_write "<td valign=top rowspan=$n_user_classes>Enter prices (no
+	    doc_body_append "<td valign=top rowspan=$n_user_classes>Enter prices (no
 	    special characters like \$) only if you want people in
 	    user classes to be charged a different price than the
 	    regular price.  If you leave user class prices blank,
 	    then the users will be charged regular price.</td>\n"
 	}
-	ns_write "</tr>\n"
+	doc_body_append "</tr>\n"
     }
-    ns_write "</table>\n"
+    doc_body_append "</table>\n"
 }
 
-
-if { [database_to_tcl_string $db "select count(*) from ec_custom_product_fields where active_p='t'"] > 0 } {
-
-    ns_write "<h3>Custom Fields</h3>
+if { [db_string num_custom_product_fields_select "select count(*) from ec_custom_product_fields where active_p='t'"] > 0 } {
+ 
+    doc_body_append "<h3>Custom Fields</h3>
     
     <p>
 
     <table noborder>
     "
     
-    set selection [ns_db select $db "select field_identifier, field_name, default_value, column_type from ec_custom_product_fields where active_p='t' order by creation_date"]
-
-    while { [ns_db getrow $db $selection] } {
-	set_variables_after_query
-	ns_write "<tr><td>$field_name</td><td>[ec_custom_product_field_form_element $field_identifier $column_type $default_value]</td></tr>\n"
+    db_foreach custom_fields_select "
+    select field_identifier, 
+           field_name, 
+           default_value, 
+           column_type 
+    from ec_custom_product_fields 
+    where active_p='t' order by creation_date" {
+	doc_body_append "<tr><td>$field_name</td><td>[ec_custom_product_field_form_element $field_identifier $column_type $default_value]</td></tr>\n"
     }
+    doc_body_append "</table>\n"
 
-    ns_write "</table>\n"
 }
 
-ns_write "<center>
+doc_body_append "<center>
 <input type=submit value=\"Continue\">
 </center>
 </form>

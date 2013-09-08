@@ -1,0 +1,54 @@
+In the file: /www/search/search.tcl
+
+ADD
+  set user_id [ad_verify_and_get_user_id]  
+BELOW
+  ad_page_variables {query_string {sections -multiple-list}}
+
+IF your version of search.tcl does a foreach loop for each section and performs a query for each section:
+THEN
+ ADD
+  if { [string compare $s "bboard"] == 0} {
+    set sql_query "SELECT /*+ FIRST_ROWS */ SCORE(10) AS the_score, section_name, user_url_stub, the_key, one_line_description, sws.table_name
+    FROM site_wide_index sws, table_acs_properties m, bboard
+    WHERE sws.table_name='[DoubleApos $s]'
+    AND the_key=bboard.msg_id
+    AND sws.table_name = m.table_name
+    AND CONTAINS(sws.datastore, '$final_query_string', 10) > 0
+    AND bboard_user_can_view_topic_p($user_id,bboard.topic_id)= 't'
+    ORDER BY SCORE(10) DESC"
+  } else {
+    set sql_query "SELECT /*+ FIRST_ROWS */ SCORE(10) AS the_score, section_name, user_url_stub, the_key, one_line_description, sws.table_name
+    FROM site_wide_index sws, table_acs_properties m
+    WHERE sws.table_name='[DoubleApos $s]'
+    AND sws.table_name = m.table_name
+    AND CONTAINS(sws.datastore, '$final_query_string', 10) > 0
+    ORDER BY SCORE(10) DESC"
+  }
+
+  AFTER the second occurrence of 
+    foreach s $sections {  
+   (NOTE that this should be inside of the foreach, and should not terminate the foreach)
+
+  REPLACE
+    set selection [ns_db select $db "...."]
+  WITH
+    set selection [ns_db select $db $sql_query]  
+  AFTER
+    with_catch_errmsg {  
+  RIGHT AFTER the fix above it
+
+ELSE (your search.tcl performs only one query for all the sections)
+  ADD
+    set security_clause "(table_name != 'bboard' OR bboard_user_can_view_msg_p($user_id,the_key) = 't')"
+  BEFORE
+    set db [ns_db gethandle]
+
+  ADD
+    $security_clause
+  AFTER
+    and contains(sws.datastore, '$final_query_string',10) > 0   
+
+
+make sure you have bboard_users_can_view_topic_p and bboard_users_can_view_msg_p PL/SQL function,
+which exists in bboard.sql and in upgrade-3.3-3.3.1.sql (and in patch for contributions.tcl)

@@ -1,11 +1,13 @@
-# /admin/pull-down-menus/index.tcl
-#
-# Author: aure@arsdigita.com, February 2000
-#
-# Presents a list of all the pdm_menus and gives the option to add a new menu.
-#
-# $Id: index.tcl,v 1.1.2.1 2000/03/16 05:33:06 aure Exp $
-# -----------------------------------------------------------------------------
+# /www/admin/pull-down-menus/index.tcl
+ad_page_contract {
+
+  Presents a list of all the pdm_menus and gives the option to add a new menu.
+
+  @author aure@arsdigita.com
+  @creation-date February 2000
+  @cvs-id index.tcl,v 1.4.2.4 2000/09/22 01:35:52 kevin Exp
+} {
+}
 
 set page_title "Pull-Down Menu Administration"
 
@@ -18,16 +20,16 @@ set html "
 
 <hr>
 
-Documentation: <a href=/doc/pull-down-menus.html>/doc/pull-down-menus.html</a>
+Documentation: <a href=/doc/pull-down-menus>/doc/pull-down-menus.html</a>
 
 <p>Available menus:
 
 <ul>"
 
-set db [ns_db gethandle]
 
 # select information about all of the menus in the system
-set selection [ns_db select $db "
+
+db_foreach get_all_menus "
 select   p.menu_id,
          menu_key,
          default_p,
@@ -35,12 +37,7 @@ select   p.menu_id,
 from     pdm_menus p, pdm_menu_items i
 where    p.menu_id = i.menu_id(+)
 group by p.menu_id, p.menu_key, p.default_p
-order by p.menu_key"]
-
-set count 0
-
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
+order by p.menu_key" {
 
     if {$default_p == "t"} {
 	set default_text "(default)"
@@ -51,12 +48,9 @@ while {[ns_db getrow $db $selection]} {
     append html "
     <li><a href=items?menu_id=$menu_id>$menu_key</a> 
     ($number_of_items items) $default_text"
-    incr count
-}
 
-ns_db releasehandle $db
+} if_no_rows {
 
-if {$count == 0} {
     append html "There are no pull-down menus in the database."
 }
 
@@ -66,10 +60,6 @@ append html "
 </ul>
 [ad_admin_footer]"
 
-ns_return 200 text/html $html 
 
-
-
-
-
+doc_return  200 text/html $html 
 

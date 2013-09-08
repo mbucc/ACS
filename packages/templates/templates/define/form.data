@@ -1,0 +1,38 @@
+<template>
+
+  <name>dict</name>
+  <title>Form Data Dictionary</title>
+  <author>karlg@arsdigita.com</author>
+  <comment>Specification for the form data dictionary.</comment>
+
+  <process>
+
+  <datasource>
+
+    <name>spec</name>
+    <type>eval</type>
+    <structure>onerow</structure>
+    <condition>ad_form_get_spec [ns_conn url]</condition>
+    <comment>Retrieves the form specification data structure.</comment>
+
+  </datasource>
+
+  <datasource>
+
+    <name>elements</name>
+    <type>eval</type>
+    <structure>multirow</structure>
+    <condition>ad_form_get_elements $spec</condition>
+    <comment>
+      Retrieves a list of elements from the form specification.
+    </comment>
+
+  </datasource>
+
+  </process>
+
+</template>
+
+
+
+

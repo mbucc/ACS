@@ -1,20 +1,21 @@
-# $Id: get-display.tcl,v 3.0 2000/02/06 03:46:42 ron Exp $
-set_form_variables
-# maint_p, user_id
+# /homepage/get-display.tcl
 
-#if {![info exists user_id] || [empty_string_p $user_id]} {
-    # First, we need to get the user_id
-#    set user_id [ad_verify_and_get_user_id]
-#}
+ad_page_contract {
+    Get the display style for the page.
+    
+    @param user_id The user_id related to the requested display settings.
+    @param maint_p Wether requesting the maintenance or regular display settings. 
 
-if {![info exists maint_p] || [empty_string_p $maint_p]} {
-    set maint_p 1
+    @creation-date January 2000
+    @author mobin@mit.edu
+    @cvs-id get-display.tcl,v 3.1.2.5 2000/09/22 01:38:16 kevin Exp
+} {
+    user_id:notnull,naturalnum
+    {maint_p "1"}
 }
 
-set db [ns_db gethandle]
-
 if {$maint_p == 0} {
-    set selection [ns_db 0or1row $db "
+    set returned_row_p [db_0or1row display {
     select bgcolor, 
     textcolor, 
     unvisited_link, 
@@ -23,10 +24,10 @@ if {$maint_p == 0} {
     link_font_weight,
     font_type
     from users_homepages
-    where user_id=$user_id
-    "]
+    where user_id=:user_id
+    }]
 } else {
-    set selection [ns_db 0or1row $db "
+    set returned_row_p [db_0or1row maint_display {
     select maint_bgcolor as bgcolor, 
     maint_textcolor as textcolor, 
     maint_unvisited_link as unvisited_link, 
@@ -35,17 +36,17 @@ if {$maint_p == 0} {
     maint_link_font_weight as link_font_weight,
     maint_font_type as font_type
     from users_homepages
-    where user_id=$user_id
-    "]
+    where user_id=:user_id
+    }]
 }
-if { [empty_string_p $selection] } {
+
+if { $returned_row_p == 0 } {
     # initialize background color to white
-    ns_return 200 text/css "BODY { background-color: white }
+    doc_return  200 text/css "BODY { background-color: white }
     "
     return
 }    
 
-set_variables_after_query
 
 if { ![empty_string_p $bgcolor] } {
     set style_bgcolor "background-color: $bgcolor"
@@ -101,7 +102,5 @@ BLOCKQUOTE{ $font_string }
 set body_string [join [css_list_existing style_bgcolor style_textcolor style_font_type] "; "]
 append css [ad_decode $body_string "" "" "BODY { $body_string }"]
 
-ns_db releasehandle $db 
-ns_return 200 text/css $css
-
-
+db_release_unused_handles 
+doc_return 200 text/css $css

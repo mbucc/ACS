@@ -1,0 +1,678 @@
+<! -- Version 1 5/31/2000 bmq>
+<html><head><title>The Hitchikers Guide to the ACS</title></head>
+<body bgcolor=#ffffff>
+<table>
+<tr>
+<td>
+<a href="http://photo.net/photo/pcd2619/hearst-castle-three-graces-37.tcl">
+    <img src="http://photo.net/photo/pcd2619/hearst-castle-three-graces-37.1.jpg"></a>
+<td>
+
+<h2>The Hitchhiker's Guide to the ACS</h2>
+by <a href="mailto:bquinn@arsdigita.com">Bryan Quinn</a>,
+<a href="mailto:docwolf@arsdigita.com">Adam Farkas</a>,
+<a href="mailto:dhoffman@arsdigita.com">Doug Hoffman</a>, 
+<a href="mailto:iwashima@mit.edu">Hiroyoshi Iwashima</a>,
+<a href="mailto:ryanlee@mit.edu">Ryan Lee</a> and
+<a href="mailto:rjasuja@arsdigita.com">Ravi Jasuja</a>,
+</tr>
+</table>
+
+<hr>
+
+<h3>Table of Contents</h3>
+<ul>
+<li><a href="#hardware">Hardware Requirements</a>
+<li><a href="#RedHat">Installing RedHat Linux 6.2</a>
+<li><a href="#Oracle">Installing Oracle 8.1.6</a>
+<li><a href="#AOLServer">Installing AOLServer 3.0</a>
+<li><a href="#ACS">Installing the ArsDigita Community System</a>
+<li><a href="#TESTS">Acceptance Tests</a> (or making sure it all worked)
+<li><a href="#Monitors">Monitors</a> (or making sure it stays working)
+</ul>
+
+<a name="HardWare"></a>
+<h3>Hardware Requirements</h3>
+<ul>
+    <li>An IBM-PC compatible with a Pentium processor or better.
+    <li>128Mb RAM (256 Mb reccomended)
+    <li>3.5 Gb Hard Drive space
+</ul>
+
+<a name="RedHat"></a>
+<h3>Installing RedHat Linux 6.2</h3>
+
+This is not intended to be a full set of information on the installation of RedHat Linux.  
+For full information, consult the RedHat <a href="http://www.redhat.com/download/howto_download.html">
+documentation</a>.<p>
+
+<ol>
+  <li>Start the Installation<p>
+  You have the following options:<br>
+  <ul>
+      <li>Install from CDROM.<p>
+      You can order an installation CDROM from RedHat or download an ISO image and
+      burn one yourself.  Once you have the CDROM, you need to boot the computer.
+      If you have a recent BIOS and CDROM, you should be able to boot directly to the
+      CDROM.  Check your system's BIOS to see if this is an option and make sure the CDROM
+      is set to boot before the primary hard drive.  Then insert the CDROM, boot the computer
+      and RedHat should start.  Otherwise, you will need a boot disk.  You can easily create
+      one using one of the standard RedHat images.  RedHat offers more 
+      <a href="http://www.redhat.com/download/howto_download.html#download">information</a>.
+      <li>Install over the Network.<p>
+      You can run the RedHat install over the network if you have a fast-enough connection.  
+      You'll need to copy roughly 300-600 MB of data, so be prepared.  You need to prepare
+      a bootdisk with the network image. 
+   </ul><p>
+  <li>Boot your computer<p>
+  To begin the installation process, insert your boot media and boot your computer.
+  RedHat should load and will present you with a LILO prompt.  Read the instructions, but it
+  should be safe to press enter unless you have unusual hardware.  The RedHat kernel will then
+  load and the installation program will start.  You will need to inform the installation 
+  program of what kind of media you are installing from (CDROM or network).<p>
+    <li>Select Installation Type<p>
+  You need to specify a <strong>Custom</strong> installation type in order to ensure you 
+  get all of the necessary packages.<p>
+  <li>Partition your drives<p>
+  Production linux servers require careful configuration of partitions in order to optimize
+  performance.  Such reccomendations are beyond the scope of this document.  A simple 
+  configuration for a simple drive is 
+  <table>
+  <tr><th>Partition Name</th><th>Size</th><th>Description</th></tr>
+  <tr><td>/boot</td><td>15 M</td><td>Stores the kernel and basic boot configuration.</td></tr>
+  <tr><td>/</td><td>3000+ M</td><td>Stores the major part of the file system.</td></tr>
+  <tr><td>&lt;swap&gt;</td><td>2x RAM or 256 Mb (whichever is smaller)</td>
+      <td>Virtual memory</td></tr>
+  </table><p>
+
+  <li>Select packages for installation<p>
+
+The following packages, at a minimum, should be installed.  Feel free to install
+above and beyond this.  Also, you may choose to individually select packages.  It
+is not necessary to do this, but you may do this to add files to the distribution.
+<em>You should not remove any of these packages</em>.  You can also install RPMs post-installation,
+so don't feel too concerned about this phase.
+
+<table>
+<tr><th>Package</th><th>Description</th><th>Why You Need This</th></tr>
+<tr><td>Printer Support<td>Allows you to print<td>If you ever want to print anything.
+<tr><td>X Windows<td>Graphical system for UNIX<td>Needed for Oracle installation.
+<tr><td>GNOME<td>X Window Manager and GUI<td>Needed to run X properly
+<tr><td>Mail/WWW/Tools<td>Tools for checking mail, accessing the web.<td>Basic user programs.
+<tr><td>Networked Workstation<td>Basic tools for configuring networking.
+     <td>Neccessary for server programs.
+<tr><td>Anonymous FTP<td>A FTP server<td>Useful for serving files to the world.
+<tr><td>Emacs<td>The Ultimate Text Editor.<td>Necessary for anything.
+<tr><td>Development<td>Basic compilers and scripting languages.
+    <td>Needed to compile AOLServer and various other programs.
+<tr><td>Kernel Development<td>Source for the Linux kernel.<td>Necessary for recompiling.
+<tr><td>Utilities<td>Basic utilities for Linux.<td>Neccesary for accessing the system.
+</table><p>
+
+
+<li>Configure users<p>
+Set a password for root.  You do not need to add any more users at this time.<p>
+
+<li>Configure boot device<p>
+In order to boot your workstation, you either need to install LILO or have a bootdisk.  The LILO
+option is reccomended.  LILO (<b>LI</b>nux<b>LO</b>ader) writes some data to your hard drives MBR
+which allows the computer to find the operating system.  It is possible to configure LILO
+to boot multiple OSes.  Check the <a href="http://www.linuxdoc.org/HOWTO/mini/LILO.html">
+LILO documentation</a> for more information.  We reccomend creating an emergency boot disk and 
+installing LILO.<p>
+
+<li>Configure networking<p>
+
+RedHat should automatically detect your network card.  You will need to enter in your
+networking information or select DHCP.  DHCP will automatically configure your networking,
+but your network must have a DHCP server already installed and running.<p>
+
+<li>Configure X<p>
+RedHat should automatically detect your graphics card.  You can configure your system
+to use a graphical login, but this is not necessary for a production system.  If your monitor is
+not listed, select a "Generic" or "Generic Multisync monitor."  
+<p>
+
+<li>Copy Files<p>
+At this point, sit back while RedHat copies itself over.<p>
+
+<li>Post Install<p>
+<ul>
+<li>Reboot your system.  If all goes well, you should be able to login as root.  If you did
+not configure a graphical login, make sure you can start X.  Do this by logging in
+and then typing <code>startx</code>.  You may need to run <code>Xconfiguratior</code>.
+<li>Add a user.  You can do <pre>
+useradd &lt;<i>username</i>&gt;
+passwd &lt;<i>username</i>&gt;
+</pre>
+</ul>
+</ol>
+
+<a name="Oracle"></a>
+<h3>Installing Oracle 8.1.6</h3>
+<ol>
+<li>Acquire Oracle 8.1.6 Enterprise Edition for Linux<p>
+<ul>
+  <li> You can obtain the software from Oracle's TechNet (http://technet.oracle.com). 
+    Free registration is required. The latest version of Oracle 8.1.6 Release 
+    2 for Linux. Via ftp, it can be found at:<br>
+    <br>
+    ftp://ftp.oracle.com/pub/www/otn/linux/oracle8i/oracle8161_tar.gz<br>
+    <br>
+  </li>
+  <li> Note that the Oracle tarball that you will download is huge (&gt; 250Mb). 
+    Oracle's site can be maddeningly slow at peak times. An alternative is to 
+    order Oracle 8.1.6 on CD-ROM (about $5).</li>
+  <li> Oracle 8.1.6 now comes with a Java RunTime Environment built-in to the 
+    distribution, so you no longer have to downlaod and install it separately.</li>
+  <li>After the download is complete, untar the file to a convenient location.<b><br>
+    </b></li>
+</ul>
+<p>
+   <li>Things to Keep in Mind<p>
+Throughout these instructions, we will refer to a service name or SID of <b>ora8</b>.  
+You may choose to customize this.  If so, change any reference to <b>ora8</b> excluding
+pathnames to your customized name.  If you are confused by this, stick to using <b>ora8</b>.
+<p>
+
+   <li>Pre-Install Tasks<p>
+Though Oracle 8.1.6 has an automated installer, we still need to perform several 
+  manual, administrative tasks before we can launch it.  You must perform all of these
+steps as the <i>root</i> user.<p>
+
+<ul>
+<li>Setup the Oracle group and account.<p>
+    We need to create a user called &quot;oracle&quot;, which is used to install 
+    the product, as well as start and stop the database. 
+    <ol>
+    <li>Make sure you are running as the root user.<p>
+    <li>Open a terminal window<p>
+    <li>In the terminal window, create the groups and users:<p>
+<pre>
+# groupadd dba
+# groupadd oinstall
+# useradd -g oinstall -G dba -m oracle
+# passwd oracle <i>{to change the password}</i>
+</pre>
+</ol>
+<p>
+<li>Make the Proper Mount Points<p>
+Oracle can be mounted in a variety of places, but we will put it in the
+places that ArsDigita conventionally uses, to make our ACS installation that much smoother. 
+   <ol>
+   <li>Make a directory for Oracle.  
+       Make sure that the drive that you're installing this on has at least 2 gigs free.<p>
+<pre>
+# mkdir /ora8
+# cd /ora8
+# mkdir m01 m02 m03 
+
+# chown -R oracle.dba /ora8 {change the owner to oracle from root..}
+</pre>
+<li>Log out as the root user.<p>
+</ol>
+</ul>
+
+<li>Set up the Oracle user's Environment<p>
+<ul>
+  <li>Log in as user &quot;oracle&quot;<p>
+  <li>Open a terminal window<p>
+  <li>Use a text editor to edit the <b>.bash_profile </b>file in the oracle 
+    account's home directory.p>
+  <li>Add the following lines to this file:</p>
+  <pre>
+ORACLE_BASE=/ora8/m01/app/oracle
+export ORACLE_BASE
+ORACLE_HOME=$ORACLE_BASE/product/8.1.6
+export ORACLE_HOME
+PATH=$PATH:$ORACLE_HOME/bin
+export PATH
+LD_LIBRARY_PATH=$ORACLE_HOME/lib:/lib:/usr/lib
+export LD_LIBRARY_PATH
+ORACLE_SID=ora8     <i>{Change this if needed.}</i>
+export ORACLE_SID
+ORACLE_TERM=vt100
+export ORACLE_TERM
+ORA_NLS33=$ORACLE_HOME/ocommon/nls/admin/data
+export ORA_NLS33
+umask 022
+NLS_LANG=american
+export NLS_LANG
+</pre>
+  <li>Save the file<p>
+  <li>Log out as oracle<p>
+  <li>Log back in as oracle<p>
+  <li>type: '<b>env</b>' <p>
+  <li>You should see all of the variables that we just typed in to the <b>.bash_profile</b> 
+    above. If you don't, you probably made a typo. Go back to the file &amp; fix 
+    it.<p>
+  <li>Make sure that<b> /bin</b>, <b>/usr/bin</b>, and <b>/usr/local/bin</b> 
+    are in your path (you should have seen them when you typed out 'env'.) If 
+    they are not, then add them to the .bash_profile above. (that is, if you don't 
+    see /usr/local/bin in your path, add it by changing the PATH statement above 
+    to PATH=$PATH:/usr/local/bin:$ORACLE_HOME/bin)<p.
+  <li>We are now ready to install Oracle. Whew.<p>
+  <p>&nbsp;<p>
+</ul>
+
+
+<li>Oracle Install<p>
+<ul>
+  <li>Log in as user oracle<p>
+  <li>If you are installing Oracle from a CD-ROM, you've got to mount it first. 
+    Open a terminal window, then:<p>
+      <pre>
+$ su root <i>{enter your root password}</i>
+# mount -t iso9660 /dev/cdrom /mnt/cdrom
+# exit <i>{to exit from superuser status}</i>
+</pre>
+  <li>To start up the installer:<p>
+      <pre>
+$ cd /mnt/cdrom/install/linux <i>{if you downlaoded it from 
+Technet&amp; aren't using a CD-ROM,}  {then cd to: wherever it was 
+untarred]/Oracle8iR2/install/linux}</i>
+$ ./runInstaller
+</pre>
+
+  <li>If all is well, a window will open that welcomes you to the Oracle Universal 
+    Installer.Click on &quot;<b>Next</b>&quot;.<p>
+  <li>Make sure that the &quot;Source&quot; path says <b>[wherever you mounted 
+    the CDROM]/stage/products.jar</b>.<p>
+  <li> The destination path should be automatically set to the same path as the 
+<b>$ORACLE_HOME</b> variable that we set in the <b>.bash_profile</b>.<p>
+  <li> Click &quot;<b>Next</b>&quot; if both paths are correct. If not, re-check 
+    your .bash_profile to make sure it's right.<p>
+  <li> You will need to specify an <b>oraInventory</b> path for the install program to
+  store information.  We reccomend <b>$ORACLE_BASE/oraInventory</b>.
+  <li> At the Unix Group Name window, enter &quot;<b>oinstall</b>&quot;<b> </b>as 
+    the Unix Group Name. Click &quot;<b>Next</b>&quot;.<p>
+  <li> A window now pops-up, complaining that the script orainstRoot.sh needs 
+    to be run with root privaleges. Here's how to do it:<p>
+      <p> Open a new terminal window, then type:<p>
+      <pre>
+$ su root {then enter root's password}
+# cd $ORACLE_HOME
+# ./orainstRoot.sh
+# exit <i>{to exit superuser privs.}</i>
+# exit <i>{to close the term}</i> 
+</pre>
+  <li>Go back to the pop-up window and click on &quot;<b>Retry</b>&quot;<p>
+  <li> You'll now be at the &quot;Available Products&quot; screen. Make sure 
+    that the &quot;<b>Oracle 8i Enterprise Edition 8.1.6.1.0</b>&quot; button 
+    is selected. Click &quot;<b>Next</b>&quot;.<p>
+  <li>Select the &quot;<b>Custom</b>&quot; installation type, and hit &quot;<b>Next</b>&quot;.<p>
+  <li>At the &quot;Available Product Components&quot; screen, you can accept 
+    all of the default modules that are checked for installation. Scroll down 
+    to the bottom of the list, and make sure that <b>Oracle SQLJ 8.1.6.0 </b>is 
+    also checked (in releases 8.1.5 and 8.1.6 , it was unchecked by default.) Then, click 
+    &quot;<b>Next</b>&quot;.<p>
+  <li> Click &quot;<b>Next</b>&quot; on the Component Locations screen.<p>
+  <li> Enter &quot;dba&quot; for the user groups on the privileged operating 
+    system groups.. Click &quot;<b>Next</b>&quot;.<p>
+  <li> The installer now asks if you want to &quot;<b>Create a Database</b>&quot; 
+    Select <b>No</b> {We will do this later}. Click &quot;<b>Next</b>&quot;.<p>
+  <li> Now we are at the &quot;<b>Summary</b>&quot; Screen. <p>
+  <li> Click on &quot;<b>Install</b>&quot;. <p>
+  <li> The install begins. This should take about 20 minutes.<p>
+  <li> After the installation finishes, you will see another pop-up window asking 
+    you to run a script called root.sh. To run it:<p>
+    <p>Open a new terminal window, then type:<br>
+<pre>
+$ su root {enter root password}
+# cd $ORACLE_HOME
+# chmod 744 root.sh
+# ./root.sh
+
+Hit "Enter" when it asks for the path to the local bin directory. Then:
+
+# exit <i>{exit superuser status}</i>
+$ exit <i>{close the terminal}</i>
+</pre>
+
+  <li> Go back to the pop-up window and hit &quot;<b>OK</b>&quot;<p>
+  <li> The &quot;Configuration Tools&quot; screen opens up. You are now faced 
+    with the &quot;Net8 Configuration Assistant&quot;. Click &quot;<b>Next</b>&quot;.<p>
+  <li> Select &quot;<b>No</b>&quot; for the Net8 directory service access configuration. 
+    Click &quot;<b>Next</b>&quot;.<p>
+  <li> Accept the default listener name of <b>&quot;listener&quot;</b>
+. Click &quot;<b>Next</b>&quot;. 
+  <li> Select protocols: TCP/IP should already be in the list of selected protcolrs. 
+Click &quot;<b>Next</b>&quot;.<p>
+  <li> Click &quot;<b>Next</b>&quot; for the default port number of 1521.<p>
+  <li> The next screen defaults to "No."  Click &quot;<b>Next</b>&quot; 
+-- we don't want to configure another listener. 
+  <p>
+  <li> On the naming methods configuration screen, select &quot;<b>No</b>&quot;, 
+    then click &quot;<b>Next</b>&quot;.<p>
+  <li> Click &quot;<b>Finish</b>&quot;.<p>
+  <li> We've reached the &quot;End of Installation&quot; screen. (hard to believe, 
+    huh?) <p>
+  <li> Click &quot;<b>Next Install</b>&quot;, then &quot;<b>Exit</b>&quot;, 
+    then &quot;<b>Yes</b>&quot;.<p>
+  <p>&nbsp;<p>
+</ul>
+
+<li>Creating a Database<p>
+<ul>
+  <li>In a terminal window (still as the oracle user) type:<p>
+  <pre>
+    <p> $ dbassist &amp;
+  </pre>
+
+  <li> The Oracle Database Configuration Agent will fire up. <p>
+  <li> Select &quot;<b>Create a database</b>&quot;; hit &quot;<b>Next</b>&quot;<p>
+  <li> Select &quot;<b>Custom</b>&quot;, hit &quot;<b>Next</b>&quot;.<p>
+  <li> Select &quot;<b>Multipurpose</b>&quot;. hit &quot;<b>Next</b>&quot;.<p>
+  <li> Select &quot;<b>60</b>&quot; concurrent users. Hit &quot;<b>Next</b>&quot;.<p>
+  <li> Select &quot;<b>Dedicated Server Mode</b>&quot;. Hit &quot;<b>Next</b>&quot;.<p>
+  <li> Accept all of the options, and hit &quot;<b>Next</b>&quot;<p>
+  <li> For &quot;global database name&quot;, enter &quot;<b>ora8</b>&quot;. For 
+    &quot;SID&quot;, also enter &quot;<b>ora8</b>&quot; [it should do this automatically.] 
+    Click &quot;<b>Next</b>&quot;.<p>
+  <li> Accept the defaults for the next screen (control file locations.) Click 
+    &quot;<b>Next</b>&quot;.<p>
+  <li> Go to the &quot;<b>temporary</b>&quot; and &quot;<b>rollback</b>&quot; 
+    tabs, and change the Size (upper-right text box) to <b>150</b>Mb. Click &quot;<b>Next</b>&quot;.<p>
+  <li> Increase the redo log sizes to <b>10000K</b> each. Click &quot;<b>Next</b>&quot;.<p>
+  <li> Use the default checkpoint interval &amp; timeout. Click &quot;<b>Next</b>.&quot;<p>
+  <li> Increase &quot;<b>Processes</b>&quot; to <b>100</b>; &quot;<b>Block Size</b>&quot; 
+    to <b>4096</b> (better for small Linux boxes; aD uses 8192 on the big Solaris 
+    machines.).<p>
+  <li> Accept the defaults for the Trace File Directory. Click &quot;<b>Next</b>&quot;.<p>
+  <li> Finally, select &quot;<b>Save information to a shell script</b>&quot; 
+    and hit &quot;<b>Finish</b>.&quot; [we're going to examne the contents of 
+    this file before creating our database.}<p>
+  <li> Hit the &quot;<b>Save</b>&quot; button [use the default directory that 
+    it gives you. the file will automatically be called &quot;sqlora8.sh&quot; 
+    and be in the directory /ora8/m01/app/oracle/product/8.1.6/assistants/dbca/jlib]<p>
+  <li> It will alert you that the script has been saved successfully.<p>
+  <li> Now, look for the file &quot;initora8.ora&quot;, which should be in /ora8/m01/app/oracle/admin/ora8/pfile.<p>
+  <li> Use your text editor to edit &quot;initora8.ora&quot;. We are going to 
+    add the following line to the end:<p>
+<pre>
+nls_date_format = &quot;YYYY-MM-DD&quot;
+</pre>
+  <li> find the open_cursors line in the file, and change it to:<p>
+<pre>
+open_cursors = 500
+</pre>
+
+  <li> save the file.<p>  This is a good time to shut down X and login via the console.
+  You can switch to a virtual console by doing "Ctrl-Alt-F1".
+  Database creation will proceed significantly faster if more RAM is available.<p>
+  <li> change directory to: /ora8/m01/app/oracle/product/8.1.6/assistants/dbca/jlib<p>
+  <li> type: <pre>./sqlora8.sh</pre>
+  <li> Your database will now be built. It will take &gt; 1 hour. No fooling. 
+    You will see lots of errors scroll by (like: &quot;ORA-01432: public synonym 
+    to be dropped does not exist&quot;) Fear not, this is normal.<p>
+  <p>Eventually, you'll be returned to your shell prompt. In the meantime, go 
+    get some food.<p>
+</ul>
+<li>Testing Your New Database<p>
+  <p>Did it work? Now's the time to find out.<p>
+<ul>
+  <li> Make sure you're logged in as user oracle.<p>
+  <li> Open up a term <p>
+  <li> you need to download the &quot;Oracle Acceptance Test&quot; file. It's 
+    available at: http://photo.net/wtr/oracle/acceptance-sql.txt<br>
+    (just type <b>wget http://photo.net/wtr/oracle/acceptance-sql.txt</b> and 
+    it will automatically download to your /home/oracle directory.)<p>
+  <li> Rename the file:<p>
+<pre>
+$ mv acceptance-sql.txt acceptance.sql
+</pre>
+
+  <li> Once you've got the acceptance test file all set, stay in your term and 
+    type the following: <p>
+<pre>
+$ mkdir -p /ora8/m03/oradata/ora8
+$ sqlplus system {we are entering Oracle's SQL*Plus program;} 
+                 {type "manager" when asked for a password.}
+</pre>
+ Now that you're into SQL*Plus, change the default passwords for system, sys, and ctxsys to 
+"alexisahunk" (or change them to something  you'll remember):
+<pre>
+SQL> alter user system identified by alexisahunk;
+SQL> alter user sys identified by alexisahunk;
+SQL> alter user ctxsys identified by alexisahunk;
+</pre>
+Now we'll create a new tablespace:
+<pre>
+SQL> create tablespace web 
+     datafile '/ora8/m03/oradata/ora8/web.dbf' 
+     size 50m autoextend on;
+</pre>
+And we'll create a user:
+<pre>
+SQL> create user web identified by web 
+     default tablespace web 
+     temporary tablespace temp 
+     quota unlimited on web; 
+</pre>
+<pre>
+SQL> grant create session to web;
+SQL> grant connect,resource to web;
+</pre>
+Next, quit out of SQL*Plus:
+<pre>
+SQL> quit
+</pre>
+Log back into SQL*Plus as user "web"
+<pre>
+$ sqlplus web {password: web}
+SQL>@/[path to the acceptancesql file]/acceptance.sql
+</pre>
+
+  <li> The system will now churn for several minutes. This is normal.<p>
+  <li> If there are no errors, then consider yourself fortunate. Your Oracle 
+    installation is working.<p>
+</ul>
+
+
+<li>Automating Startup &amp; Shutdown<p>
+
+You will want to automate the database startup and shutdown process. It's probably 
+best to have Oracle spring to life when you boot up your machine. <p>
+<ul>
+  <li> open a term; become the root user<p>
+  <pre> 
+$ su root <i>{enter root pw}</i>
+# cd /etc
+</pre>
+  <li> edit the file 'oratab'<p>
+  <li> you will see a line &quot;ora8:/ora8/m01/app/oracle/product/8.1.6:N&quot; 
+  <p>
+  <li> change the last letter from &quot;N&quot; to &quot;Y&quot;. This tells 
+    Oracle that you want the database to start when the machine boots.<p>
+  <li> Save the file &amp; quit the term<p>
+  <li> You need a script to automate startup and shutdown.  
+       Save the <a href="oracle8i">script</a> as <b>/etc/rc.d/init.d/oracle8i</b>
+  <li> Open a term, as the root user. Make the script executable:<p>
+<pre>
+# chmod +x /etc/rc.d/init.d/oracle8i
+</pre>
+  <li> Test the script. change to the /etc/rc.d/init directory, then type:<p>
+<pre>
+# ./oracle8i stop
+# ./oracle8i start
+# ./oracle8i restart
+# ./oracle8i invalid-parameter
+</pre>
+
+  <li> If it works OK, then you've got to link it so it automatically runs on 
+    shutdown or reboot.  First, for shutdown.
+<pre>
+# ln -s /etc/rc.d/init.d/oracle8i /etc/rc.d/rc0.d/K10oracle8i
+# ln -s /etc/rc.d/init.d/oracle8i /etc/rc.d/rc6.d/K10oracle8i
+</pre>
+  <li>To make sure Oracle starts automatically on boot (at runlevels 2, 3, and 5):
+<pre>
+# ln -s /etc/rc.d/init.d/oracle8i /etc/rc.d/rc5.d/S99oracle8i
+# ln -s /etc/rc.d/init.d/oracle8i /etc/rc.d/rc3.d/S99oracle8i
+# ln -s /etc/rc.d/init.d/oracle8i /etc/rc.d/rc2.d/S99oracle8i
+</pre>
+</ul>
+
+<li>Test the automation<p>
+Reboot your computer and ensure that Oracle starts automatically
+by starting sqlplus.  If it works, then your Oracle installation is complete.
+</ol>
+
+<a name="AOLServer"></a>
+<h3>Installing AOLServer 3.0</h3>
+
+<ul>
+<li>Download it from <a href="http://arsdigita.com/download/">ArsDigita.com</a> or from
+the <a href="http://aolserver.com/">AOLServer web site</a>.
+<li>Configure the system for build: check Makefile and include/Makefile.global.  You
+may want to set an install directory in Makefile.global.  By default $INST is set to /tmp.  We set it
+to /usr/local/aolserver.  Make sure you have permissions to write to this directory.
+<li>Run 'make'
+<li>Run 'make install' to copy over an installation distribution.  Optionally create a directory
+to deposit the files and set permissions.  We created a user, web, chowned the directory /webroot/aol3
+to web, and then copied over the AOLServer installation.
+</ul>
+
+<h3>Configuring AOLServer</h3>
+
+The <a href="http://arsdigita.com/doc/installation.html">ACS Installation Documentation</a> reccomends 
+creating a chrooted environment for configuring AOLServer.  However, no configuration information
+is given about how to create this directory.  This would be useful.<p>
+
+AOLServer can be configued with two different configuration files: nsd.tcl and nsd.ini.  By default,
+nsd.tcl is used.  However, the ACS uses a special file, parameters.ini for its own configuration.  
+In order to use this file, you need to be using nsd.ini.  By default, AOLServer comes with nsd.tcl,
+but you can translate this: from the aol3 directory, run <code>bin/translate-tcl <nsd.tcl >nsd.ini</code>.
+<br>
+<font color=red>CHECK THIS: does parameters.ini work with nsd.tcl? </strong>
+<p>
+
+If you use nsd.ini, make sure that the home directory is properly set, or AOLServer will not work.  
+Edit nsd.ini, and set 
+<pre>
+home=/webroot/aol3
+</pre><p>
+
+You should also comment out all references to nsssl.  <p>
+
+Test to make sure your installation is running.  <code>bin/nsd -fc nsd.ini -s server1</code>.  Surf over to 
+localhost:8000, and make sure you can see the page.<p>
+
+<h3>Installing Monitors</h3>
+
+(note: Cassandracle and Cassandrix untar to directories named cassandracle and cassandrix.
+This is convenient for installation purposes.  MTA Montior untars to /www/mmon.  It should untar to /mmon.)  
+
+<h3>Installing Oracle</h3>
+Create user oracle (primary GID oinstall, secondary dba)
+
+Untar the archive.  Cd to /OracleRi2
+Type ./runInstaller.
+
+File Locations:
+Source (automatically set)<br>
+Destination /ora8/m01
+OraInventory /ora8/.oraInventory
+Database directory /ora8/m02
+Set Install group to oinstall
+Typical Installation.
+Name your database.  This name is used for accessing the db from oracle tools.
+You need a service name and a system identifier: SID.  The service name should be a database name and
+your domain.  For instance, we used chaos.arsdigita.com.  This gives us a SID of chaos.
+Wait.
+
+A database will be created for you with two accounts:
+SYS, change_on_install (lucky2)
+SYSTEM, manager        (lucky)
+
+Post-install
+
+Edit the init-scripts for your shell (e.g. .bashrc) and set the (supposedly optional)
+ORACLE_BASE and ORACLE_HOME environment variables.
+<pre>
+ORACLE_BASE=/ora8/m01
+ORACLE_HOME=/ora8/m01
+ORACLE_SID=SID
+</pre>
+
+Moving on to http://www.arsdigita.com/doc/architecture-install.html and
+http://www.arsdigita.com/doc/installation.html
+
+Architecture install has a legacy print-out of Oracle data files.
+
+Find where the tablespaces are stored 
+
+                    SVRMGR>  select file_name from dba_data_files;
+
+              Example results: 
+
+                    /ora8/m01/app/oracle/oradata/ora8/system01.dbf
+                    /ora8/m01/app/oracle/oradata/ora8/oemrep01.dbf
+                    /ora8/m01/app/oracle/oradata/ora8/rbs01.dbf
+                    /ora8/m01/app/oracle/oradata/ora8/temp01.dbf
+                    /ora8/m01/app/oracle/oradata/ora8/users01.dbf
+                    /ora8/m01/app/oracle/oradata/ora8/indx01.dbf
+                    /ora8/m01/app/oracle/oradata/ora8/drsys01.dbf
+                    /ora8/m02/oradata/ora8/jsc01.dbf (misleading!)
+
+A fresh installation looks like this:
+
+SVRMGR> select file_name from dba_data_files;
+FILE_NAME                                                                       
+--------------------------------------------------------------------------------
+/ora8/m01/oradata/order/tools01.dbf                                             
+/ora8/m01/oradata/order/drsys01.dbf                                             
+/ora8/m01/oradata/order/users01.dbf                                             
+/ora8/m01/oradata/order/indx01.dbf                                              
+/ora8/m01/oradata/order/rbs01.dbf                                               
+/ora8/m01/oradata/order/temp01.dbf                                              
+/ora8/m01/oradata/order/system01.dbf                                            
+7 rows selected.
+
+Export and Import *must* be done from svrmgrl.  This is not specified in the documentation.
+
+For the export-oracle script, all instances of 'app/oracle/product/8.1.5/' should be deleted.
+
+<h3>Installing the ACS</h3>
+When configuring service-name.ini, delete the [ns/setup] section.  This was only for AOLServer 2.3.3.
+Must set a Port for the [ns/server/service_name/module/nssock]
+nscache.so is also deprecated.
+
+When compiling Oracle driver, one usually gets the warning 
+<pre>
+ld: warning: type and size of dynamic symbol `sskgslgf' are not defined
+</pre>
+
+This should be more prominently documented.
+
+Provide documentation for [ns/parameters] in nsd.ini.
+
+Include instructions to update the webserver user's LD_LIBRARY_PATH with the $ORACLE_HOME/lib
+
+ArsDigita Server installation references 'nsd-oracle' which is deprecated.
+Keepalive installation instructions references a 'restart-aolserver' script which we could not find
+on the web, but had from bootcamp.
+
+Knowing where nsd-oracle is would help a lot.
+
+
+<h3>Setting up Glassroom</h3>
+Exactly what must one do?
+
+<h3>Setting up Monitors</h3>
+ad-utilities-preload.tcl should be included with KeepAlive, WatchDog, etc.
+Watchdog needs better setup instructions.
+Glassroom needs better setup instructions.
+
+<h3>Using CVS</h3>
+
+
+<h3>Other Installation Documents
+<ul>
+<li><a href="http://arsdigita.com/doc/installation.html">ArsDigita Community System Installation</a><br>
+Covers the installation of ACS given a Unix server, Oracle, and AOLServer.
+<li><a href="http://photo.net/wtr/oracle-tips.html">Tips for using Oracle</a>
+</ul>
+
+</body>
+</html>

@@ -5,7 +5,7 @@
 -- Data to initialize the menus for the admin pages, and arsdigita-users bar
 -- for demonstration of the module
 --
--- $Id: pull-down-menu-data.sql,v 1.1.2.2 2000/03/16 05:35:34 aure Exp $
+-- pull-down-menu-data.sql,v 3.1 2000/03/20 08:00:42 ron Exp
 
 set define off;
 

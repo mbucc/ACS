@@ -1,14 +1,13 @@
-#
-# find-user.tcl
-# mark@ciccarello.com
+ad_page_contract {
+    Finds a particular user for permissioning purposes.
 
-
-set_the_usual_form_variables
-
-#
-# expects: table_name, row_id
-#
-
+    @author mark@ciccarello.com
+    @creation-date February 2000
+    @cvs-id find-user.tcl,v 3.4.2.2 2000/07/21 03:57:24 ron Exp
+} {
+    table_name:notnull
+    row_id:notnull
+}
 
 set html "[ad_admin_header  "Edit Permissions for a User" ]
 <h2>Add or Edit Permissions for a User</h2>
@@ -22,7 +21,7 @@ set passthrough [list table_name row_id]
 
 append html "</table>"
 append html "<h3>Edit permissions for user:</h3>
-<form action=\"/user-search.tcl\" method=post>
+<form action=\"/user-search\" method=post>
 [export_form_vars passthrough custom_title target table_name row_id]
 <table>
 <tr><td>Email address:<td><input type=text name=email size=40></tr>

@@ -5,7 +5,8 @@
 -- Reference table for available states.
 create table crm_states (
 	state_name	varchar(50) not null primary key,
-	description	varchar(1000) not null -- for UI
+	description	varchar(1000) not null, -- for UI
+	initial_state_p	char(1) default 'f' check (initial_state_p in ('t', 'f'))
 );
 
 -- Defines allowable transitions and a bit of SQL which can trigger it.

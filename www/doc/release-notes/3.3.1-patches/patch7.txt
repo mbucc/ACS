@@ -1,0 +1,267 @@
+In the file: /www/search/query-by-example.tcl
+
+You have two choices, both of which will patch the security
+hole, but the latter one will make it run a lot faster as well
+
+PATCH 1: just the security patch
+
+ADD
+  set user_id [ad_verify_and_get_user_id]  
+BELOW
+  ad_page_variables {query_string {sections -multiple-list}}
+
+IF your version of search.tcl does a foreach loop for each section and performs a query for each section:
+THEN
+  ADD
+   if { [string compare $s "bboard"] == 0} {
+     set sql_query "SELECT /*+ FIRST_ROWS */ SCORE(10) AS the_score, section_name, user_url_stub, the_key, one_line_description, sws.table_name
+     FROM site_wide_index sws, table_acs_properties m, bboard
+     WHERE sws.table_name='[DoubleApos $s]'
+     AND the_key=bboard.msg_id
+     AND sws.table_name = m.table_name
+     AND CONTAINS(sws.datastore, '$final_query_string', 10) > 0
+     AND bboard_user_can_view_topic_p($user_id,bboard.topic_id)= 't'
+     ORDER BY SCORE(10) DESC"
+   } else {
+     set sql_query "SELECT /*+ FIRST_ROWS */ SCORE(10) AS the_score, section_name, user_url_stub, the_key, one_line_description, sws.table_name
+     FROM site_wide_index sws, table_acs_properties m
+     WHERE sws.table_name='[DoubleApos $s]'
+     AND sws.table_name = m.table_name
+     AND CONTAINS(sws.datastore, '$final_query_string', 10) > 0
+     ORDER BY SCORE(10) DESC"
+   }
+  AFTER the second occurrence of 
+   foreach s $sections {  
+  (NOTE that this should be inside of the foreach, and should not terminate the foreach)
+
+  REPLACE
+   set selection [ns_db select $db "...."]
+  WITH
+   set selection [ns_db select $db $sql_query]  
+  AFTER
+   with_catch_errmsg {  
+  RIGHT AFTER the fix above it
+
+ELSE (your search.tcl performs only one query for all the sections)
+  ADD
+   set security_clause "(table_name != 'bboard' OR bboard_user_can_view_msg_p($user_id,the_key) = 't')"
+  BEFORE
+   set db [ns_db gethandle]
+
+  ADD
+   $security_clause
+  AFTER
+   and contains(sws.datastore, '$final_query_string',10) > 0   
+
+
+make sure you have bboard_users_can_view_topic_p and bboard_users_can_view_msg_p PL/SQL function,
+which exists in bboard.sql and in upgrade-3.3-3.3.1.sql (and in patch for
+contributions.tcl)
+
+PATCH 2: security fix plus optimization
+
+This must be remodeled to be like search.tcl, which means a
+substantial change...
+
+ADD
+  set user_id [ad_verity_and_get_user_id]  
+AFTER
+  set_the_usual_form_variables
+
+COMMENT OUT
+  if { $search_display_preference == "by_section" } {
+      set order_clause "order by section_name, 1 desc"
+  } else {
+      set order_clause "order by 1 desc"
+  }
+
+COMMENT OUT below section
+  ### begin section ###
+#  set search_results ""
+
+#  set selection [ns_db select $db "select /*+ FIRST_ROWS */ score(10) as the_score, section_name, user_url_stub, the_key, one_line_description, sws.table_name
+#  from site_wide_index sws, table_acs_properties m
+#  where sws.table_name = m.table_name
+#  and contains(sws.datastore, '$subject_query and [join $about_clause " and "]', 10) > 0
+#  $sections_clause
+#  $order_clause"]
+
+#  set counter 0
+#  set last_section ""
+#  set max_score 0
+
+#  while {[ns_db getrow $db $selection]} {
+#      set_variables_after_query
+#      incr counter
+
+#      if { $section_name != $last_section } {
+#  	set max_score $the_score
+#  	# Reset count for new section.
+#  	set counter 0
+#  	set last_section $section_name
+#  	append search_results "<h3>$section_name</h3>\n"
+#      }
+    
+#      if { [ad_search_results_cutoff $counter $the_score $max_score] } {
+#  	ns_db flush $db
+#  	break
+#      }
+
+#      set one_line "<li>$the_score: <a href=\"$results_base_url$user_url_stub$the_key\">$one_line_description</a>\n"
+#      if { $n_sections > 1 && $search_display_preference == "one_list" } {
+#  	append search_results "$one_line <font size=-1>($section_name)</font>\n"
+#      } else {
+#  	append search_results $one_line
+#      }
+
+#      append search_results "(<a href=\"query-by-example?[export_url_vars sections table_name the_key]&subject=[ns_urlencode $one_line_description]\">more like this</a>)\n"
+#  }
+  ### end section ###
+
+Make sure you still have 
+  set results_base_url [ad_parameter BounceResultsTo site-wide-search ""]
+
+ADD BELOW INSTEAD OF THE ABOVE SECTION
+  if { $search_display_preference != "by_section"} {
+    # Generic Search
+    with_catch errmsg {
+	set selection [ns_db select $db "select /*+ FIRST_ROWS */ score(10) as the_score, section_name, user_url_stub, the_key, one_line_description, sws.table_name
+	from site_wide_index sws, table_acs_properties m
+	where sws.table_name = m.table_name
+	and contains(sws.datastore, '$subject_query and [join $about_clause " and "]', 10) > 0
+	$sections_clause
+	order by 1 desc"]
+    } {
+	ad_return_error "Problem with interMedia" "There was a problem with interMedia 
+	while processing your query. This site wide search thing is still somewhat experimental,
+	so please bear with us while we work out the kinks. You may have better luck if you change
+	your query a little bit."
+	return
+    }
+
+    set search_results ""
+    
+    set counter 0
+    set last_section ""
+    set max_score 0
+    
+    set results_base_url [ad_parameter BounceResultsTo site-wide-search ""]
+    
+    while {[ns_db getrow $db $selection]} {
+	set_variables_after_query
+	incr counter
+	
+	if { $section_name != $last_section } {
+	    set max_score $the_score
+	    # Reset count for new section.
+	    set counter 0
+	    set last_section $section_name
+	    append search_results "<h3>$section_name</h3>\n"
+	}
+	
+	if { [ad_search_results_cutoff $counter $the_score $max_score] } {
+	    if { $search_display_preference == "by_section" } {
+		# We may have more sections later on.
+		continue
+	    } else {
+		# All done.
+		ns_db flush $db
+		break
+	    }
+	}
+	
+	set one_line "<li>$the_score: <a href=\"$results_base_url$user_url_stub$the_key\">$one_line_description</a>\n"
+	if { $n_sections > 1 && $search_display_preference == "one_list" } {
+	    append search_results "$one_line <font size=-1>($section_name)</font>\n"
+	} else {
+	    append search_results $one_line
+	}
+	# LuisRodriguez@photo.net, June 2000
+	# Make sure sections is first var in URL, otherwise MSIE 4.01 will turn "&sect"
+	# into a multibyte char and thus mangle the URL
+	append search_results "<font size=-1>(<a href=\"query-by-example?[export_url_vars sections table_name the_key]&subject=[ns_urlencode $one_line_description]\">more like this</a>)</font>\n"
+    }
+
+    if { [empty_string_p $search_results] } {
+	set search_results "No hits found for your query."
+    }
+  } else {
+    # This is a by section wedge, so we can optimize this
+    # Instead of going through the whole table row by row, we can constrain it
+    # to each section, then perform multiple queries, which actually go faster
+    # because we are only interested in the top few.
+
+    set any_hits_p 0
+
+    set search_results ""
+
+    foreach s $sections {
+	if { [string compare $s "bboard"] == 0} {
+	    set sql_query "SELECT /*+ FIRST_ROWS */ SCORE(10) AS the_score, section_name, user_url_stub, the_key, one_line_description, sws.table_name
+	    FROM site_wide_index sws, table_acs_properties m, bboard
+	    WHERE sws.table_name='[DoubleApos $s]'
+	    AND the_key=bboard.msg_id
+	    AND sws.table_name = m.table_name
+	    and contains(sws.datastore, '$subject_query and [join $about_clause " and "]', 10) > 0
+	    AND bboard_user_can_view_topic_p($user_id,bboard.topic_id)= 't'
+	    ORDER BY SCORE(10) DESC"
+	} else {
+	    set sql_query "SELECT /*+ FIRST_ROWS */ SCORE(10) AS the_score, section_name, user_url_stub, the_key, one_line_description, sws.table_name
+	    FROM site_wide_index sws, table_acs_properties m
+	    WHERE sws.table_name='[DoubleApos $s]'
+	    AND sws.table_name = m.table_name
+	    and contains(sws.datastore, '$subject_query and [join $about_clause " and "]', 10) > 0
+	    ORDER BY SCORE(10) DESC"
+	}
+	with_catch errmsg {
+	    set selection [ns_db select $db $sql_query]
+	} {
+	    ad_return_error "Problem with interMedia" "There was a problem with interMedia 
+	    while processing your query. This site wide search thing is still somewhat experimental,
+	    so please bear with us while we work out the kinks. You may have better luck if you change
+	    your query a little bit."
+	    ns_db releasehandle $db
+	    return
+	}
+	
+	set counter 0
+	set max_score 0
+	
+	while {[ns_db getrow $db $selection]} {
+	    set_variables_after_query
+	    incr counter
+	    set any_hits_p 1
+
+	    if { $counter == 1 } {
+		set max_score $the_score
+		append search_results "<h3>$section_name</h3>\n"
+	    }
+	    
+	    if { [ad_search_results_cutoff $counter $the_score $max_score] } {
+		# All done with current section
+		ns_db flush $db
+		break
+	    } else {
+		append search_results "<li>$the_score: <a href=\"$results_base_url$user_url_stub$the_key\">$one_line_description</a>\n"
+		append search_results "<font size=-1>(<a href=\"query-by-example.tcl?[export_url_vars sections table_name the_key]&subject=[ns_urlencode $one_line_description]\">more like this</a>)</font>\n"
+	    }
+	}
+    }
+    if { !$any_hits_p } {
+	append search_results "No hits found for your query."
+    }
+
+  }
+
+
+REMOVE
+  ReturnHeaders  
+
+MOVE
+  ns_write "[ad_header "Search Results"]
+  <h2>Search Results</h2>
+  [ad_context_bar_ws_or_index [list "index.tcl" "Search"] "Results"]
+  <hr>
+  Themes searched for: [join $themes ", "]
+  <ul>"  
+INTO BOTTOM SECTION AND CHANGE TO ns_return

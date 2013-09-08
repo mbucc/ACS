@@ -1,10 +1,28 @@
-# $Id: one-subsubcategory.tcl,v 3.0 2000/02/06 03:20:31 ron Exp $
-set_the_usual_form_variables
-# category_id, category_name, subcategory_id, subcategory_name, subsubcategory_id subsubcategory_name
+# one-subsubcategory.tcl
+# one-subsubcategory.tcl,v 3.1.6.4 2000/08/28 20:19:12 hbrock Exp
 
-ReturnHeaders
+ad_page_contract { 
+    @param category_id
+    @param category_name
+    @param subcategory_id
+    @param subcategory_name
+    @subsubcategory_id 
+    @subsubcategory_name
 
-ns_write "[ad_admin_header "Products in $category_name: $subcategory_name: $subsubcategory_name"]
+    @author
+    @creation-date
+    @cvs-id one-subsubcategory.tcl,v 3.1.6.4 2000/08/28 20:19:12 hbrock Exp
+} {
+    category_id
+    category_name
+    subcategory_id
+    subcategory_name
+    subsubcategory_id 
+    subsubcategory_name
+}
+
+
+doc_body_append "[ad_admin_header "Products in $category_name: $subcategory_name: $subsubcategory_name"]
 
 <h2>Products in $category_name: $subcategory_name: $subsubcategory_name</h2>
 
@@ -15,35 +33,30 @@ ns_write "[ad_admin_header "Products in $category_name: $subcategory_name: $subs
 <ul>
 "
 
-set db [ns_db gethandle]
-
-set selection [ns_db select $db "select m.product_id, p.product_name, publisher_favorite_p
+set sql "select m.product_id, p.product_name, publisher_favorite_p
 from ec_subsubcategory_product_map m, ec_products p
 where m.product_id = p.product_id
-and m.subsubcategory_id=$subsubcategory_id
-order by product_name"]
+and m.subsubcategory_id= :subsubcategory_id
+order by product_name"
 
-set product_counter 0
-while { [ns_db getrow $db $selection] } {
-    incr product_counter
-    set_variables_after_query
-    ns_write "<li><a href=\"one.tcl?[export_url_vars product_id]\">$product_name</a> "
+db_foreach select_subsubcate $sql {
+
+    doc_body_append "<li><a href=\"one?[export_url_vars product_id]\">$product_name</a> "
     if { $publisher_favorite_p == "t" } {
-	ns_write "This is a favorite. "
+	doc_body_append "This is a favorite. "
     }
     if { $publisher_favorite_p == "t" } {
-	ns_write " \[<a href=\"subsubcategory-property-toggle.tcl?publisher_favorite_p=f&[export_url_vars product_id category_id category_name subcategory_id subcategory_name subsubcategory_id subsubcategory_name]\">make it not be a favorite</a>\]"
+	doc_body_append " \[<a href=\"subsubcategory-property-toggle?publisher_favorite_p=f&[export_url_vars product_id category_id category_name subcategory_id subcategory_name subsubcategory_id subsubcategory_name]\">make it not be a favorite</a>\]"
     } else {
-	ns_write "\[<a href=\"subsubcategory-property-toggle.tcl?publisher_favorite_p=t&[export_url_vars product_id category_id category_name subcategory_id subcategory_name subsubcategory_id subsubcategory_name]\">make this a favorite</a>\]"
+	doc_body_append "\[<a href=\"subsubcategory-property-toggle?publisher_favorite_p=t&[export_url_vars product_id category_id category_name subcategory_id subcategory_name subsubcategory_id subsubcategory_name]\">make this a favorite</a>\]"
     }
-
+    
+} if_no_rows {
+    
+    doc_body_append "There are no products in this subsubcategory.\n"
 }
 
-if { $product_counter == 0 } {
-    ns_write "There are no products in this subsubcategory.\n"
-}
-
-ns_write "</ul>
+doc_body_append "</ul>
 
 [ad_admin_footer]
 "

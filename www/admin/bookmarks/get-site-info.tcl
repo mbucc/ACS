@@ -1,13 +1,12 @@
-# /admin/bookmarks/get-site-info.tcl
-#
-# populate the database with url titles, live status and meta tags
-#
-# by aure@arsdigita.com, June 1999
-#
-# Note: this probably should be moved to pl/sql and run nightly
-#
-# $Id: get-site-info.tcl,v 3.0.4.2 2000/03/18 02:46:27 cnk Exp $
+# /www/admin/bookmarks/get-site-info.tcl
 
+ad_page_contract {
+    populate the database with url titles, live status and meta tags
+    Note: this probably should be moved to pl/sql and run nightly
+    @author Aurelius Prochazka (aure@arsdigita.com)
+    @creation-date June 1999  
+    @cvs-id get-site-info.tcl,v 3.2.2.6 2000/09/22 01:34:24 kevin Exp
+} {} 
 
 set user_id [ad_verify_and_get_user_id]
 ad_maybe_redirect_for_registration
@@ -35,20 +34,17 @@ set title "Get Site Information"
 
 # we spool this page since it can take a long time (and also access it
 # from a softlink so that we can use http instead of https)
-ReturnHeaders
 
-ns_write "
+set page_content "
 [ad_admin_header $title]
 
 <h2> $title </h2>
 [ad_admin_context_bar [list "" "Bookmarks"] $title]
 <hr>"
 
-set db [ns_db gethandle]
-
 # get all the sites that haven't been checked recently
 
-set check_list [database_to_tcl_list_list $db "
+set check_list [db_list_of_lists site_list "
     select unique bm_list.url_id, 
            local_title, 
            complete_url, 
@@ -58,10 +54,9 @@ set check_list [database_to_tcl_list_list $db "
     and    last_live_date < sysdate - 1
     order by bookmark_id desc"]
 
-
 # here we release the database handle in order so that we don't stay connected
 # to oracle while this procedure chugs along
-ns_db releasehandle $db
+db_release_unused_handles
 
 set checked_list [list ]
 foreach check_set $check_list {
@@ -74,10 +69,10 @@ foreach check_set $check_list {
 	# it was a mailto or an ftp:// or something (but not http://)
 	# else that http_open won't like (or just plain #foobar)
 
-	ns_write "Skipping <a href=\"[philg_quote_double_quotes $complete_url]\">$local_title</a>...<br>"
+	append page_content "Skipping <a href=\"[philg_quote_double_quotes $complete_url]\">$local_title</a>...<br>"
 	continue
     } 
-    ns_write "Checking <a href=\"[philg_quote_double_quotes $complete_url]\">$local_title</a>..."
+    append page_content "Checking <a href=\"[philg_quote_double_quotes $complete_url]\">$local_title</a>..."
     
     # strip off any trailing #foo section directives to browsers
     regexp {^(.*/?[^/]+)\#[^/]+$} $complete_url dummy complete_url
@@ -97,7 +92,7 @@ foreach check_set $check_list {
     set checked_pair $url_id
     if { $response != 200 && $response != 302 } {
 	lappend checked_pair " "
-	ns_write " NOT FOUND<br>" 
+	append page_content " NOT FOUND<br>" 
     } else {
 	if {![catch {ns_httpget $complete_url 3 1} url_content]} {
 	    set title ""
@@ -118,34 +113,32 @@ foreach check_set $check_list {
 		set description "[string range $description 0 990]..."
 	    }
 	    lappend checked_pair ", last_live_date=sysdate,
-	    url_title='[DoubleApos $title]',
-	    meta_description='[DoubleApos $description]',
-	    meta_keywords='[DoubleApos $keywords]'"
+	    url_title= :title,
+	    meta_description= :description,
+	    meta_keywords= :keywords"
 	}
-	ns_write " FOUND<br>"
+	append page_content " FOUND<br>"
     }
     lappend checked_list $checked_pair
 }
 
-set db [ns_db gethandle]
-
 foreach checked_pair $checked_list {
     set url_id [lindex $checked_pair 0]
     set last_live_clause [lindex $checked_pair 1]
-    ns_db dml $db "
+    db_dml bm_update "
         update bm_urls 
 	set    last_checked_date = sysdate$last_live_clause
-	where  url_id = $url_id"
+	where  url_id = :url_id"
 }
 
-ns_write "
+append page_content "
 </ul> Done!  
 
 <a href=\"\">Click</a> to continue.
 
 [ad_admin_footer]"
 
-
+doc_return  200 text/html "$page_content"
 
 
 

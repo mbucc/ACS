@@ -1,25 +1,48 @@
-# /admin/users/action-choose.tcl
-#
-# Author: philg@mit.edu in late 1998
-# Modified by: ron@arsdigita.com to confirm with ACS form conventions
-# 
-# Given a class of users, lets site admin pick something to do with
-# them.
-#
-# $Id: action-choose.tcl,v 3.6.2.1 2000/04/28 15:09:35 carsten Exp $
+ad_page_contract {
+    Given a class of users, lets site admin pick something to do with them.
 
-set_the_usual_form_variables
+    # maybe a whole host of user criteria
 
-# maybe user_class_id (to indicate a previousely-selected class of users)
-# maybe a whole host of user criteria
-# If description is specified, we display it instead of the results of ad_user_class_description
-#   -- Passing description hides the sql query which can be good for normal, non-programming, users
+    @author Philip Greenspun (philg@mit.edu)
+    @author Ron Henderson (ron@arsdigita.com)
+    @cvs-id action-choose.tcl,v 3.11.2.5.2.3 2000/09/22 01:36:16 kevin Exp
 
-set admin_user_id [ad_verify_and_get_user_id]
-ad_maybe_redirect_for_registration
+    @param user_class_id (optional) a previously-selected class of users
+    @param description (optional) if given, used instead of the results of ad_user_class_description. Passing description hides the sql query which can be good for normal, non-programming, users
+} {
+    registration_after_date:optional
+    category_id:optional
+    curriculum_elements_completed:optional
+    expensive:optional
+    include_accumulated_charges_p:optional
+    group_id:optional,integer
+    special:optional
+    user_state:optional
+    registration_during_month:optional
+    last_login_equals_days:optional
+    crm_state:optional
+    country_code:optional
+    usps_abbrev:optional
+    sex:optional
+    age_above_years:optional
+    age_below_years:optional
+    registration_before_days:optional
+    registration_after_days:optional
+    last_login_before_days:optional
+    last_login_after_days:optional
+    number_visits_below:optional
+    number_visits_above:optional
+    last_name_starts_with:optional
+    email_starts_with:optional
+    combine_method:optional
+    sql_post_select:optional
+    {user_class_id:integer ""}
+    description:optional
+}
+
+set admin_user_id [ad_maybe_redirect_for_registration]
 
 # we get a form that specifies a class of user
-
 set user_class_description [ad_user_class_description [ns_conn form]]
 
 if { ![exists_and_not_null description] } {
@@ -28,7 +51,6 @@ if { ![exists_and_not_null description] } {
 } else {
     set user_description "Users who $description"
 }
-
 
 append whole_page "[ad_admin_header $user_description]
 
@@ -44,29 +66,15 @@ Class description:  $user_description.
 
 "
 
-set db [ns_db gethandle]
 
 
 if { [ad_parameter NumberOfUsers] == "small" } {
     # we print out all the users
     append action_heading "<ul>"
     set query [ad_user_class_query [ns_conn form]]
-    if [catch {set selection [ns_db select $db $query]} errmsg] {
-	append  "The query
-<blockquote>
-$query 
-</blockquote>
-is invalid.
-[ad_admin_footer]"
-	return
-    }
-    set count 0
-    while { [ns_db getrow $db $selection] } {
-	set_variables_after_query
-	incr count
-	append action_heading "<li><a href=\"one.tcl?user_id=$user_id\">$first_names $last_name</a> ($email)\n"
-    }
-    if { $count == 0 } {
+    db_foreach user_class_query $query {
+	append action_heading "<li><a href=\"one?user_id=$user_id\">$first_names $last_name</a> ($email)\n"
+    } if_no_rows {
 	append action_heading "no users found meeting these criteria"
     }
     append action_heading "</ul>"
@@ -74,7 +82,7 @@ is invalid.
     # this is a large community; we just say how many users 
     # there are in this class
     set query [ad_user_class_query_count_only [ns_conn form]]
-    if [catch {set n_users [database_to_tcl_string $db $query]} errmsg] {
+    if [catch {set n_users [db_string user_class_query $query]} errmsg] {
 	append whole_page  "The query
 <blockquote>
 $query 
@@ -89,16 +97,17 @@ is invalid.
 
 set sql_description $user_class_description
 
-
-if {![info exists user_class_id] || [empty_string_p $user_class_id]} {
-    append title_text "<form action=user-class-add.tcl method=post>
+if {[empty_string_p $user_class_id]} {
+    append title_text "<form action=user-class-add method=post>
 [export_form_vars query sql_description]
 Save this criteria as: <input type=text name=name>
 <input type=submit value=\"Save\"> 
 </form>"
 } else {
-    set selection [ns_db 1row $db "select name, description, sql_description, sql_post_select from user_classes where user_class_id = $user_class_id"]
-    set_variables_after_query
+    if { ![db_0or1row user_classes_query "select name, description, sql_description, sql_post_select from user_classes where user_class_id = $user_class_id"] } {
+	ad_return_error "User Class Not Found" "User class #user_class_id does not exist"
+	return
+    }
     append title_text "
     <h3>User class: $name</h3>
 <ul>    
@@ -110,11 +119,11 @@ if {[ad_parameter AllowAdminSQLQueries "" 0] == 1} {
 }
 
 append title_text "<br>
-<a href=\"user-class-edit.tcl?[export_url_vars user_class_id]\">edit</a>
+\[ <a href=\"user-class-edit?[export_url_vars user_class_id]\">edit</a> |
+<a href=\"javascript:if(confirm('Are you sure you want to delete this user class?'))location.href='user-class-delete?[export_url_vars user_class_id]'\">delete</a> \]
 </ul>
 <p>"
 }
-
 
 append whole_page "
 
@@ -125,10 +134,10 @@ $action_heading
 <h3>Pick an Action</h3>
 
 <ul>
-<li><a href=\"view.tcl?[export_entire_form_as_url_vars]\">View</a> 
-<li><a href=\"view-verbose.tcl?[export_entire_form_as_url_vars]\">View (with address &amp; demographics)</a>
-<li><a href=\"merge/one-class.tcl?[export_entire_form_as_url_vars]&order_by=email\">Look for merger candidates</a> 
-<li><a href=\"view-csv.tcl?[export_entire_form_as_url_vars]\">Download
+<li><a href=\"view?[export_entire_form_as_url_vars]\">View</a> 
+<li><a href=\"view-verbose?[export_entire_form_as_url_vars]\">View (with address &amp; demographics)</a>
+<li><a href=\"merge/one-class?[export_entire_form_as_url_vars]&order_by=email\">Look for merger candidates</a> 
+<li><a href=\"view-csv?[export_entire_form_as_url_vars]\">Download
 a comma-separated value file suitable for importing into a
 spreadsheet</a> 
 <br>(format is email, last name, first names)
@@ -138,17 +147,16 @@ spreadsheet</a>
 "
 
 # generate unique key here so we can handle the "user hit submit twice" case
-set spam_id [database_to_tcl_string $db "select spam_id_sequence.nextval from dual"]
+set spam_id [db_string new_spam_id "select spam_id_sequence.nextval from dual"]
 
 # Generate the SQL query from the user_class_id, if supplied, or else from the 
 # pile of form vars as args to ad_user_class_query
 
 set users_sql_query [ad_user_class_query [ns_getform]]
-regsub {from users} $users_sql_query {from users_spammable users} users_sql_query
 
 if { [info exists user_class_id] && ![empty_string_p $user_class_id]} {
-    set class_name [database_to_tcl_string $db "select name from user_classes where user_class_id = $user_class_id "]
-    set sql_description [database_to_tcl_string $db "select sql_description from user_classes where user_class_id = $user_class_id "]
+    set class_name [db_string user_class_query "select name from user_classes where user_class_id = $user_class_id "]
+    set sql_description [db_string sql_desc_query "select sql_description from user_classes where user_class_id = $user_class_id "]
     set users_description "$class_name: $sql_description"
 } else {
     set users_description  $user_description
@@ -166,7 +174,7 @@ our code will think you are trying to substitute a variable like
 (\$first_names). 
 </blockquote>
 
-<p> <form method=POST action=\"/admin/spam/spam-confirm.tcl\">
+<p> <form method=POST action=\"/admin/spam/spam-confirm\">
 [export_form_vars spam_id users_sql_query users_description]
 
 <table>
@@ -175,7 +183,7 @@ our code will think you are trying to substitute a variable like
 <td align=right>From:</td>
 <td>
 <input name=from_address type=text size=30
-value=\"[database_to_tcl_string $db "select email from users where
+value=\"[db_string user_email "select email from users where
 user_id = $admin_user_id"]\"></td>
 </tr>
 
@@ -216,5 +224,5 @@ Tcl Template</td>
 [ad_admin_footer]
 "
 
-ns_db releasehandle $db
-ns_return 200 text/html $whole_page
+
+doc_return  200 text/html $whole_page

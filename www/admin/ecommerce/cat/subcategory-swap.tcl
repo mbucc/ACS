@@ -1,14 +1,32 @@
-# $Id: subcategory-swap.tcl,v 3.0.4.1 2000/04/28 15:08:36 carsten Exp $
-set_the_usual_form_variables
-# subcategory_id, next_subcategory_id, sort_key, next_sort_key, category_id, category_name
+# /www/admin/ecommerce/cat/subcategory-swap.tcl
+ad_page_contract {
+
+    Swaps two adjacent subcategories of common category.
+
+    @param subcategory_id the subcategory ID
+    @param next_subcategory_id the next subcategory ID (to swap)
+    @param sort_key the key to sort this one on
+    @param next_sort_key the key for the other
+    @param category_id the category ID
+    @param category_name the category name
+
+    @cvs-id subcategory-swap.tcl,v 3.1.6.5 2000/08/16 15:54:10 seb Exp
+} {
+    subcategory_id:integer,notnull
+    next_subcategory_id:integer,notnull
+    sort_key:notnull
+    next_sort_key:notnull
+    category_id:integer,notnull
+    category_name:notnull
+}
 
 # switches the ordering of a category with that of the next subcategory
 
-set db [ns_db gethandle]
 
-set item_match [database_to_tcl_string $db "select count(*) from ec_subcategories where subcategory_id=$subcategory_id and sort_key=$sort_key"]
 
-set next_item_match [database_to_tcl_string $db "select count(*) from ec_subcategories where subcategory_id=$next_subcategory_id and sort_key=$next_sort_key"]
+set item_match [db_string get_item_match "select count(*) from ec_subcategories where subcategory_id=:subcategory_id and sort_key=:sort_key"]
+
+set next_item_match [db_string get_next_item_match "select count(*) from ec_subcategories where subcategory_id=:next_subcategory_id and sort_key=:next_sort_key"]
 
 if { $item_match != 1 || $next_item_match != 1 } {
     ad_return_complaint 1 "<li>The page you came from appears to be out-of-date;
@@ -18,9 +36,9 @@ if { $item_match != 1 || $next_item_match != 1 } {
     return
 }
 
-ns_db dml $db "begin transaction"
-ns_db dml $db "update ec_subcategories set sort_key=$next_sort_key where subcategory_id=$subcategory_id"
-ns_db dml $db "update ec_subcategories set sort_key=$sort_key where subcategory_id=$next_subcategory_id"
-ns_db dml $db "end transaction"
-
-ad_returnredirect "category.tcl?[export_url_vars category_id category_name]"
+db_transaction {
+db_dml update_swap_subcat "update ec_subcategories set sort_key=:next_sort_key where subcategory_id=:subcategory_id"
+db_dml update_swap_subcat_2 "update ec_subcategories set sort_key=:sort_key where subcategory_id=:next_subcategory_id"
+}
+db_release_unused_handles
+ad_returnredirect "category?[export_url_vars category_id category_name]"

@@ -1,29 +1,48 @@
-# $Id: group-type-edit-2.tcl,v 3.0.4.1 2000/04/28 15:09:32 carsten Exp $
-set_the_usual_form_variables
+ad_page_contract {
+    @param group_type  group_type, plus all the other group type variables from the form
+    @param group_type_module_id (necessary for insertion of content-sections module  into content_sections table in the case group_module_administration is enabling or full)
+    @param pretty_name The name of the group type
+    @param pretty_plural The plural name of more than one group type
+    @param approval_policy The approval policy for how a new group of this group type can be created
+    @param default_new_member_policy The default policy for how a group will handle new members
+    @param group_module_administration The policy for how a group can administer its module associations
 
-# group_type, plus all the other group type variables from the form
-# group_type_module_id (necessary for insertion of content-sections module
-# into content_sections table in the case group_module_administration is enabling or full)
+    @cvs-id group-type-edit-2.tcl,v 3.1.6.4 2000/07/21 03:58:16 ron Exp
+} {
+    group_type:notnull
+    group_type_module_id:notnull,naturalnum
+    pretty_name:notnull
+    pretty_plural:notnull
+    approval_policy:notnull
+    default_new_member_policy:notnull
+    group_module_administration:notnull
+}
 
-set db [ns_db gethandle]
-set update_statement [util_prepare_update $db user_group_types group_type $group_type [ns_getform]]
+set update_statement "
+    update user_group_types
+    set pretty_name = :pretty_name,
+        pretty_plural = :pretty_plural,
+        approval_policy = :approval_policy,
+        default_new_member_policy = :default_new_member_policy,
+        group_module_administration = :group_module_administration
+    where group_type = :group_type
+"
 
-set return_url "group-type.tcl?[export_url_vars group_type]"
+set return_url "group-type?[export_url_vars group_type]"
 
 if [catch { 
-    ns_db dml $db "begin transaction"
+    db_transaction {
     
     # this updates the user_group_types table per data entered in the form
-    ns_db dml $db $update_statement
+    db_dml group_type_update $update_statement
     
     if { $group_module_administration=="full" } {
 	# we are giving full module administration to the groups
 	# in this case we shouldn't have any group_type to module mappings,
 	# so that we can guarantee constistency in module mappings in the case
 	# module administration is switched to enabling or none
-	ns_db dml $db "
-	delete from user_group_type_modules_map where group_type='$QQgroup_type'
-	"
+	db_dml group_type_mm_delete "
+	delete from user_group_type_modules_map where group_type=:group_type"
     }
     
     if { $group_module_administration=="full" ||  $group_module_administration=="enabling" } {
@@ -31,33 +50,35 @@ if [catch {
 	# module is installed (otherwise, group_module_administration doesn't make sense)
 	
 	set module_key "content-sections"
-	set QQmodule_key [DoubleApos $module_key]
 	
-	ns_db dml $db "
+	
+	db_dml insert_gt_mod_map "
 	insert into user_group_type_modules_map
 	(group_type_module_id, group_type, module_key)
-	select $group_type_module_id, '$QQgroup_type', '$QQmodule_key'
+	select :group_type_module_id, :group_type, :module_key
 	from dual where not exists (select 1 from user_group_type_modules_map 
-                                    where group_type='$QQgroup_type' and module_key='$QQmodule_key')
+                                    where group_type=:group_type and module_key=:module_key)
 	"
 	
-	set selection [ns_db 1row $db "
+	db_1row get_prettyname "
 	select pretty_name as module_pretty_name, section_type_from_module_key(module_key) as section_type
-	from acs_modules where module_key='$QQmodule_key'"]
-	set_variables_after_query
+	from acs_modules where module_key=:module_key"
+	
 	
 	# select all the groups of this group type, which don't have this module already installed
-	set selection [ns_db select $db "
+	set existing_module_groups_counter 0
+
+	db_foreach get_content_section_stuff "
 	select content_sections.group_id as module_existing_group_id
 	from content_sections, user_groups
 	where content_sections.scope='group'
 	and content_sections.group_id=user_groups.group_id
-	and user_groups.group_type='$QQgroup_type'
-	and module_key='$QQmodule_key' for update"]
+	and user_groups.group_type=:group_type
+	and module_key=:module_key for update" {
 	
-	set existing_module_groups_counter 0
-	while { [ns_db getrow $db $selection] } {
-	    set_variables_after_query
+	
+	
+	  
 	    
 	    lappend existing_module_groups_list $module_existing_group_id
 	    incr existing_module_groups_counter
@@ -68,45 +89,43 @@ if [catch {
 	} else {
 	    set existing_modules_sql ""
 	}
-	
-	set selection [ns_db select $db "
-	select group_id as insert_group_id, 
-	uniq_group_module_section_key('$QQmodule_key', group_id) as insert_section_key
-	from user_groups
-	where group_type='$QQgroup_type'
-	$existing_modules_sql for update"]
-	
 	set insertion_sql_list [list]
-	while { [ns_db getrow $db $selection] } {
-	    set_variables_after_query
-	    
+	db_foreach get_group_ids_for_insert "
+	select group_id as insert_group_id, 
+	uniq_group_module_section_key(:module_key, group_id) as insert_section_key
+	from user_groups
+	where group_type=:group_type
+	$existing_modules_sql for update" {
+
+	
+	
 	    lappend insertion_sql_list "
 	    insert into content_sections
 	    (section_id, scope, section_type, requires_registration_p, visibility, group_id, 
 	    section_key, module_key, section_pretty_name, enabled_p)
 	    values
-	    (content_section_id_sequence.nextval, 'group', '[DoubleApos $section_type]', 'f', 'public', $insert_group_id, 
-	    '[DoubleApos $insert_section_key]', '$QQmodule_key', '[DoubleApos $module_pretty_name]', 't')
+	    (content_section_id_sequence.nextval, 'group', :section_type, 'f', 'public', :insert_group_id, 
+	    :insert_section_key, :module_key, :module_pretty_name, 't')
 	    "
 	}
 	
 	foreach insertion_sql $insertion_sql_list {
-	    ns_db dml $db $insertion_sql
+	    db_dml insert_into_cs_sql_list $insertion_sql
 	}
     } 
     
-    ns_db dml $db "end transaction"
+    }
 } errmsg] {
     # Oracle choked on the insert
-    ns_db dml $db "abort transaction"
+    db_dml abort_transaction "abort transaction"
     
     # detect double click
-    set selection [ns_db 0or1row $db "
+    if { [db_0or1row get_dclick_ugtmm "
     select 1
     from user_group_type_modules_map
-    where group_type_module_id= $group_type_module_id"]
+    where group_type_module_id= :group_type_module_id"] == 0 } {
     
-    if { ![empty_string_p $selection] } {
+
 	# it's a double click, so just redirect the user to the index page
 	ad_returnredirect $return_url
 	return
@@ -129,4 +148,7 @@ if [catch {
 ad_returnredirect $return_url
 
     
+
+
+
 

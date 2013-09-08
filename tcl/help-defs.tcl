@@ -1,13 +1,14 @@
-# $Id: help-defs.tcl,v 3.0 2000/02/06 03:13:42 ron Exp $
-#
-# help-defs.tcl
-# 
-# by philg@mit.edu on July 1, 1999
-# 
-# documented at /doc/help.html 
-#
+# /tcl/help-defs.tcl
 
-util_report_library_entry
+ad_library {
+    Routines used by the ACS help system
+    documented at /doc/help.html 
+
+    @author Philip Greenspun (philg@mit.edu)
+    @creation-date  1 July 1999
+
+    @cvs-id help-defs.tcl,v 3.1.2.1 2000/07/12 23:23:03 scott Exp
+}
 
 proc_doc help_link {} "If a help file isn't available for the currently executing .tcl script, return empty string.  Otherwise, returns a hyperlinked anchor of \"help\" that will take a user to /help/for-one-page.tcl" {
     # we may have multi-lingual help but right now we don't care; let's
@@ -77,5 +78,3 @@ proc_doc help_upper_right_menu_b args "Returns an HTML table, with \"out-of-flow
     }
 }
 
-
-util_report_successful_library_load

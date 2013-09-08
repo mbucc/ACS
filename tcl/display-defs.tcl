@@ -1,12 +1,14 @@
-# $Id: display-defs.tcl,v 3.0 2000/02/06 03:13:09 ron Exp $
-# File:   /tcl/css-defs.tcl
-# Date:   12/27/99
-# Author: Tarik Alatovic
-# Email:  tarik@arsdigita.com
-#
-# Purpose: utility functions used for css module
+# /tcl/display-defs.tcl
 
-proc_doc css_generate_complete_css { db } "assumes scope is set in the callers enironment. if scope=user it assumes user_id is set in callers environment and if scope=group it assumes that group_id is set in callers environment. it returns generate css string from the css_complete table matching the provided scope" {
+ad_library {
+    utility functions used for css module
+    
+    @author Tarik Alatovic   tarik@arsdigita.com
+    @date 12/27/99
+    @cvs-id display-defs.tcl,v 3.2.2.3 2000/09/14 07:36:30 ron Exp
+}
+
+proc_doc css_generate_complete_css { } "assumes scope is set in the callers enironment. if scope=user it assumes user_id is set in callers environment and if scope=group it assumes that group_id is set in callers environment. it returns generate css string from the css_complete table matching the provided scope" {
 
     upvar scope scope 
 
@@ -17,17 +19,16 @@ proc_doc css_generate_complete_css { db } "assumes scope is set in the callers e
 	upvar user_id user_id
     }
 
-    set selection [ns_db select $db "
-    select selector, property, value
-    from css_complete
-    where [ad_scope_sql]"]
+
+    set query_sql "
+    select selector, property, value 
+    from css_complete 
+    where [ad_scope_sql]"
     
-    set_variables_after_query
     
     set counter 0
     set last_selector ""
-    while { [ns_db getrow $db $selection] } {
-	set_variables_after_query
+    db_foreach select_query $query_sql {
 	
 	if { [string compare $selector $last_selector]!=0 } {
 	    if { $counter > 0 } {
@@ -53,7 +54,6 @@ proc_doc css_generate_complete_css { db } "assumes scope is set in the callers e
 
     return $css
 }
-
 
 proc_doc css_html_color_name_p { font_name } "returns 1 if font_name is one of the html defined font names and returns 0 otherwise" {
     if { [lsearch -exact { white silver gray maroon green navy purple olive teal black red lime blue magenta yellow cyan} $font_name] != -1 } {

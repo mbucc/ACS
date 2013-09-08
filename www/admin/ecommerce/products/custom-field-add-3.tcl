@@ -1,18 +1,20 @@
-# $Id: custom-field-add-3.tcl,v 3.0.4.1 2000/04/28 15:08:48 carsten Exp $
-set_the_usual_form_variables
+#  www/admin/ecommerce/products/custom-field-add-3.tcl
+ad_page_contract {
+  Add a custom product field.
 
-# field_identifier, field_name, default_value, column_type
+  @author Eve Andersson (eveander@arsdigita.com)
+  @creation-date Summer 1999
+  @cvs-id custom-field-add-3.tcl,v 3.2.2.3 2000/08/20 11:20:43 seb Exp
+} {
+  field_identifier:sql_identifier
+  field_name
+  default_value
+  column_type
+}
 
 # we need them to be logged in
-set user_id [ad_verify_and_get_user_id]
-
-if {$user_id == 0} {
-    
-    set return_url "[ns_conn url]?[export_entire_form_as_url_vars]"
-
-    ad_returnredirect "/register.tcl?[export_url_vars return_url]"
-    return
-}
+ad_maybe_redirect_for_registration
+set user_id [ad_get_user_id]
 
 # if the column type is boolean, we want to add a (named) check constraint at the end
 if { $column_type == "char(1)" } {
@@ -21,22 +23,24 @@ if { $column_type == "char(1)" } {
     set end_of_alter ""
 }
 
-set db [ns_db gethandle]
 
-if { [database_to_tcl_string $db "select count(*) from ec_custom_product_fields where field_identifier='$QQfield_identifier'"] > 0 } {
+
+if { [db_string doubleclick_select "select count(*) from ec_custom_product_fields where field_identifier=:field_identifier"] > 0 } {
     # then they probably just hit submit twice, so send them to custom-fields.tcl
-    ad_returnredirect "custom-fields.tcl"
+    ad_returnredirect "custom-fields"
 }
 
+set peeraddr [ns_conn peeraddr]
+
 set audit_fields "last_modified, last_modifying_user, modified_ip_address"
-set audit_info "sysdate, '$user_id', '[DoubleApos [ns_conn peeraddr]]'"
+set audit_info "sysdate, :user_id, :peeraddr"
 
 set insert_statement "insert into ec_custom_product_fields
 (field_identifier, field_name, default_value, column_type, $audit_fields)
 values
-('$QQfield_identifier', '$QQfield_name', '$QQdefault_value', '$QQcolumn_type', $audit_info)"
+(:field_identifier, :field_name, :default_value, :column_type, $audit_info)"
 
-if [catch { ns_db dml $db $insert_statement } errmsg] {
+if [catch { db_dml custom_product_field_insert $insert_statement } errmsg] {
     ad_return_error "Unable to Add Field" "Sorry, we were unable to add the field you requested.  Here's the error message: <blockquote><pre>$errmsg</pre></blockquote>"
     return
 }
@@ -48,9 +52,9 @@ set alter_statement "alter table ec_custom_product_field_values add (
     $field_identifier $column_type$end_of_alter
 )"
 
-if [catch { ns_db dml $db $alter_statement } errmsg] {
+if [catch { db_dml alter_table $alter_statement } errmsg] {
     # this means we were unable to add the column to ec_custom_product_field_values, so undo the insert into ec_custom_product_fields
-    ns_db dml $db "delete from ec_custom_product_fields where field_identifier='$QQfield_identifier'"
+    db_dml custom_field_delete "delete from ec_custom_product_fields where field_identifier=:field_identifier"
     ad_return_error "Unable to Add Field" "Sorry, we were unable to add the field you requested.  The error occurred when adding the column $field_identifier to ec_custom_product_field_values, so we've deleted the row containing $field_identifier from ec_custom_product_fields as well (for consistency).  Here's the error message: <blockquote><pre>$errmsg</pre></blockquote>"
     return
 }
@@ -62,15 +66,13 @@ set alter_statement_2 "alter table ec_custom_p_field_values_audit add (
     $field_identifier $column_type
 )"
 
-if [catch {ns_db dml $db $alter_statement_2} errmsg] {
+if [catch {db_dml alter_table_2 $alter_statement_2} errmsg] {
     # this means we were unable to add the column to ec_custom_p_field_values_audit, so undo the insert into ec_custom_product_fields and the alteration to ec_custom_product_field_values
-    ns_db dml $db "delete from ec_custom_product_fields where field_identifier='$QQfield_identifier'"
-    ns_db dml $db "alter table ec_custom_product_field_values drop column $field_identifier"
+    db_dml custom_field_delete "delete from ec_custom_product_fields where field_identifier=:field_identifier"
+    db_dml custom_field_drop "alter table ec_custom_product_field_values drop column $field_identifier"
     ad_return_error "Unable to Add Field" "Sorry, we were unable to add the field you requested.  The error occurred when adding the column $field_identifier to ec_custom_p_field_values_audit, so we've dropped that column from ec_custom_product_field_values and we've deleted the row containing $field_identifier from ec_custom_product_fields as well (for consistency).  Here's the error message: <blockquote><pre>$errmsg</pre></blockquote>"
     return
 }
-
-
 
 # determine what the new trigger should be
 set new_trigger_beginning "create or replace trigger ec_custom_p_f_values_audit_tr
@@ -79,9 +81,11 @@ for each row
 begin
 	insert into ec_custom_p_field_values_audit ("
 
-set trigger_column_list [list]
-for {set i 0} {$i < [ns_column count $db ec_custom_product_field_values]} {incr i} {
+db_with_handle db {
+  set trigger_column_list [list]
+  for {set i 0} {$i < [ns_column count $db ec_custom_product_field_values]} {incr i} {
     lappend trigger_column_list [ns_column name $db ec_custom_product_field_values $i]
+  }
 }
 
 set new_trigger_columns [join $trigger_column_list ", "]
@@ -100,7 +104,13 @@ $new_trigger_middle
 $new_trigger_values
 $new_trigger_end"
 
-ns_db dml $db "drop trigger ec_custom_p_f_values_audit_tr"
-ns_db dml $db $new_trigger
+#  (2000-08-20 Seb) I don't know how to escape bind variables (':old' in
+#  text of PL/SQL code will force Oracle driver to look for Tcl var named
+#  'old', and that's Not What We Want.  For the time being, I will resort
+#  to plainb ns_db call:
 
-ad_returnredirect "custom-fields.tcl"
+db_with_handle db {
+  ns_db dml $db $new_trigger
+}
+
+ad_returnredirect "custom-fields"

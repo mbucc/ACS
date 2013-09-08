@@ -1,8 +1,15 @@
-# $Id: upload-2.tcl,v 3.0 2000/02/06 03:21:10 ron Exp $
-set_the_usual_form_variables
-# csv_file
+#  www/admin/ecommerce/products/upload-2.tcl
+ad_page_contract {
 
-if { ![info exists csv_file] } {
+  @author
+  @creation-date
+  @cvs-id upload-2.tcl,v 3.1.2.4 2000/10/27 23:17:11 kevin Exp
+} {
+  csv_file
+  csv_file.tmpfile:tmpfile
+}
+
+if { [empty_string_p $csv_file] } {
     ad_return_error "Missing CSV File" "You must input the name of the .csv file on your local hard drive."
     return
 }
@@ -10,10 +17,7 @@ if { ![info exists csv_file] } {
 set user_id [ad_get_user_id]
 set ip [ns_conn peeraddr]
 
-
-ReturnHeaders
-
-ns_write "[ad_admin_header "Uploading Products"]
+doc_body_append "[ad_admin_header "Uploading Products"]
 
 <h2>Uploading Products</h2>
 
@@ -24,12 +28,11 @@ ns_write "[ad_admin_header "Uploading Products"]
 <blockquote>
 "
 
-set unix_file_name [ns_queryget csv_file.tmpfile]
+set unix_file_name ${csv_file.tmpfile}
 
-set db [ns_db gethandle]
 
 if { ![file readable $unix_file_name] } {
-    ns_write "Cannot read file $unix_file_name"
+    doc_body_append "Cannot read file $unix_file_name"
     return
 }
 
@@ -62,31 +65,32 @@ while { [ns_getcsv $csvfp elements] != -1 } {
 	}
 	
 	set columns_sql "insert into ec_products (creation_date, available_date, dirname, last_modified, last_modifying_user, modified_ip_address "
-	set values_sql " values (sysdate, sysdate, '[DoubleApos $dirname]', sysdate, $user_id, '$ip' "
+	set values_sql " values (sysdate, sysdate, :dirname, sysdate, :user_id, :ip "
 	for { set i 0 } { $i < $number_of_columns } { incr i } {
-	    append columns_sql ", [lindex $columns $i]"
-	    append values_sql ", '[DoubleApos [lindex $elements $i]]'"
+	  append columns_sql ", [lindex $columns $i]"
+	  set var_name "val_$i"
+	  set $var_name [lindex $elements $i]
+	  append values_sql ", :$var_name"
 	}
 	set sql "$columns_sql ) $values_sql )"
 
 	# we have to also write a row into ec_custom_product_field_values
 	# for consistency with add*.tcl (added 1999-08-08)
-	ns_db dml $db "begin transaction"
+	db_transaction {
 	
-	if { [catch {ns_db dml $db $sql} errmsg] } {
-	    ns_write "<font color=red>FAILURE!</font> SQL: $sql<br>\n"
-	    ns_db dml $db "end transaction"
-	} else {
+	  if { [catch {db_dml product_insert $sql} errmsg] } {
+	    doc_body_append "<font color=red>FAILURE!</font> SQL: $sql<br>$number_of_columns<br>$product_id_column<br>$product_name_column<br>\n"
+	  } else {
 	    incr success_count
-	    if { [catch {ns_db dml $db "insert into ec_custom_product_field_values (product_id, last_modified, last_modifying_user, modified_ip_address) values ([lindex $elements $product_id_column], sysdate, '$user_id', '[DoubleApos [ns_conn peeraddr]]')" } errmsg] } {
-		ns_write "<font color=red>FAILURE!</font> Insert into ec_custom_product_field_values failed for product_id=$product_id<br>\n"
+	    if { [catch {db_dml custom_product_field_insert "insert into ec_custom_product_field_values (product_id, last_modified, last_modifying_user, modified_ip_address) values (:val_$product_id_column, sysdate, :user_id, :peeraddr)" } errmsg] } {
+		doc_body_append "<font color=red>FAILURE!</font> Insert into ec_custom_product_field_values failed for product_id=[set val_$product_id_column]<br>\n"
 	    }
-	    ns_db dml $db "end transaction"
+	    }
 
 	    # Get the directory where dirname is stored
 	    set subdirectory "[ad_parameter EcommerceDataDirectory ecommerce][ad_parameter ProductDataDirectory ecommerce][ec_product_file_directory [lindex $elements $product_id_column]]"
 	    ec_assert_directory $subdirectory
-	    
+
 	    set full_dirname "$subdirectory/$dirname"
 	    ec_assert_directory $full_dirname
 	}
@@ -99,11 +103,9 @@ if { $success_count == 1 } {
     set product_string "products"
 }
 
-ns_write "</blockquote>
+doc_body_append "</blockquote>
 
 <p>Successfully loaded $success_count $product_string out of [ec_decode $count "0" "0" [expr $count -1]].
 
 [ad_admin_footer]
 "
-
-

@@ -1,7 +1,12 @@
-# $Id: index.tcl,v 3.0 2000/02/06 03:31:53 ron Exp $
-ReturnHeaders
 
-ns_write "[ad_admin_header "Merge Users"]
+ad_page_contract {
+    @author ?
+    @creation-date ?
+    @cvs-id index.tcl,v 3.1.6.2.2.3 2000/09/22 01:36:26 kevin Exp
+} {
+}
+
+set page_content "[ad_admin_header "Merge Users"]
 
 <h2>Merge Users</h2>
 
@@ -25,11 +30,13 @@ email addresses in that time).
 Start by looking at all users 
 
 <ul>
-<li><a href=\"users-all.tcl?order_by=email\">ordered by email</a>
-<li><a href=\"users-all.tcl?order_by=last_name\">ordered by last name</a>
-<li><a href=\"users-all.tcl?order_by=first_names\">ordered by first name</a>
+<li><a href=\"users-all?order_by=email\">ordered by email</a>
+<li><a href=\"users-all?order_by=last_name\">ordered by last name</a>
+<li><a href=\"users-all?order_by=first_names\">ordered by first name</a>
 
 </ul>
 
 [ad_admin_footer]
 "
+
+doc_return  200 text/html $page_content

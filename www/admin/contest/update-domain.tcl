@@ -1,17 +1,24 @@
-# $Id: update-domain.tcl,v 3.1 2000/03/10 20:02:03 markd Exp $
-set_the_usual_form_variables
+# /www/admin/contest/update-domain.tcl
+ad_page_contract {
+    Updates contest info (from form on manage-domain.tcl).
 
-# expects domain_id
+    @param domain_id which contest this is
 
-set db [ns_db gethandle]
+    @author mbryzek@arsdigita.com
+    @cvs_id update-domain.tcl,v 3.3.2.5 2000/09/22 01:34:37 kevin Exp
+} {
+    domain_id:integer
+}
 
-set domain [database_to_tcl_string $db "select domain from contest_domains where domain_id='$QQdomain_id'"]
+set domain [db_string domain "select domain from contest_domains where domain_id = :domain_id"]
 
-set form [ns_conn form $conn]
+set form [ns_getform]
 
-set sql_statement [util_prepare_update $db contest_domains domain_id $QQdomain_id $form]
+set sql_statement_and_bind_vars [util_prepare_update contest_domains domain_id $domain_id $form]
+set sql_statement [lindex $sql_statement_and_bind_vars 0]
+set bind_vars [lindex $sql_statement_and_bind_vars 1]
 
-if [catch { ns_db dml $db $sql_statement } errmsg] {
+if [catch { db_dml contest_info_update $sql_statement -bind $bind_vars } errmsg] {
     # something went a bit wrong
     ad_return_error "Update Error" "Error while trying to update $domain.
 Tried the following SQL:
@@ -33,11 +40,13 @@ $errmsg
 return
 } 
 
-ns_return 200 text/html "[ad_admin_header "Update of $domain complete"]
+
+
+doc_return  200 text/html "[ad_admin_header "Update of $domain complete"]
     
 <h2>Update of $domain Complete</h2>
     
-in the <a href=\"index.tcl\">contest system</a>
+in the <a href=\"index\">contest system</a>
 
 <hr>
 
@@ -51,7 +60,7 @@ $sql_statement
 
 <P>
         
-You probably want to <a href=\"manage-domain.tcl?[export_url_vars domain_id]\">
+You probably want to <a href=\"manage-domain?[export_url_vars domain_id]\">
 return to the management page for $domain</a>.
 
 [ad_contest_admin_footer]

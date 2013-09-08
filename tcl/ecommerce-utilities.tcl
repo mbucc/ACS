@@ -1,9 +1,14 @@
-# $Id: ecommerce-utilities.tcl,v 3.0 2000/02/06 03:13:26 ron Exp $
-## Utilities for the ecommerce module
-## Started April, 1999 by Eve Andersson (eveander@arsdigita.com)
-## Other ecommerce procedures can be found in ecommerce-*.tcl
+# /tcl/ecommerce-utilities.tcl
+ad_library {
 
-proc ec_zero_if_null { the_value } {
+    Utilities for the ecommerce module.
+
+    @author Eve Andersson (eveander@arsdigita.com)
+    @creation-date  April, 1999
+    @cvs-id ecommerce-utilities.tcl,v 3.3.2.6 2000/08/17 17:37:17 seb Exp
+}
+
+ad_proc ec_zero_if_null { the_value } { Returns Zero if Null } {
     if { [empty_string_p $the_value] } {
 	return "0"
     } else {
@@ -11,7 +16,7 @@ proc ec_zero_if_null { the_value } {
     }
 }
 
-proc ec_na_if_null { the_value } {
+ad_proc ec_na_if_null { the_value } { Returns N/A if Null } {
     if { [empty_string_p $the_value] } {
 	return "N/A"
     } else {
@@ -19,7 +24,7 @@ proc ec_na_if_null { the_value } {
     }
 }
 
-proc ec_nbsp_if_null {the_value} {
+ad_proc ec_nbsp_if_null {the_value} { Return nonbreaking space } {
     if { [empty_string_p $the_value] } {
 	return "&nbsp;"
     } else {
@@ -27,8 +32,10 @@ proc ec_nbsp_if_null {the_value} {
     }
 }
 
-proc ec_pretty_price { the_price {currency ""} {zero_if_null_p "f"} } {
-    if { [empty_string_p $currency] } {
+ad_proc ec_pretty_price { the_price {currency ""} {zero_if_null_p "f"} } {
+    returns a nicely formatted price } {  
+
+  if { [empty_string_p $currency] } {
 	set currency [ad_parameter Currency ecommerce]
     }
     if { [empty_string_p $the_price] } {
@@ -53,8 +60,7 @@ proc ec_pretty_price { the_price {currency ""} {zero_if_null_p "f"} } {
     }
 }
 
-
-proc ec_pretty_column_type { column_type } {
+ad_proc ec_pretty_column_type { column_type } { Get Pretty Column Type } {
     if { $column_type == "integer" } {
 	return "Integer"
     } elseif { $column_type == "number" } {
@@ -70,34 +76,34 @@ proc ec_pretty_column_type { column_type } {
     }
 }
 
-proc ec_custom_product_field_form_element { field_name column_type {default_value ""} } {
+ad_proc ec_custom_product_field_form_element { field_identifier column_type {default_value ""} } { Get Custom Form Element } {
     if { $column_type == "integer" || $column_type == "number"} {
-	return "<input type=text name=\"$field_name\" value=\"$default_value\" size=5>"
+	return "<input type=text name=\"ec_custom_fields.$field_identifier\" value=\"$default_value\" size=5>"
     } elseif { $column_type == "date" } {
-	return [ad_dateentrywidget $field_name $default_value]
+	return [ad_dateentrywidget ec_custom_fields.$field_identifier $default_value]
     } elseif { $column_type == "varchar(200)" } {
-	return "<input type=text name=\"$field_name\" value=\"$default_value\" size=50 maxlength=200>"
+	return "<input type=text name=\"ec_custom_fields.$field_identifier\" value=\"$default_value\" size=50 maxlength=200>"
     } elseif { $column_type == "varchar(4000)" } {
-	return "<textarea wrap name=\"$field_name\" rows=4 cols=60>$default_value</textarea>"
+	return "<textarea wrap name=\"ec_custom_fields.$field_identifier\" rows=4 cols=60>$default_value</textarea>"
     } else {
 	# it's boolean
 	set to_return ""
 	if { [string tolower $default_value] == "t" || [string tolower $default_value] == "y" || [string tolower $default_value] == "yes"} {
-	    append to_return "<input type=radio name=\"$field_name\" value=t checked>Yes &nbsp;"
+	    append to_return "<input type=radio name=\"ec_custom_fields.$field_identifier\" value=t checked>Yes &nbsp;"
 	} else {
-	    append to_return "<input type=radio name=\"$field_name\" value=t>Yes &nbsp;"
+	    append to_return "<input type=radio name=\"ec_custom_fields.$field_identifier\" value=t>Yes &nbsp;"
 	}
 	if { [string tolower $default_value] == "f" || [string tolower $default_value] == "n" || [string tolower $default_value] == "no"} {
-	    append to_return "<input type=radio name=\"$field_name\" value=f checked>No"
+	    append to_return "<input type=radio name=\"ec_custom_fields.$field_identifier\" value=f checked>No"
 	} else {
-	    append to_return "<input type=radio name=\"$field_name\" value=f>No"
+	    append to_return "<input type=radio name=\"ec_custom_fields.$field_identifier\" value=f>No"
 	}
 	return $to_return
     }
 }
 
 # the_value should just be a number (no percent sign)
-proc ec_percent_to_decimal { the_value } {
+ad_proc ec_percent_to_decimal { the_value } { Converts PCT to dec equiv } {
     if { [empty_string_p $the_value] } {
 	return ""
     } else {
@@ -106,7 +112,7 @@ proc ec_percent_to_decimal { the_value } {
 }
 
 # the value returned is just a number (no percent sign)
-proc ec_decimal_to_percent { the_decimal_number } {
+ad_proc ec_decimal_to_percent { the_decimal_number } { Converts dec to pct } {
     if { [empty_string_p $the_decimal_number] } {
 	return ""
     } else {
@@ -114,7 +120,7 @@ proc ec_decimal_to_percent { the_decimal_number } {
     }
 }
 
-proc ec_message_if_null { the_value } {
+ad_proc ec_message_if_null { the_value } { Give Null Message } {
     if { [empty_string_p $the_value] } {
 	return "None Defined"
     } else {
@@ -123,8 +129,7 @@ proc ec_message_if_null { the_value } {
 }
 
 
-# stolen from guide for engineers and scientists, I think
-proc ec_choose_n_random {choices_list n_to_choose chosen_list} {
+ad_proc ec_choose_n_random {choices_list n_to_choose chosen_list} { Get Random Choices } {
     if { $n_to_choose == 0 } {  return $chosen_list    } else {
         set chosen_index [randomRange [llength $choices_list]]
         set new_chosen_list [lappend chosen_list [lindex $choices_list $chosen_index]]
@@ -134,7 +139,7 @@ proc ec_choose_n_random {choices_list n_to_choose chosen_list} {
     }   
 }
 
-proc ec_generate_random_string { {string_length 10} } {
+ad_proc ec_generate_random_string { {string_length 10} } { Returns a random string } {
     # leave out characters that might be confusing like l and 1, O and 0, etc.
     set choices "ABCDEFGHIJKLMNPQRSTUVWXYZabcdefghijmnopqrstuvwxyz23456789"
     set choices_length [string length $choices]
@@ -146,7 +151,7 @@ proc ec_generate_random_string { {string_length 10} } {
     return $random_string
 } 
 
-proc ec_PrettyBoolean {t_or_f} {
+ad_proc ec_PrettyBoolean {t_or_f} { Returns Yes or No instead of t/f } {
     if { $t_or_f == "t" || $t_or_f == "T" } {
 	return "Yes"
     } elseif { $t_or_f == "f" || $t_or_f == "F" } {
@@ -156,8 +161,7 @@ proc ec_PrettyBoolean {t_or_f} {
     }
 }
 
-
-proc ec_display_as_html { text_to_display } {
+ad_proc ec_display_as_html { text_to_display } { Formats text as HTML } {
     regsub -all "\\&" $text_to_display "\\&amp;" html_text
     regsub -all "\>" $html_text "\\&gt;" html_text
     regsub -all "\<" $html_text "\\&lt;" html_text
@@ -167,12 +171,12 @@ proc ec_display_as_html { text_to_display } {
     return $html_text
 }
 
-# This looks at dirname to see if the thumbnail is there and if
-# so returns an html fragment that links to the bigger version
-# of the picture (or to product.tcl if link_to_product_p is "t").
-# Otherwise it returns the empty string.
 
-proc ec_linked_thumbnail_if_it_exists { dirname {border_p "t"} {link_to_product_p "f"} } {
+ad_proc ec_linked_thumbnail_if_it_exists { dirname {border_p "t"} {link_to_product_p "f"} } { 
+This looks at dirname to see if the thumbnail is there and if
+ so returns an html fragment that links to the bigger version
+ of the picture (or to product.tcl if link_to_product_p is "t").
+Otherwise it returns the empty string. } {
 
     set linked_thumbnail ""
 
@@ -204,20 +208,20 @@ proc ec_linked_thumbnail_if_it_exists { dirname {border_p "t"} {link_to_product_
 		set linked_thumbnail "<a href=\"/product-file/$file_path/product.gif\"><img $border_part_of_img_tag width=[lindex $thumbnail_size 0] height=[lindex $thumbnail_size 1] src=\"/product-file/$file_path/product-thumbnail.jpg\"></a>"
 	    }
 	} else {
-	    set linked_thumbnail "<a href=\"product.tcl?[export_url_vars product_id]\"><img $border_part_of_img_tag width=[lindex $thumbnail_size 0] height=[lindex $thumbnail_size 1] src=\"/product-file/$file_path/product-thumbnail.jpg\"></a>"
+	    set linked_thumbnail "<a href=\"product?[export_url_vars product_id]\"><img $border_part_of_img_tag width=[lindex $thumbnail_size 0] height=[lindex $thumbnail_size 1] src=\"/product-file/$file_path/product-thumbnail.jpg\"></a>"
 	}
     }
 
     return $linked_thumbnail
 }
 
-proc ec_best_price { db product_id } {
-    return [database_to_tcl_string $db "select min(price) from ec_offers where product_id=$product_id"]
+ad_proc ec_best_price { product_id } { Returns the minimum price offered } {
+    return [db_string get_min_price "select min(price) from ec_offers where product_id=:product_id"]
 }
 
-proc ec_savings { db product_id } {
-    set retailprice [database_to_tcl_string_or_null $db "select retailprice from ec_custom_product_field_values where product_id=$product_id"]
-    set bestprice [database_to_tcl_string $db "select min(price) from ec_offers where product_id=$product_id"]
+ad_proc ec_savings { product_id } { Returns savings over Retail price } {
+    set retailprice [db_string get_retailprice "select retailprice from ec_custom_product_field_values where product_id=:product_id" -default ""]
+    set bestprice [db_string get_best_price "select min(price) from ec_offers where product_id=:product_id"]
     if { ![empty_string_p $retailprice] && ![empty_string_p $bestprice] } {
 	set savings [expr $retailprice - $bestprice]
     } else {
@@ -226,7 +230,7 @@ proc ec_savings { db product_id } {
     return $savings
 }
 
-proc_doc ec_date_with_time_stripped { the_date } "Removes the time part of the date stamp (useful when using util_AnsiDatetoPrettyDate)" {
+ad_proc ec_date_with_time_stripped { the_date } {Removes the time part of the date stamp (useful when using util_AnsiDatetoPrettyDate)} {
     if { [regexp {[^\ ]+} $the_date stripped_date ] } {
 	return $stripped_date
     } else {
@@ -235,11 +239,11 @@ proc_doc ec_date_with_time_stripped { the_date } "Removes the time part of the d
     }
 }
 
-proc_doc ec_user_audit_info { } "Returns User ID, IP Address, and date for audit trails" {
+ad_proc ec_user_audit_info { } {Returns User ID, IP Address, and date for audit trails} {
     return [list $user_id [ns_conn peeraddr] sysdate]
 }
 
-proc ec_get_user_session_id {} {
+ad_proc ec_get_user_session_id {} { Gets the user session from cookies } {
     set headers [ns_conn headers]
     set cookie [ns_set get $headers Cookie]
     # grab the user_session_id from the cookie
@@ -250,7 +254,7 @@ proc ec_get_user_session_id {} {
     }
 }
 
-proc_doc ec_pretty_creditcard_type { creditcard_type } "Returns the credit card type based on the one-or-two-letter code for that type." {
+ad_proc ec_pretty_creditcard_type { creditcard_type } "Returns the credit card type based on the one-or-two-letter code for that type." {
     if { $creditcard_type == "a" || $creditcard_type == "ax"} {
 	return "American Express"
     } elseif { $creditcard_type == "v" || $creditcard_type == "vs"} {
@@ -262,13 +266,13 @@ proc_doc ec_pretty_creditcard_type { creditcard_type } "Returns the credit card 
     }
 }
 
-# like decode in sql
-# Takes the place of an if (or switch) statement -- convenient because it's compact and
-# you don't have to break out of an ns_write if you're in one.
-# args: same order as in sql: first the unknown value, then any number of pairs denoting
-# "if the unknown value is equal to first element of pair, then return second element", then
-# if the unknown value is not equal to any of the first elements, return the last arg
-proc ec_decode args {
+
+ad_proc ec_decode {args}  {  like decode in sql
+ Takes the place of an if (or switch) statement -- convenient because it's compact and
+ you don't have to break out of an append doc_body if you're in one.
+ args: same order as in sql: first the unknown value, then any number of pairs denoting
+ if the unknown value is equal to first element of pair, then return second element, then
+if the unknown value is not equal to any of the first elements, return the last arg } {
     set args_length [llength $args]
     set unknown_value [lindex $args 0]
     
@@ -283,25 +287,25 @@ proc ec_decode args {
     return [lindex $args [expr $args_length -1]]
 }
 
-proc_doc ec_last_second_in_the_day { the_date } "Returns the last second of the given day's date.  Input date should be in format YYYY-MM-DD HH24:MI:SS or YYYY-MM-DD." {
+ad_proc ec_last_second_in_the_day { the_date } "Returns the last second of the given day's date.  Input date should be in format YYYY-MM-DD HH24:MI:SS or YYYY-MM-DD." {
     regexp {^(....)-(..)-(..)} $the_date garbage year month day
     return "$year-$month-$day 23:59:59"
 }
 
-proc ec_user_identification_summary { db user_identification_id {link_to_new_window_p "f"} } {
+ad_proc ec_user_identification_summary { user_identification_id {link_to_new_window_p "f"} } { Get user Info } {
     if { $link_to_new_window_p == "t" } {
 	set target_tag "target=user_window"
     } else {
 	set target_tag ""
     }
-    set selection [ns_db 0or1row $db "select * from ec_user_identification where user_identification_id=$user_identification_id"]
-    if { $selection == "" } {
+    if { [db_0or1row get_row_exists "select user_id,first_names,last_name,email,other_id_info,postal_code from ec_user_identification where user_identification_id=:user_identification_id"]==0 } {
+
 	return ""
     }
-    set_variables_after_query
+    
     if { ![empty_string_p $user_id] } {
-	set user_name [database_to_tcl_string $db "select first_names || ' ' || last_name from users where user_id=$user_id"]
-	return "Registered user: <a $target_tag href=\"/admin/users/one.tcl?user_id=$user_id\">$user_name</a>."
+	set user_name [db_string get_user_name "select first_names || ' ' || last_name from users where user_id=:user_id"]
+	return "Registered user: <a $target_tag href=\"/admin/users/one?user_id=$user_id\">$user_name</a>."
     }
 
     set name_part_to_return ""
@@ -328,12 +332,12 @@ proc ec_user_identification_summary { db user_identification_id {link_to_new_win
 	set other_id_info_part_to_return "Other identifying info: $other_id_info"
     }
 
-    set link_part_to_return " (<a $target_tag href=\"user-identification.tcl?user_identification_id=$user_identification_id\">user info</a>)"
+    set link_part_to_return " (<a $target_tag href=\"user-identification?user_identification_id=$user_identification_id\">user info</a>)"
 
     return "$name_part_to_return $email_part_to_return $postal_code_part_to_return $other_id_info_part_to_return $link_part_to_return"
 }
 
-proc ec_export_entire_form_except args {
+ad_proc ec_export_entire_form_except args { Exports all but part of a form } {
     # exports entire form except the variables specified in args
     set hidden ""
     set the_form [ns_getform]
@@ -341,20 +345,19 @@ proc ec_export_entire_form_except args {
         set varname [ns_set key $the_form $i]
 	if { [lsearch -exact $args $varname] == -1 } {
 	    set varvalue [ns_set value $the_form $i]
-	    append hidden "<input type=hidden name=\"$varname\" value=\"[philg_quote_double_quotes $varvalue]\">\n"
+	    append hidden "<input type=hidden name=\"$varname\" value=\"[ad_quotehtml $varvalue]\">\n"
 	}
     }
     return $hidden
 }
 
-
 # ugly_date should be in the format YYYY-MM-DD HH24:MI:SS
-proc ec_formatted_full_date { ugly_date } {
+ad_proc ec_formatted_full_date { ugly_date } { Format Ugly Date to Pretty } {
     return "[util_AnsiDatetoPrettyDate [lindex [split $ugly_date " "] 0]] [lindex [split $ugly_date " "] 1]"
 }
 
 # ugly_date shoud be in the format YYYY-MM-DD HH24:MI:SS or just YYYY-MM-DD
-proc ec_formatted_date { ugly_date } {
+ad_proc ec_formatted_date { ugly_date } { Format Ugly Date } {
     set split_date [split $ugly_date " "]
     if { [llength $split_date] == 1 } {
 	return [util_AnsiDatetoPrettyDate $ugly_date]
@@ -363,20 +366,21 @@ proc ec_formatted_date { ugly_date } {
     }
 }
 
-
-proc ec_location_based_on_zip_code { db zip_code } {
-        set selection [ns_db select $db "select state_code, city_name, county_name from zip_codes where zip_code='$zip_code'"]
+ad_proc ec_location_based_on_zip_code { zip_code } { Get location } {
+        set sql "select state_code, city_name, county_name from zip_codes where zip_code=:zip_code"
     
     set city_list [list]
-    while { [ns_db getrow $db $selection] } {
-	set_variables_after_query
+    if { [catch {
+    db_foreach get_city_list $sql {
+	
 	lappend city_list "$city_name, $county_name County, $state_code"
-    }
+}   } errmsg] } { return "Zip Code Table Not Installed" }
     
     return "[join $city_list " or "]"
 }
 
-proc ec_pretty_mailing_address_from_args { db line1 line2 city usps_abbrev zip_code country_code full_state_name attn phone phone_time } {
+ad_proc ec_pretty_mailing_address_from_args { line1 line2 city usps_abbrev zip_code country_code full_state_name attn phone phone_time } { get Pretty Mailing Address } {
+
     set lines [list $attn]
     if [empty_string_p $line2] {
 	lappend lines $line1
@@ -390,39 +394,37 @@ proc ec_pretty_mailing_address_from_args { db line1 line2 city usps_abbrev zip_c
     if { ![empty_string_p $country_code] && $country_code != "us" } {
 	lappend lines "$city, $full_state_name $zip_code"
 
-	lappend lines [ad_country_name_from_country_code $db $country_code]
+	lappend lines [ad_country_name_from_country_code $country_code]
     } else {
 	lappend lines "$city, $usps_abbrev $zip_code"
     }
 
     lappend lines "$phone ([ec_decode $phone_time "D" "day" "E" "evening" ""])"
-
-    return [join $lines "\n"]
+  
+  return [join $lines "\n"]
 }
 
-proc ec_pretty_mailing_address_from_ec_addresses { db address_id } {
+ad_proc ec_pretty_mailing_address_from_ec_addresses { address_id } { Gets Pretty Mailing Address } {
     if { [empty_string_p $address_id] } {
 	return ""
     }
-    set selection [ns_db 0or1row $db "select line1, line2, city, usps_abbrev, zip_code, country_code, full_state_name, attn, phone, phone_time from ec_addresses where address_id=$address_id"]
-    if { [empty_string_p $selection] } {
+
+    if { [db_0or1row get_row_exists_p "select line1, line2, city, usps_abbrev, zip_code, country_code, full_state_name, attn, phone, phone_time from ec_addresses where address_id=:address_id"]==0 } {
 	return ""
-    }
-    set_variables_after_query
-    return [ec_pretty_mailing_address_from_args $db $line1 $line2 $city $usps_abbrev $zip_code $country_code $full_state_name $attn $phone $phone_time]
+      }
+      
+    return [ec_pretty_mailing_address_from_args $line1 $line2 $city $usps_abbrev $zip_code $country_code $full_state_name $attn $phone $phone_time]
 }
 
-proc ec_creditcard_summary { db creditcard_id } {
-    set selection [ns_db 0or1row $db "select creditcard_type, creditcard_last_four, creditcard_expire, billing_zip_code from ec_creditcards where creditcard_id=$creditcard_id"]
-    if { [empty_string_p $selection] } {
+ad_proc ec_creditcard_summary { creditcard_id } { Returns Credit Card info } {
+  
+    if {  [db_0or1row get_creditcard_summary "select creditcard_type, creditcard_last_four, creditcard_expire, billing_zip_code from ec_creditcards where creditcard_id=:creditcard_id"] == 0 } {
 	return ""
     }
-    set_variables_after_query
-
     return "[ec_pretty_creditcard_type $creditcard_type]\nxxxxxxxxxxxx$creditcard_last_four\nexp: $creditcard_expire\nzip: $billing_zip_code"
 }
 
-proc ec_elements_of_list_a_that_arent_in_list_b { list_a list_b } {
+ad_proc ec_elements_of_list_a_that_arent_in_list_b { list_a list_b } { Do a check and return list of a that are not in b } {
     set list_to_return [list]
     foreach list_a_element $list_a {
 	if { [lsearch -exact $list_b $list_a_element] == -1 } {
@@ -432,7 +434,7 @@ proc ec_elements_of_list_a_that_arent_in_list_b { list_a list_b } {
     return $list_to_return
 }
 
-proc ec_first_element_of_list_a_that_isnt_in_list_b { list_a list_b } {
+ad_proc ec_first_element_of_list_a_that_isnt_in_list_b { list_a list_b } { Get First Element of A not in B} {
     foreach list_a_element $list_a {
 	if { [lsearch -exact $list_b $list_a_element] == -1 } {
 	    return $list_a_element
@@ -441,7 +443,6 @@ proc ec_first_element_of_list_a_that_isnt_in_list_b { list_a list_b } {
     return ""
 }
 
-
 # Gets the start and end date when the dates are supplied by ec_report_date_range_widget;
 # if they're not supplied, it makes the first of this month be the start date and today
 # be the end date.
@@ -449,18 +450,18 @@ proc ec_first_element_of_list_a_that_isnt_in_list_b { list_a list_b } {
 # If the date is supplied incorrectly or not supplied at all, it just returns the default
 # dates (above), unless return_date_error_p (in the calling environment) is "t", in which case
 # it returns 0
-proc ec_report_get_start_date_and_end_date { } {
+ad_proc ec_report_get_start_date_and_end_date { } { Report Get Start and End Date from Widgets } {
     uplevel {
 
-	# get rid of leading zeroes in ColValue.start%5fdate.day and
-	# ColValue.end%5fdate.day because it can't interpret 08 and
+	# get rid of leading zeroes in start%5fdate.day and
+	# end%5fdate.day because it can't interpret 08 and
 	# 09 (It thinks they're octal numbers)
 
-	if { [info exists "ColValue.start%5fdate.day"] } {
-	    set "ColValue.start%5fdate.day" [string trimleft [set "ColValue.start%5fdate.day"] "0"]
-	    set "ColValue.end%5fdate.day" [string trimleft [set "ColValue.end%5fdate.day"] "0"]
-	    ns_set update $form "ColValue.start%5fdate.day" [set ColValue.start%5fdate.day]
-	    ns_set update $form "ColValue.end%5fdate.day" [set ColValue.end%5fdate.day]
+	if { [info exists "start%5fdate.day"] } {
+	    set "start%5fdate.day" [string trimleft [set "start%5fdate.day"] "0"]
+	    set "end%5fdate.day" [string trimleft [set "end%5fdate.day"] "0"]
+	    ns_set update $form "start%5fdate.day" [set start%5fdate.day]
+	    ns_set update $form "end%5fdate.day" [set end%5fdate.day]
 	}
 
 	
@@ -502,18 +503,21 @@ proc ec_report_get_start_date_and_end_date { } {
     }
 }
 
-# returns the status of the order for the customer
-proc ec_order_status { db order_id } {
+
+ad_proc ec_order_status {  order_id } {  returns the status of the order for the customer } {
+    # check shipping_method to see whether this was a shippable order
+    set shippable_p [db_string get_shippable_p "select decode(shipping_method,'no shipping',0,1) as shippable_p from ec_orders where order_id=:order_id"]
+
     # we have to look at individual items
     set n_shipped_items 0
     set n_received_back_items 0
     set n_total_items 0
-    set selection [ns_db select $db "select item_state, count(*) as n_items
+    set sql "select item_state, count(*) as n_items
     from ec_items
     where order_id=$order_id
-    group by item_state"]
-    while { [ns_db getrow $db $selection] } {
-	set_variables_after_query
+    group by item_state"
+    db_foreach get_individual_items $sql {
+	
 	if { $item_state == "shipped" || $item_state == "arrived" } {
 	    set n_shipped_items [expr $n_shipped_items + $n_items]
 	} elseif { $item_state == "received_back" } {
@@ -531,9 +535,15 @@ proc ec_order_status { db order_id } {
     #   some       some      0     Some Items Returned
     #    0         some     some   Partial Shipment Made
     #   some        0       some   Some Items Returned
+    # * Note: some of the above wording is changed if it
+    #   is a non shippable order
 
     if { $n_shipped_items == $n_total_items } {
-	return "All Items Shipped"
+        if { $shippable_p } {
+	    return "All Items Shipped"
+	} else {
+	    return "All Items Fullfilled"
+	}
     } elseif { $n_received_back_items == $n_total_items } {
 	return "All Items Returned"
     } elseif { $n_shipped_items == 0 && $n_received_back_items == 0 } {
@@ -547,15 +557,15 @@ proc ec_order_status { db order_id } {
     }
 }
 
-# returns the status of the gift certificate for the customer
-proc ec_gift_certificate_status { db gift_certificate_id } {
 
-    set selection [ns_db 1row $db "select 
+ad_proc ec_gift_certificate_status { gift_certificate_id } { 
+    returns the status of the gift certificate for the customer } {
+    db_1row get_gift_certificate_info "select 
     gift_certificate_state, user_id
     from ec_gift_certificates
-    where gift_certificate_id=$gift_certificate_id"]
+    where gift_certificate_id=:gift_certificate_id"
 
-    set_variables_after_query
+    
     
     if { $gift_certificate_state == "confirmed" } {
 	return "Not Yet Authorized"
@@ -597,7 +607,7 @@ proc ec_min { a b } {
     }
 }
 
-proc_doc ec_product_file_directory { product_id } "Returns the directory that that the product files are located under the ecommerce product data directory. This is the two lowest order digits of the product_id." {
+ad_proc ec_product_file_directory { product_id } "Returns the directory that that the product files are located under the ecommerce product data directory. This is the two lowest order digits of the product_id." {
     set id_length [string length $product_id]
 
     if { $id_length == 1 } {
@@ -609,7 +619,7 @@ proc_doc ec_product_file_directory { product_id } "Returns the directory that th
     }
 }
 
-proc_doc ec_assert_directory {dir_path} "Checks that directory exists, if not creates it" {
+ad_proc ec_assert_directory {dir_path} "Checks that directory exists, if not creates it" {
     if { [file exists $dir_path] } {
 	# Everything okay
 	return 1
@@ -619,11 +629,11 @@ proc_doc ec_assert_directory {dir_path} "Checks that directory exists, if not cr
     }
 }
 
-proc_doc ec_leading_zeros {the_integer n_desired_digits} "Adds leading zeros to an integer to give it the desired number of digits" {
+ad_proc ec_leading_zeros {the_integer n_desired_digits} "Adds leading zeros to an integer to give it the desired number of digits" {
     return [format "%0${n_desired_digits}d" $the_integer]
 }
 
-proc_doc ec_leading_nbsp {the_integer n_desired_digits} "Adds leading nbsps to an integer to give it the desired number of digits" {
+ad_proc ec_leading_nbsp {the_integer n_desired_digits} "Adds leading nbsps to an integer to give it the desired number of digits" {
     set n_digits_to_add [expr $n_desired_digits - [string length $the_integer]]
     if {$n_digits_to_add <= 0} {
 	return $the_integer
@@ -631,3 +641,5 @@ proc_doc ec_leading_nbsp {the_integer n_desired_digits} "Adds leading nbsps to a
 	return [ec_leading_zeros "&nbsp;&nbsp;$the_integer" $n_desired_digits]
     }
 }
+
+

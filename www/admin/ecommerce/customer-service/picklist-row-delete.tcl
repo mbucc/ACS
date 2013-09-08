@@ -1,9 +1,20 @@
-# $Id: picklist-row-delete.tcl,v 3.0.4.1 2000/04/28 15:08:40 carsten Exp $
-set_the_usual_form_variables
-# table_name, rowid
+# picklist-row-delete.tcl
 
-set db [ns_db gethandle]
+ad_page_contract {
+    @param table_name
+    @param rowid
 
-ns_db dml $db "delete from $table_name where rowid='$QQrowid'"
+    @author
+    @creation-date
+    @cvs-id picklist-row-delete.tcl,v 3.1.6.3 2000/07/21 03:56:58 ron Exp
+} {
+    table_name
+    rowid
+}
+
+
+
+db_dml telere_from_picklist_table "delete from $table_name where rowid=:rowid"
+db_release_unused_handles
 
 ad_returnredirect picklists.tcl

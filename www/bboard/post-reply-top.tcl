@@ -1,29 +1,27 @@
-# $Id: post-reply-top.tcl,v 3.0 2000/02/06 03:34:09 ron Exp $
-set_form_variables
-
-# refers_to is the key
-
-set db [bboard_db_gethandle]
-if { $db == "" } {
-    bboard_return_error_page
-    return
+# /www/bboard/post-reply-top.tcl
+ad_page_contract {
+    @cvs_id post-reply-top.tcl,v 3.0.12.5 2000/09/22 01:36:52 kevin Exp
+} {
+    refers_to
 }
 
+# -----------------------------------------------------------------------------
 
-set selection [ns_db 1row $db "select first_names || ' ' || last_name as name, email, bboard.* 
-from bboard, users
-where bboard.user_id = users.user_id
-and msg_id = '$refers_to'"]
-
-set_variables_after_query
+db_1row user_info "
+select first_names || ' ' || last_name as name, 
+       email, 
+       one_line,
+       message,
+       html_p
+from   bboard, 
+       users
+where  bboard.user_id = users.user_id
+and    msg_id = :refers_to"
 
 # now variables like $message are defined
 
-ns_return 200 text/html "<html>
-<head>
-<title>$one_line</title>
-</head>
-<body bgcolor=[ad_parameter bgcolor "" "white"] text=[ad_parameter textcolor "" "black"]>
+doc_return  200 text/html "
+[bboard_header $one_line]
 
 <h3>$one_line</h3>
 
@@ -31,8 +29,7 @@ from $name (<a href=\"mailto:$email\">$email</a>)
 
 <hr>
 
-$message
+[ad_convert_to_html -html_p $html_p -- $message]
 
-</body>
-</html>
+[bboard_footer]
 "

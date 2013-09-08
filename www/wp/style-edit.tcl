@@ -1,22 +1,51 @@
-# $Id: style-edit.tcl,v 3.0 2000/02/06 03:55:45 ron Exp $
-# File:        style-edit.tcl
-# Date:        28 Nov 1999
-# Author:      Jon Salz <jsalz@mit.edu>
-# Description: Allows the user to create or edit a style.
-# Inputs:      style_id (if editing)
-#              presentation_id, if we should set a presentation to have this style
+# /wp/style-edit.tcl
+ad_page_contract {
+    Allows the user to create or edit a style.
+    @cvs-id style-edit.tcl,v 3.0.12.12 2001/01/12 00:54:53 khy Exp
+    @creation-date  28 Nov 1999
+    @author  Jon Salz <jsalz@mit.edu>
+    @param style_id ID of the style to edit (if editing)
+    @param presentation_id ID of the presentation, if we should set a presentation to have this style
+} {
+    style_id:naturalnum,optional
+    presentation_id:naturalnum,optional
+}
+# modified by jwong@arsdigita.com on 10 Jul 2000 for ACS 3.4 upgrades 
 
-set_the_usual_form_variables 0
-set db [ns_db gethandle]
 set user_id [ad_maybe_redirect_for_registration]
+
+proc_doc wp_check_style_authorization { style_id user_id } { Verifies that the user owns this style. } {
+    wp_check_numeric $style_id
+    wp_check_numeric $user_id
+    set owner [db_string wp_style_owner_select "select owner from wp_styles where style_id = :style_id" -default "not_found"]
+    if { $owner == "not_found" } {
+	set err "Error"
+	set errmsg "Style $style_id was not found in the database."
+    } else { 
+	set err "Authorization Failed"
+	set errmsg "You do not have the proper authorization to access this feature."
+    }
+    if { $owner != $user_id } {
+	ad_return_error $err $errmsg
+	ad_script_abort
+    }
+}
 
 if { [info exists style_id] } {
     # Editing an existing style. Make sure we own it, and then retrieve info from the
     # database.
-    wp_check_style_authorization $db $style_id $user_id
+    wp_check_style_authorization $style_id $user_id
 
-    set selection [ns_db 1row $db "select * from wp_styles where style_id = $style_id"]
-    set_variables_after_query
+    db_1row style_select "
+    select  name,
+	    css, 
+	    text_color, 
+	    background_color,
+	    background_image,
+	    link_color,
+	    alink_color,
+	    vlink_color
+    from wp_styles where style_id = :style_id" 
 
     set header [list "style-view.tcl?style_id=$style_id" $name]
 
@@ -37,15 +66,18 @@ set colors { Chartreuse Mauve Teal Oyster Cordova Burgundy Spruce }
 set elements { Polka-Dots Hearts {Maple Leaves} Peacocks Bunnies }
 
 if { [info exists style_id] } {
-    set items [database_to_tcl_list $db "
+    set items [db_list wp_file_names_select "
         select file_name
         from wp_style_images
-        where style_id = $style_id
+        where style_id = :style_id
         order by file_name
-    "]
+    " ]
 } else {
     set items ""
 }
+
+
+db_release_unused_handles
 
 if { $items == "" } {
     set background_images "<i>There are not yet any uploaded images to use as the background.</i>
@@ -63,11 +95,11 @@ if { $items == "" } {
 
 set values [list]
 
-ReturnHeaders
-ns_write "[wp_header_form "name=f action=style-edit-2.tcl method=post enctype=multipart/form-data" \
-           [list "" "WimpyPoint"] [list "style-list.tcl" "Your Styles"] $header "$role Style"]
-[export_form_vars style_id presentation_id]
 
+set page_output "[wp_header_form "name=f action=style-edit-2.tcl method=post enctype=multipart/form-data" \
+           [list "" "WimpyPoint"] [list "style-list.tcl" "Your Styles"] $header "$role Style"]
+[export_form_vars presentation_id]
+[export_form_vars -sign style_id]
 <script language=javascript>
 [ad_color_widget_js]
 </script>
@@ -118,3 +150,6 @@ ns_write "[wp_header_form "name=f action=style-edit-2.tcl method=post enctype=mu
 
 [wp_footer]
 "
+
+doc_return  200 "text/html" $page_output
+

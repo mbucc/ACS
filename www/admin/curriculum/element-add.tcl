@@ -1,21 +1,26 @@
-# $Id: element-add.tcl,v 3.0 2000/02/06 03:15:56 ron Exp $
-#Code for element-add.tcl
+# /www/admin/curriculum/element-add.tcl
+
+ad_page_contract {
+    Code for element-add.tcl
+    @author unknown
+    @cvs-id element-add.tcl,v 3.2.2.6 2001/01/10 17:04:40 khy Exp
+} {}
 
 ad_maybe_redirect_for_registration
-set db [ns_db gethandle]
-ReturnHeaders 
 
 
-ns_write "
+set curriculum_element_id [db_nextval "curriculum_element_id_sequence"]
+
+set body  "
 [ad_admin_header "Add a curriculum element"]
 
 <h2>Add a curriculum element</h2>
 
-[ad_admin_context_bar [list "element-list.tcl" "Curriculum"] "Add a curriculum element"]
+[ad_admin_context_bar [list "element-list" "Curriculum"] "Add a curriculum element"]
 
 <hr>
 
-<form method=POST action=\"element-add-2.tcl\"> 
+<form method=POST action=\"element-add-2\"> 
 
 <table>
 <tr><th valign=top align=right>Sequence (0 is the first element in the curriculum)</th>
@@ -39,8 +44,7 @@ you need to include the \"index.html\" or \"index.tcl\" or whatever.</font>
 <td><textarea name=full_description cols=40 rows=15 wrap=soft></textarea></td></tr>
 
 </table>
-<input type=hidden name=curriculum_element_id value=\"[database_to_tcl_string $db "
-select curriculum_element_id_sequence.nextval from dual"]\">
+[export_form_vars -sign curriculum_element_id]
 <p>
 <center>
 <input type=submit value=\"Add the curriculum element\">
@@ -48,3 +52,8 @@ select curriculum_element_id_sequence.nextval from dual"]\">
 </form>
 <p>
 [ad_admin_footer]"
+
+
+
+doc_return  200 text/html $body
+

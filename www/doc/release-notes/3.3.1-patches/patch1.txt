@@ -1,0 +1,103 @@
+Add the following to /parameters/yourserver.ini:
+
+   [ns/server/yourservername/acs/ADP]
+   ; Block users from adding/editing ADP pages with function calls in them?
+   ; NOTE: Setting this to false if you are allowing users to access the file
+   ; manager or manipulate templates in electronic commerce will effectivly
+   ; give them full access to your system and is hence not recommended.
+   BlockUserADPFunctionsP=true
+
+
+Add the following procedure to /tcl/file-manager-defs.tcl:
+
+   # Checks for any function execution in an adp page
+  
+   proc fm_adp_function_p {adp_page} {
+       if {[ad_parameter BlockUserADPFunctions ADP]=="false"} {
+         return 0
+       }
+       if {[regexp {<%[^=](.*?)%>} $adp_page match function]} {
+         set user_id [ad_get_user_id]
+         ns_log warning "User: $user_id tried to include \n$function\nin an adp page"
+         return 1
+       } elseif {[regexp {<%=.*?(\[.*?)%>} $adp_page match function]} {
+         set user_id [ad_get_user_id]
+         ns_log warning "User: $user_id tried to include \n$function\nin an adp page"
+         return 1
+       } else {
+         return 0
+      }
+   }
+
+Add this to /www/admin/ecommerce/templates/add-2.tcl:
+
+    if {[fm_adp_function_p $text]} {
+       ns_return 200 text/html "
+       <P><tt>We're sorry, but files added here cannot
+        have functions in them for security reasons. Only HTML and
+       <%= \$variable %> style code may be used.</tt>"
+    }
+
+above ReturnHeaders.
+
+
+Add this to /www/admin/ecommerce/templates/edit-2.tcl:
+   # check the template for the execution of functions
+  
+   if {[fm_adp_function_p $template]} {
+       ns_return 200 text/html "
+       <P><tt>We're sorry, but files edited here cannot
+       have functions in them for security reasons. Only HTML and
+       <%= \$variable %> style code may be used.</tt>"
+   }
+
+above  set db [ns_db gethandle]
+
+
+Add this to /www/admin/file-manager/file-edit-2.tcl:
+
+   # check if this is an adp page
+   if {[regexp {\.adp} $path]} {
+       # Check it for functions in it
+       if {[fm_adp_function_p $file_content]} {
+         ns_return 200 text/html "
+         <P><tt>We're sorry, but files edited with the file manager cannot
+         have functions in them for security reasons. Only HTML and
+         <%= \$variable %> style code may be used.</tt>"
+      }
+   }
+
+  above  set text $file_content
+
+Add this to /www/admin/file-manager/file-upload-2.tcl:
+
+    } elseif {[regexp {adp} $file_type]} {
+       if [catch {
+  
+         set fd [open $the_file r]
+         set text [read $fd]
+         close $fd
+  
+       } errmsg] {
+  
+         ns_return 200 text/html "
+  
+         <p>An error occurred with the file upload:</p>
+  
+         <pre>$errmsg</pre>
+         "
+         return
+       }
+  
+       if {[fm_adp_function_p $text]} {
+         ns_return 200 text/html "
+         <P><tt>We're sorry, but files edited with the file manager cannot
+         have functions in them for security reasons. Only HTML and
+         <%= \$variable %> style code may be used.</tt>"
+       }
+  
+above
+
+    } else {
+
+        # if the file is binary just copy it

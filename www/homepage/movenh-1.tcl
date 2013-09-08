@@ -1,13 +1,18 @@
-# $Id: movenh-1.tcl,v 3.0.4.1 2000/04/28 15:11:02 carsten Exp $
 # File:     /homepage/movenh-1.tcl
-# Date:     Thu Jan 27 02:44:02 EST 2000
-# Location: 42ÅÅ∞21'N 71ÅÅ∞04'W
-# Location: 80 PROSPECT ST CAMBRIDGE MA 02139 USA
-# Author:   mobin@mit.edu (Usman Y. Mobin)
-# Purpose:  Page to move a neighbourhood
 
-set_form_variables
-# neighborhood_node, move_node
+ad_page_contract {
+    Purpose:  Page to move a neighbourhood
+
+    @param neighborhood_node The neighborhood node one came from
+    @param move_node The node to move from
+
+    @author Usman Y. Mobin (mobin@mit.edu)
+    @creation-date Thu Jan 27 02:44:02 EST 2000
+    @cvs-id movenh-1.tcl,v 3.3.2.10 2000/09/22 01:38:17 kevin Exp
+} {
+    neighborhood_node:notnull,naturalnum
+    move_node:notnull,naturalnum
+}
 
 # ------------------------------ initialization codeBlock ----
 
@@ -23,76 +28,72 @@ if { $user_id == 0 } {
 
 # ------------------------------ htmlGeneration codeBlock ----
 
-set db [ns_db gethandle]
-set neighborhood_name [database_to_tcl_string $db "
-select neighborhood_name from users_neighborhoods
-where neighborhood_id=$move_node"]
 
-set html "
+set neighborhood_name [db_string select_neighborhood_name "
+select neighborhood_name from users_neighborhoods
+where neighborhood_id=:move_node"]
+
+set page_content "
 Please click on the neighborhood to which<br>you would like to move `$neighborhood_name':
 <br><p>
 <table border=0 cellpadding=0 cellspacing=0>"
 
-set user_root [database_to_tcl_string $db "
+set user_root [db_string select_user_root "
 select hp_get_neighborhood_root_node from dual"]
 
-set selection [ns_db select $db "
+set neighborhood_qry  "
 select neighborhood_id as nid, neighborhood_name, level, parent_id,
 hp_neighborhood_sortkey_gen(neighborhood_id) as generated_sort_key,
-hp_neighborhood_in_subtree_p($move_node, neighborhood_id) as is_child_p
+hp_neighborhood_in_subtree_p(:move_node, neighborhood_id) as is_child_p
 from users_neighborhoods
 connect by prior neighborhood_id = parent_id
-start with neighborhood_id=$user_root
-order by generated_sort_key asc"]
+start with neighborhood_id=:user_root
+order by generated_sort_key asc"
 
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
+db_foreach get_neighborhoods $neighborhood_qry {
     set level [expr $level - 1]
-    
+
     if {$is_child_p} {
     } else {
-    append html "<tr><td>[ad_space [expr $level * 8]]
-	<a href=movenh-2.tcl?neighborhood_node=$neighborhood_node&move_node=$move_node&move_target=$nid>$neighborhood_name</a>"
+    append page_content "<tr><td>[ad_space [expr $level * 8]]
+	<a href=movenh-2?neighborhood_node=$neighborhood_node&move_node=$move_node&move_target=$nid>$neighborhood_name</a>"
     }
-
 }
 
-ns_db releasehandle $db
+db_release_unused_handles
 
-append html "</table>"
+append page_content "</table>"
+
+set title "Neighborhood Management"
 
 #set dialog_body "Please choose the directory to which you would like to move `$neighborhood_name'<br> \
 #<table> \
-#$html \
+#$page_content \
 #</table>"
 
 #  <table border=0 cellpadding=0> \
 #  <tr> \
-#      <td><form method=get action=index.tcl> \
+#      <td><form method=get action=index> \
 #          <input type=hidden name=neighborhood_node value=$neighborhood_node> \
 #          <input type=submit value=Cancel></form></td> \
 #  </tr></table>"
 
-
-#ad_returnredirect "dialog-class.tcl?title=Neighborhood Management&text=$dialog_body"
+#ad_returnredirect "dialog-class?title=Neighborhood Management&text=$dialog_body"
 #return
 
-ReturnHeaders
-
-set title "Neighborhood Management"
 
 # Code deactivated Mon Jan 24 21:40:52 EST 2000
 #ns_write "
 #[ad_header $title]
 #<h2>$title</h2>
 #[ad_context_bar_ws_or_index \
-#        [list "index.tcl?neighborhood_node=$neighborhood_node" "Homepage Maintenance"] $title]
+#        [list "index?neighborhood_node=$neighborhood_node" "Homepage Maintenance"] $title]
 #<hr>
 #<blockquote>
 #
-#$html
+#$page_content
 #
-#<form method=post action=rename-2.tcl>
+#<form method=post action=rename-2>
 #  <input type=hidden name=neighborhood_node value=$neighborhood_node>
 #  <input type=hidden name=move_node value=$move_node>
 #  <p><br>
@@ -110,7 +111,7 @@ set title "Neighborhood Management"
 #[ad_footer]
 #"
 
-ns_write "
+set page_content "
 <html>
 
 <head>
@@ -158,7 +159,7 @@ A:vlink {text-decoration:none; font-style:plain; font-weight:bold}
                                        cellpadding=25>
                                          <tr align=center>
                                          <td><p>
-                                                  $html
+                                                  $page_content
                                          </td>
                                          </tr>
                                 </table>
@@ -174,3 +175,7 @@ A:vlink {text-decoration:none; font-style:plain; font-weight:bold}
 </body>
 </html>
 "
+
+doc_return  200 text/html $page_content
+
+

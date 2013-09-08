@@ -1,20 +1,27 @@
-# Target page for redirecting results of a site wide search query.
+# /www/bboard/redirect-for-sws.tcl
+ad_page_contract {
+    Target page for redirecting results of a site wide search query.
 
-set_the_usual_form_variables
-# msg_id
+    @param msg_id a bboard message ID
 
-set db [ns_db gethandle]
-if { $db == "" } {
-    ad_return_error_page
-    return
+    @cvs-id redirect-for-sws.tcl,v 3.3.2.3 2000/07/21 03:58:50 ron Exp
+} {
+    {msg_id}
 }
 
-set selection [ns_db 1row $db "select presentation_type, sort_key, bboard_topics.topic_id, bboard_topics.topic
-from bboard, bboard_topics
-where bboard.msg_id = '$msg_id'
-and bboard_topics.topic_id = bboard.topic_id"]
+# -----------------------------------------------------------------------------
 
-set_variables_after_query
+page_validation {
+    bboard_validate_msg_id $msg_id
+}
+
+db_1row topic "
+select presentation_type, sort_key, 
+       bboard_topics.topic_id, bboard_topics.topic
+from   bboard, bboard_topics
+where  bboard.msg_id = :msg_id
+and    bboard_topics.topic_id = bboard.topic_id"
+
 
 if { [string first "." $sort_key] == -1 } {
     # there is no period in the sort key so this is the start of a thread

@@ -1,27 +1,40 @@
-# $Id: info-edit-2.tcl,v 3.0.4.2 2000/04/28 15:11:10 carsten Exp $
-# File: /www/intranet/procedures/info-edit-2.tcl
-#
-# Author: mbryzek@arsdigita.com, Jan 2000
-#
-# Purpose: Stores changes to procedure
-#
+# /www/intranet/procedures/info-edit-2.tcl
 
-set_the_usual_form_variables
-# procedure_id, note
+ad_page_contract {
+    Purpose: Stores changes to procedure
 
-set caller_id [ad_verify_and_get_user_id]
-ad_maybe_redirect_for_registration
+    @param procedure_id  the procedure we're editing
+    @param note general notes about the procedure
+    @param name the name of the procedure
 
-set db [ns_db gethandle]
+
+    @author mbryzek@arsdigita.com
+    @creation-date Jan 2000
+
+    @cvs-id info-edit-2.tcl,v 3.2.6.10 2000/08/16 21:24:59 mbryzek Exp
+} {
+    procedure_id:integer
+    note:html
+    name:optional
+}
+
+set caller_id [ad_maybe_redirect_for_registration]
+
 
 set exception_count 0
 set exception_text ""
 
+set name [string trim $name]
 if [empty_string_p $name] {
-    incr exception_count
-    append exception_text "<LI>The procedure needs a name\n"
+    ad_return_complaint "error" "You have to give a procedure name!"
+    return
 }
 
-ns_db dml $db "update im_procedures set note = '$QQnote', name='$QQname' where procedure_id = $procedure_id"
 
-ad_returnredirect info.tcl?procedure_id=$procedure_id
+
+db_dml update_procedure "update im_procedures set note = :note, name=:name 
+where procedure_id = :procedure_id"
+
+db_release_unused_handles
+
+ad_returnredirect info?procedure_id=$procedure_id

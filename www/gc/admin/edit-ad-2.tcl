@@ -1,59 +1,96 @@
-# $Id: edit-ad-2.tcl,v 3.1 2000/03/10 23:58:50 curtisg Exp $
+# /www/gc/admin/edit-ad-2.tcl
+
+ad_page_contract {
+    @author
+    @creation-date
+    @cvs-id edit-ad-2.tcl,v 3.2.6.8 2000/09/22 01:38:00 kevin Exp
+
+    @param classified_ad_id
+    @param state
+    @param country
+    @param one_line
+    @param full_add
+    @param html_p
+    @param expires
+    @param primary_category
+    @param manufacturer
+    @param model
+    @param item_size
+    @param color
+    @param us_citizen_p
+    @param wanted_p
+    @param auction_p
+    @param user_charge
+    @param charge_comment
+
+} {
+    classified_ad_id
+    {state ""}
+    {country ""}
+    one_line
+    full_ad
+    html_p
+    expires
+    primary_category
+    {manufacturer ""}
+    {model ""}
+    {item_size ""}
+    {color ""}
+    {us_citizen_p ""}
+    {wanted_p ""}
+    {auction_p ""}    
+    {user_charge ""}
+    {charge_comment ""}
+}
+
 ad_maybe_redirect_for_registration
 
 set admin_id [ad_get_user_id]
 
-set_the_usual_form_variables
-
 # bunch of stuff including classified_ad_id; maybe user_charge
-# actually most of these will have gotten overwritten by 
-# set_variables_after_query after the next query
+# actually most of these will have gotten overwritten
+# after the next query
 
 
-set db [ns_db gethandle]
-
-if [catch { set selection [ns_db 1row $db "select ca.*, ad.domain
+if [catch { db_1row gc_admin_edit_ad_2_ad_data_get "
+select ad.domain, ad.domain_id
 from classified_ads ca, ad_domains ad
 where ad.domain_id = ca.domain_id and
-classified_ad_id = $classified_ad_id"] } errmsg ] {
+classified_ad_id = :classified_ad_id" } errmsg ] {
     ad_return_error "Could not find Ad $classified_ad_id" "Either you are fooling around with the Location field in your browser
-or my code has a serious bug.  The error message from the database was
+    or my code has a serious bug.  The error message from the database was
 
-<blockquote><code>
-$errmsg
-</blockquote></code>"
-       return 
+    <blockquote><code>
+    $errmsg
+    </blockquote></code>"
+    return
 }
 
-# OK, we found the ad in the database if we are here...
-# the variable SELECTION holds the values from the db
-set_variables_after_query
-
-# now we know to what domain this ad belongs
-
-if ![ad_administration_group_member $db "gc" $domain $admin_id] {
+if {![ad_administrator_p] && ![ad_administration_group_member "gc" $domain $admin_id]} {
     ad_return_error "Unauthorized" "Unauthorized" 
     return
 }
 
-set update_sql [util_prepare_update $db classified_ads classified_ad_id $classified_ad_id [ns_conn form]]
+set sql_statement_and_bind_vars [util_prepare_update classified_ads classified_ad_id $classified_ad_id [ns_conn form]]
+set sql_statement [lindex $sql_statement_and_bind_vars 0]
+set bind_vars [lindex $sql_statement_and_bind_vars 1]
 
-if [catch { ns_db dml $db $update_sql } errmsg] {
+if [catch { db_dml gc_admin_edit_ad_2_update $sql_statement } errmsg] {
     # something went a bit wrong
-    set_variables_after_query
+    
     ad_return_error "Error Updating Ad $classified_ad_id" "Tried the following SQL:
 
-<pre>
-$update_sql
-</pre>
+    <pre>
+    $sql_statement
+    </pre>
 
-and got back the following:
-
-<blockquote><code>
-$errmsg
-</blockquote></code>"
+    and got back the following:
+    
+    <blockquote><code>
+    $errmsg
+    </blockquote></code>"
     return
-
+    
 } else {
 
     # everything went nicely 
@@ -67,7 +104,7 @@ $errmsg
 
 "
 
-if { [info exists user_charge] && ![empty_string_p $user_charge] } {
+if { ![empty_string_p $user_charge] } {
     if { [info exists charge_comment] && ![empty_string_p $charge_comment] } {
 	# insert separately typed comment
 	set user_charge [mv_user_charge_replace_comment $user_charge $charge_comment]
@@ -77,7 +114,7 @@ if { [info exists user_charge] && ![empty_string_p $user_charge] } {
 [mv_describe_user_charge $user_charge]
 </blockquote>
 ... "
-    mv_charge_user $db $user_charge "Editing your ad in [ad_system_name]" "We had to edit your ad in [ad_system_name].
+    mv_charge_user $user_charge "Editing your ad in [ad_system_name]" "We had to edit your ad in [ad_system_name].
 
 For clarity, here is what we had in the database..
 
@@ -96,10 +133,10 @@ append html "
 <p>
 
 If you'd like to check the ad, then take a look 
-at <a href=\"/gc/view-one.tcl?classified_ad_id=$classified_ad_id\">the public page</a>.
+at <a href=\"/gc/view-one?classified_ad_id=$classified_ad_id\">the public page</a>.
 
 [ad_admin_footer]"
 }
 
-ns_db releasehandle $b
-ns_return 200 text/html $html
+db_release_unused_handles
+doc_return  200 text/html $html

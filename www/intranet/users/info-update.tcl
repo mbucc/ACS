@@ -1,20 +1,21 @@
-# $Id: info-update.tcl,v 3.3.2.1 2000/03/17 08:23:22 mbryzek Exp $
-# File: /www/intranet/users/info-update.tcl
-#
-# Author: mbryzek@arsdigita.com, Jan 2000
-#
-# Purpose: Updates a user's intranet information
-#
+# /www/intranet/users/info-update.tcl
 
-set_the_usual_form_variables 0
-# from (maybe)
+ad_page_contract {
+    Purpose: Updates a user's intranet information
 
-set caller_user_id [ad_verify_and_get_user_id]
-ad_maybe_redirect_for_registration
+    @param from
 
-set db [ns_db gethandle]
+    @author mbryzek@arsdigita.com
+    @creation-date Jan 2000
 
-set selection [ns_db 1row $db "\
+    @cvs-id info-update.tcl,v 3.11.2.7 2000/09/22 01:38:51 kevin Exp
+} {
+    { from "" }
+}
+
+set user_id [ad_maybe_redirect_for_registration]
+
+db_1row get_all_from_user "
 select 
   first_names, 
   last_name, 
@@ -34,27 +35,22 @@ select
   ha_city, 
   ha_state, 
   ha_postal_code,
-  featured_employee_blurb
+  featured_employee_blurb,
+  featured_employee_blurb_html_p,
+  recruiting_blurb,
+  recruiting_blurb_html_p
 from users, users_contact, im_employee_info info
 where users.user_id = users_contact.user_id(+)
 and users.user_id = info.user_id(+)
-and users.user_id = $caller_user_id"]
+and users.user_id = :user_id" 
 
-set_variables_after_query
-
-set office_id [database_to_tcl_string_or_null $db \
-	"select o.group_id
-           from im_offices o
-          where ad_group_member_p ( $caller_user_id, o.group_id ) = 't'"]
-
-set user_id $caller_user_id
 
 set page_title "$first_names $last_name"
-set context_bar [ad_context_bar [list "/" Home] [list "../index.tcl" "Intranet"] [list "./" "Users"] [list view.tcl?[export_url_vars user_id] "One user"] "Update info"]
+set context_bar [ad_context_bar_ws [list "./" "Users"] [list view.tcl?[export_url_vars user_id] "One user"] "Update info"]
 
 set page_body "
 
-<form method=post action=info-update-2.tcl>
+<form method=post action=info-update-2>
 [export_form_vars return_url]
 
 <table>
@@ -97,22 +93,7 @@ set page_body "
  <td><input type=text name=dp.users_contact.cell_phone size=20 maxlength=100 [export_form_value cell_phone]></td>
 </tr>
 
-<tr>
- <th>Office:</th>
- <td>
-<select name=office_id>
-<option value=\"\"> -- Please select --
-[ad_db_optionlist $db \
-	"select g.group_name, g.group_id
-           from im_offices o, user_groups g
-          where o.group_id=g.group_id
-       order by lower(group_name)" [value_if_exists office_id]]
-</select>
- </td>
-</tr>
-
 <tr><td colspan=2></td></tr>
-
 
 <tr>
  <th valign=top>Home address:</th>
@@ -132,7 +113,7 @@ set page_body "
      </tr>
      <tr>
         <th align=right>State:</th>
-        <td>[state_widget $db [value_if_exists ha_state] dp.users_contact.ha_state]</td>
+        <td>[state_widget [value_if_exists ha_state] dp.users_contact.ha_state]</td>
      </tr>
      <tr>
         <th align=right>Zip:</th>
@@ -143,7 +124,6 @@ set page_body "
 </tr>
 
 <tr><td colspan=2></td></tr>
-
 
 <tr>
  <th>List your degrees with the school names:</TH>
@@ -174,9 +154,7 @@ set page_body "
 
 <tr><td colspan=2></td></tr>
 
-
 <tr><td colspan=2></td></tr>
-
 
 <tr>
  <TD ALIGN=CENTER WIDTH=200><B>Special skills:</B><BR>
@@ -201,14 +179,12 @@ someone who can do <EM>X</EM>)
 
 <tr><td colspan=2></td></tr>
 
-
 <tr>
  <TD ALIGN=CENTER WIDTH=200><B>Resume:</B>
 </td>
  <td>
 <textarea name=dp.im_employee_info.resume.clob cols=50 rows=4 wrap=soft>[philg_quote_double_quotes [value_if_exists resume]]</textarea>
 <p>
-
 
 The above resume is:
 <select name=dp.im_employee_info.resume_html_p>
@@ -217,16 +193,13 @@ The above resume is:
 </td>
 </tr>
 
-
 <tr><td colspan=2></td></tr>
 
 <tr>
  <th>Other notes:<td><textarea name=dp.users_contact.note cols=50 rows=4 wrap=soft>[philg_quote_double_quotes [value_if_exists note]]</textarea></td>
 </tr>
 
-
 <tr><td colspan=2></td></tr>
-
 
 <tr>
  <TD ALIGN=CENTER WIDTH=200><B>Featured Employee Blurb:</B>
@@ -235,7 +208,6 @@ The above resume is:
 <textarea name=dp.im_employee_info.featured_employee_blurb.clob cols=50 rows=6 wrap=soft>[philg_quote_double_quotes [value_if_exists featured_employee_blurb]]</textarea>
 <p>
 
-
 The above blurb is:
 <select name=dp.im_employee_info.featured_employee_blurb_html_p>
 [html_select_value_options {{"t" "HTML"} {"f" "Text"}}  [value_if_exists featured_employee_blurb_html_p]]
@@ -243,8 +215,19 @@ The above blurb is:
 </td>
 </tr>
 
+<tr>
+ <TD ALIGN=CENTER WIDTH=200><B>Recruiting Blurb:</B>
+</td>
+ <td>
+<textarea name=dp.im_employee_info.recruiting_blurb.clob cols=50 rows=6 wrap=soft>[philg_quote_double_quotes [value_if_exists recruiting_blurb]]</textarea>
+<p>
 
-
+The above blurb is:
+<select name=dp.im_employee_info.recruiting_blurb_html_p>
+[html_select_value_options {{"t" "HTML"} {"f" "Text"}}  [value_if_exists recruiting_blurb_html_p]]
+</select>
+</td>
+</tr>
 
 </table>
 
@@ -256,4 +239,4 @@ The above blurb is:
 </form>
 "
 
-ns_return 200 text/html [ad_partner_return_template]
+doc_return  200 text/html [im_return_template]

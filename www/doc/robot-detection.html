@@ -21,7 +21,7 @@ by <a href="http://michael.yoon.org/">Michael Yoon</a>
 <li>User-accessible directory: none
 <li>Site administrator directory: <a href="/admin/robot-detection/">/admin/robot-detection/</a>
 <li>Data model: <a href="/doc/sql/robot-detection.sql">/doc/sql/robot-detection.sql</a>
-<li>Tcl procedures: /tcl/ad-robot-defs.tcl
+<li>Tcl procedures: /tcl/ad-robot-defs
 </ul>
 
 <h3>The Big Picture</h3>
@@ -30,7 +30,7 @@ Many of the pages on an ACS-based website are hidden from robots
 (a.k.a. search engines) by virtue of the fact that login is required to
 access them. A generic way to expose login-required content to robots is
 to redirect all requests from robots to a special URL that is designed
-to give the robot what at least appear to be linked .html files.
+to give the robot what at least appear to be linked  files.
 
 <p>
 
@@ -38,14 +38,14 @@ You might want to use this software for situations where public (not
 password-protected) pages aren't getting indexed by a specific robot.
 Many robots won't visit pages that look like CGI scripts, e.g., with
 question marks and form vars (this is discussed in <a
-href="http://photo.net/wtr/thebook/publicizing.html">Chapter 7</a> of
+href="http://photo.net/wtr/thebook/publicizing">Chapter 7</a> of
 <cite>Philip and Alex's Guide to Web Publishing</cite>).
 
 <h3>The Medium-sized Picture</h3>
 
 In order for this to work, we need a way to distinguish robots from
 human beings.  Fortunately, the <a
-href="http://info.webcrawler.com/mak/projects/robots/active.html">Web
+href="http://info.webcrawler.com/mak/projects/robots/active">Web
 Robots Database</a> maintains a list of active robots that they kindly
 publish as a <a
 href="http://info.webcrawler.com/mak/projects/robots/active/all.txt">text
@@ -76,8 +76,8 @@ itself, we can enhance the code to parse out and store all fields.)
 ; the URL of the Web Robots DB text file
 WebRobotsDB=http://info.webcrawler.com/mak/projects/robots/active/all.txt
 ; which URLs should ad_robot_filter check (uncomment to turn system on)
-; FilterPattern=/members-only-stuff/*.html
-; FilterPattern=/members-only-stuff/*.tcl
+; FilterPattern=/members-only-stuff/*
+; FilterPattern=/members-only-stuff/*
 ; the URL where robots should be sent
 RedirectURL=/robot-heaven/
 ; How frequently (in days) the robots table

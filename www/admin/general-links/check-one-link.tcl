@@ -1,11 +1,18 @@
 # File: /admin/general-links/check-one-link.tcl
-# Date: 2/01/2000
-# Author: tzumainn@arsdigita.com 
-#
-# Purpose: 
-# Checks one link for live/dead status and meta tags
-#
-# $Id: check-one-link.tcl,v 3.0 2000/02/06 03:23:35 ron Exp $
+
+ad_page_contract {
+    Checks one link for live/dead status and meta tags.
+    Note the ns_write method is used here because ns_httpget and doc_return  may timeout the browser when used together.
+
+    @param link_id The ID of the link to check
+
+    @author Tzu-Mainn Chen (tzumainn@arsdigita.com)
+    @creation-date 2/01/2000
+    @cvs-id check-one-link.tcl,v 3.0.12.6 2000/09/22 01:35:24 kevin Exp
+} {
+    link_id:notnull,naturalnum
+}
+
 #--------------------------------------------------------
 
 if {[ad_read_only_p]} {
@@ -14,8 +21,6 @@ if {[ad_read_only_p]} {
 }
 
 set admin_id [ad_maybe_redirect_for_registration]
-
-ad_page_variables {link_id}
 
 ad_return_top_of_page "[ad_header "Check One Link" ]
 
@@ -26,16 +31,14 @@ ad_return_top_of_page "[ad_header "Check One Link" ]
 <hr>
 "
 
-set db [ns_db gethandle]
+set url [db_string select_url {select url from general_links where link_id = :link_id}]
 
-set url [database_to_tcl_string $db "select url from general_links where link_id = $link_id"]
-
-set check_p [ad_general_link_check $db $link_id]
+set check_p [ad_general_link_check $link_id]
 
 if { $check_p == 1 } {
     set link_status "<a href=\"$url\">$url</a> is <b>live</b>"
 } else {
-    set last_live_date [database_to_tcl_string_or_null $db "select last_live_date from general_links where link_id = $link_id"]
+    set last_live_date [db_string -default "" select_last_live_date {select last_live_date from general_links where link_id = :link_id}]
     if [empty_string_p $last_live_date] {
 	set last_live_date "N/A"
     }
@@ -45,7 +48,7 @@ if { $check_p == 1 } {
     <br>Last Live Date: $last_live_date"
 }
 
-ns_db releasehandle $db
+db_release_unused_handles
 
 ns_write "
 <ul>

@@ -1,16 +1,29 @@
-#
-# /survsimp/admin/survey-create-2.tcl
-#
-# by philg@mit.edu, February 9, 2000
-#
-# actually does the insert
-# 
-#$Id: survey-create-2.tcl,v 1.2.2.3 2000/04/28 15:11:34 carsten Exp $
-#
+# /www/survsimp/admin/survey-create-2.tcl
+ad_page_contract {
 
-ad_page_variables {name description short_name survey_id} 
+  Displays confirmation page for new survey creation or, if we
+  just arrived from it, actually creates new survey.
 
-set db [ns_db gethandle]
+  @param  survey_id    id of survey to be created
+  @param  name         new survey title
+  @param  short_name   new survey short tag
+  @param  description  new survey description
+  @param  desc_html    whether the description is provided in HTML or not
+  @param  checked_p    t if we arrived from confirmation page
+
+  @author philg@mit.edu
+  @date   February 9, 2000
+  @cvs-id survey-create-2.tcl,v 1.6.2.6 2001/01/11 23:53:49 khy Exp
+
+} {
+  name
+  short_name
+  description:html
+  desc_html
+  {checked_p "f"}
+
+}
+
 
 set exception_count 0
 set exception_text ""
@@ -21,9 +34,10 @@ if { [empty_string_p $short_name] } {
 } else {
     # make sure the short name isn't used somewhere else
 
-    set short_name_used_p [database_to_tcl_string $db "select
-      count(short_name) from survsimp_surveys where lower(short_name) =
-      '[string tolower $QQshort_name]'"]
+    set short_name_used_p [db_string short_name_uniqueness_check "
+select count(short_name)
+from survsimp_surveys
+where lower(short_name) = lower(:short_name)"]
 
     if {$short_name_used_p > 0} {
 	incr exception_count
@@ -46,13 +60,55 @@ if {$exception_count > 0} {
     return
 }
 
-set user_id [ad_verify_and_get_user_id]
 
-# make sure the short_name is unique
+    set survey_id [db_string next_survey_id "select survsimp_survey_id_sequence.nextval from dual"]
+    set whole_page "[ad_header "Confirm New Survey Description"]
+    
+    <h2>Confirm New Survey Description</h2>
+    
+    [ad_context_bar_ws_or_index [list "index.tcl" "Simple Survey Admin"] "Confirm New Survey Description"]
+    
+    <hr>
+    
+    Here is how your survey description will appear:
+    <blockquote><p>"
 
-ns_db dml $db "insert into survsimp_surveys
-(survey_id, name, short_name, description, creation_user)
-values
-($survey_id, '$QQname', '$QQshort_name', '$QQdescription', $user_id)"
+    switch $desc_html {
+	"html" {
+	    append whole_page "$description"
+	}
+	
+	"pre" {
+	    regsub "\[ \012\015\]+\$" $description {} description
+	    set description "<pre>[ns_quotehtml $description]</pre>"
+	    append whole_page "$description"
+	}
 
-ad_returnredirect "question-add.tcl?survey_id=$survey_id"
+	default {
+	    append whole_page "[util_convert_plaintext_to_html $description]"
+	}
+    }
+    
+    append whole_page "<form method=post action=\"survey-create-3\">
+    [export_form_vars name short_name description desc_html]
+    [export_form_vars -sign survey_id]
+    <input type=hidden name=checked_p value=\"t\">
+    <br><center><input type=submit value=\"Confirm\"></center>
+    </form>
+
+    </blockquote>
+
+    <font size=-1 face=\"verdana, arial, helvetica\">
+    Note: if the text above has a bunch of visible HTML tags then you probably
+    should have selected \"HTML\" rather than \"Plain Text\". If it is all smashed together
+    and you want the original line breaks saved then choose \"Preformatted Text\".
+    Use your browser's Back button to return to the submission form.
+    </font>
+    
+    [ad_footer]"
+    
+    
+    doc_return  200 text/html $whole_page
+    return
+
+

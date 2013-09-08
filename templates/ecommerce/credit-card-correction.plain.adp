@@ -11,7 +11,7 @@ At this time we are unable to receive authorization to charge your
 credit card.  Please check the number and the expiration date and
 try again or use a different credit card.
 
-<form method=post action=credit-card-correction-2.tcl>
+<form method=post action=credit-card-correction-2>
 
 <table>
 <tr>

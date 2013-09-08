@@ -1,45 +1,43 @@
-# $Id: info-edit.tcl,v 3.1.4.1 2000/03/17 08:02:24 mbryzek Exp $
-# File: /www/intranet/procedures/info-edit.tcl
-#
-# Author: mbryzek@arsdigita.com, Jan 2000
-#
-# Purpose: Form to edit procedure information
-#
+# /www/intranet/procedures/info-edit.tcl
 
-set_form_variables
-# procedure_id
+ad_page_contract {
+    Purpose: Form to edit procedure information
 
-set caller_id [ad_verify_and_get_user_id]
-ad_maybe_redirect_for_registration
+    @param  procedure_id  the proc we're editing data for
 
-set db [ns_db gethandle]
+    @author mbryzek@arsdigita.com
+    @creation-date Jan 2000
 
-if {[database_to_tcl_string $db "select count(*) from im_procedure_users where user_id = $caller_id and procedure_id = $procedure_id"] == 0} {
+    @cvs-id info-edit.tcl,v 3.5.6.11 2000/09/22 01:38:43 kevin Exp
+} {
+    procedure_id:integer
+}
+
+set caller_id [ad_maybe_redirect_for_registration]
+
+
+
+if {[db_string procedure_access_allowed \
+"select count(*) from im_procedure_users 
+where user_id = $caller_id 
+and procedure_id = :procedure_id"] == 0} {
     ad_return_error "Error" "You're not allowed to edit this information"
     return
 }
 
-set selection [ns_db 0or1row $db "
-select * from im_procedures where procedure_id = $procedure_id"]
 
-if [empty_string_p $selection] {
+if { [db_0or1row procedure_id_exists \
+"select procedure_id, name, note from im_procedures where procedure_id = :procedure_id"] == 0 } {
     ad_return_error "Error" "That procedure doesn't exist"
     return
 }
-set_variables_after_query
 
+set context_bar [ad_context_bar_ws [list "index" "Procedures"] "Edit Procedure info"]
 set page_body "
-
-[ad_header $name]
-
-<H2>$name</H2>
-
-[ad_context_bar [list "/" Home] [list "../index.tcl" "Intranet"] [list "index.tcl" "Procedures"] "Edit Procedure info"]
-
-<HR>
+[im_header $name]
 
 <BLOCKQUOTE>
-<FORM METHOD=POST ACTION=info-edit-2.tcl>
+<FORM METHOD=POST ACTION=info-edit-2>
 [export_form_vars procedure_id]
 
 <P>The procedure:<BR>
@@ -53,9 +51,15 @@ set page_body "
 </CENTER></P>
 
 </BLOCKQUOTE>
-[ad_footer]
+[im_footer]
 "
 
-ns_db releasehandle $db
 
-ns_return 200 text/html $page_body
+
+doc_return  200 text/html $page_body
+
+
+
+
+
+

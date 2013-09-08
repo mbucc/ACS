@@ -1,18 +1,20 @@
-# $Id: edit-bookmark.tcl,v 3.0.4.3 2000/04/28 15:09:46 carsten Exp $
-# edit-bookmark.tcl
-#
-# edit a bookmark in your bookmark list
-#
-# by aure@arsdigita.com and dh@arsdigita.com
+# /www/bookmarks/edit-bookmark.tcl
 
-set_the_usual_form_variables
-
-# bookmark_id, return_url
+ad_page_contract {
+    edit a bookmark in your bookmark list
+    @param bookmark_id 
+    @param return_url
+    @author David Hill (dh@arsdigita.com)
+    @author Aurelius Prochazka (aure@arsdigita.com)
+    @creation-date June 1999  
+    @cvs-id edit-bookmark.tcl,v 3.3.6.5 2000/09/22 01:37:01 kevin Exp
+} {
+    bookmark_id:integer
+    return_url
+} 
  
 set user_id [ad_verify_and_get_user_id]
 ad_maybe_redirect_for_registration
-
-set db [ns_db gethandle]
 
 # start error-checking
 set exception_text ""
@@ -31,9 +33,9 @@ if {$bookmark_id=="undefined"} {
 set  ownership_query "
         select count(*)
         from   bm_list
-        where  owner_id=$user_id
-        and bookmark_id=$bookmark_id"
-set ownership_test [database_to_tcl_string $db $ownership_query]
+        where  owner_id = :user_id
+        and bookmark_id = :bookmark_id"
+set ownership_test [db_string ownership $ownership_query]
 
 if {$ownership_test==0} {
     incr exception_count
@@ -56,16 +58,20 @@ set page_content "
 "
 
 set bm_info_query "
-        select nvl(local_title, url_title) as title, complete_url, folder_p,
-               parent_id, private_p, bookmark_id, hidden_p
-        from   bm_list,bm_urls
-        where  bookmark_id=$bookmark_id
-        and    owner_id=$user_id
-        and    bm_list.url_id=bm_urls.url_id(+)"
+        select nvl(local_title, url_title) as title, 
+               complete_url, 
+               folder_p,
+               parent_id, 
+               private_p, 
+               bookmark_id, 
+               hidden_p
+        from   bm_list, 
+               bm_urls
+        where  bookmark_id = :bookmark_id
+        and    owner_id = :user_id
+        and    bm_list.url_id = bm_urls.url_id(+)"
 
-set selection [ns_db 1row $db $bm_info_query]
- 
-set_variables_after_query
+db_1row bm_info $bm_info_query
 
 # begin the form and table
 append page_content "<form method=post action=edit-bookmark-2><table>"
@@ -85,7 +91,7 @@ append page_content "
 </tr>
 <tr>
   <td align=right valign=top>Parent Folder:</td>
-  <td>[bm_folder_selection $db $user_id $bookmark_id]</td>
+  <td>[bm_folder_selection $user_id $bookmark_id]</td>
 </tr>
   <td align=right valign=top>Privacy:</td>
   <td align=left>"
@@ -139,10 +145,11 @@ append page_content "
 append page_content "[bm_footer]"
 
 # release the database handle before serving the page
-ns_db releasehandle $db 
+db_release_unused_handles 
 
 # serve the page
-ns_return 200 text/html $page_content 
+doc_return  200 text/html $page_content 
+
 
 
 

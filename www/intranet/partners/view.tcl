@@ -1,61 +1,94 @@
-# $Id: view.tcl,v 3.3.2.1 2000/03/17 08:23:06 mbryzek Exp $
-# File: /www/intranet/partners/view.tcl
-#
-# Author: mbryzek@arsdigita.com, Jan 2000
-#
-# Purpose: Lists info about one partner
-#
+# /www/intranet/partners/view.tcl
 
-set current_user_id [ad_verify_and_get_user_id]
-ad_maybe_redirect_for_registration
+ad_page_contract {
+    Purpose: Lists info about one partner
 
-set_form_variables
-# group_id
+    @param group_id user GROUP ID
 
-set return_url [ad_partner_url_with_query]
+    @author mbryzek@arsdigita.com
+    @creation-date Jan 2000
 
-set db [ns_db gethandle]
-
-# Admins and Employees can administer partners
-set user_admin_p [im_is_user_site_wide_or_intranet_admin $db $current_user_id]
-if { $user_admin_p == 0 } {
-    set user_admin_p [im_user_is_employee_p $db $current_user_id]
+    @cvs-id view.tcl,v 3.15.2.8 2000/09/22 01:38:41 kevin Exp
+} {
+    group_id:integer
 }
 
-# set user_admin_p [im_can_user_administer_group $db $group_id $current_user_id]
+
+set user_id [ad_maybe_redirect_for_registration]
+
+set return_url [im_url_with_query]
 
 
+
+# We need to know if the user belongs to the group to be able to do things
+# through scoping. If not, we add an intermedia page to ask the user if s/he
+# wants to join the group before continuing
+set user_belongs_to_group_p [ad_user_group_member $group_id $user_id]
+
+
+# Admins and Employees can administer partners
+set user_admin_p [im_is_user_site_wide_or_intranet_admin $user_id]
+if { $user_admin_p == 0 } {
+    set user_admin_p [im_user_is_employee_p $user_id]
+}
+
+# set user_admin_p [im_can_user_administer_group $group_id $user_id]
 
 if { $user_admin_p > 0 } {
     # Set up all the admin stuff here in an array
-    set admin(basic_info) "  <p><li> <a href=ae.tcl?[export_url_vars group_id return_url]>Edit this information</a>"
-    set admin(contact_info) "<p><li><a href=/address-book/record-add.tcl?scope=group&[export_url_vars group_id return_url]>Add a contact</a>"
+    set admin(basic_info) "  <p><li> <a href=ae?[export_url_vars group_id return_url]>Edit this information</a>"
+    set admin(contact_info) "<p><li><a href=[im_group_scope_url $group_id $return_url "/address-book/record-add.tcl" $user_belongs_to_group_p]>Add a contact</a>"
 } else {
     set admin(basic_info) ""
     set admin(contact_info) ""
 }
- 
-set selection [ns_db 1row $db \
-	"select g.group_name, g.registration_date, g.modification_date, p.note, p.url, g.short_name, 
+
+if {![db_0or1row get_group \
+	"select g.group_name, g.registration_date, g.modification_date, p.note, p.url, g.short_name,
                 nvl(t.partner_type,'&lt;-- not specified --&gt;') as partner_type,
-                nvl(s.partner_status,'&lt;-- not specified --&gt;') as partner_status
-	   from user_groups g, im_partners p, im_partner_types t, im_partner_status s
-	  where g.group_id=$group_id
+                nvl(s.partner_status,'&lt;-- not specified --&gt;') as partner_status,
+                nvl(im_category_from_id(annual_revenue),'&lt;-- not specified --&gt;') as annual_revenue,
+                nvl(referral_source,'&lt;-- not specified --&gt;') as referral_source,
+                ab.first_names||' '||ab.last_name as primary_contact_name, p.primary_contact_id
+	   from user_groups g, im_partners p, im_partner_types t, im_partner_status s, address_book ab
+	  where g.group_id=:group_id
 	    and g.group_id=p.group_id
 	    and p.partner_type_id=t.partner_type_id(+)
-	    and p.partner_status_id=s.partner_status_id(+)"]
-
-set_variables_after_query
+	    and p.partner_status_id=s.partner_status_id(+)
+and p.primary_contact_id=ab.address_book_id(+)"]} {
+    ad_return_complaint 1 "Can't find the partner with group id of $group_id"
+    return
+}
 
 set page_title $group_name
-set context_bar [ad_context_bar [list "/" Home] [list ../index.tcl "Intranet"] [list index.tcl "Partners"] "One partner"]
+set context_bar [ad_context_bar_ws [list ./ "Partners"] "One partner"]
+
+set primary_contact_text ""
+if { [empty_string_p $primary_contact_id] } {
+    if { $user_admin_p } {
+	set primary_contact_text "<a href=primary-contact?[export_url_vars group_id limit_to_users_in_group_id]>Add primary contact</a>\n"
+    } else {
+	set primary_contact_text "<i>none</i>"
+    }
+} else {
+
+    append primary_contact_text "<a href=[im_group_scope_url $group_id $return_url "/address-book/record.tcl?address_book_id=$primary_contact_id"]>$primary_contact_name</a>"
+    
+    if { $user_admin_p } {
+	append primary_contact_text "    (<a href=primary-contact?[export_url_vars group_id limit_to_users_in_group_id]>change</a> |
+	<a href=primary-contact-delete?[export_url_vars group_id return_url]>remove</a>)\n"
+    }
+}
 
 set left_column "
 <ul> 
   <li> Type: $partner_type
   <li> Status: $partner_status
-  <li> Partner short name: $short_name
+  <li> Primary contact: $primary_contact_text
   <li> Added on [util_AnsiDatetoPrettyDate $registration_date]
+  <li> Referral source: $referral_source
+  <li> Annual Revenue: $annual_revenue
+[im_email_aliases $short_name]
 " 
 
 if { ![empty_string_p $url] } {
@@ -81,20 +114,23 @@ $admin(basic_info)
 
 # Print out the address book
 set contact_info ""
-set selection [ns_db select $db \
-	"select * 
-           from address_book 
-          where group_id=$group_id
-       order by lower(last_name)"]
 
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
-    append contact_info "  <p><li>[address_book_record_display $selection "f"]\n"
+set query "select   ab.address_book_id, ab.first_names, ab.last_name, ab.email, ab.email2,
+                    ab.line1, ab.line2, ab.city, ab.country, ab.birthmonth, ab.birthyear,
+                    ab.phone_home, ab.phone_work, ab.phone_cell, ab.phone_other, ab.notes,
+                    ab.usps_abbrev, ab.zip_code
+           from     address_book ab
+           where    ab.group_id=:group_id
+           order by lower(ab.last_name)"
+
+db_foreach get_contact_info $query {
+    set address_book_info [ad_tcl_vars_to_ns_set address_book_id first_names last_name email email2 line1 line2 city country birthmonth birthyear phone_home phone_work phone_cell phone_other notes usps_abbrev zip_code]
+    append contact_info "<p><li>[address_book_display_one_row]\n"
     if { $user_admin_p > 0 } {
 	append contact_info "
 <br>
-\[<a href=/address-book/record-edit.tcl?scope=group&[export_url_vars group_id address_book_id return_url]>edit</a> | 
-<a href=/address-book/record-delete.tcl?scope=group&[export_url_vars group_id address_book_id return_url]>delete</a>\]
+\[<a href=[im_group_scope_url $group_id $return_url "/address-book/record-edit?[export_url_vars address_book_id]" $user_belongs_to_group_p]>edit</a> | 
+<a href=[im_group_scope_url $group_id $return_url "/address-book/record-delete?[export_url_vars address_book_id]" $user_belongs_to_group_p]>delete</a>\]
 "
     }
 } 
@@ -111,9 +147,9 @@ $admin(contact_info)
 </ul>
 
 <em>Contact correspondence and strategy reviews:</em>
-[ad_general_comments_summary $db $group_id im_partners $group_name]
+[ad_general_comments_summary $group_id user_groups $group_name]
 <ul>
-<p><a href=\"/general-comments/comment-add.tcl?group_id=$group_id&scope=group&on_which_table=im_partners&on_what_id=$group_id&item=[ns_urlencode $group_name]&module=intranet&[export_url_vars return_url]\">Add a correspondance</a>
+<p><a href=\"/general-comments/comment-add?group_id=$group_id&scope=group&on_which_table=user_groups&on_what_id=$group_id&item=[ns_urlencode $group_name]&module=intranet&[export_url_vars return_url]\">Add a correspondance</a>
 </ul>
 
 "
@@ -125,12 +161,17 @@ set page_body "
 $left_column
   </td>
   <td valign=top>
-[im_table_with_title "[ad_parameter SystemName] Employees" "<ul>[im_users_in_group $db $group_id $current_user_id "are working with $group_name" $user_admin_p $return_url [im_employee_group_id]]</ul>"]
+[im_table_with_title "[ad_parameter SystemName] Employees" "<ul>[im_users_in_group $group_id $user_id "are working with $group_name" $user_admin_p $return_url [im_employee_group_id]]</ul>"]
   </td>
 </tr>
 </table>
 
 "
 
-ns_db releasehandle $db
-ns_return 200 text/html [ad_partner_return_template]
+
+doc_return  200 text/html [im_return_template]
+
+
+
+
+

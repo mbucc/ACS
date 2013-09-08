@@ -1,10 +1,23 @@
-# $Id: gift-certificate-order-4.tcl,v 3.1.2.1 2000/04/28 15:10:01 carsten Exp $
-# dispays order summary
+#  www/ecommerce/gift-certificate-order-4.tcl
+ad_page_contract {
+ dispays order summary
+  @author
+  @creation-date
+  @cvs-id gift-certificate-order-4.tcl,v 3.2.6.7 2001/01/12 19:47:51 khy Exp
+} {
+    certificate_to
+    certificate_from
+    certificate_message
+    amount
+    recipient_email
+    creditcard_number
+    creditcard_type
+    creditcard_expire_1
+    creditcard_expire_2
+    billing_zip_code
+}
 
-set_the_usual_form_variables
-# certificate_to, certificate_from, certificate_message, amount, recipient_email,
-# creditcard_number, creditcard_type, creditcard_expire_1,
-# creditcard_expire_2, billing_zip_code
+#
 
 ec_redirect_to_https_if_possible_and_necessary
 
@@ -17,9 +30,9 @@ set user_id [ad_verify_and_get_user_id]
 
 if {$user_id == 0} {
     
-    set return_url "[ns_conn url]?[export_entire_form_as_url_vars]"
+    set return_url "[ad_conn url]?[export_entire_form_as_url_vars]"
 
-    ad_returnredirect "/register.tcl?[export_url_vars return_url]"
+    ad_returnredirect "/register?[export_url_vars return_url]"
     return
 }
 
@@ -45,14 +58,7 @@ if { [string length $recipient_email] > 100 } {
     append exception_text "<li>The recipient email address you entered is too long.  It needs to contain fewer than 100 characters (the current length is [string length $recipient_email] characters)."
 }
 
-
-if { [empty_string_p $amount] } {
-    incr exception_count
-    append exception_text "<li>You forgot to enter the amount of the gift certificate."
-} elseif { [regexp {[^0-9]} $amount] } {
-    incr exception_count
-    append exception_text "<li>The amount needs to be a number with no special characters."
-} elseif { $amount < [ad_parameter MinGiftCertificateAmount ecommerce] } {
+if { $amount < [ad_parameter MinGiftCertificateAmount ecommerce] } {
     incr exception_count
     append exception_text "<li>The amount needs to be at least [ec_pretty_price [ad_parameter MinGiftCertificateAmount ecommerce]]"
 } elseif { $amount > [ad_parameter MaxGiftCertificateAmount ecommerce] } {
@@ -103,11 +109,13 @@ if { $exception_count > 0 } {
 }
 
 
-set db [ns_db gethandle]
-set gift_certificate_id [database_to_tcl_string $db "select ec_gift_cert_id_sequence.nextval from dual"]
-set user_email [database_to_tcl_string $db "select email from users where user_id=$user_id"]
 
-set hidden_form_variables [export_form_vars certificate_to certificate_from certificate_message amount recipient_email creditcard_number creditcard_type creditcard_expire_1 creditcard_expire_2 billing_zip_code gift_certificate_id]
+set gift_certificate_id [db_string get_gc_id "select ec_gift_cert_id_sequence.nextval from dual"]
+set user_email [db_string get_email_for_user "select email from users where user_id=:user_id"]
+
+set hidden_form_variables "[export_form_vars certificate_to certificate_from certificate_message amount recipient_email creditcard_number creditcard_type creditcard_expire_1 creditcard_expire_2 billing_zip_code]
+[export_form_vars -sign gift_certificate_id]
+"
 
 if { ![empty_string_p $certificate_to] } {
     set to_row "<tr><td><b>To:</b></td><td>$certificate_to</td></tr>"
@@ -129,5 +137,6 @@ if { ![empty_string_p $certificate_message] } {
 
 set formatted_amount [ec_pretty_price $amount]
 set zero_in_the_correct_currency [ec_pretty_price 0]
-
+db_release_unused_handles
 ad_return_template
+

@@ -1,14 +1,35 @@
-# $Id: process-payment.tcl,v 3.1.2.1 2000/04/28 15:10:02 carsten Exp $
-# puts in the credit card data
-set_form_variables 0
-# creditcard_number, creditcard_type, creditcard_expire_1,
-# creditcard_expire_2, billing_zip_code
+#  www/ecommerce/process-payment.tcl
+ad_page_contract {
 
-# possibly creditcard_id if they want to use a previous credit
-# card, but if there's anything in creditcard_number, that will
-# override the selection of a past credit card
+    Begins processing a payment from a customer, using either a credit
+    card on file or a card they entered in payment.tcl (which is the only
+    way to get to this script).
 
-# possibly usca_p
+    <p>If there's anything in creditcard_number, that will override
+    the selection of a past credit card.
+
+    @param creditcard_id
+    @param creditcard_number
+    @param creditcard_type
+    @param creditcard_expire_1
+    @param creditcard_expire_2
+    @param billing_zip_code
+    @author original author unknown (eveander@arsdigita.com?)
+    @author hbrock@arsdigita.com
+    @creation-date
+    @cvs-id process-payment.tcl,v 3.2.6.9 2000/08/18 21:46:34 stevenp Exp
+} {
+    creditcard_id:optional
+    creditcard_number:optional
+    creditcard_type:optional
+    creditcard_expire_1:optional
+    creditcard_expire_2:optional
+    billing_zip_code:optional
+    usca_p:optional
+}
+
+
+
 
 ec_redirect_to_https_if_possible_and_necessary
 
@@ -24,9 +45,9 @@ set user_id [ad_verify_and_get_user_id]
 
 if {$user_id == 0} {
     
-    set return_url "[ns_conn url]"
+    set return_url "[ad_conn url]"
 
-    ad_returnredirect "/register.tcl?[export_url_vars return_url]"
+    ad_returnredirect "/register?[export_url_vars return_url]"
     return
 }
 
@@ -39,9 +60,7 @@ if {$user_id == 0} {
 
 set user_session_id [ec_get_user_session_id]
 
-set db_pools [ns_db gethandle [philg_server_default_pool] 2]
-set db [lindex $db_pools 0]
-set db_sub [lindex $db_pools 1]
+
 ec_create_new_session_if_necessary [ec_export_entire_form_as_url_vars_maybe]
 # type3
 
@@ -50,7 +69,7 @@ ec_log_user_as_user_id_for_this_session
 # make sure they have an in_basket order, otherwise they've probably
 # gotten here by pushing Back, so return them to index.tcl
 
-set order_id [database_to_tcl_string_or_null $db "select order_id from ec_orders where user_session_id=$user_session_id and order_state='in_basket'"]
+set order_id [db_string  get_order_id "select order_id from ec_orders where user_session_id=:user_session_id and order_state='in_basket'" -default ""]
 
 if { [empty_string_p $order_id] } {
     # then they probably got here by pushing "Back", so just redirect them
@@ -63,14 +82,14 @@ if { [empty_string_p $order_id] } {
 # redirect them to their shopping cart which will tell them
 # that it's empty.
 
-if { [database_to_tcl_string $db "select count(*) from ec_items where order_id=$order_id"] == 0 } {
+if { [db_string get_shopping_cart_no "select count(*) from ec_items where order_id=:order_id"] == 0 } {
     ad_returnredirect shopping-cart.tcl
     return
 }
 
 # make sure the order belongs to this user_id, otherwise they managed to skip past checkout.tcl, or
 # they messed w/their user_session_id cookie
-set order_owner [database_to_tcl_string $db "select user_id from ec_orders where order_id=$order_id"]
+set order_owner [db_string get_order_owner "select user_id from ec_orders where order_id=:order_id"]
 
 if { $order_owner != $user_id } {
     ad_returnredirect checkout.tcl
@@ -80,7 +99,7 @@ if { $order_owner != $user_id } {
 # make sure there is an address for this order, otherwise they've probably
 # gotten here via url surgery, so redirect them to checkout.tcl
 
-set address_id [database_to_tcl_string_or_null $db "select shipping_address from ec_orders where order_id=$order_id"]
+set address_id [db_string get_address_id "select shipping_address from ec_orders where order_id=:order_id" -default ""]
 if { [empty_string_p $address_id] } {
     ad_returnredirect checkout.tcl
     return
@@ -89,7 +108,7 @@ if { [empty_string_p $address_id] } {
 # make sure there is a shipping method for this order, otherwise they've probably
 # gotten here via url surgery, so redirect them to checkout-2.tcl
 
-set shipping_method [database_to_tcl_string $db "select shipping_method from ec_orders where order_id=$order_id"]
+set shipping_method [db_string get_shipping_method "select shipping_method from ec_orders where order_id=:order_id"]
 if { [empty_string_p $shipping_method] } {
     ad_returnredirect checkout-2.tcl
     return
@@ -103,11 +122,11 @@ if { [empty_string_p $shipping_method] } {
 # (c) *all* of the credit card information for a new card has been filled in
 
 # we only want price and shipping from this (to determine whether gift_certificate_balance covers cost)
-set price_shipping_gift_certificate_and_tax [ec_price_shipping_gift_certificate_and_tax_in_an_order $db $order_id]
+set price_shipping_gift_certificate_and_tax [ec_price_shipping_gift_certificate_and_tax_in_an_order $order_id]
 
 set order_total_price_pre_gift_certificate [expr [lindex $price_shipping_gift_certificate_and_tax 0] + [lindex $price_shipping_gift_certificate_and_tax 1]]
 
-set gift_certificate_balance [database_to_tcl_string $db "select ec_gift_certificate_balance($user_id) from dual"]
+set gift_certificate_balance [db_string get_gc_balance "select ec_gift_certificate_balance(:user_id) from dual"]
 
 
 if { $gift_certificate_balance >= $order_total_price_pre_gift_certificate } {
@@ -168,7 +187,7 @@ if { $gift_certificate_covers_cost_p == "f" } {
 	    ad_returnredirect checkout-2.tcl
 	    return
 	}
-	set creditcard_owner [database_to_tcl_string_or_null $db "select user_id from ec_creditcards where creditcard_id=$creditcard_id"]
+	set creditcard_owner [db_string get_cc_owner "select user_id from ec_creditcards where creditcard_id=:creditcard_id" -default ""]
 	if { $user_id != $creditcard_owner } {
 	    # probably form surgery
 	    ad_returnredirect checkout-2.tcl
@@ -180,30 +199,33 @@ if { $gift_certificate_covers_cost_p == "f" } {
 # everything is ok now; the user has a non-empty in_basket order and an
 # address associated with it, so now insert credit card info if needed
 
-ns_db dml $db "begin transaction"
+db_transaction {
 
 # If gift_certificate doesn't cover cost, either insert or update credit card
 
 if { $gift_certificate_covers_cost_p == "f" } {
     if { ![info exists creditcard_number] || [empty_string_p $creditcard_number] } {
 	# using pre-existing credit card
-	ns_db dml $db "update ec_orders set creditcard_id=$creditcard_id where order_id=$order_id"
+	db_dml use_existing_cc_for_order "update ec_orders set creditcard_id=:creditcard_id where order_id=:order_id"
     } else {
 	# using new credit card
-	set creditcard_id [database_to_tcl_string $db "select ec_creditcard_id_sequence.nextval from dual"]
-	ns_db dml $db "insert into ec_creditcards
+	set creditcard_id [db_string get_id_for_new_cc "select ec_creditcard_id_sequence.nextval from dual"]
+ set cc_no [string range $creditcard_number [expr [string length $creditcard_number] -4] [expr [string length $creditcard_number] -1]]
+set expiry "$creditcard_expire_1/$creditcard_expire_2"
+	db_dml insert_new_cc "insert into ec_creditcards
 	(creditcard_id, user_id, creditcard_number, creditcard_last_four, creditcard_type, creditcard_expire, billing_zip_code)
 	values
-	($creditcard_id, $user_id, '$creditcard_number', '[string range $creditcard_number [expr [string length $creditcard_number] -4] [expr [string length $creditcard_number] -1]]', '[DoubleApos $creditcard_type]','$creditcard_expire_1/$creditcard_expire_2','[DoubleApos $billing_zip_code]')
+	(:creditcard_id, :user_id, :creditcard_number,:cc_no , :creditcard_type,:expiry,:billing_zip_code)
 	"
-	ns_db dml $db "update ec_orders set creditcard_id=$creditcard_id where order_id=$order_id"
+	db_dml update_order_set_cc "update ec_orders set creditcard_id=:creditcard_id where order_id=:order_id"
     }
 } else {
     # make creditcard_id be null (which it might not be if this isn't their first
     # time along this path)
-    ns_db dml $db "update ec_orders set creditcard_id=null where order_id=$order_id"
+    db_dml set_null_cc_in_order "update ec_orders set creditcard_id=null where order_id=:order_id"
 }
 
-ns_db dml $db "end transaction"
+}
+db_release_unused_handles
 
 ad_returnredirect checkout-3.tcl

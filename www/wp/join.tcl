@@ -1,13 +1,14 @@
-# $Id: join.tcl,v 3.0 2000/02/06 03:55:00 ron Exp $
-# File:        join.tcl
-# Date:        28 Nov 1999
-# Author:      Jon Salz <jsalz@mit.edu>
-# Description: Redeems a wp_user_access_ticket.
-# Inputs:      query string of the form "presentation_id,secret", e.g., 131,92775918
+# /wp/join.tcl
+ad_page_contract {
+    Redeems a wp_user_access_ticket.
 
-set_the_usual_form_variables
+    @param query string of the form "presentation_id,secret", e.g., 131,92775918
+    @creation-date  28 Nov 1999
+    @author Jon Salz <jsalz@mit.edu>
+    @cvs-id join.tcl,v 3.0.12.8 2000/09/22 01:39:30 kevin Exp
+} {
+}
 
-set db [ns_db gethandle]
 set user_id [ad_verify_and_get_user_id]
 
 set sample_url [join [lreplace [ns_conn urlv] end end "join.tcl?131_92775918"] "/"]
@@ -28,14 +29,16 @@ the E-mail to invite you again."
     return
 }
 
-set selection [ns_db 0or1row $db "
+set ticket_check [db_0or1row wp_check_ticket "
     select t.*, p.*
     from wp_user_access_ticket t, wp_presentations p
-    where t.invitation_id = $invitation_id
+    where t.invitation_id = :invitation_id
     and p.presentation_id = t.presentation_id
 "]
 
-if { $selection == "" } {
+if { !$ticket_check} {
+    db_release_unused_handles
+    
     ad_return_error "Invitation Invalid" "This invitation link is invalid. This could be because
 your mail client mangled the link, or the invitation
 has been revoked.
@@ -46,8 +49,6 @@ the E-mail to invite you again."
 
     return
 }
-
-set_variables_after_query
 
 if { $role != "read" } {
     # The user is being granted write access - teleport them to the authoring screen.
@@ -91,22 +92,23 @@ the person you were inviting!"
         return
     }
 
-    ns_db dml $db "begin transaction"
-    if { [wp_access $db $presentation_id $user_id $role] != "" } {
+    db_transaction {
+    if { [wp_access $presentation_id $user_id $role] != "" } {
 	set message "You are already allowed to [wp_short_role_predicate $role $title]."
     } else {
-	ns_db dml $db "
+	set ip_address [ns_conn peeraddr]
+	db_dml wp_insert_user_ugm "
             insert into user_group_map(group_id, user_id, role, mapping_user, mapping_ip_address)
-            values($group_id, $user_id, '$role', $user_id, '[ns_conn peeraddr]')
+            values(:group_id, :user_id, :role, :user_id, :ip_address)
         "
 	set message "You are now allowed to [wp_short_role_predicate $role $title]."
     }
     # Set secret to null to remember that the ticket is already redeemed.
-    ns_db dml $db "update wp_user_access_ticket set secret = null where invitation_id = $invitation_id"
-    ns_db dml $db "end transaction"
+    db_dml wp_update_secret "update wp_user_access_ticket set secret = null where invitation_id = :invitation_id"
+    }
 
-    ReturnHeaders
-    ns_write "[wp_header [list "" "WimpyPoint"] "Welcome!"]
+
+    append whole_page "[wp_header [list "" "WimpyPoint"] "Welcome!"]
 
 <p>$message
 
@@ -119,8 +121,7 @@ the person you were inviting!"
     # Send the user to register, and have him/her sent back here when done (in which
     # case the top branch of this if statement is taken and the user is granted access.
 
-    ReturnHeaders
-    ns_write "[wp_header [list "" "WimpyPoint"] "Welcome!"]
+    append whole_page "[wp_header [list "" "WimpyPoint"] "Welcome!"]
 
 <p>Welcome to WimpyPoint! Please <a href=\"/register/?return_url=[ns_urlencode "[ns_conn url]?[ns_conn query]"]\">follow this link</a>
 to register for an account on [ad_system_name] (or log in if you already have an account). As soon as that's done,
@@ -131,3 +132,6 @@ you'll be able to [wp_short_role_predicate $role $title].
 [wp_footer]
 "
 }
+
+
+doc_return  200 text/html $whole_page

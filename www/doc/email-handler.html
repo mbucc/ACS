@@ -8,7 +8,7 @@
 
 <h2>Email Handler</h2>
 
-part of the <a href="index.html">ArsDigita Community System</a>
+part of the <a href="index">ArsDigita Community System</a>
 by <a href="http://hqm.ne.mediaone.net">Henry Minsky</a>
 
 <hr>
@@ -16,9 +16,9 @@ by <a href="http://hqm.ne.mediaone.net">Henry Minsky</a>
 <ul>
 <li>User-accessible directory:  none
 <li>Site administrator directory: not currently available
-<li>data model :  <a href="/doc/sql/display-sql.tcl?url=/doc/sql/email-handler.sql">/doc/sql/email-handler.sql</a>
+<li>data model :  <a href="/doc/sql/display-sql?url=/doc/sql/email-handler.sql">/doc/sql/email-handler.sql</a>
 
-<li>Tcl procs:  /tcl/email-handler.tcl
+<li>Tcl procs:  /tcl/email-handler
 <li>Perl procmail script:  <a href="queue-message.pl.txt">/bin/queue-message.pl</a>
 
 </ul>
@@ -90,7 +90,7 @@ for some reason.
 
 The procmail Perl script doesn't do anything except fill 
 the <code>incoming_email_queue</code> Oracle table.  So
-the file <code>/tcl/email-queue.tcl</code> schedules
+the file <code>/tcl/email-queue</code> schedules
 the Tcl procedure <code> process_email_queue</code>
 to sweep the queue, and will dispatch on each message tag to a procedure
 which you specify in the email-handler section of ad.ini.
@@ -115,7 +115,7 @@ in any way you wish. After the call to your dispatch procedure, the message is
 deleted from the queue.
 
 <h3>Email Handling Utilities</h3>
-Some routines in <code>/tcl/email-utils.tcl</code> will help you
+Some routines in <code>/tcl/email-utils</code> will help you
 parse the raw mail message contents in the db. 
 <dl>
 <dt><code>parse_email_message <i>message_body</i></code>
@@ -130,7 +130,7 @@ a key named <i>message_body</i> which contains the message body text.
 Oracle 8i (8.1.5 and later) includes a Java virtual machine.  You are
 thus able to load up a Java email parsing library that will take apart
 the messages in a queue very nicely (presumably more robustly than the
-Tcl kludges in email-utils.tcl).
+Tcl kludges in email-utils).
 
 <hr>
 <a href="mailto:hqm@arsdigita.com">hqm@arsdigita.com</address></a>

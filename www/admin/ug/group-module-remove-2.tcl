@@ -1,55 +1,63 @@
-# $Id: group-module-remove-2.tcl,v 3.0.4.1 2000/04/28 15:09:29 carsten Exp $
 # File:     /admin/ug/group-module-remove-2.tcl
-# Date:     01/01/2000
-# Contact:  tarik@arsdigita.com
-# Purpose:  removes association between module and the group
+ad_page_contract {
+    Purpose:  removes association between module and the group
+    @param group_id the ID of the group
+    @param module_key the handle for the module
+    @param confirm_button use a confirm button
 
-set_the_usual_form_variables
-# group_id, module_key, confirm_button
+    @author tarik@arsdigita.com
+    @creation-date 1 January 2000
+    @cvs-id group-module-remove-2.tcl,v 3.2.2.4 2000/07/22 06:15:39 ryanlee Exp
 
-set return_url "group.tcl?group_id=$group_id"
+} {
+    group_id:notnull,naturalnum
+    module_key:notnull
+    confirm_button
+}
+
+
+set return_url "group?group_id=$group_id"
 
 if { [string compare $confirm_button yes]!=0 } {
     ad_returnredirect $return_url
     return
 }
 
-set db [ns_db gethandle]
+db_transaction {
 
-ns_db dml $db "begin transaction"
-
-ns_db dml $db "
+db_dml cs_links_delete "
 delete from content_section_links
 where from_section_id=(select section_id
                        from content_sections
                        where scope='group'
-                       and group_id=$group_id
-                       and module_key='$QQmodule_key')
+                       and group_id=:group_id
+                       and module_key=:module_key)
 or to_section_id=(select section_id
                   from content_sections
                   where scope='group'
-                  and group_id=$group_id
-                  and module_key='$QQmodule_key')
+                  and group_id=:group_id
+                  and module_key=:module_key)
 "
 
-ns_db dml $db "
+db_dml cs_content_delete "
 delete from content_files
 where section_id=(select section_id
                   from content_sections
                   where scope='group'
-                  and group_id=$group_id
-                  and module_key='$QQmodule_key')
+                  and group_id=:group_id
+                  and module_key=:module_key)
 "
 
-ns_db dml $db "
+db_dml cs_delete_group "
 delete from content_sections
 where scope='group'
-and group_id=$group_id
-and module_key='$QQmodule_key'
+and group_id=:group_id
+and module_key=:module_key
 "
 
-ns_db dml $db "end transaction"
+} on_error {
+    ad_return_error "Oracle Error" "Oracle returned the following error:\n<pre>\n$errmsg\n</pre>\n"
+}
 
 ad_returnredirect $return_url
-
 

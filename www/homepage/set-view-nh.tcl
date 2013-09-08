@@ -1,17 +1,17 @@
-# $Id: set-view-nh.tcl,v 3.0 2000/02/06 03:47:13 ron Exp $
 # File:     /homepage/set-view-nh.tcl
-# Date:     Sat Jan 22 23:03:44 EST 2000
-# Location: 42Å∞21'N 71Å∞04'W
-# Location: 80 PROSPECT ST CAMBRIDGE MA 02139 USA
-# Author:   mobin@mit.edu (Usman Y. Mobin)
-# Purpose:  Sets a cookie to determine user's preferred view
+ad_page_contract {
+    Sets a cookie to determine user's preferred view (in neighborhood view).
 
-set_form_variables
-# view, neighborhood_node
+    @param view Which view to use in looking at homepage files (normal or tree)
+    @param neighborhood_node Used to determine a return location
 
-ns_write "HTTP/1.0 302 FOUND
-MIME-Version: 1.0
-Content-Type: text/html
-Set-Cookie: neighborhood_view=$view; path=/; expires=05-Mar-2079 05:45:00 GMT
-Location: neighborhoods.tcl?neighborhood_node=$neighborhood_node
-"
+    @author Usman Y. Mobin (mobin@mit.edu)
+    @creation-date Sat Jan 22 23:03:44 EST 2000
+    @cvs-id set-view-nh.tcl,v 3.0.12.4 2000/07/21 04:00:46 ron Exp
+} {
+    view:notnull,trim
+    neighborhood_node:notnull,naturalnum
+}
+
+ad_set_cookie -replace t neighborhood_view $view
+ad_returnredirect neighborhoods?neighborhood_node=$neighborhood_node

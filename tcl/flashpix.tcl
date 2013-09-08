@@ -1,4 +1,10 @@
-# $Id: flashpix.tcl,v 3.0 2000/02/06 03:13:38 ron Exp $
+ad_library {
+    
+    @author probably philg
+    @creation-date ?
+    @cvs-id  flashpix.tcl,v 3.2.2.1 2000/07/25 11:27:49 ron Exp
+
+}
 
 proc philg_img_target {conn url_stub fpx_filename jpeg_front width height copyright_text caption tech_details tutorial_info} {
     set referer [ns_set get [ns_conn headers $conn] Referer]
@@ -14,7 +20,7 @@ proc philg_img_target {conn url_stub fpx_filename jpeg_front width height copyri
     if { $copyright_text == "" } {
 	set complete_copyright "<br><br>Any photograph is copyrighted when created.  You should find the photographer and get permission to use this image."
     } else {
-	set complete_copyright "<br><br><a href=\"/philg/nasty-copyright-notice.html\">$copyright_text</a>"
+	set complete_copyright "<br><br><a href=\"/philg/nasty-copyright-notice\">$copyright_text</a>"
     }
     set complete_tech_details ""
     if { $tech_details != "" } {
@@ -42,7 +48,7 @@ $complete_tech_details
 <br>
 <br>
 Available as <a href=\"${url_stub}${jpeg_front}.3.jpg\">a 500x750 pixel JPEG</a> or 
-<a href=\"/photo/show-a-flashpix.tcl?url_stub=[ns_urlencode $url_stub]&fpx_filename=[ns_urlencode $fpx_filename]&width=$width&height=$height&jpeg_front=[ns_urlencode $jpeg_front]\">a FlashPix</a>
+<a href=\"/photo/show-a-flashpix?url_stub=[ns_urlencode $url_stub]&fpx_filename=[ns_urlencode $fpx_filename]&width=$width&height=$height&jpeg_front=[ns_urlencode $jpeg_front]\">a FlashPix</a>
 
 $complete_backlink
 $complete_copyright
@@ -52,7 +58,7 @@ $complete_copyright
 
 Note: This browser has been customized to request huge JPEGs by default.  If you want to change the
 default image size or format that you get after clicking on a
-thumbnail, then <a href=\"/photo/personalize-thumbnail-targets.tcl\">just tell us what you'd prefer</a>.
+thumbnail, then <a href=\"/photo/personalize-thumbnail-targets\">just tell us what you'd prefer</a>.
 
 <hr width=200>
 
@@ -114,9 +120,8 @@ probably
 href=\"http://rawfpx.photo.net${url_stub}${fpx_filename}\">download the raw
 FlashPix file</a> and then 
 
-read <a href=\"/photo/color-printers.html\">my article on
+read <a href=\"/photo/color-printers\">my article on
 color printers</a>.
-
 
 <hr width=200>
 
@@ -158,7 +163,6 @@ color printers</a>.
  value=\"/opx-bin/OpxIIPISA.dll?FIF=${url_stub}${fpx_filename}\">
 </applet>
 
-
 <br>
 <br>
 Available as <a href=\"${url_stub}${jpeg_front}.4.jpg\">a 1000x1500 pixel JPEG</a> or 
@@ -180,7 +184,7 @@ default.  If you want to change the default image size or format that
 you get after clicking on a thumbnail, then <a
 href=\"/photo/personalize-thumbnail-targets.tcl\">just tell us what
 you'd prefer</a>.  If you wish to make a print of this image for personal use, you should
-probably read <a href=\"/photo/color-printers.html\">my article on
+probably read <a href=\"/photo/color-printers\">my article on
 color printers</a>, especially the tips at the top for how to select
 the View Image option and Print Preview.
 
@@ -206,7 +210,7 @@ the View Image option and Print Preview.
 <br>
 <br>
 Available as <a href=\"${url_stub}${jpeg_front}.4.jpg\">a 1000x1500 pixel JPEG</a> or 
-<a href=\"/photo/show-a-flashpix.tcl?url_stub=[ns_urlencode $url_stub]&fpx_filename=[ns_urlencode $fpx_filename]&width=$width&height=$height&jpeg_front=[ns_urlencode $jpeg_front]\">a FlashPix</a> (perfect for printing)
+<a href=\"/photo/show-a-flashpix?url_stub=[ns_urlencode $url_stub]&fpx_filename=[ns_urlencode $fpx_filename]&width=$width&height=$height&jpeg_front=[ns_urlencode $jpeg_front]\">a FlashPix</a> (perfect for printing)
 
 <br>
 <br>
@@ -220,7 +224,7 @@ $complete_copyright
 
 Note: you can personalize this site.  If you want to change the
 default image size or format that you get after clicking on a
-thumbnail, then <a href=\"/photo/personalize-thumbnail-targets.tcl\">just tell us what you'd prefer</a>.
+thumbnail, then <a href=\"/photo/personalize-thumbnail-targets\">just tell us what you'd prefer</a>.
 
 <hr width=200>
 

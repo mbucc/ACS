@@ -1,14 +1,18 @@
-# $Id: merge-from-search.tcl,v 3.0.4.1 2000/04/28 15:09:38 carsten Exp $
-#
 # merge-from-search.tcl
-# 
-# by philg@mit.edu on October 30, 1999
-#
-# exists to redirect to merge.tcl after /user-search.tcl
-# or /admin/users/search.tcl 
 
-set_the_usual_form_variables 
+ad_page_contract {
+    exists to redirect to merge.tcl after /user-search.tcl
+    or /admin/users/search.tcl 
+    
+    @param u1
+    @param user_id_from_search
+    @author philg@mit.edu
+    @creation-date October 30, 1999
+    @cvs-id merge-from-search.tcl,v 3.1.6.2.2.2 2000/07/31 19:47:46 gjin Exp
 
-# u1, user_id_from_search
+} {
+    u1:notnull
+    user_id_from_search:integer,notnull
+}
 
 ad_returnredirect "merge.tcl?u1=$u1&u2=$user_id_from_search"

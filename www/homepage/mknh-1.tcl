@@ -1,13 +1,16 @@
-# $Id: mknh-1.tcl,v 3.0.4.1 2000/04/28 15:11:02 carsten Exp $
 # File:     /homepage/mknh-1.tcl
-# Date:     Thu Jan 27 01:06:47 EST 2000
-# Location: 42ÅÅ∞21'N 71ÅÅ∞04'W
-# Location: 80 PROSPECT ST CAMBRIDGE MA 02139 USA
-# Author:   mobin@mit.edu (Usman Y. Mobin)
-# Purpose:  Page to create a neighborhood
 
-set_form_variables
-# neighborhood_node
+ad_page_contract {
+    Page to create a neighborhood
+
+    @param neighborhood_node System variable to get us back to the start
+
+    @author Usman Y. Mobin (mobin@mit.edu)
+    @creation-date Thu Jan 27 01:06:47 EST 2000
+    @cvs-id mknh-1.tcl,v 3.3.2.10 2000/09/22 01:38:17 kevin Exp
+} {
+    neighborhood_node:notnull,naturalnum
+}
 
 # ------------------------------ initialization codeBlock ----
 
@@ -21,10 +24,19 @@ if { $user_id == 0 } {
     return
 }
 
+set ad_administrator_p [ad_administrator_p $user_id]
+
+
+if { !$ad_administrator_p } {
+    ad_return_error "Not allowed to create neighborhood" "You may not create a neighborhood unless you are a site-wide administrator."
+    return
+}
+
+db_release_unused_handles
 
 # ------------------------------ htmlGeneration codeBlock ----
 
-set dialog_body "Please choose a name for the neighborhood. Also Choose a description for this neighborhood.<br><form method=post action=mknh-2.tcl> \
+set dialog_body "Please choose a name for the neighborhood. Also Choose a description for this neighborhood.<br><form method=post action=mknh-2> \
   <input type=hidden name=neighborhood_node value=$neighborhood_node> \
   <table border=0 cellpadding=15> \
     <tr> \
@@ -37,28 +49,26 @@ set dialog_body "Please choose a name for the neighborhood. Also Choose a descri
   <table border=0 cellpadding=0> \
   <tr> \
   <td><input type=submit value=Okay></form></td> \
-  <td><form method=get action=neighborhoods.tcl> \
+  <td><form method=get action=neighborhoods> \
   <input type=hidden name=neighborhood_node value=$neighborhood_node> \
   <input type=submit value=Cancel></form></td> \
   </tr> \
   </table>"
 
-ad_returnredirect "dialog-class.tcl?title=Neighborhood Management&text=$dialog_body"
+ad_returnredirect "dialog-class?title=Neighborhood Management&text=$dialog_body"
 return
-
-ReturnHeaders
 
 set title "Create Neighborhood"
 
-ns_write "
+set page_content "
 [ad_header $title]
 <h2>$title</h2>
 [ad_context_bar_ws_or_index \
-        [list "neighborhoods.tcl?neighborhood_node=$neighborhood_node" "Homepage Maintenance"] $title]
+        [list "neighborhoods?neighborhood_node=$neighborhood_node" "Homepage Maintenance"] $title]
 <hr>
 <blockquote>
 
-<form method=post action=mknh-2.tcl>
+<form method=post action=mknh-2>
   [export_form_vars neighborhood_node]
   <p><br>
   <ul>
@@ -74,3 +84,10 @@ ns_write "
 </blockquote>
 [ad_footer]
 "
+
+# Return the page for viewing
+doc_return  200 text/html $page_content
+
+
+
+

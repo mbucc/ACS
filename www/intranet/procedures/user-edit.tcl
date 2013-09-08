@@ -1,39 +1,40 @@
-# $Id: user-edit.tcl,v 3.1.4.1 2000/03/17 08:02:28 mbryzek Exp $
-# File: /www/intranet/procedures/user-edit.tcl
-#
-# Author: mbryzek@arsdigita.com, Jan 2000
-#
-# Purpose: form to change restrictions on a procedure
-#
+# /www/intranet/procedures/user-edit.tcl
 
-set_form_variables
-# procedure_id user_id
+ad_page_contract {
+    Purpose: form to change restrictions on a procedure
 
-set caller_id [ad_verify_and_get_user_id]
-ad_maybe_redirect_for_registration
+    @param procedure_id the procedure we're editing
+    @param user_id user to edit
+    @author mbryzek@arsdigita.com
+    @creation-date Jan 2000
 
-set db [ns_db gethandle]
+    @cvs-id user-edit.tcl,v 3.7.2.9 2000/09/22 01:38:43 kevin Exp
+} {
+    procedure_id:integer
+    user_id:integer
+}
 
-set selection [ns_db 0or1row $db "
-select * from im_procedures where procedure_id = $procedure_id"]
+set caller_id [ad_maybe_redirect_for_registration]
 
-if [empty_string_p $selection] {
+
+if {![db_0or1row procedure_scan "select creation_user from im_procedures \
+	where procedure_id = :procedure_id"]} {
     ad_return_error "Error" "That procedure doesn't exist"
     return
 }
-set_variables_after_query
 
-if {[database_to_tcl_string $db "
+
+if {$caller_id != $user_id && [db_string certify_user "
 select count(*) 
 from im_procedure_users 
-where user_id = $user_id 
-and procedure_id = $procedure_id
-and user_id != $caller_id"] == 0} {
+where user_id = :user_id 
+and procedure_id = :procedure_id"] } {
     ad_return_error "Error" "You're not allowed to change this information"
     return
 }
 
-set selection [ns_db 0or1row $db "
+
+db_1row procedure_details "
 select
     u.first_names || ' ' || u.last_name as user_name,
     ip.name as procedure_name,
@@ -41,23 +42,17 @@ select
     ipu.note as restrictions
 from users u, im_procedures ip, im_procedure_users ipu
 where u.user_id = $user_id
-and ip.procedure_id = $procedure_id
+and ip.procedure_id = :procedure_id
 and ip.procedure_id = ipu.procedure_id
-and u.user_id = ipu.user_id"]
+and u.user_id = ipu.user_id"
 
-set_variables_after_query
 
-set page_body "
+set page_title "Change restrictions"
+set context_bar [ad_context_bar_ws [list "./" "Procedures"] "Change restrictions"]
 
-[ad_header "Change restrictions"]
+set page_content "
 
-<H2>Change restrictions</H2>
-
-[ad_context_bar [list "/" Home] [list "index.tcl" "Intranet"] [list "procedures.tcl" "Procedures"] "Change restrictions"]
-
-<HR>
-
-<FORM METHOD=POST ACTION=procedure-user-edit-2.tcl>
+<FORM METHOD=POST ACTION=user-edit-2>
 [export_form_vars user_id procedure_id]
 
 <UL>
@@ -78,12 +73,10 @@ set page_body "
 </P>
 
 </FORM>
-
-[ad_footer]
 "
 
 
-ns_db releasehandle $db
 
-ns_return 200 text/html $page_body
+doc_return  200 text/html [im_return_template]
+
 

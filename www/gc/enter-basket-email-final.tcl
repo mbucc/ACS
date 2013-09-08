@@ -1,18 +1,25 @@
-# $Id: enter-basket-email-final.tcl,v 3.0 2000/02/06 03:42:58 ron Exp $
-set_form_variables
-set_form_variables_string_trim_DoubleAposQQ
+# enter-basket-email-final.tcl
 
-# ad_id, email
+ad_page_contract {
+    @author
+    @creation-date
+    @cvs-id enter-basket-email-final.tcl,v 3.0.12.3 2000/08/01 15:52:15 psu Exp
+} {
+    ad_id:integer
+    email
+}
 
-set insert_sql "insert into user_picks (email, ad_id) 
-                values ('$QQemail',$QQad_id)"
+set insert_sql {
+    insert into user_picks (email, ad_id) 
+    values (:email, :ad_id)"
+}
 
-set db [gc_db_gethandle]
+db_dml gc_enter_basket_final_insert $insert_sql
 
-ns_db dml $db $insert_sql
 
 ns_write "HTTP/1.0 302 Found
 Location: basket-home.tcl
 MIME-Version: 1.0
 Set-Cookie:  HearstClassifiedBasketEmail=$email; path=/;
 "
+

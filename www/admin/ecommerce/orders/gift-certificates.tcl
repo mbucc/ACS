@@ -1,28 +1,26 @@
-# $Id: gift-certificates.tcl,v 3.0 2000/02/06 03:19:12 ron Exp $
-set_form_variables 0
-# possibly view_gift_certificate_state and/or view_issue_date and/or order_by
+# /www/admin/ecommerce/orders/gift-certificates.tcl
+ad_page_contract {
 
-if { ![info exists view_gift_certificate_state] } {
-    set view_gift_certificate_state "reportable"
-}
-if { ![info exists view_issue_date] } {
-    set view_issue_date "all"
-}
-if { ![info exists order_by] } {
-    set order_by "g.gift_certificate_id"
+  View gift certificates.
+
+  @author Eve Andersson (eveander@arsdigita.com)
+  @creation-date Summer 1999
+  @cvs-id gift-certificates.tcl,v 3.2.2.3 2000/08/16 21:07:10 seb Exp
+} {
+  {view_gift_certificate_state "reportable"}
+  {view_issue_date "all"}
+  {order_by "gift_certificate_id"}
 }
 
-ReturnHeaders
-
-ns_write "[ad_admin_header "Gift Certificate Purchase History"]
+doc_body_append "[ad_admin_header "Gift Certificate Purchase History"]
 
 <h2>Gift Certificate Purchase History</h2>
 
-[ad_admin_context_bar [list "../" "Ecommerce"] [list "index.tcl" "Orders"] "Gift Certificate Purchase History"]
+[ad_admin_context_bar [list "../" "Ecommerce"] [list "index" "Orders"] "Gift Certificate Purchase History"]
 
 <hr>
 
-<form method=post action=gift-certificates.tcl>
+<form method=post action=gift-certificates>
 [export_form_vars view_issue_date order_by]
 
 <table border=0 cellspacing=0 cellpadding=0 width=100%>
@@ -38,13 +36,13 @@ set gift_certificate_state_list [list [list reportable "reportable (authorized p
 
 foreach gift_certificate_state $gift_certificate_state_list {
     if {[lindex $gift_certificate_state 0] == $view_gift_certificate_state} {
-	ns_write "<option value=\"[lindex $gift_certificate_state 0]\" selected>[lindex $gift_certificate_state 1]"
+	doc_body_append "<option value=\"[lindex $gift_certificate_state 0]\" selected>[lindex $gift_certificate_state 1]"
     } else {
-	ns_write "<option value=\"[lindex $gift_certificate_state 0]\">[lindex $gift_certificate_state 1]"
+	doc_body_append "<option value=\"[lindex $gift_certificate_state 0]\">[lindex $gift_certificate_state 1]"
     }
 }
 
-ns_write "</select>
+doc_body_append "</select>
 <input type=submit value=\"Change\">
 </td>
 <td align=center>
@@ -58,11 +56,11 @@ foreach issue_date $issue_date_list {
     if {$view_issue_date == [lindex $issue_date 0]} {
 	lappend linked_issue_date_list "<b>[lindex $issue_date 1]</b>"
     } else {
-	lappend linked_issue_date_list "<a href=\"gift-certificates.tcl?[export_url_vars view_gift_certificate_state order_by]&view_issue_date=[lindex $issue_date 0]\">[lindex $issue_date 1]</a>"
+	lappend linked_issue_date_list "<a href=\"gift-certificates?[export_url_vars view_gift_certificate_state order_by]&view_issue_date=[lindex $issue_date 0]\">[lindex $issue_date 1]</a>"
     }
 }
 
-ns_write "\[ [join $linked_issue_date_list " | "] \]
+doc_body_append "\[ [join $linked_issue_date_list " | "] \]
 
 </td></tr></table>
 
@@ -73,7 +71,7 @@ ns_write "\[ [join $linked_issue_date_list " | "] \]
 if { $view_gift_certificate_state == "reportable" } {
     set gift_certificate_state_query_bit "and g.gift_certificate_state in ('authorized_plus_avs','authorized_minus_avs')"
 } else {
-    set gift_certificate_state_query_bit "and g.gift_certificate_state='$view_gift_certificate_state'"
+    set gift_certificate_state_query_bit "and g.gift_certificate_state=:view_gift_certificate_state"
 }
 
 if { $view_issue_date == "last_24" } {
@@ -86,32 +84,37 @@ if { $view_issue_date == "last_24" } {
     set issue_date_query_bit ""
 }
 
-set link_beginning "gift-certificates.tcl?[export_url_vars view_gift_certificate_state view_issue_date]"
+set link_beginning "gift-certificates?[export_url_vars view_gift_certificate_state view_issue_date]"
+
+set order_by_clause [util_decode $order_by \
+    "gift_certificate_id" "g.gift_certificate_id" \
+    "issue_date" "g.issue_date" \
+    "gift_certificate_state" "g.gift_certificate_state" \
+    "name" "u.last_name, u.first_names" \
+    "recipient_email" "g.recipient_email" \
+    "amount" "g.amount"]
 
 set table_header "<table>
 <tr>
-<td><b><a href=\"$link_beginning&order_by=[ns_urlencode "g.gift_certificate_id"]\">ID</a></b></td>
-<td><b><a href=\"$link_beginning&order_by=[ns_urlencode "g.issue_date"]\">Date Issued</a></b></td>
-<td><b><a href=\"$link_beginning&order_by=[ns_urlencode "g.gift_certificate_state"]\">Gift Certificate State</a></b></td>
-<td><b><a href=\"$link_beginning&order_by=[ns_urlencode "u.last_name, u.first_names"]\">Purchased By</a></b></td>
-<td><b><a href=\"$link_beginning&order_by=[ns_urlencode "g.recipient_email"]\">Recipient</a></b></td>
-<td><b><a href=\"$link_beginning&order_by=[ns_urlencode "g.amount"]\">Amount</a></b></td>
+<td><b><a href=\"$link_beginning&order_by=[ns_urlencode "gift_certificate_id"]\">ID</a></b></td>
+<td><b><a href=\"$link_beginning&order_by=[ns_urlencode "issue_date"]\">Date Issued</a></b></td>
+<td><b><a href=\"$link_beginning&order_by=[ns_urlencode "gift_certificate_state"]\">Gift Certificate State</a></b></td>
+<td><b><a href=\"$link_beginning&order_by=[ns_urlencode "name"]\">Purchased By</a></b></td>
+<td><b><a href=\"$link_beginning&order_by=[ns_urlencode "recipient_email"]\">Recipient</a></b></td>
+<td><b><a href=\"$link_beginning&order_by=[ns_urlencode "amount"]\">Amount</a></b></td>
 </tr>"
 
-set db [ns_db gethandle]
 
-set selection [ns_db select $db "select g.gift_certificate_id, g.issue_date, g.gift_certificate_state, g.recipient_email, g.purchased_by, g.amount, u.first_names, u.last_name
+
+set row_counter 0
+db_foreach gift_certificates_select "select g.gift_certificate_id, g.issue_date, g.gift_certificate_state, g.recipient_email, g.purchased_by, g.amount, u.first_names, u.last_name
 from ec_gift_certificates g, users u
 where g.purchased_by=u.user_id
 $issue_date_query_bit $gift_certificate_state_query_bit
-order by $order_by
-"]
-
-set row_counter 0
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+order by $order_by_clause
+" {
     if { $row_counter == 0 } {
-	ns_write $table_header
+      doc_body_append $table_header
     }
     # even rows are white, odd are grey
     if { [expr floor($row_counter/2.)] == [expr $row_counter/2.] } {
@@ -119,25 +122,24 @@ while { [ns_db getrow $db $selection] } {
     } else {
 	set bgcolor "ececec"
     }
-    ns_write "<tr bgcolor=$bgcolor>
-<td><a href=\"gift-certificate.tcl?[export_url_vars gift_certificate_id]\">$gift_certificate_id</a></td>
+    doc_body_append "<tr bgcolor=$bgcolor>
+<td><a href=\"gift-certificate?[export_url_vars gift_certificate_id]\">$gift_certificate_id</a></td>
 <td>[ec_nbsp_if_null [util_AnsiDatetoPrettyDate $issue_date]]</td>
 <td>$gift_certificate_state</td>
-<td>[ec_decode $last_name "" "&nbsp;" "<a href=\"/admin/users/one.tcl?user_id=$purchased_by\">$last_name, $first_names</a>"]</td>
+<td>[ec_decode $last_name "" "&nbsp;" "<a href=\"/admin/users/one?user_id=$purchased_by\">$last_name, $first_names</a>"]</td>
 <td>$recipient_email</td>
 <td>[ec_pretty_price $amount]</td>
     "
     incr row_counter
 }
 
-
 if { $row_counter != 0 } {
-    ns_write "</table>"
+    doc_body_append "</table>"
 } else {
-    ns_write "<center>None Found</center>"
+    doc_body_append "<center>None Found</center>"
 }
 
-ns_write "</blockquote>
+doc_body_append "</blockquote>
 
 [ad_admin_footer]
 "

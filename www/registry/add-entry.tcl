@@ -1,4 +1,21 @@
-# $Id: add-entry.tcl,v 3.0.4.1 2000/04/28 15:11:26 carsten Exp $
+ad_page_contract {
+
+    Since we are just directly inserting values into the database,
+this page should be doing some additional error checking.  E.g., value
+must be a floating point number.
+
+    We also aren't doing any double-click checking.
+
+    @cvs-id add-entry.tcl,v 3.3.2.6 2000/09/22 01:39:16 kevin Exp
+} {
+    additional_contact_info
+    manufacturer:notnull
+    model:notnull
+    serial_number:notnull
+    value:notnull
+    story:html,notnull
+}
+
 if {[ad_read_only_p]} {
     ad_return_read_only_maintenance_message
     return
@@ -10,14 +27,14 @@ if { $user_id == 0 } {
     return
 }
 
-set_the_usual_form_variables
+set insert_sql "insert into stolen_registry (
+    stolen_id, user_id, additional_contact_info, manufacturer, model, serial_number, value, posted, story )
+values (
+    stolen_registry_sequence.nextval, :user_id, :additional_contact_info, :manufacturer, :model, :serial_number, :value, sysdate, :story )"
 
-set insert_sql "insert into stolen_registry ( stolen_id, user_id, additional_contact_info, manufacturer, model, serial_number, value, posted, story ) 
-values ( stolen_registry_sequence.nextval, $user_id, '$QQadditional_contact_info', '$QQmanufacturer', '$QQmodel', '$QQserial_number', $value, sysdate, '$QQstory'  )"
+set bind_vars [ad_tcl_vars_to_ns_set user_id additional_contact_info manufacturer model serial_number value story]
 
-set db [ns_db gethandle]
-
-if [catch { ns_db dml $db $insert_sql } errmsg] {
+if [catch { db_dml registry_insert $insert_sql -bind $bind_vars } errmsg] {
     ad_return_error "Ouch!" "Problem inserting your entry. <P> Here's what came back from the database:<p><pre><code>$errmsg</code></pre>
 
 Here are some common reasons:  
@@ -28,17 +45,16 @@ Here are some common reasons:
 
 "
 } else {
-    ns_return 200 text/html "[ad_header "Successful Entry"]
 
-<h2>Entry Successful</h2>
+    
+ 
+    doc_return  200 text/html "[ad_header "Successful Entry"]
 
-in the <a href=index.tcl>Stolen Equipment Registry</a>
+    <h2>Entry Successful</h2>
 
-<hr>
-
-Your entry has been recorded.  Thank you.
-
-[ad_footer]
-"
+    in the <a href=index>Stolen Equipment Registry</a>
+    <hr>
+    Your entry has been recorded.  Thank you.
+    [ad_footer]
+    "
 }
-

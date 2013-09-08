@@ -1,21 +1,27 @@
-# $Id: offer-edit-3.tcl,v 3.0.4.1 2000/04/28 15:08:53 carsten Exp $
-set_the_usual_form_variables
-# offer_id, product_id, product_name, retailer_id, price, shipping, stock_status, old_retailer_id, offer_begins, offer_ends, 
-# special_offer_p, special_offer_html
-# and possibly shipping_unavailable_p
+#  www/admin/ecommerce/products/offer-edit-3.tcl
+ad_page_contract {
+  Edit an offer.
 
-# we need them to be logged in
-set user_id [ad_verify_and_get_user_id]
-
-if {$user_id == 0} {
-    
-    set return_url "[ns_conn url]?[export_entire_form_as_url_vars]"
-
-    ad_returnredirect "/register.tcl?[export_url_vars return_url]"
-    return
+  @author Eve Andersson (eveander@arsdigita.com)
+  @creation-date Summer 1999
+  @cvs-id offer-edit-3.tcl,v 3.1.6.2 2000/07/22 07:57:40 ron Exp
+} {
+  offer_id:integer,notnull
+  product_id:integer,notnull
+  retailer_id:integer,notnull
+  price
+  shipping
+  stock_status
+  old_retailer_id:integer,notnull
+  offer_begins
+  offer_ends
+  special_offer_p
+  special_offer_html:html
+  shipping_unavailable_p:optional
 }
 
-set db [ns_db gethandle]
+# we need them to be logged in
+set user_id [ad_maybe_redirect_for_registration]
 
 if { [info exists shipping_unavailable_p] } {
     set additional_thing_to_insert ", shipping_unavailable_p='t'"
@@ -23,8 +29,22 @@ if { [info exists shipping_unavailable_p] } {
     set additional_thing_to_insert ", shipping_unavailable_p='f'"
 }
 
-ns_db dml $db "update ec_offers
-set retailer_id=$retailer_id, price='$QQprice', shipping='$QQshipping', stock_status='$QQstock_status', special_offer_p='$special_offer_p', special_offer_html='$QQspecial_offer_html', offer_begins=to_date('$offer_begins','YYYY-MM-DD HH24:MI:SS'), offer_ends=to_date('$offer_ends','YYYY-MM-DD HH24:MI:SS') $additional_thing_to_insert, last_modified=sysdate, last_modifying_user='$user_id', modified_ip_address='[DoubleApos [ns_conn peeraddr]]'
-where offer_id=$offer_id"
+set peeraddr [ns_conn peeraddr]
 
-ad_returnredirect "offers.tcl?[export_url_vars product_id product_name]"
+db_dml unused "
+update ec_offers
+set retailer_id = :retailer_id,
+    price = :price,
+    shipping = :shipping,
+    stock_status = :stock_status,
+    special_offer_p = :special_offer_p,
+    special_offer_html = :special_offer_html,
+    offer_begins = to_date(:offer_begins, 'YYYY-MM-DD HH24:MI:SS'),
+    offer_ends = to_date(:offer_ends, 'YYYY-MM-DD HH24:MI:SS') $additional_thing_to_insert,
+    last_modified = sysdate,
+    last_modifying_user = :user_id,
+    modified_ip_address = :peeraddr
+where offer_id = :offer_id
+"
+
+ad_returnredirect "offers.tcl?[export_url_vars product_id]"

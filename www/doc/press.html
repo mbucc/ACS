@@ -1,6 +1,6 @@
 <html>
 <!--AD_DND-->
-<!--$Id: press.html,v 3.1 2000/02/20 09:40:11 ron Exp $-->
+<!--press.html,v 3.2.2.1 2000/09/16 19:05:48 ron Exp-->
 <head>
 <title>Press</title>
 </head>
@@ -8,7 +8,7 @@
 <body bgcolor=#ffffff text=#000000>
 <h2>Press</h2>
 
-part of the <a href="index.html">ArsDigita Community System</a>
+part of the <a href="index">ArsDigita Community System</a>
 by <a href="mailto:ron@arsdigita.com">Ron Henderson</a>
 
 <hr>
@@ -18,8 +18,8 @@ by <a href="mailto:ron@arsdigita.com">Ron Henderson</a>
 <li>Site administrator directory:  <a href="/admin/press/">/admin/press/</a>
 <li>Group admin pages:  <a href="/press/admin/">/press/admin/</a>
 <li>data model:
-<a href="/doc/sql/display-sql.tcl?url=/doc/sql/press.sql">/doc/sql/press.sql</a>
-<li>Tcl procs:  /tcl/press-defs.tcl 
+<a href="/doc/sql/display-sql?url=/doc/sql/press.sql">/doc/sql/press.sql</a>
+<li>Tcl procs:  /tcl/press-defs 
 </ul>
 
 <h3>The Big Picture</h3>
@@ -27,7 +27,7 @@ by <a href="mailto:ron@arsdigita.com">Ron Henderson</a>
 <p>Most Web services and all corporate sites have a "foobar.com in the
 news" page.  This page lists, chronologically, articles in newspapers,
 magazines, etc. where the site or company is featured.  This is a
-little bit different from the <a href=news.html>news</a> module in
+little bit different from the <a href=news>news</a> module in
 that the publisher is mostly linking off to other publications and not
 trying to disseminate news him or herself.
 
@@ -38,21 +38,25 @@ Examples:
 <ul>
 <!--
 <li><a
-href="http://arsdigita.com/press.html">http://arsdigita.com/press.html</a>
+href="http://arsdigita.com/press">http://arsdigita.com/press</a>
 -->
 <li><a
-href="http://www.scorecard.org/about/about-press.tcl">http://www.scorecard.org/about/about-press.tcl</a>
+href="http://www.scorecard.org/about/about-press">http://www.scorecard.org/about/about-press</a>
 <li><a href="http://www.valinux.com/news/news.php3">http://www.valinux.com/news/news.php3</a>
 
 
 </ul>
 
-<p>The system supports site-wide press coverage (appropriate when one
+<p>The press module supports site-wide press coverage (appropriate when one
 ACS installation is being used for a company) and subcommunity press
 coverage, e.g. for a service like arfdigita.org where many
 organizations are using the same ACS.  Anyone who has the
 administrator role in a user group can edit the press coverage for
 that group.
+
+<p>Press items are displayed using a paging system.  The module can be
+configured to display a set number of items on the main page, and will
+offer links to "previous" and "next" pages if available.
 
 <h3>Press Coverage Templates</h3>
 
@@ -95,7 +99,7 @@ canine rule."</dd>
 
 <p>Hyperlinks to external publications and articles are inserted
 automatically and optionally tracked using the <a
-href=/doc/clickthrough.html>clickthrough</a> module.</p> 
+href=/doc/clickthrough>clickthrough</a> module.</p> 
 
 <h3>Under the Hood</h3>
 
@@ -192,7 +196,7 @@ can:</p>
 <blockquote>
 <pre><code>
 [ns/server/service/acs/press]
-; maximum number of press items to display on the press coverage page
+; maximum number of simultaneous press items to display on the press coverage page
 DisplayMax=10
 ; number of days a press item remains active
 ActiveDays=60
@@ -209,13 +213,15 @@ only way to turn it back on is to set the important_p flag and have it
 displayed permanently.  It would make more sense to define a
 per-press-item expiration date.
 
+<p>Expired press items are available from the archives pages.
+
 <p>Any administrator can create public press coverage (the limitation
 is that this cannot be restricted).  
 
 <h3>Future Improvements</h3>
 
 <ul>
-<li>Expiration date for individual headlines
+<li>Expiration date for individual press items
 <li>Separation of public and private (group only) headlines
 <li>Ability to display headlines based on publication name or a
 keyword search of title and abstract. 

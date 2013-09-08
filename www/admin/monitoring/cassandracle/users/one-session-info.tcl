@@ -1,9 +1,12 @@
-# $Id: one-session-info.tcl,v 3.0 2000/02/06 03:25:35 ron Exp $
-set_form_variables
+# /admin/monitoring/cassandracle/users/one-session-info.tcl
 
-# sid
+ad_page_contract {
+    Show information about a particular database session.
 
-set db [ns_db gethandle]
+    @cvs-id one-session-info.tcl,v 3.3.2.5 2000/07/21 03:57:40 ron Exp
+} {
+    sid:integer     
+}
 
 set session_query "select 
   S.username, S.osuser, S.machine, S.terminal, 
@@ -11,11 +14,9 @@ set session_query "select
 from 
   V\$SESSION S, V\$PROCESS P
 where 
-  P.Addr = S.Paddr and S.sid='$sid'"
+  P.Addr = S.Paddr and S.sid=:sid"
 
-db_query_to_vars $db "
-$session_query
-"
+db_1row mon_session_info $session_query
 
 if { ![empty_string_p $username] } {
     set page_name "Session Information for $username"
@@ -23,16 +24,13 @@ if { ![empty_string_p $username] } {
     set page_name "Session Information for sid #$sid"
 }
 
-ReturnHeaders
-
-ns_write "
+ad_return_top_of_page "
 
 [ad_admin_header "Session #$sid"]
 
 <h2>Session #$sid</h2>
 
-[ad_admin_context_bar [list "/admin/monitoring" "Monitoring"] [list "/admin/monitoring/cassandracle" "Cassandracle"] [list "sessions-info.tcl" "Open sessions"]  "One session"]
-
+[ad_admin_context_bar [list "/admin/monitoring" "Monitoring"] [list "/admin/monitoring/cassandracle" "Cassandracle"] [list "sessions-info" "Open sessions"]  "One session"]
 
 <hr>
 <blockquote>
@@ -49,7 +47,7 @@ ns_write "
 </blockquote>
 
 <p>
-You may be interested in <a href=\"sessions-info.tcl\">a list of all active sessions</a>.
+You may be interested in <a href=\"sessions-info\">a list of all active sessions</a>.
 <p>
 Here is the SQL responsible for this information: <p>
 <pre>
@@ -64,36 +62,32 @@ Looking for current SQL available from this user:<br>
 <blockquote><kbd>
 "
 
-set sql_text [string trim [join [database_to_tcl_list $db "
+set select_session_sql "
 select 
   sql_text 
 from 
   v\$sqltext st, v\$session s 
 where 
-  s.sql_address=st.address and s.sql_hash_value=st.hash_value and s.sid='$sid'
+  s.sql_address=st.address and s.sql_hash_value=st.hash_value and s.sid=:sid
 order by 
-  piece"] ""]]
+  piece"
+
+set sql_text [string trim [join [db_list mon_session_sql $select_session_sql] ""]]
 
 if {$sql_text==""} {
     set sql_text "No SQL available to report for this session."
 }
+
+db_release_unused_handles
+
 ns_write "
 $sql_text
 </kbd></blockquote>
 <p>
 Here is the SQL responsible for this information: <P>
 <pre>
-select 
-  sql_text 
-from 
-  v\$sqltext st, v\$session s 
-where 
-  s.sql_address=st.address and s.sql_hash_value=st.hash_value and s.sid='$sid'
-order by 
-  piece
+$select_session_sql
 </pre>
-
-
 
 <p>
 [ad_admin_footer]

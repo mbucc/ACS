@@ -1,0 +1,138 @@
+<html>
+<head>
+<title>Upgrading an ACS Installation</title>
+</head>
+<body bgcolor=white>
+<h2>Upgrading an ACS Installation</h2>
+part of <a href="">the ACS docs</a> by <a href="http://www.pinds.com/lars">Lars Pind</a>
+<hr>
+
+
+This document will walk you through upgrading ACS from one major
+version to the next. If you need to upgrade across several major
+versions, take them one at a time. If you haven't kept up-to-date for
+a <i>really</i> long time, it may be better to start afresh and invent
+a way to move your old data into the new system. See the <a
+href="upgrading">other upgrading document</a> for how to do that.
+
+<p>
+
+The process being outlined here involves shutting the site down for an
+hour or two while the upgrade takes place. We'll update the document
+later to include how to do it without taking the live site down.
+
+<p>
+
+The steps are:
+
+<ol>
+
+<li>Stop you webserver.
+
+<li>Download and untar the new version.
+
+<li>Import the new files and resolve conflicts.
+
+<li>Back up your database.
+
+<li>Figure out what minor version your database is at.
+
+<li>Upgrade the database.
+
+<li>Do any version-specific upgrade tasks.
+
+<li>Start the webserver.
+
+<li>Test.
+
+</ol>
+
+<h3>1. Stop Your Webserver</h3>
+
+Turn off the line for your webservice in
+<code>/etc/inittab</code>. Remember that you can't comment out lines
+in inittab on Solaris. Instead, change <code>respawn</code> to
+<code>off</code>. Then type <code>init q</code> on the command line to
+have the server process killed.
+
+
+<h3>2 and 3. Download, Untar, Import, Resolving Conflicts</h3>
+
+This is already described in detail in <a
+href="http://www.arsdigita.com/doc/runbook/project-management#upgrade">the
+project management document</a> in the ACS Runbook.
+
+
+<h3>4. Back Up Your Database</h3>
+
+You can do this with 
+
+<blockquote><pre>
+exp <i>yourservice</i>/<i>password</i> owner=<i>yourservice</i> file=<i>yourservice</i>.dmp consistent=y
+</pre></blockquote>
+
+Make sure it completes without hickups.
+
+<h3>5. Figure Out Your Minor Version</h3>
+
+If you're in doubt, fire up SQL*Plus, open the first minor upgrade
+script for your major version (e.g. <code>upgrade-3.2-3.2.1.sql</code>
+and check if the first few changes from that file have been done with
+<code>describe <i>objectname</i></code>. Continue till you find
+something that hasn't been done, and here's where you should start.
+
+<h3>6. Upgrade The Database</h3>
+
+Programmers make mistakes. We haven't been good enough at testing in
+the past. Therefore, we urge you to interactively run the upgrade
+scripts, rather than run the automatically. That way you'll know what
+worked and what didn't and resolve the problems by hand. This is
+especially a good idea, if you've made custom development on top of
+the toolkit.
+
+<p>
+
+The most convenient way to do it is to fire up SQL*Plus in a shell
+buffer in Emacs (<code>M-x rename-buffer</code> to
+<code>sqlplus</code>), then open the upgrade script in another buffer
+(you probably already have it open from step 5).
+
+<p>
+
+Copy the stuff from the upgrade-script buffer to the SQL*Plus buffer
+bit by bit and make sure there aren't any problems. The upgrade
+scripts are divided into blocks concerning each their part. Experience
+shows that if the first few statements in a block succeed, you can
+be reasonably safe taking larger chunks from within that block, but go
+by your intuition.
+
+
+
+<h3>7. Version-specific Upgrade Tasks</h3>
+
+Some versions have specific things you need to do. For example, ACS
+3.3 requires you to deleted some files in special places. Check the
+<a href="release-notes/">release notes</a> for these.
+
+<h3>8. Start the Web Server</h3>
+
+Fire up another shell in Emacs, and do a 
+
+<blockquote><pre>tail -f /home/aol30/log/<i>yourserver</i>-error.log</pre></blockquote>
+
+Change <code>/etc/inittab</code> back, so it says <code>respawn</code>
+again, and <code>init q</code>. Check that the webserver is running.
+Search for "Error" or other suspicious-looking messages in the error
+log.
+
+
+</h3>Test</h3>
+
+Surf around your website, to make sure that everything worked okay.
+
+
+<hr>
+<address><a href="mailto:lars@pinds.com">Lars Pind</a></address>
+</body>
+</html>
+

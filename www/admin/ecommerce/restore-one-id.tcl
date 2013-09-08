@@ -1,34 +1,53 @@
-# $Id: restore-one-id.tcl,v 3.0.4.1 2000/04/28 15:08:34 carsten Exp $
-# Jesse 7/17
-# Tries to restore from the audit table to the main table
-# for one id in the id_column
+# /www/admin/ecommerce/restore-one-id.tcl
 
-set_the_usual_form_variables
-# id, id_column, audit_table_name, main_table_name, rowid
+ad_page_contract { 
+
+   Tries to restore from the audit table to the main table
+   for one id in the id_column.
+
+    @param id
+    @param id_column
+    @param audit_table_name
+    @param main_table_name
+    @param rowid
+
+    @author Jesse 
+    @creation-date 7/17
+    @cvs-id restore-one-id.tcl,v 3.1.6.6 2000/09/22 01:34:47 kevin Exp
+} {
+    id:integer,notnull
+    id_column:notnull,sql_identifier
+    audit_table_name:notnull,sql_identifier
+    main_table_name:notnull,sql_identifier
+    rowid:notnull
+}
+
+
+
 
 # we need them to be logged in
 set user_id [ad_verify_and_get_user_id]
 
 if {$user_id == 0} {
     
-    set return_url "[ns_conn url]?[export_entire_form_as_url_vars]"
+    set return_url "[ad_conn url]?[export_entire_form_as_url_vars]"
 
-    ad_returnredirect "/register.tcl?[export_url_vars return_url]"
+    ad_returnredirect "/register?[export_url_vars return_url]"
     return
 }
 
 # we have to generate audit information
 set audit_fields "last_modified, last_modifying_user, modified_ip_address"
-set audit_info "sysdate, '$user_id', '[DoubleApos [ns_conn peeraddr]]'"
+set peeraddr [ns_conn peeraddr]
+set audit_info "sysdate, :user_id, :peeraddr"
 
-set db [ns_db gethandle]
+
 
 set sql_insert ""
 set result "The $main_table_name table is not supported at this time."
 
 # Get all values from the selected row of the audit table
-set selection [ns_db 1row $db "select * from $audit_table_name where rowid = '$rowid'"]
-set_variables_after_query
+db_1row get_audit_rows "select * from $audit_table_name where rowid = :rowid"
 
 # ss_subcategory_features
 if { [string compare $main_table_name "ss_subcategory_features"] == 0 } {
@@ -44,15 +63,15 @@ comparison_p,
 feature_list_p,
 $audit_fields
 ) values (
-'[DoubleApos $feature_id]',
-'[DoubleApos $subcategory_id]',
-'[DoubleApos $feature_name]',
-'[DoubleApos $recommended_p]',
-'[DoubleApos $feature_description]',
-'[DoubleApos $sort_key]',
-'[DoubleApos $filter_p]',
-'[DoubleApos $comparison_p]',
-'[DoubleApos $feature_list_p]',
+:feature_id,
+:subcategory_id,
+:feature_name,
+:recommended_p,
+:feature_description,
+:sort_key,
+:filter_p,
+:comparison_p,
+:feature_list_p,
 $audit_info
 )"
 
@@ -64,12 +83,12 @@ if { [string compare $main_table_name "ss_product_feature_map"] == 0 } {
 }
 
 if { ![empty_string_p $sql_insert] } {
-    if [catch { set result [ns_db dml $db $sql_insert] } errmsg] {
+    if [catch { set result [db_dml restore_row $sql_insert] } errmsg] {
 	set result $errmsg
     }
 }
 
-ns_return 200 text/html "
+doc_return  200 text/html "
 [ss_new_staff_header "Restore of $id_column $id"]
 [ss_staff_context_bar "Restore Data"]
 
@@ -83,3 +102,5 @@ This result was obtained
 $result
 </blockquote>
 [ls_admin_footer]"
+
+

@@ -1,0 +1,801 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+
+<head>
+<title>ACS Package Manager (APM)</title>
+<link rel="stylesheet" type="text/css" href="core-arch-guide.css">
+</head>
+
+<body>
+
+<h2>ACS Package Manager (APM)</h2>
+
+by <a href="jsalz@mit.edu">Jon Salz</a>,
+<a href="michael@arsdigita.com">Michael Yoon</a>,
+and <a href="lars@pinds.com">Lars Pind</a>
+
+<p>
+
+<a href="/doc/">ACS Documentation</a> :
+<a href="">ACS Core Architecture Guide</a> :
+ACS Package Manager (APM)
+
+<hr>
+
+<h3>The Big Picture</h3>
+
+In general terms, a <strong>package</strong> is a unit of software
+that serves a single well-defined purpose. That purpose may be to
+provide a service directly to one or more classes of end-user, (e.g.,
+discussion forums and file storage for community members, user
+profiling tools for the site publisher), or it may be to act as a
+building block for other packages (e.g., an application programming
+interface (API) for storing and querying access control rules, or an
+API for scheduling email alerts). Thus, packages fall into one of two
+categories:
+
+<ul>
+<li><strong>Application packages:</strong> a "program or group of
+programs designed for end users" (the <a
+href="http://www.pcwebopaedia.com/TERM/a/application.html">Webopedia
+definition</a>); also known as <em>modules</em>, for historical
+reasons
+
+<p>
+
+<li><strong>Library packages:</strong> the aforementioned building
+blocks
+</ul>
+
+<p>
+
+The ACS itself a collection of interdependent library and application
+packages. Prior to ACS 3.3, all packages were lumped together into one
+monolithic distribution without explicit boundaries; the only way to
+ascertain what comprised a given package was to look at the top of the
+corresponding documentation page, where, by convention, the package
+developer would specify where to find:
+
+<ul>
+<li>the data model
+<li>the Tcl procedures
+<li>the user-accessible pages
+<li>the administration pages
+</ul>
+
+<p>
+
+Experience has shown us that this lack of explicit boundaries causes a
+number of maintainability problems for pre-3.3 installations:
+
+<ol>
+
+<li>Package interfaces were not guaranteed to be stable in any formal
+way, so a change in the interface of one package would often break
+dependent packages (which we would only discover through manual
+regression testing). In this context, any of the following could
+constitute an interface change:
+
+<p>
+
+<ul>
+<li>renaming a file or directory that appears in a URL
+
+<li>changing what form variables are expected as input by a page
+
+<li>changing a procedural abstraction, e.g., a PL/SQL or Java stored
+procedure or a Tcl procedure
+
+<li>changing a functional abstraction, e.g., a database view or a
+PL/SQL or Java stored function
+
+<li>changing the data model
+</ul>
+
+<p>
+
+This last point is especially important. In most cases, changing the
+data model should <em>not</em> affect dependent packages. Rather, the
+package interface should provide a level of abstraction above the data
+model (as well as the rest of the package implementation). Then, users
+of the package can take advantage of implementation improvements that
+don't affect the interface (e.g., faster performance from intelligent
+denormalization of the data model), without having to worry that code
+outside the package will now break.
+
+<p>
+
+<li>A typical ACS-backed site only uses a few of the modules included
+in the distribution, yet there was no well-understood way to pick only
+what you need when installing the ACS, or even to uninstall what you
+didn't need, post-installation. Unwanted code had to be removed
+manually.
+
+<p>
+
+<li>Releasing a new version of the ACS was complicated, owing again to
+the monolithic nature of the software. Since we released everything in
+the ACS together, all threads of ACS development had to converge on a
+single deadline, after which we would undertake a focused QA effort
+whose scale increased in direct proportion to the expansion of the ACS
+codebase.
+
+<p>
+
+<li>There was no standard way for developers outside of ArsDigita to
+extend the ACS with their own packages. Along the same lines,
+ArsDigita programmers working on client projects had no standard way
+to keep custom development cleanly separated from ACS
+code. Consequently, upgrading the ACS once installed was an
+error-prone and time-consuming process.
+
+</ol>
+
+The ACS is basically a platform for web-based application software,
+and any software platform has the potential to develop problems like
+these. Fortunately, there are many precedents for systematic ways of
+avoiding them, including:
+
+<ul>
+<li><a href="http://www.debian.org/">Debian GNU/Linux</a> has <a
+href="http://www.debian.org/~hp/tutorial/debian-tutorial.html/ch-dpkg.html"><code>dpkg</code> and Apt</a>
+
+<li><a href="http://www.freebsd.org/">FreeBSD</a> has <a
+href="http://www.freebsd.org/handbook/ports.html">the Ports
+collection</a>
+
+<li><a href="http://www.redhat.com/">Red Hat Linux</a> has <a
+href="http://rpm.redhat.com/">the Red Hat Package Manager (RPM)</a>
+</ul>
+
+<p>
+
+Borrowing from all of the above, ACS 3.3 introduces its own package
+management system, the ACS Package Manager (APM), which consists of:
+
+<ul>
+
+<li><strong>a standard format for APM packages</strong> (also called
+"ACS packages"), including:
+
+<ul>
+<li>version numbering, independent of any other package and the ACS as
+a whole
+<li>specification of the package interface
+<li>specification of dependencies on other packages (if any)
+<li>attribution (who wrote it) and ownership (who maintains it)
+</ul>
+
+<p>
+
+<li><strong>web-based tools for package management</strong>, i.e.:
+
+<ul>
+<li>obtaining packages from a remote distribution point
+
+<li>installing packages, if and only if:
+
+<ol>
+<li>all prerequisite packages are installed
+<li>no conflicts will be created by the installation
+</ol>
+
+<li>configuring packages (obsoleting the monolithic ACS configuration
+file)
+
+<font color=green face=courier><b>[ACS4]</b></font>
+
+<li>upgrading packages, without clobbering local modifications
+
+<li>uninstalling unwanted packages
+
+</ul>
+
+<p>
+
+<li><strong>a registry of installed packages</strong>, database-backed
+and integrated with filesystem-based version control
+
+<p>
+
+<li><strong>web-based tools for package development</strong>,
+i.e.:
+
+<ul>
+<li>creating new packages locally
+<li>releasing new versions of locally-created packages
+</ul>
+
+</ul>
+
+Consistent use of the APM format and tools will go a long way toward
+solving the maintainability problems listed above. Moreover, APM is
+the substrate that will enable us to soon establish a central package
+repository, where both ArsDigita and third-party developers will be
+able publish their packages for other ACS users to download and
+install.
+
+<p>
+
+For a simple illustration of the difference between ACS without APM
+(pre-3.3) and ACS with APM (3.3 and beyond), consider a hypothetical
+ACS installation that uses only two of the thirty-odd modules
+available circa ACS 3.2 (say, bboard and ecommerce):
+
+<center>
+<img src="images/acs-without-apm-vs-with-apm.png" alt="ACS, without APM vs. with APM">
+</center>
+
+<p>
+
+APM itself is part of a package, <strong>ACS Core</strong>, a library
+package that is the only mandatory component of an ACS installation.
+
+<h3>The Components of an APM Package</h3>
+
+An APM package consists of:
+
+<ol>
+
+<li>A set of interfaces
+
+<li>Implementations of those interfaces
+
+<li>Documentation
+
+<li>A package specification
+
+</ol>
+
+<h4>Package Interfaces</h4>
+
+There are three types of interface that an APM package can define:
+
+<ul>
+
+<li><strong>application programming interface (API):</strong> A
+stable, well-documented set of methods for interacting with the
+package programmatically, either to query it for information or to
+command it to perform an action.
+
+<p>
+
+<li><strong>user interface (UI):</strong> For each class of end-user
+(e.g., community member, site administrator), a set of web pages that
+provides a stable set of features.
+
+<p>
+
+<li><strong>configuration interface:</strong> A stable set of
+parameters that can be used to control the behavior of the package,
+whose values can be set <em>non-programmatically</em>, i.e., with a
+configuration file and/or through a user interface.
+</ul>
+
+By definition, an application package provides a UI but may or may not
+provide an API. Conversely, a library package provides an API but may
+or may not provide a UI. A configuration interface is optional for
+either type of package.
+
+<h4>Package Implementation</h4>
+
+Implementation varies by type of interface:
+
+<ul>
+
+<li>APIs are implemented as one or more of the following: PL/SQL or
+Java stored procedure and functions, database views, Tcl library
+procedures, linkable URLs, e.g., <code>/user-search</code>
+
+<li>UIs are implemented as one or more of the following: HTML pages,
+Tcl pages, AOLserver Dynamic Pages (ADPs), registered procedures.
+
+<li>Virtually all API and UI implementations include a <a
+href="http://www.webopedia.com/search?keywords=schema">database
+schema</a> (a.k.a. data model).
+
+<li>Currently, the standard way to implement a package's configuration
+interface is through <a
+href="http://www.aolserver.com/doc/3.0/admin/con-ch3.htm#24432">an
+auxiliary AOLserver configuration file</a>. A database-backed,
+generic configuration facility will be introduced in version 4.0 of
+the ACS Core package.
+
+</ul>
+
+(Note that we now consider the database schema to be part of the
+package implementation, not the package interface. In other words, the
+only code that should execute queries or DML against a package's
+schema is the package's own implementation code. There are legacy
+violations of this rule that will be corrected incrementally.)
+
+<h4>Package Documentation</h4>
+
+A package must contain one or more of the following types of
+documentation:
+
+<ul>
+
+<li>High-level design documentation, written in lay terms ("The Big
+Picture"); every package should have this.
+
+<li>API documentation for programmers writing code that
+depends on the package
+
+<li>"Help" pages for end-users (with good UI design, we
+shouldn't need too many of these)
+
+<li>Configuration instructions for administrators who have installed
+the package on their site: what parameters are available; for each
+parameter, what values are valid;
+
+<li>Implementation documentation for the package maintainer ("Under
+the Hood"), e.g., descriptions of any optimizations like
+denormalization or caching, periodic processes (i.e., scheduled
+procedures), external programs or scripts used, etc.
+
+</ul>
+
+<h4>Package Specification: The <code>.info</code> file</h4>
+
+The package specification is an XML document that lists:
+
+<ul>
+<li>properties of the package such as name, version, owner
+<li>the interfaces that the package provides
+<li>the external interfaces upon which the package depends
+<li>the names and types of all files included in the package
+</ul>
+
+Package specifications are typically not authored manually; rather,
+APM provides a UI for
+
+<p>
+
+Here is a sample excerpt from the specification of the ACS Core
+package itself:
+
+<blockquote><pre>
+&lt;?xml version="1.0"?&gt;
+&lt;!-- Generated by the ACS Package Manager --&gt;
+
+&lt;package key="acs-core" url="http://software.arsdigita.com/packages/acs-core"&gt;
+    &lt;version name="3.3.0" url="http://software.arsdigita.com/packages/acs-core-3.3.0.apm"&gt;
+        &lt;package-name&gt;ACS Core&lt;/package-name&gt;
+        &lt;owner url="mailto:jsalz@mit.edu"&gt;Jon Salz&lt;/owner&gt;
+        &lt;summary&gt;Routines and data models providing the foundation for ACS-based Web services.&lt;/summary&gt;
+        &lt;release-date&gt;2000-06-03&lt;/release-date&gt;
+        &lt;vendor url="http://www.arsdigita.com/"&gt;ArsDigita Corporation&lt;/vendor&gt;
+
+        &lt;provides url="http://software.arsdigita.com/packages/developer-support/tcl-api" version="0.2d"/&gt;
+        &lt;!-- No included packages --&gt;
+
+        &lt;files&gt;
+            &lt;file type="tcl_procs" path="00-proc-procs.tcl"/&gt;
+            &lt;file type="tcl_procs" path="10-database-procs.tcl"/&gt;
+            ...
+        &lt;/files&gt;
+    &lt;/version&gt;
+&lt;/package&gt;
+</pre></blockquote>
+
+The only attributes of the <code>&lt;package&gt;</code> element itself are
+<code>key</code> and <code>url</code>. The <code>key</code> attribute
+is a default short name for the package that appears in the APM site
+administrator UI; to enable the prevention of namespace collision, the
+<code>key</code> is not fixed but can be changed within an ACS
+installation. The <code>url</code> attribute identifies the
+authoritative distribution point for the package (specifically, a
+directory from which all versions of the package can be obtained). It
+also serves as the package's universally unique identifier and
+therefore cannot be changed.
+
+<p>
+
+All other properties of the package are stored as attributes and child
+elements of the <code>&lt;version&gt;</code> element, since they can
+vary from version to version. The <code>&lt;version&gt;</code> element
+also has two attributes: <code>name</code> and <code>url</code>. The
+<code>name</code> attribute is actually a version number that conforms
+to the numbering convention defined below. It is called
+<code>name</code> instead of <code>number</code>, because it can be
+alphanumeric, not purely numeric. The <code>name</code> attribute also
+designates the maturity of the package: development, alpha, beta, or
+release. As with the <code>&lt;package&gt;</code> element, the
+<code>url</code> attribute identifies the authoritative distribution
+point for the specified version of the package (specifically, the
+location of an actual package file that can be downloaded) and serves
+as the package version's universally unique identifier.
+
+<p>
+
+The <code>version</code> element contains:
+
+<ul>
+
+<li>One <code>&lt;package-name&gt;</code> element, which is a pretty
+name for the package
+
+<li>One or more <code>&lt;owner&gt;</code> elements, each of which
+identifies a party responsible for maintenance of the package
+
+<li>One <code>&lt;summary&gt;</code> element
+
+<li>One <code>&lt;description&gt;</code> element (optional)
+
+<li>One <code>&lt;release-date&gt;</code> element
+
+<li>One <code>&lt;vendor&gt;</code> element (optional), which
+identifies the organization that maintains the package
+
+<li>Zero or more <code>&lt;provides&gt;</code> elements, each of which
+identifies an interface provided by the package
+
+<li>Zero or more <code>&lt;requires&gt;</code> elements, each of which
+identifies an interface upon which the package depends
+
+<li>One <code>&lt;files&gt;</code> element, containing one
+<code>&lt;file&gt;</code> element for each 
+
+<li>One or more <code>&lt;parameter&gt;</code> elements that specify
+the package's configuration interface
+
+<font color=green face=courier><b>[ACS4]</b></font>
+
+</ul>
+
+A <code>&lt;provides&gt;</code> or <code>&lt;requires&gt;</code>
+element identifies an interface with the combination of its
+<code>url</code> and <code>version</code> attributes, where
+<code>url</code> is a universally unique identifier for the interface
+(API or UI) and <code>version</code> is an identifier that conforms to
+the same version numbering convention used for packages. The
+convention for constructing an interface URL is:
+
+<blockquote><code>
+http://<em>vendor-host</em>/packages/<em>logical-name</em>/<em>implementation-type</em>
+</code></blockquote>
+
+In the above example, the <code><em>vendor-host</em></code> is
+<code>software.arsdigita.com</code>, the
+<code><em>logical-name</em></code> is <code>developer-support</code>,
+and the <code><em>implementation-type</em></code> is
+<code>tcl-api</code>. Other <code>implementation-type</code> values
+include <code>plsql-api</code>, <code>sql-views</code>, and
+<code>java-api</code>. (At this time, the result of visiting an
+interface URL is undefined; in the future, it will display the
+documentation for the identified interface.)
+
+<p>
+
+Once an interface is published in an <code>&lt;provides&gt;</code>
+element, future versions of the package must maintain that interface,
+i.e., no changes can be made to the interface or its implementation
+that would cause dependent code to break. The interface <em>can</em>
+be augmented, in which case the version number should be incremented,
+i.e., a later version of an interface is always the superset of an
+earlier version. To communicate the fact that an incompatible change
+has been made to an interface, the package owner will remove the
+original <code>&lt;provides&gt;</code> element and add a new,
+different <code>&lt;provides&gt;</code> element, e.g., hypothetically,
+we might someday replace <code>developer-support/tcl-api</code> with
+<code>developer-support/tcl-api-2</code>.
+
+<p>
+
+Also, a <code>&lt;provides&gt;</code> element can include a
+<code>deprecated</code> attribute, meaning that the package owner
+expects to remove the corresponding interface in the future.
+
+<h4>Version Numbering Convention</h4>
+
+A version number consists of:
+
+<ol>
+
+<li>A major version number.
+
+<li>Optionally, up to three minor version numbers.
+
+<li>One of the following:
+
+<ul>
+<li>The letter <code>d</code>, indicating a development-only version (i.e., definitely broken)
+<li>The letter <code>a</code>, indicating an alpha release (i.e., probably broken)
+<li>The letter <code>b</code>, indicating a beta release (i.e., somewhat broken)
+<li>No letter at all, indicating a final release (i.e., not broken or, realistically, broken a little)
+</ul>
+
+</ol>
+
+<p>
+
+In addition, the letters <code>d</code>, <code>a</code>, and
+<code>b</code> may be followed by another integer, indicating a
+version within the release.
+
+<p>
+
+For those who like regular expressions:
+
+<blockquote><pre>version_number := integer ('.' integer){0,3} (('d'|'a'|'b') integer?)?</pre></blockquote>
+
+<p>
+
+So the following is a valid progression for version numbers:
+
+<blockquote><code>0.9d, 0.9d1, 0.9a1, 0.9b1, 0.9b2, 0.9, 1.0, 1.0.1, 1.1b1, 1.1</code></blockquote>
+
+<h4>Distribution Format: The <code>.apm</code> file</h4>
+
+In <a
+href="http://rikers.org/rpmbook/node8.html#SECTION02111000000000000000"><cite>Maximum
+RPM</cite></a>, Edward Bailey writes:
+
+<blockquote><cite>
+
+Normally, package management systems take all the various files
+containing programs, data, documentation, and configuration
+information, and place them in one specially formatted file -- a
+package file.
+
+</cite></blockquote>
+
+This description fits APM packages, which are distributed as <a
+href="http://www.gnu.org/software/gzip/gzip.html"><code>gzip</code></a>-compressed
+tarfiles, with the special extension <code>.apm</code>. The full
+naming convention for APM package files is:
+
+<blockquote><code>
+<em>package-key</em>-<em>package-version-name</em>.apm
+</code></blockquote>
+
+For instance, the first production release of the ACS Core package
+is named <code>acs-core-3.3.0.apm</code>.
+
+<p>
+
+Inside the tarfile, there is one directory at the top level, with the
+same name as the package key, which, in turn, contains:
+
+<ul>
+
+<li>an optional <code>www</code> directory, in which the
+implementation of the package's UI (if any) resides
+
+<p>
+
+<li>zero or more Tcl scripts that are loaded when the server
+starts. Files ending in <code>-procs.tcl</code> define Tcl procedures;
+files ending in <code>-init.tcl</code> contain code to be run at
+initialization time (e.g., filter registration).
+
+<p>
+
+<li>zero or more SQL files (any files in the directory with a
+<code>.sql</code> extension) that contain the DDL statements to
+install the package's database schema and/or the package's
+database-resident API (views, stored procedures, stored functions)
+
+<p>
+
+<li>zero or more SQL files, each of which upgrades the package's
+database schema from one version to a later version (not necessarily
+the next version, if no upgrades were needed for intervening versions)
+and is named according to the convention:
+
+<blockquote><code>
+upgrade-<em>version-name</em>-<em>next-version-name</em>.sql
+</code></blockquote>
+
+(If any of these files are present, they will be located in an
+<code>upgrade</code> subdirectory.)
+
+<p>
+
+<li>a documentation file named <code><em>package-key</em>.html</code>
+or <code><em>package-name</em>.adp</code>, or a <code>doc</code>
+subdirectory containing multiple documentation files
+
+<p>
+
+<li>The package specification file, named
+<code><em>package-key</em>.info</code>
+
+</ul>
+
+Aside from the package specification, all items listed above are
+optional.
+
+<h3>ACS Directory Structure</h3>
+
+APM installs packages in the <code>packages</code> subdirectory of the
+server root directory, at the same level as the legacy
+<code>www</code>, <code>tcl</code>, and <code>parameters</code>
+directories (which, by the way, continue to serve the same purposes as
+they did in versions of ACS prior to 3.2; we may remove some of this
+backward-compatibility in ACS 4).
+
+<p>
+
+Thus, the directory structure of the hypothetical ACS 3.3 installation
+that is illustrated in the diagram above would look something like
+this:
+
+<blockquote><pre>
+<em>server-root</em>/
+  |
+  +-- packages/
+        |
+        +-- acs-core/
+        |
+        +-- bboard/
+        |     |
+        |     +-- doc/
+        |     |     |
+        |     |     +-- index.html
+        |     |     |
+        |     |     +-- ...
+        |     |
+        |     +-- www/
+        |     |     |
+        |     |     +-- admin/
+        |     |     |     |
+        |     |     |     +-- index.adp
+        |     |     |     |
+        |     |     |     +-- ...
+        |     |     |
+        |     |     +-- index.adp
+        |     |     |
+        |     |     +-- ...
+        |     |
+        |     +-- bboard.info
+        |     |
+        |     +-- bboard.sql
+        |     |
+        |     +-- bboard-init.tcl
+        |     |
+        |     +-- bboard-procs.tcl
+        |     |
+        |     +-- ...
+        |
+        +-- ecommerce/
+              |
+              +-- ...
+</pre></blockquote>
+
+Another component of the ACS Core package, <a
+href="request-processor">the Request Processor</a>, is responsible for
+making the various package user interfaces integrate into one coherent
+hierarchy of URLs. The basic algorithm used to translate a URL into a
+filesystem path is simple: "When an HTTP request for
+<code>/<em>package-key</em>/<em>filename</em></code> is received, then
+return the file
+<code><em>server-root</em>/packages/<em>package-key</em>/www/<em>filename</em></code>."
+(In reality, the job of the Request Processor is not so simple.)
+
+<h4>Changes From ACS 3.2 and Prior Versions</h4>
+
+Prior to the introduction of APM in ACS 3.3, the contents of a given
+package were scattered throughout the site's physical structure:
+
+<ul>
+
+<li>the Tcl library scripts for all packages were located in the
+<code><em>server-root</em>/tcl</code> directory
+
+<li>the UI pages for all packages were located in the directory
+structure beneath the page root
+(<code><em>server-root</em>/www</code>), which translated directly
+into the site's URL hierarchy
+
+<li>the data model files for all packages were located in the
+<code><em>server-root</em>/www/doc/sql</code> directory
+
+</ul>
+
+In contrast, APM imposes a vertical organization wherein the
+filesystem does not map directly to the URL hierarchy. The main
+advantage of the pre-APM filesystem organization was the fact that,
+given a URL, you always knew where to look for the corresponding file
+under the page root. In our judgement, the benefit of having the
+filesystem explicitly preserve the modularity of installed packages
+outweighs this advantage, and the extra complexity that's now built
+into the Request Processor.
+
+<h3>Future Improvements</h3>
+
+<ul>
+<li>Implement aforementioned configuration facility.
+
+<li>Adjust design and implementation to work with forthcoming
+Parties/Subcommunities model.
+
+<li>Implement installation chaining, i.e., installing one package causes
+any required packages that are not installed to be installed, if they
+can be obtained. (The FreeBSD ports collection does this.)
+
+<li>Implement composite packages, i.e., packages that contain other
+packages. There is already stub support for this. Installation
+chaining may actually make this superfluous.
+
+<li>Compliance with XML Namespaces (<a
+href="http://www.w3.org/TR/REC-xml-names/">http://www.w3.org/TR/REC-xml-names/</a>);
+may provide a standard way to solve the namespace collision problem
+that the <code>key</code> attribute of the <code>package</code>
+element is designed to address.
+
+<li>A method for explicit definition of interfaces (i.e., mapping a UI
+identifier to be a set of URLs or an API identifier to a set of
+procedure/function signatures) and, potentially, automated detection
+of incompatibility
+
+<li>Consider a suffix other than <code>.info</code> for package
+specifications: perhaps just <code>.xml</code>?
+
+<li>Documentation improvements:
+
+<li>Write a formal DTD for APM package specifications.
+
+<ul>
+
+<li>User experience documentation: for each class of user, what
+questions can be asked, what actions performed.
+
+<li>API documentation
+
+<li>Add examples of how interfaces can be broken
+
+<li>Document the integration of CVS and APM (specifically regarding
+imported packages vs. locally developed packages)
+
+<li>Documentation browser for installed packages
+
+</ul>
+
+<li>Consider moving a separate <code>api</code> directory
+
+<li>Clarify the rules that map files in packages to URLs; what follows
+is preserved from an earlier version of this document:
+
+<blockquote>
+
+The distribution file containing a package is rooted at the server root, so
+(for instance) one might find the file <code>packages/address-book/address-book.html</code>
+in the package. If for some reason a package needs to contribute a file to the
+global <code>www</code> directory rather than its package-private one, the package could
+just contain the file <code>www/foo/bar.tcl</code>; this file would be installed into the
+site-wide <code>www</code> directory.
+
+<p>
+
+Package distribution files can contain files in other packages' directories;
+this flexibility will be useful in case a package needs to augment another package by
+providing extra services. For instance, a package providing attachment support for the
+address book might contain a <code>packages/address-book/www/view-attachments.tcl</code> file.
+However, it <i>could not</i> contain a new <code>packages/address-book/www/index.tcl</code> file
+- we allow a file to belong to only one package. (To provide a "hook" to the attachment package,
+the address book could use a Package Manager API to determine whether the attachment package
+is installed, displaying a link to <code>view-attachments.tcl</code> only in that case.)
+
+</blockquote>
+
+</ul>
+
+
+<h3>Under the Hood</h3>
+
+At startup, the ACS Core scans all package specifications and
+synchronizes them with the database. Mismatches (indicating that new
+packages have been installed) will result in appropriate action
+(running upgrade scripts or notifying the administrator).
+
+<hr>
+
+<address>
+<a href="mailto:michael@arsdigita.com">michael@arsdigita.com</a>
+</address>
+
+</body>
+
+</html>

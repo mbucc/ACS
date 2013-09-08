@@ -1,15 +1,24 @@
-# $Id: domain-administrator-update.tcl,v 3.1 2000/03/10 23:58:49 curtisg Exp $
-set_the_usual_form_variables
+# /www/gc/admin/domain-administrator-update.tcl
 
-# domain_id
+ad_page_contract {
+    @author
+    @creation-date
+    @cvs-id domain-administrator-update.tcl,v 3.2.6.6 2000/09/22 01:37:59 kevin Exp
+    
+    @param domain_id
 
-set db [ns_db gethandle]
+} {
+    domain_id:integer
+}
 
-set selection [ns_db 1row $db "select ad_domains.*,
-users.email from ad_domains, users
-where domain_id = $domain_id
-and users.user_id(+) = ad_domains.primary_maintainer_id"] 
-set_variables_after_query
+
+db_1row gc_admin_update_domain_admin_get {
+    select ad_domains.*, users.email 
+    from ad_domains, users
+    where domain_id = :domain_id
+    and users.user_id(+) = ad_domains.primary_maintainer_id
+} 
+
 
 set action "Edit administrator for $domain"
 
@@ -17,10 +26,10 @@ append html "[ad_header "$action"]
 
 <h2>$action</h2>
 
-in <a href=\"index.tcl\">[neighbor_system_name] administration</a>
+in <a href=\"index\">[neighbor_system_name] administration</a>
 <hr>
 
-<form action=\"/user-search.tcl\" method=post>
+<form action=\"/user-search\" method=post>
 [export_form_vars domain_id]
 <input type=hidden name=target value=\"/admin/gc/domain-administrator-update-2.tcl\">
 <input type=hidden name=passthrough value=\"domain_id\">
@@ -43,5 +52,7 @@ Search for a user to be primary administrator of this domain by<br>
 [neighbor_footer]
 "
 
-ns_db releasehandle $db
-ns_return 200 text/html $html
+db_release_unused_handles
+doc_return  200 text/html $html
+
+

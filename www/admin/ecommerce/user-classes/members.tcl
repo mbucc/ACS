@@ -1,15 +1,19 @@
-# $Id: members.tcl,v 3.0 2000/02/06 03:22:06 ron Exp $
-set_the_usual_form_variables
+#  www/admin/ecommerce/user-classes/members.tcl
+ad_page_contract {
+    @param user_class_id
+  @author
+  @creation-date
+  @cvs-id members.tcl,v 3.1.6.5 2000/09/22 01:35:06 kevin Exp
+} {
+    user_class_id:notnull
+}
 
-# user_class_id
 
-ReturnHeaders
 
-set db [ns_db gethandle]
 
-set user_class_name [database_to_tcl_string $db "select user_class_name from ec_user_classes where user_class_id = $user_class_id"]
+set user_class_name [db_string get_uc_name "select user_class_name from ec_user_classes where user_class_id = :user_class_id"]
 
-ns_write "[ad_admin_header "Members of $user_class_name"]
+set page_html "[ad_admin_header "Members of $user_class_name"]
 
 <h2>Members of $user_class_name</h2>
 
@@ -20,41 +24,41 @@ ns_write "[ad_admin_header "Members of $user_class_name"]
 <ul>
 "
 
-set selection [ns_db select $db "select 
+db_foreach get_users_in_ec_user_class "select 
 users.user_id, first_names, last_name, email,
 m.user_class_approved_p
 from users, ec_user_class_user_map m
 where users.user_id = m.user_id
-and m.user_class_id=$user_class_id"]
+and m.user_class_id=:user_class_id" {
 
-set user_counter 0
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
-    ns_write "<li><a href=\"/admin/users/one.tcl?user_id=$user_id\">$first_names $last_name</a> ($email) "
+    append page_html "<li><a href=\"/admin/users/one?user_id=$user_id\">$first_names $last_name</a> ($email) "
 
     if { [ad_parameter UserClassApproveP ecommerce] } {
-	ns_write "<font size=-1>[ec_decode $user_class_approved_p "t" "" "un"]approved</font> "
+	append page_html "<font size=-1>[ec_decode $user_class_approved_p "t" "" "un"]approved</font> "
     }
 
-    ns_write "(<a href=\"member-delete.tcl?[export_url_vars user_class_name user_class_id user_id]\">remove</a>"
+    append page_html "(<a href=\"member-delete?[export_url_vars user_class_name user_class_id user_id]\">remove</a>"
 
     if { [ad_parameter UserClassApproveP ecommerce] } {
 	if { $user_class_approved_p == "t" } {
-	    ns_write " | <a href=\"approve-toggle.tcl?[export_url_vars user_class_id user_id user_class_approved_p]\">unapprove</a>"
+	    append page_html " | <a href=\"approve-toggle?[export_url_vars user_class_id user_id user_class_approved_p]\">unapprove</a>"
 	} else {
-	    ns_write " | <a href=\"approve-toggle.tcl?[export_url_vars user_class_id user_id user_class_approved_p]\">approve</a>"
+	    append page_html " | <a href=\"approve-toggle?[export_url_vars user_class_id user_id user_class_approved_p]\">approve</a>"
 	}
     }
 
-    ns_write ")\n"
-    incr user_counter
+    append page_html ")\n"
+
+} if_no_rows {
+
+    append page_html "There are no users in this user class."
 }
 
-if { $user_counter == 0 } {
-    ns_write "There are no users in this user class."
-}
-
-ns_write "</ul>
+append page_html "</ul>
 
 [ad_admin_footer]
 "
+
+
+
+doc_return  200 text/html $page_html

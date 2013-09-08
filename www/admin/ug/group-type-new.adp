@@ -2,11 +2,11 @@
 
 <h2>Define Group Type</h2>
 
-<%=[ad_admin_context_bar [list "index.tcl" "User Groups"] "New Group Type"]%>
+<%=[ad_admin_context_bar [list "index" "User Groups"] "New Group Type"]%>
 
 <hr>
 
-<form method=post action=group-type-new-2.tcl>
+<form method=post action=group-type-new-2>
 <table>
 <tr>
 <th>Group type
@@ -41,3 +41,4 @@
 
 
 <%=[ad_admin_footer]%>
+

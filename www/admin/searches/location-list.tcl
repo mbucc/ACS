@@ -1,12 +1,14 @@
-# $Id: location-list.tcl,v 3.0 2000/02/06 03:28:19 ron Exp $
-ReturnHeaders
+# /www/admin/searches/location-list.tcl
+ad_page_contract {
+    @cvs-id location-list.tcl,v 3.2.2.5 2000/09/22 01:36:05 kevin Exp
+} {
+}
 
-ns_write "[ad_admin_header "User Searches - locations"]
+set page_content "[ad_admin_header "User Searches - locations"]
 
 <h2>User Searches - locations</h2>
 
 [ad_admin_context_bar [list "index.tcl" "User Searches"] "Distinct Locations"]
-
 
 <hr>
 
@@ -21,37 +23,38 @@ AltaVista).
 <ul>
 "
 
-set db [ns_db gethandle]
-
-set selection [ns_db select $db "select distinct subsection
+set sql "select distinct subsection
 from query_strings
 where subsection is not null
-order by upper(subsection)"]
+order by upper(subsection)"
 
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
-    ns_write "<li><a href=\"by-location.tcl?location=[ns_urlencode $subsection]\">$subsection</a>"
+db_foreach location_search_select $sql {
+    append page_content "<li><a href=\"by-location?location=[ns_urlencode $subsection]\">$subsection</a>"
 }
 
-ns_write "</ul>
+append page_content "</ul>
 <h3>Search engines</h3>
 <ul>"
 
-set selection [ns_db select $db "select distinct search_engine_name
+set sql "select distinct search_engine_name
 from query_strings
 where search_engine_name is not null
-order by upper(search_engine_name)"]
+order by upper(search_engine_name)"
 
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
-    ns_write "<li><a href=\"by-location.tcl?location=[ns_urlencode $search_engine_name]\">$search_engine_name</a>"
+db_foreach search_engine_select $sql {
+    append page_content "<li><a href=\"by-location?location=[ns_urlencode $search_engine_name]\">$search_engine_name</a>"
 }
 
-ns_write "
+db_release_unused_handles
+
+append page_content "
 </ul>
 
-To add search engines, visit <a href=\"/admin/referer/mapping.tcl\">the URL lumping section of the 
+To add search engines, visit <a href=\"/admin/referer/mapping\">the URL lumping section of the 
 referer logging admin pages</a>.
 
 [ad_admin_footer]
 "
+
+doc_return  200 text/html $page_content
+

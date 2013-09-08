@@ -1,0 +1,117 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>Confirmation Dialog</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Confirmation Dialog</h2>
+
+part of the <a href="index.html">ArsDigita Community System</a>
+by <a href="http://www.pinds.com/lars/">Lars Pind</a> on June 5, 2000.
+
+<hr>
+
+
+<ul>
+<li>User-accessible directory:  none
+<li>Site administrator directory:  none
+<li>Data model :  none
+<li>Developer-usable pages: /shared/confirm.tcl
+<li>Tcl procs reside in:  /packages/acs-core/widgets-procs.tcl
+</ul>
+
+
+<h3>The Big Picture</h3>
+
+Several places in the ACS, we have a confirmation page: "Are you sure
+you want to nuke this user?". It's a waste of time to write such pages
+over and over again. Furthermore, if you decide that you prefer
+javascript or some other fancy feature over simple redirects, you have
+to edit many different places. Thus, there seems to be a need for a
+general solution to this problem.
+
+
+
+
+<h3>Why You Shouldn't Use This Tool (And Also, Why You Might Anyway)</h3>
+
+Confirmation dialogs suck. You know, the little annoying popup-window
+that says "Are you sure you want to format your hard drive?". They
+suck, mainly because they're so predictable, that we get in the habit
+of hitting OK without even looking at them, only to hit OK that one
+time, where we didn't mean it.  Never the less, they might be better
+than nothing. 
+
+<p>
+
+The alternative is to implement undo, so the action takes place
+immediately, but the user can change his mind and undo the
+harm. Unfortunately, there are two problems with this approach: (a)
+implementing undo is hard, especially on top of today's RDBMS's; and
+(b) constructing a good UI for an undoable world is hard. So
+confirmation dialogs may be better than nothing, at least in the short
+term.
+
+<h3>Under The Hood</h3>
+
+There's a proc, <a
+href="proc-one?proc_name=ad_confirm_dlg"><code>ad_confirm_dlg</code></a>
+in <code>/packages/acs-core/widgets-procs.tcl</code>. It's really
+simple. It will pop up a javascript confirmation dialog and, if the
+user hits ok, redirect to the URL provided.
+
+<p>
+
+If you or our client don't like javascript, however, or if you have
+needs for more customization, you can use the script,
+<code>/shared/confirm.tcl</code>. It takes a bunch of parameters and
+does appropriate redirects. The most commonly used arguments are:
+
+<ul>
+
+<li><code>message</code> &#151; what you want displayed to the user.
+
+<li><code>yes_url</code> &#151; will redirect to this URL if the user
+clicks OK or yes.
+
+<li><code>no_url</code> &#151; will redirect to this URL if the user
+clicks Cancel or no (usually the page we came from).
+
+</ul>
+
+Don't forget to pass it absolute URLs, or it will fail.
+
+<p>
+
+
+
+<h3>Future Improvements</h3>
+
+If we want to make the choice between javascript and redirect
+transparent to the developer, we need to translate the yes-URL from a
+relative URL into an absolute URL, with respect to <code>ns_conn
+url</code>. We also need to figure out the URL of the calling page,
+which could be done from a combination of <code>ns_conn url</code> and
+<code>ns_getform</code>. It's up to the calling developer to make sure
+that the page is idempotent, that is, that we can get back to the same
+page with the same request that got to it the first time (e.g. a
+counter would not fulfill this requirement, since the number change
+each time for the same request).
+ 
+<p>
+
+One useful addition would be to let the user say "I don't want to see
+any more confirmation dialogs for this action". This would require
+that we pass along a unique identifier for the action in question
+(something derived from the URL would probably make sense); it would
+also require that we record the user's preferences for each type of
+action (a' la <code>dont_spam_me_p</code>); and it would require us to
+check against this table at each confirmation. All doable.
+
+
+
+<hr>
+<a href="mailto:lars@pinds.com"><address>lars@pinds.com.</address></a>
+</body>
+</html>

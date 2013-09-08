@@ -4,6 +4,12 @@
 
 This page lists already added downloads for which different download Rules can be added. Click on the file for which you want to add new rule. If there is no file in the database, it will ask you to add new downloadable file before adding rules to it. 
 
+<p>
+
+Visibility indicates who is allowed to view the download files.
+Availability indicates who is allowed to download the files.
+
+
 </ul>
 
 <%= [ad_scope_admin_footer] %>

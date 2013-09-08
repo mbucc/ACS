@@ -1,49 +1,47 @@
-# $Id: items-return.tcl,v 3.0.4.1 2000/04/28 15:08:45 carsten Exp $
-set_the_usual_form_variables
-# order_id
+# /www/admin/ecommerce/orders/items-return.tcl
+ad_page_contract {
 
-# we need them to be logged in
-set customer_service_rep [ad_verify_and_get_user_id]
+  Return items.
 
-if {$customer_service_rep == 0} {
-    set return_url "[ns_conn url]?[export_entire_form_as_url_vars]"
-    ad_returnredirect "/register.tcl?[export_url_vars return_url]"
-    return
+  @author Eve Andersson (eveander@arsdigita.com)
+  @creation-date Summer 1999
+  @cvs-id items-return.tcl,v 3.3.2.4 2000/08/17 15:19:14 seb Exp
+} {
+  order_id:integer,notnull
 }
 
-set db [ns_db gethandle]
+ad_maybe_redirect_for_registration
 
 # in case they reload this page after completing the refund process:
-if { [database_to_tcl_string $db "select count(*) from ec_items_refundable where order_id=$order_id"] == 0 } {
-    ad_return_complaint 1 "<li>This order doesn't contain any refundable items; perhaps you are using an old form.  <a href=\"one.tcl?[export_url_vars order_id]\">Return to the order.</a>"
+if { [db_string doubleclick_select "select count(*) from ec_items_refundable where order_id=:order_id"] == 0 } {
+    ad_return_complaint 1 "<li>This order doesn't contain any refundable items; perhaps you are using an old form.  <a href=\"one?[export_url_vars order_id]\">Return to the order.</a>"
     return
 }
 
-ReturnHeaders
-ns_write "[ad_admin_header "Mark Items Returned"]
+doc_body_append "[ad_admin_header "Mark Items Returned"]
 
 <h2>Mark Items Returned</h2>
 
-[ad_admin_context_bar [list "../" "Ecommerce"] [list "index.tcl" "Orders"] [list "one.tcl?order_id=$order_id" "One Order"] "Mark Items Returned"]
+[ad_admin_context_bar [list "../" "Ecommerce"] [list "index" "Orders"] [list "one?order_id=$order_id" "One Order"] "Mark Items Returned"]
 
 <hr>
 "
+
 # generate the new refund_id here (we don't want them reusing this form)
-set refund_id [database_to_tcl_string $db "select refund_id_sequence.nextval from dual"]
+set refund_id [db_string refund_id_select "select refund_id_sequence.nextval from dual"]
 
-
-ns_write "<form method=post action=items-return-2.tcl>
+doc_body_append "<form method=post action=items-return-2>
 [export_form_vars order_id refund_id]
 
 <blockquote>
 Date received back:
-[ad_dateentrywidget received_back_date] [ec_timeentrywidget received_back_date "[ns_localsqltimestamp]"]
+[ad_dateentrywidget received_back_date]&nbsp;[ec_timeentrywidget received_back_time]
 
 <p>
 
 Please check off the items that were received back:
 <blockquote>
-[ec_items_for_fulfillment_or_return $db $order_id "f"]
+[ec_items_for_fulfillment_or_return $order_id "f"]
 </blockquote>
 
 Reason for return (if known):

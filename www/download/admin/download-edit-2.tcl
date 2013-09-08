@@ -1,61 +1,49 @@
-# /www/download/download-edit-2.tcl
-#
-# Date:     01/04/2000
-# Author :  ahmeds@mit.edu
-# Purpose:  adds new downloadable file
-#
-# $Id: download-edit-2.tcl,v 3.0.6.3 2000/05/18 00:05:15 ron Exp $
-# -----------------------------------------------------------------------------
+# /www/download/admin/download-edit-2.tcl
+ad_page_contract {
+    processes the new information for a download file
 
-set_the_usual_form_variables
-# maybe scope, maybe scope related variables (group_id)
-# download_name, description, html_p, download_id
+    @param download_id the ID of the file being edited
+    @param download_name the new name
+    @param description the new description
+    @param html_p is the description in html?
+    @param scope
+    @param group_id
+
+    @author ahmeds@mit.edu
+    @creation-date 4 Jan 2000
+    @cvs-id download-edit-2.tcl,v 3.8.2.4 2000/07/21 03:59:18 ron Exp
+} {
+    download_name:trim,notnull
+    description:trim,html
+    html_p
+    download_id:integer,notnull
+    scope:optional
+    group_id:optional,integer
+}
+
+# -----------------------------------------------------------------------------
 
 ad_scope_error_check
 
-set db [ns_db gethandle]
-ad_scope_authorize $db $scope admin group_admin none
+ad_scope_authorize $scope admin group_admin none
 
-set user_id [download_admin_authorize $db $download_id]
+set user_id [download_admin_authorize $download_id]
 
-# Radiobuttons and selects may give us trouble if none are selected
-# The columns that might cause trouble are html_p
-if ![info exists html_p] {
-    set html_p ""
-    set QQhtml_p ""
+page_validation {
+    if {[string length $description] > 4000} {
+	error "\"description\" is too long\n"
+    }
 }
 
-# Now check to see if the input is good as directed by the page designer
-
-set exception_count 0
-set exception_text ""
-
-# we were directed to return an error for download_name
-if {![info exists download_name] ||[empty_string_p $download_name]} {
-    incr exception_count
-    append exception_text "<li>You did not enter a value for download_name.<br>"
-} 
-
-
-if {[string length $description] > 4000} {
-    incr exception_count
-    append exception_text "<LI>\"description\" is too long\n"
-}
-
-if {$exception_count > 0} {
-    ad_scope_return_complaint $exception_count $exception_text $db
-    return
-}
-
-# So the input is good --
 # Now we'll do the update of the downloads table.
-if [catch {ns_db dml $db "update downloads 
+# KS - I don't understand why we are inserting sysdate here
+if [catch {db_dml download_update "update downloads 
       set creation_date = sysdate, 
-      creation_user = $user_id, 
-      download_name = '$QQdownload_name', 
-      description = '$QQdescription', 
-      html_p = '$QQhtml_p'
-      where download_id = '$download_id'" } errmsg] {
+      creation_user = :user_id, 
+      download_name = :download_name, 
+      description = :description, 
+      html_p = :html_p
+      where download_id = :download_id"} errmsg] {
 
 # Oracle choked on the update
     ad_scope_return_error "Error in update" "We were unable to do your update in the database. Here is the error that was returned:
@@ -64,10 +52,9 @@ if [catch {ns_db dml $db "update downloads
 <pre>
 $errmsg
 </pre>
-</blockquote>" $db
+</blockquote>"
     return
 }
 
-ad_returnredirect download-view.tcl?[export_url_scope_vars download_id]
-
+ad_returnredirect download-view?[export_url_scope_vars download_id]
 

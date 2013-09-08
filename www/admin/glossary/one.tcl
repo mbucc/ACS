@@ -1,55 +1,60 @@
-# $Id: one.tcl,v 3.0.4.1 2000/04/28 15:09:06 carsten Exp $
-set user_id [ad_verify_and_get_user_id]
-if { $user_id == 0 } {
-    ad_returnredirect "/register/index.tcl?return_url=[ns_urlencode [ns_conn url]]"
-    return
-}
+# /www/admin/glossary/one.tcl
 
-set_the_usual_form_variables
-# term
+ad_page_contract {
+    
+    query the database for information about one term (definition)
+    get the user id in case the person is logged in and we want to offer
+    an edit option
+    
+    @author Walter McGinnis (walter@arsdigita.com)
+    @cvs-id one.tcl,v 3.3.2.7 2000/09/22 01:35:26 kevin Exp
+    @param term the term to view
+} {term} 
 
-if { ![info exists term] || [empty_string_p $QQterm] } {
-    ad_return_complaint 1 "No term given"
-    return
-}
+set user_id [ad_maybe_redirect_for_registration]
 
-ReturnHeaders
-ns_write "[ad_admin_header $term]
+set whole_page "[ad_admin_header $term]
 
 <h2>$term</h2>
 
-[ad_admin_context_bar [list "index.tcl" Glossary] "One Term"]
+[ad_admin_context_bar [list "index" Glossary] "One Term"]
 
 <hr>
 
 <i>$term</i>:
 "
 
-set db [ns_db gethandle]
+set selection [db_0or1row admin_glossary_get_term "select definition, approved_p from glossary where term = :term"]
 
-set selection [ns_db 0or1row $db "select definition, approved_p from glossary where term = '$QQterm'"]
-
-if { $selection == "" } {
-    set definition "Not defined in glossary."
-    set approved_p 't'
-} else {
-    set_variables_after_query
+if {$selection == 0} {
+    ad_return_complaint "Term not found" "$term could not be found in the glossary"
+    db_release_unused_handles
+    return
 }
 
-ns_write "
+if { [empty_string_p $definition]} {
+    set definition ""
+    set approved_p 't'
+}
+
+
+append whole_page "
 <blockquote>$definition</blockquote>
 <ul>
-<li><a href=\"term-edit.tcl?term=[ns_urlencode $term]\">Edit this Term</a>
+<li><a href=\"term-edit?[export_url_vars term]\">Edit this Term</a>
 <p>
-<li><a href=\"term-delete.tcl?term=[ns_urlencode $term]\">Delete this Term (immediate)</a>
+<li><a href=\"term-delete?[export_url_vars term]\">Delete this Term (immediate)</a>
 "
 
 if { $approved_p == "f" } {
-    ns_write "<li><a href=\"term-approve.tcl?term=[ns_urlencode $term]\">Approve this Term</a>\n"
+    append whole_page "<li><a href=\"term-approve?[export_url_vars term]\">Approve this Term</a>\n"
 }
 
-ns_write "
+append whole_page "
 </ul>
 
 [ad_admin_footer]
 "
+
+doc_return  200 text/html $whole_page
+

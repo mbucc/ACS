@@ -1,6 +1,6 @@
 <html>
 <!--AD_DND-->
-<!--$Id: installation.html,v 3.1.4.4 2000/03/17 05:26:04 gregh Exp $-->
+<!--installation.html,v 3.4.2.1 2000/08/05 18:46:13 ron Exp-->
 <HEAD>
 <TITLE>ArsDigita Community System Installation Instructions</TITLE></HEAD>
 <BODY bgcolor=#ffffff text=#000000>
@@ -10,12 +10,15 @@ by <A href="http://photo.net/philg/">Philip Greenspun</a>
 <hr>
 
 <ul>
-<li>source: <a href="http://software.arsdigita.com">http://software.arsdigita.com</a>
-<li>bug reports: <a href="mailto:acs-bugs@arsdigita.com">acs-bugs@arsdigita.com</a>
-<li>philosophy:  <a
-href="http://photo.net/wtr/thebook/community.html">http://photo.net/wtr/thebook/community.html</a>
-(the community chapter of <cite>Philip and Alex's Guide to Web
+<li>source: 
+<a href="http://www.arsdigita.com/download/">http://www.arsdigita.com/download/</a>
+<li>bug reports: 
+<a href="http://www.arsdigita.com/sdm/one-package?package_id=1">http://www.arsdigita.com/sdm/</a>
+
+<li>philosophy:  
+<a href="http://photo.net/wtr/thebook/community">http://photo.net/wtr/thebook/community</a> (the community chapter of <cite>Philip and Alex's Guide to Web
 Publishing</cite>)
+
 <li>technical background: <a
 href="http://photo.net/wtr/thebook/">http://photo.net/wtr/thebook/</a>
 </ul>
@@ -28,7 +31,7 @@ href="http://photo.net/wtr/thebook/">http://photo.net/wtr/thebook/</a>
 management system</a>
 <li><a href="http://www.aolserver.com">AOLserver</a> (free)
 <li><a
-href="http://arsdigita.com/free-tools/oracle-driver.html">ArsDigita
+href="http://arsdigita.com/free-tools/oracle-driver">ArsDigita
 Oracle driver for AOLserver</a> (free)
 </ul>
 
@@ -42,7 +45,7 @@ href="http://www.pls.com">http://www.pls.com</a>.
 The ACS requires that Oracle's NLS_DATE_FORMAT parameter be set to
 'YYYY-MM-DD', as God intended it to be.  See 
 <a
-href="http://photo.net/wtr/oracle-tips.html">http://photo.net/wtr/oracle-tips.html</a>
+href="http://photo.net/wtr/oracle-tips">http://photo.net/wtr/oracle-tips</a>
 for more details on how to bring Oracle into the ANSI age...
 
 <p>
@@ -54,7 +57,9 @@ The "nuke a user" admin page and Intermedia won't run unless you set
 
 As of the arrival of AOLserver 3.0, we recommend running AOLserver and the
 ACS in a <code>chroot</code> "jail."  This enhances security, limiting the
-likelihood of a rogue intruder damaging your system.
+likelihood of a rogue intruder damaging your system. For more details,
+see the <a href="security">security document</a>.
+
 
 <p>
 
@@ -69,10 +74,13 @@ All ArsDigita software packages, including the ACS, rely on a basket
 of utility procedures that are generally part of the AOLserver
 installation. This used to be distributed separately and put in the
 shared Tcl directory (/home/nsadmin/modules/tcl), but is now a part of
-the ACS and exists in [acsdir]/tcl/ad-utilities.tcl.preload. Note that many
+the ACS and exists in [acsdir]/tcl/ad-utilities.preload. Note that many
 other files in the tcl directory depend on utility functions defined
 in this file, which is why it is named as it is, so that it will be
 loaded before any of the other files.
+
+<p>All of our services are set up in accordance with the <a
+href="architecture-install">ArsDigita Server Architecture</a>.
 
 <p>
 
@@ -149,7 +157,7 @@ Text's special ctxsys user.
 <h3>Configuring AOLServer</h3>
 
 
-<b>Note: Because we're <code>chroot</code>'ing the webserver, it's view
+<b>Note: Because we're <code>chroot</code>'ing the webserver, its view
 of the filesystem begins at /webroot.  So, it will actually see its 
 content at /web.</b>
 
@@ -181,11 +189,11 @@ driver (which allocates 40,000 bytes on the stack when called).
 fancy custom error responses and such, put in 
 
 <blockquote><pre>
-NotFoundResponse=/global/file-not-found.html
-ServerBusyResponse=/global/busy.html
-ServerInternalErrorResponse=/global/error.html
-ForbiddenResponse=/global/forbidden.html
-UnauthorizedResponse=/global/unauthorized.html
+NotFoundResponse=/global/file-not-found
+ServerBusyResponse=/global/busy
+ServerInternalErrorResponse=/global/error
+ForbiddenResponse=/global/forbidden
+UnauthorizedResponse=/global/unauthorized
 </pre></blockquote>
 
 then go into the /www/global/ directory and edit these files to suit.
@@ -215,7 +223,7 @@ Unless you want pages that advertise a community called "Yourdomain
 Network" owned by "webmaster@yourdomain.com", you'll probably want to
 edit the text of /web/yourdomain/parameters/yourdomain.ini file to
 change system-wide parameters.  If you want to change how some of these
-are used, a good place to look is /web/yourdomain/tcl/ad-defs.tcl.
+are used, a good place to look is /web/yourdomain/tcl/ad-defs.
 
 <h3>Configuring Permissions</h3>
 
@@ -233,21 +241,24 @@ not underneath the /admin directory
 
 <h3>Adding Yourself as a User and Making Yourself a Sysadmin</h3>
 
-The ArsDigita Community System will define two users:  system and
+The ArsDigita Community System will define two users: system and
 anonymous.  It will also define a user group of system administrators.
 You'll want to add yourself as a user (at /register/ ) and then add
 yourself as as member of the site-wide administration group.  Start by
 logging out as yourself and logging in as the system user (email of
-"system").  Change the system user's password.  Visit the 
-the https://yourservername.com/admin/ug/ directory and add your personal
-user as a site-wide administrator.  Now you're bootstrapped!
+"system", password "changeme").  Change the system user's password.
+Visit the the https://yourservername.com/admin/ug/ directory and add
+your personal user as a site-wide administrator.  Now you're
+bootstrapped!
 
 
 <h3>Closing Down Access</h3>
 
-The ACS ships with a user named "anonymous" (email "anonymous") to
-serve as a content owner.  If you're operating a restricted-access
-site, make sure to change the anonymous user's password.
+The ACS ships with a user named "anonymous" (email "anonymous",
+password "changeme") to serve as a content owner.  If you're operating
+a restricted-access site, make sure to change the anonymous user's
+password or ban the anonymous user from the system in addition to
+changing the system user's password.
 
 <h3>Where to Find What</h3>
 
@@ -255,7 +266,7 @@ A few pointers:
 
 <ul>
 <li> the /register directory contains the login and registration scripts. You
-can easily redirect someone to /register/index.tcl to have them login
+can easily redirect someone to /register/index to have them login
 or register.
 
 <li> the /pvt directory is for user-specific pages. They can only be accessed by people who have logged in.
@@ -264,7 +275,7 @@ or register.
 
 <h3>Making sure that it works</h3>
 
-Run the acceptance tests in <a href="/doc/acceptance-test.html">acceptance-test.html</a>
+Run the acceptance tests in <a href="/doc/acceptance-test">/doc/acceptance-test</a>
 
 <h3>Reversing the whole process!</h3>
 

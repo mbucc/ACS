@@ -1,7 +1,14 @@
-# $Id: upload-utilities.tcl,v 3.0 2000/02/06 03:21:12 ron Exp $
-ReturnHeaders
+#  www/admin/ecommerce/products/upload-utilities.tcl
+ad_page_contract {
+  Upload utilites admin page.
 
-ns_write "[ad_admin_header "Upload Utilities"]
+  @author Eve Andersson (eveander@arsdigita.com)
+  @creation-date Summer 1999
+  @cvs-id upload-utilities.tcl,v 3.1.6.1 2000/07/22 07:57:46 ron Exp
+} {
+}
+
+doc_body_append "[ad_admin_header "Upload Utilities"]
 
 <h2>Upload Utilities</h2>
 
@@ -13,9 +20,9 @@ There are three utilities provided with the ecommerce module that can
 help you load you catalog data into the database:
 
 <ul>
-<li><a href=\"upload.tcl\">Product Loader</a>
-<li><a href=\"extras-upload.tcl\">Product Extras Loader</a>
-<li><a href=\"categories-upload.tcl\">Product Category Map Loader</a>
+<li><a href=\"upload\">Product Loader</a>
+<li><a href=\"extras-upload\">Product Extras Loader</a>
+<li><a href=\"categories-upload\">Product Category Map Loader</a>
 </ul>
 
 <p>The product loader uploads a CSV file that contains one line per product

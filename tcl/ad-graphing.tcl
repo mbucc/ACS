@@ -1,6 +1,8 @@
-# $Id: ad-graphing.tcl,v 3.0 2000/02/06 03:12:26 ron Exp $
-## Make sure you have the latest version of utilities.tcl running on
-## your server, otherwise ad_proc doesn't exist
+# /tcl/ad-graphing.tcl
+
+ad_library {
+    @cvs-id ad-graphing.tcl,v 3.1.2.3 2000/08/04 10:45:06 ron Exp
+}
 
 ad_proc gr_sideways_bar_chart { {-legend "" -bar_color_list "" -display_values_p "f" -display_scale_p "t" -default_drilldown_url "" -non_percent_values_p "f" -min_left_column_width "1" -bar_height "15" -subcategory_spacing "7" -compare_non_percents_across_categories "f" -left_heading "" -right_heading "" -replace_null_subcategory_with_none_p "f"} subcategory_category_and_value_list } "Read <a href=\"http://software.arsdigita.com/www/doc/graphing.html\">http://software.arsdigita.com/www/doc/graphing.html</a>" {
 
@@ -94,7 +96,6 @@ ad_proc gr_sideways_bar_chart { {-legend "" -bar_color_list "" -display_values_p
 	    append to_return "<tr><td>[gr_font]$subcategory</font></td><td width=10> </td><td>"
 	}
 
-
 	# value_counter is to determine bar_color
 	set value_counter 0
 	foreach value $values {
@@ -143,8 +144,6 @@ ad_proc gr_sideways_bar_chart { {-legend "" -bar_color_list "" -display_values_p
 
 	append to_return "<img width=1 height=$subcategory_spacing src=\"/graphics/graphing-package/white-dot.gif\"></td></tr>"
 
-
-
     } ; #  end  foreach subcategory_category_and_value $subcategory_category_and_value_list
 
     append to_return "</table>"
@@ -172,7 +171,6 @@ proc hex_color {color} {
 	"muted-aquamarine" {set hex_color "669999"}
     }
 }
-
 
 proc gr_list_with_non_numeric_elements_replaced_by_zeroes { the_list } {
     set new_list ""

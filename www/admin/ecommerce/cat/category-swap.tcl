@@ -1,17 +1,30 @@
-# $Id: category-swap.tcl,v 3.0.4.1 2000/04/28 15:08:35 carsten Exp $
-set_the_usual_form_variables
-# category_id, next_category_id, sort_key, next_sort_key
+# /www/admin/ecommerce/cat/category-swap.tcl
 
-# switches the ordering of a category with that of the next category
+ad_page_contract {
 
-set db [ns_db gethandle]
+    Switches the ordering of a category with that of the next category.
+
+    @param category_id the ID for the category
+    @param next_category_key the key for next category
+    @param sort_key the sort key
+    @param next_sort_key the next sort key
+
+    @cvs-id category-swap.tcl,v 3.1.6.5 2000/08/16 13:57:11 seb Exp
+} {
+
+    category_id:integer,notnull
+    next_category_id:integer,notnull
+    sort_key:notnull
+    next_sort_key:notnull
+}
+
 
 # check that the sort keys are the same as before; otherwise the page
 # they got here from is out of date
 
-set item_match [database_to_tcl_string $db "select count(*) from ec_categories where category_id=$category_id and sort_key=$sort_key"]
+set item_match [db_string get_item_match_count "select count(*) from ec_categories where category_id=:category_id and sort_key=:sort_key"]
 
-set next_item_match [database_to_tcl_string $db "select count(*) from ec_categories where category_id=$next_category_id and sort_key=$next_sort_key"]
+set next_item_match [db_string get_next_item_match_count "select count(*) from ec_categories where category_id=:next_category_id and sort_key=:next_sort_key"]
 
 if { $item_match != 1 || $next_item_match != 1 } {
     ad_return_complaint 1 "<li>The page you came from appears to be out-of-date;
@@ -21,9 +34,10 @@ if { $item_match != 1 || $next_item_match != 1 } {
     return
 }
 
-ns_db dml $db "begin transaction"
-ns_db dml $db "update ec_categories set sort_key=$next_sort_key where category_id=$category_id"
-ns_db dml $db "update ec_categories set sort_key=$sort_key where category_id=$next_category_id"
-ns_db dml $db "end transaction"
+db_transaction {
+    db_dml update_swap_cat_1 "update ec_categories set sort_key=:next_sort_key where category_id=:category_id"
+    db_dml update_swap_cat_2 "update ec_categories set sort_key=:sort_key where category_id=:next_category_id"
+}
+db_release_unused_handles
 
-ad_returnredirect "index.tcl"
+ad_returnredirect "index"

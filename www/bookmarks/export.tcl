@@ -1,10 +1,19 @@
-# $Id: export.tcl,v 3.0.4.2 2000/04/28 15:09:46 carsten Exp $
+# /www/bookmarks/export.tcl
+
+ad_page_contract {
+    export bookmarks in your bookmark list
+    @author David Hill (dh@arsdigita.com)
+    @author Aurelius Prochazka (aure@arsdigita.com)
+    @creation-date June 1999  
+    @cvs-id export.tcl,v 3.3.2.3 2000/09/22 01:37:01 kevin Exp
+} {} 
+
 set user_id [ad_verify_and_get_user_id]
+
 if { $user_id == 0 } {
     ad_returnredirect "/register/index?return_url=[ns_urlencode [ns_conn url]]"
     return
 }
-
 
 set title "Export Bookmarks"
 
@@ -24,7 +33,6 @@ then save the file as
 
 C:\\Program Files\\Netscape\\Users\\<i>your_name</i>\\bookmark.htm
 
-
 <blockquote>
 
  <a href=\"bookmark.htm\">bookmark.htm</a>
@@ -37,5 +45,7 @@ and choose \"Save Target As...\" or \"Save Link As...\")</i>
 
 "
 
-ns_return 200 text/html $html
+doc_return  200 text/html $html
+
+
 

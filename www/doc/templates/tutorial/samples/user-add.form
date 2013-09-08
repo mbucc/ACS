@@ -1,0 +1,72 @@
+<form>
+
+  <name>add_user</name>
+  <title>Add User</title>
+  <author>karlg@arsdigita.com</author>
+  <action>users.adp</action>
+  <comment>
+    Adds a new user.
+  </comment>
+  <dbaction>insert</dbaction>
+
+  <elements>
+
+  <element>
+
+    <name>user_id</name>
+    <label>User ID</label>
+    <widget>hidden</widget>
+    <datatype>number</datatype>
+    <comment>A unique ID assigned to each new user.</comment>
+
+    <defaults method="query">
+    select
+      max(user_id) + 1
+    from
+      ad_template_sample_users
+    </defaults>
+
+    <datamap key="parent" table="ad_template_sample_users"></datamap>
+
+  </element>
+
+  <element>
+
+    <name>first_name</name>
+    <label>First Name</label>
+    <comment>The user's first name.</comment>
+    <datamap table="ad_template_sample_users"></datamap>
+
+  </element>
+
+  <element>
+
+    <name>last_name</name>
+    <label>Last Name</label>
+    <comment>The user's last name.</comment>
+    <datamap table="ad_template_sample_users"></datamap>
+
+  </element>
+
+  <element status="optional">
+
+    <name>city</name>
+    <label>City</label>
+    <comment>The user's city of residence.</comment>
+    <datamap table="ad_template_sample_users"></datamap>
+
+  </element>
+
+  <element status="optional" width=4>
+
+    <name>state</name>
+    <label>State</label>
+    <attribute name=maxlength>2</attribute>
+    <comment>The user's state of residence.</comment>
+    <datamap table="ad_template_sample_users"></datamap>
+    
+  </element>
+
+  </elements>
+
+</form>

@@ -1,13 +1,13 @@
-# $Id: refresh-robot-list.tcl,v 3.0.4.1 2000/04/28 15:09:20 carsten Exp $
-#
-# refresh-robot-list.tcl
-#
-# Created by michael@yoon.org, 05/27/1999
-#
+# www/admin/robot-detection/refresh-robot-list.tcl
 
-set db [ns_db gethandle]
+ad_page_contract {
+    @author Michael Yoon (michael@yoon.org)
+    @creation-date 05-MAY-1999
+    @cvs-id refresh-robot-list.tcl,v 3.1.6.3 2000/07/21 03:57:58 ron Exp
+} {
+}
 
-if [catch { ad_replicate_web_robots_db $db } errmsg] {
+if [catch { ad_replicate_web_robots_db } errmsg] {
     ad_return_error "Database Error" $errmsg
     return
 }

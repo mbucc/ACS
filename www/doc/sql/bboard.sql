@@ -22,6 +22,29 @@
 
 set scan off
 
+
+--
+-- bboard_icons contains all icons available to the unified bboard
+-- module. Listed first since bboard_topics references it.
+--
+CREATE TABLE bboard_icons (
+       icon_id			integer NOT NULL PRIMARY KEY,
+       -- A short name for the icon (the system will pick a
+       -- non-descriptive name if the user doesn't
+       icon_name                varchar(25),
+       -- Actual filename of the icon.  The path name is in IconDir
+       -- under the bboard/unified key in the
+       -- parameters/<servername>.ini file 
+       icon_file		varchar(250),
+       -- The width (in pixels) that the icon will be scaled to
+       icon_width		integer,
+       -- The height (in pixels) that the icon will be scaled to
+       icon_height		integer
+);
+
+create sequence icon_id_seq;
+
+
 create sequence bboard_topic_id_sequence;
 
 create table bboard_topics (
@@ -92,7 +115,18 @@ create table bboard_topics (
 	uploads_anticipated		varchar(30) check (uploads_anticipated in ('images','files','images_or_files')),
 	-- should this forum come up on the user interface?
 	active_p			char(1) default 't' check (active_p in ('t','f')),
-	group_id			integer references user_groups
+	group_id			integer references user_groups,
+       -- Columns for unified presentation.
+       -- default_topic_p is 't' if the web service admin wants that
+       -- topic to be a default bboard forum for users
+       default_topic_p            varchar(1) default 't' check (default_topic_p in ('t','f')),
+       -- the default color set by the web service admin for
+       -- displaying topic summary lines for a forum 
+       -- in #XXXXXX format (Hexadecimal)
+       color			  varchar(7),
+       -- the default icon set by the web service admin for displaying
+       -- topic summary lines for the forum 
+       icon_id			  integer REFERENCES bboard_icons
 );
 
 
@@ -127,7 +161,8 @@ create table bboard (
 	category	varchar(200),	-- only used for categorized Q&A forums
 	originating_ip	varchar(16),	-- stored as string, separated by periods
 	user_id		integer not null references users,
-	one_line	varchar(700),
+	one_line	varchar(700)
+			constraint bboard_one_line_nn not null,
 	message		clob,
 	-- html_p - is the message in html or not
 	html_p		char(1) default 'f' check (html_p in ('t','f')),
@@ -380,3 +415,82 @@ create table bboard_uploaded_files (
 	original_width		integer,
 	original_height		integer
 );
+
+--
+-- bboard-unified.sql for unfying the bboard forums
+-- 
+-- by LuisRodriguez@photo.net
+-- Date: May 2000
+--
+
+
+--
+-- Map users to their customizable unified set of Forums they want to
+-- participate in
+--
+CREATE TABLE bboard_unified (
+       user_id		 	 integer NOT NULL REFERENCES users,
+       topic_id			 integer NOT NULL REFERENCES bboard_topics,
+       -- default_topic_p is 't' if the user wants that topic to be in
+       -- his/her unified bboard view
+       default_topic_p           varchar(1) DEFAULT 't' CHECK (default_topic_p IN ('t','f')),
+       -- the color used to display topic summary lines for the forum,
+       -- in #XXXXXX format (Hexadecimal)
+       color			 varchar(7),
+       -- the icon used in displaying topic summary lines for the forum
+       icon_id			 integer REFERENCES bboard_icons
+);
+
+
+--
+-- pl/sql function that performs the tcl function
+-- bboard_user_can_view_topic_p declared in /tcl/bboard-defs.tcl
+-- returns 'f' if the person is not allowed to view, 't' if he is
+--
+
+create or replace function bboard_user_can_view_topic_p ( v_user_id IN integer, v_topic_id IN integer)
+return char
+IS
+	v_read_access varchar(16);
+	v_group_id    integer;
+	v_count       integer;
+BEGIN
+	select read_access, group_id into v_read_access, v_group_id
+	from bboard_topics
+	where topic_id = v_topic_id;
+
+	IF v_read_access = 'any' or v_read_access = 'public' THEN
+	   RETURN 't';
+	END IF;
+
+	-- now, we know that it's in some group, let's make sure this person is in it
+	select count(*) into v_count
+	from user_group_map
+	where user_id = v_user_id
+	and group_id = v_group_id;	
+
+	IF v_count > 0 THEN
+	   RETURN 't';
+	END IF;
+	
+	-- if we're up to here, then this person is not allowed to view this page
+	RETURN 'f';
+	   
+END;
+/
+show errors
+
+
+create or replace function bboard_user_can_view_msg_p ( v_user_id IN integer, v_msg_id IN varchar)
+return char
+IS
+	v_topic_id	integer;
+BEGIN
+	select topic_id into v_topic_id
+	from bboard
+	where msg_id = v_msg_id;
+
+	RETURN bboard_user_can_view_topic_p(v_user_id, v_topic_id);
+END;
+/
+show errors;

@@ -1,7 +1,15 @@
-# $Id: variables.tcl,v 3.0 2000/02/06 03:18:40 ron Exp $
-ReturnHeaders
+# variables.tcl
 
-ns_write "[ad_admin_header "Note on Variables"]
+ad_page_contract {
+    @author
+    @creation-date
+    @cvs-id variables.tcl,v 3.1.2.3 2000/09/22 01:34:56 kevin Exp
+} {
+}
+
+
+
+append doc_body "[ad_admin_header "Note on Variables"]
 
 <h2>Note on Variables</h2>
 
@@ -56,7 +64,6 @@ Tax:   tax_here
 -----------------
 Total: total_here
 
-
 Thank you. 
 
 Sincerely,
@@ -72,3 +79,9 @@ http://www.whatever.com"]</td>
 
 [ad_admin_footer]
 "
+
+
+doc_return  200 text/html $doc_body
+
+
+

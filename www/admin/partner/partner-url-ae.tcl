@@ -1,29 +1,43 @@
-# $Id: partner-url-ae.tcl,v 3.0 2000/02/06 03:26:44 ron Exp $
-set_the_usual_form_variables
-# partner_id if we're adding
-# url_id if we're editing
+# /www/admin/partner/partner-url-ae.tcl
 
+ad_page_contract {
+    Form to add/edit a new url
 
-set db [ns_db gethandle]
+    @param partner_id integer specified only when adding
+    @param url_id Integer specified only when editing
+    @param return_url 
 
-if  {[info exists url_id] && ![empty_string_p $url_id]} {
-    set selection [ns_db 1row $db "select url_stub, partner_id
-  		                 from ad_partner_url 
-                                 where url_id='$QQurl_id'"]
-    set_variables_after_query
-    set page_title "Edit URL"
-} else {
-    set url_id [database_to_tcl_string $db "select ad_partner_url_url_id_seq.nextVal from dual"]
-    set page_title "Add URL"
-    set url_stub "/"
+    @author mbryzek@arsdigita.com
+    @creation-date 10/1999
+
+    @cvs-id partner-url-ae.tcl,v 3.2.2.3 2000/09/22 01:35:45 kevin Exp
+} {
+    { partner_id:integer "" }
+    { url_id:integer "" }
+    { return_url "" }
 }
 
-set context_bar [ad_context_bar_ws [list "index.tcl" "Partner manager"] [list "partner-view.tcl?[export_url_vars partner_id]" "One partner"] "$page_title"]
+if  {![empty_string_p $url_id]} {
+    
+    db_1row partner_stub_partner_id \
+	    "select url_stub, partner_id
+               from ad_partner_url 
+              where url_id=:url_id"
+    set page_title "Edit URL"
+    set context_bar [ad_context_bar_ws [list "index" "Partner manager"] [list "partner-view?[export_url_vars partner_id]" "One partner"] [list partner-url?[export_url_vars url_id] "One URL"] "$page_title"]
+
+} else {
+
+    set url_id [db_nextval "ad_partner_url_url_id_seq"]
+    set page_title "Add URL"
+    set url_stub "/"
+    set context_bar [ad_context_bar_ws [list "index" "Partner manager"] [list "partner-view?[export_url_vars partner_id]" "One partner"] "$page_title"]
+}
 
 set page_body "
-<form method=post action=\"partner-url-ae-2.tcl\">
-[export_form_vars partner_id url_id return_url]
-
+<form method=post action=\"partner-url-ae-2\">
+[export_form_vars partner_id return_url]
+[export_form_vars -sign url_id]
 <table>
 <tr>
   <td>URL Stub (with leading slash):</td>
@@ -35,4 +49,5 @@ set page_body "
 </form>
 "
 
-ns_return 200 text/html [ad_partner_return_template]
+# ad_partner_return_template releases the db handles
+doc_return  200 text/html [ad_partner_return_template]

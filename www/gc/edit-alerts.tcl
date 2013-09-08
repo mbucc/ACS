@@ -1,17 +1,19 @@
-# $Id: edit-alerts.tcl,v 3.1.2.1 2000/04/28 15:10:31 carsten Exp $
-#
-# edit-alerts.tcl
-#
-# built in 1998 by teadams@mit.edu and philg@mit.edu 
-#
+# /www/gc/edit-alerts.tcl
+
+ad_page_contract {
+    displays a page summarizing a user's email alerts and offering
+    opportunities to disable or reenable them
+
+    @author teadams@mit.edu
+    @author philg@mit.edu
+    @creation-date 1998
+    @cvs-id edit-alerts.tcl,v 3.4.2.5 2000/09/22 01:37:53 kevin Exp 
+}
+
 # fixed October 30, 1999 by philg to URLencode the rowid
 #
 # modified March 10, 2000 by curtisg@arsdigita.com
 # to use new alert_id primary key instead of rowid 
-#
-# displays a page summarizing a user's email alerts and offering
-# opportunities to disable or reenable them
-#
 
 set user_id [ad_get_user_id]
 
@@ -19,8 +21,7 @@ if { $user_id == 0 } {
     ad_returnredirect /register/index.tcl?return_url=[ns_urlencode /gc/edit-alerts.tcl]
 }
 
-set db [gc_db_gethandle]
-set email [database_to_tcl_string $db "select email from users where user_id=$user_id"]
+set email [db_string unused "select email from users where user_id=$user_id"]
 
 append html "[gc_header "Edit Alerts for $email"]
 
@@ -34,31 +35,29 @@ append html "[gc_header "Edit Alerts for $email"]
 
 "
 
-
-set selection [ns_db select $db "select cea.*, ad.domain
+set sql "select cea.*, ad.domain
 from classified_email_alerts cea, ad_domains ad
-where user_id=$user_id
+where user_id = :user_id
 and ad.domain_id = cea.domain_id
 and sysdate <= expires
-order by expires desc"]
+order by expires desc"
 
 set alert_rows ""
 set counter 0
 
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
+db_foreach gc_edit_alerts_alert_list $sql {    
     incr counter
     if { $valid_p == "f" } {
 	# alert has been disabled for some reason
 	set status "Off"
-	set action "<a href=\"alert-reenable.tcl?[export_url_vars alert_id]\">Re-enable</a>"
+	set action "<a href=\"alert-reenable?[export_url_vars alert_id]\">Re-enable</a>"
     } else {
 	# alert is enabled
 	set status "<font color=red>On</font>"
-	set action "<a href=\"alert-disable.tcl?[export_url_vars alert_id]\">Disable</a>"
+	set action "<a href=\"alert-disable?[export_url_vars alert_id]\">Disable</a>"
     }
     append alert_rows "<tr><td>$status<td>$action<td>$domain<td>
-<a href=\"alert-extend.tcl?[export_url_vars alert_id]\">$expires</a>
+<a href=\"alert-extend?[export_url_vars alert_id]\">$expires</a>
 <td>[gc_PrettyFrequency $frequency]<td>$alert_type"
     if { $alert_type == "all" } {
 	append alert_rows "<td>--</tr>\n"
@@ -85,10 +84,9 @@ append html "
 
 <P>
 
-<i>Note: check <a href=\"/pvt/alerts.tcl\">your site-wide alerts
+<i>Note: check <a href=\"/pvt/alerts\">your site-wide alerts
 page</a> for a list of alerts that you might have in other subsystems.</i>
 
 [gc_footer [gc_system_owner]]"
 
-
-ns_return 200 text/html $html
+doc_return  200 text/html $html

@@ -7,19 +7,22 @@
 <body bgcolor=#ffffff text=#000000>
 <h2>/bboard system</h2>
 
-part of the <a href="index.html">ArsDigita Community System</a>
+part of the <a href="index">ArsDigita Community System</a>
 by <a href="http://photo.net/philg/">Philip Greenspun</a>
 
 <hr>
 
 <ul>
 <li>User directory:  <a href="/bboard/">/bboard/</a>
+<li>Unified bboard directory:  <a href="/bboard/unified/">/bboard/unified/</a>
+<li>Icons for unified bboard system:  <a href="/bboard/unified/icons/">/bboard/unified/icons/</a>
+<li>Color swatches for unified bboard system:  <a href="/bboard/unified/colors/">/bboard/unified/colors/</a>
 <li>Admin directory:  message deletion, etc., is handling by
-admin-*.html scripts within the user directory; heavy duty stuff such as
+admin-* scripts within the user directory; heavy duty stuff such as
 creating a new bboard or adding a maintainer is done at
 <a href="/admin/bboard/">/admin/bboard/</a>
 
-<li>data model :  <a href="/doc/sql/display-sql.tcl?url=/doc/sql/bboard.sql">/doc/sql/bboard.sql</a>
+<li>data model :  <a href="/doc/sql/display-sql?url=/doc/sql/bboard.sql">/doc/sql/bboard.sql</a>
 
 
 </ul>
@@ -102,8 +105,9 @@ discussions on the topic.
 
 <h4>Public and Private Bboards</h4>
 
-There is a new read and write permissions model for topics. A topic
-has "read-access" and "write-access" permissions.
+All permissioning is done at the topic level.  A message inherits its
+private/public status from the topic of which it is part.  A topic has
+"read-access" and "write-access" permissions.
 
 <pre>
 Read-access := any | public | group
@@ -126,6 +130,16 @@ Write-access :=  public | group
 the posting is urgent or not
  <li>parameters: <tt>UrgentMessageEnabledP=<i>[0|1]</i></tt>, <tt>DaysConsideredUrgent=<i>number-of-days</i></tt> in
 the <tt>bboard</tt> section of the config file.
+
+</ul>
+
+<h3>Future Versions</h3>
+
+<ul>
+
+<li>kill off the /bboard/unified/colors directory and come up with a
+system that lets people choose simply with HTML standard color palette
+(keywords from the server; let the browser render the colors).
 
 </ul>
 

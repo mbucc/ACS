@@ -1,38 +1,39 @@
-# $Id: edit.tcl,v 3.0.4.1 2000/04/28 15:11:13 carsten Exp $
-set user_id [ad_get_user_id]
+# /www/neighbor/edit.tcl
+ad_page_contract {
+    Allows a user to edit their neighbor-to-neighbor entries.
 
-if {$user_id == 0} {
-   ad_returnredirect /register.tcl?return_url=[ns_urlencode "[ns_conn url]"]
-   return
-}
+    @author Philip Greenspun (philg@mit.edu)
+    @creation-date 1 January 1998
+    @cvs-id edit.tcl,v 3.4.2.2 2000/09/22 01:38:55 kevin Exp
+} {}
 
-set db [neighbor_db_gethandle]
+set user_id [ad_maybe_redirect_for_registration]
 
-ReturnHeaders
-
-ns_write "[neighbor_header "Your postings"]
+set page_content "[neighbor_header "Your postings"]
 
 <h2>Your postings</h2>
 
-in <a href=index.tcl>[neighbor_system_name]</a>
+in <a href=index>[neighbor_system_name]</a>
 
 <hr>
 
 <ul>
 "
 
-set selection [ns_db select $db "select neighbor_to_neighbor_id, about, one_line, posted
-from neighbor_to_neighbor
-where poster_user_id = $user_id
-order by posted desc"]
+set sql_query "
+    select neighbor_to_neighbor_id, about, one_line, posted
+      from neighbor_to_neighbor
+     where poster_user_id = :user_id
+  order by posted desc"
 
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
-    ns_write "<li><a href=\"edit-2.tcl?neighbor_to_neighbor_id=$neighbor_to_neighbor_id\">$about : $one_line</a> (posted $posted)\n"
+db_foreach select_entires $sql_query {
+    append page_content "<li><a href=\"edit-2?neighbor_to_neighbor_id=$neighbor_to_neighbor_id\">$about : $one_line</a> (posted $posted)\n"
 }
 
-ns_write "</ul>
-
+append page_content "</ul>
 
 [neighbor_footer]
 "
+
+db_release_unused_handles
+doc_return 200 text/html $page_content

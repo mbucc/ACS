@@ -4,7 +4,7 @@
 
 <h2>Payment Info</h2>
 
-<form method=post action="gift-certificate-order-4.tcl">
+<form method=post action="gift-certificate-order-4">
 <%= $hidden_form_variables %>
 
 <blockquote>

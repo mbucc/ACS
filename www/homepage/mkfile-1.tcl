@@ -1,13 +1,16 @@
-# $Id: mkfile-1.tcl,v 3.0.4.1 2000/04/28 15:11:01 carsten Exp $
 # File:     /homepage/mkfile-1.tcl
-# Date:     Wed Jan 19 02:07:35 EST 2000
-# Location: 42ÅÅ∞21'N 71ÅÅ∞04'W
-# Location: 80 PROSPECT ST CAMBRIDGE MA 02139 USA
-# Author:   mobin@mit.edu (Usman Y. Mobin)
-# Purpose:  Page to create an empty file
 
-set_form_variables
-# filesystem_node
+ad_page_contract {
+    Page to create an empty file
+
+    @param filesystem_node System variable to get us back to the start
+
+    @author Usman Y. Mobin (mobin@mit.edu)
+    @creation-date Wed Jan 19 02:07:35 EST 2000
+    @cvs-id mkfile-1.tcl,v 3.3.2.5 2000/09/22 01:38:17 kevin Exp
+} {
+    filesystem_node:notnull,naturalnum
+}
 
 # ------------------------------ initialization codeBlock ----
 
@@ -24,7 +27,7 @@ if { $user_id == 0 } {
 # ------------------------------ htmlGeneration codeBlock ----
 
 set dialog_body " \
-<form method=post action=mkfile-2.tcl> \
+<form method=post action=mkfile-2> \
   <input type=hidden name=filesystem_node value=$filesystem_node> \
   <table cellpadding=0 border=0> \
     <tr> \
@@ -40,28 +43,25 @@ set dialog_body " \
   </table> \
   <table border=0 cellpadding=0> \
   <tr><td><input type=submit value=Okay></form></td> \
-      <td><form method=get action=index.tcl> \
+      <td><form method=get action=index> \
           <input type=hidden name=filesystem_node value=$filesystem_node> \
           <input type=submit value=Cancel></form></td> \
   </tr></table>"
 
-
-ad_returnredirect "dialog-class.tcl?title=Filesystem Management&text=$dialog_body"
+ad_returnredirect "dialog-class?title=Filesystem Management&text=$dialog_body"
 return
-
-ReturnHeaders
 
 set title "Create File"
 
-ns_write "
+set page_content "
 [ad_header $title]
 <h2>$title</h2>
 [ad_context_bar_ws_or_index \
-        [list "index.tcl?filesystem_node=$filesystem_node" "Homepage Maintenance"] $title]
+        [list "index?filesystem_node=$filesystem_node" "Homepage Maintenance"] $title]
 <hr>
 <blockquote>
 
-<form method=post action=mkfile-2.tcl>
+<form method=post action=mkfile-2>
   <input type=hidden name=filesystem_node value=$filesystem_node>
   <p><br>
   <ul>
@@ -79,5 +79,5 @@ Please choose a filename for the new file you wish to create. The filename you c
 [ad_footer]
 "
 
-
-
+# Return the page for viewing
+doc_return  200 text/html $page_content

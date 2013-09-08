@@ -1,14 +1,17 @@
-# $Id: add-custom-column-2.tcl,v 3.2 2000/03/12 20:01:18 markd Exp $
-set_the_usual_form_variables
+ad_page_contract {
+    @author unknown    
+    @cvs-id add-custom-column-2.tcl,v 3.3.2.5 2000/09/22 01:34:36 kevin Exp
+} {
+    domain_id:integer
+    column_actual_name
+    column_pretty_name
+    column_type
+    column_extra_sql
+}
 
-# domain_id, column_actual_name, column_type
-# column_extra_sql
+set domain [db_string domain_get "select domain from contest_domains where domain_id = :domain_id" -bind [ad_tcl_vars_to_ns_set domain_id]]
 
-set db [ns_db gethandle]
-
-set domain [database_to_tcl_string $db "select domain from contest_domains where domain_id = '$QQdomain_id'"]
-
-set table_name [database_to_tcl_string $db "select entrants_table_name from contest_domains where domain_id = '$QQdomain_id'"]
+set table_name [db_string table_name_get "select entrants_table_name from contest_domains where domain_id = :domain_id" -bind [ad_tcl_vars_to_ns_set domain_id]]
 
 if { $column_type == "boolean" } {
     set real_column_type "char(1) default 't' check ($column_actual_name in ('t', 'f'))"
@@ -20,10 +23,12 @@ set alter_sql "alter table $table_name add ($column_actual_name $real_column_typ
 
 set insert_sql "insert into contest_extra_columns (domain_id, column_pretty_name, column_actual_name, column_type, column_extra_sql)
 values
-( '$QQdomain_id', '$QQcolumn_pretty_name', '$QQcolumn_actual_name','$QQcolumn_type', [ns_dbquotevalue $column_extra_sql text])"
+(:domain_id, :column_pretty_name, :column_actual_name, :column_type, :column_extra_sql)"
 
-if [catch { ns_db dml $db $alter_sql
-            ns_db dml $db $insert_sql }  errmsg] {
+set bind_vars [ad_tcl_vars_to_ns_set domain_id column_pretty_name column_actual_name column_type column_extra_sql]
+
+if [catch { db_dml column_add $alter_sql
+            db_dml column_register $insert_sql -bind $bind_vars }  errmsg] {
     # an error
     ad_return_error "Database Error" "Error while trying to customize $domain.
 	
@@ -46,7 +51,8 @@ $errmsg
 	
 [ad_contest_admin_footer]" } else {
     # database stuff went OK
-    ns_return 200 text/html "[ad_admin_header "Column Added"]
+
+    doc_return  200 text/html "[ad_admin_header "Column Added"]
 
 <h2>Column Added</h2>
 
@@ -80,4 +86,5 @@ reflecting that
 </ul>
 
 [ad_contest_admin_footer]
-"}
+"
+}

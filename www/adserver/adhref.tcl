@@ -1,31 +1,35 @@
-# $Id: adhref.tcl,v 3.0.4.1 2000/04/28 15:09:39 carsten Exp $
-# adimg.tcl
-#
-# at this point mostly by philg@mit.edu 
+# /www/adserver/adhref.tcl
+
+ad_page_contract {
+
+    this page finds the target URL that corresponds to the banner we displayed
+    sends bytes back to the browser instructing the browser to redirect to that URL
+    closes the TCP connection to the user
+    while this thread is still alive, logs the clickthrough 
+    (optionally this page will not log the clickthrough, e.g., 
+    if this is invoked from the /admin directory)
+
+    @author philg@mit.edu
+    @creation-date 11/24/1999
+    @cvs-id adhref.tcl,v 3.1.6.2 2000/07/22 20:50:37 berkeley Exp
+} {
+    adv_key
+    suppress_logging_p:optional  
+}
+
 # last edited November 24, 1999 to address a concurrency problem 
-# 
-# this page 
-#   finds the target URL that corresponds to the banner we displayed
-#   sends bytes back to the browser instructing the browser to redirect to that URL
-#   closes the TCP connection to the user
-#   while this thread is still alive, logs the clickthrough 
-#   (optionally this page will not log the clickthrough, e.g., 
-#    if this is invoked from the /admin directory)
-
-set_the_usual_form_variables 0
-
-# adv_key, maybe suppress_logging_p
 
 if { ![info exists adv_key] || $adv_key==""} {
     ad_returnredirect [ad_parameter DefaultTargetUrl adserver "/"]
     return
 }
 
-set db [ns_db gethandle]
 
-set target_url [database_to_tcl_string_or_null $db "select target_url 
-from advs
-where adv_key = '$QQadv_key'"]
+
+set target_url [db_string adv_url_query "
+select target_url 
+from advs 
+where adv_key = :adv_key" -default ""]
 
 if { $target_url == "" } {
     ad_returnredirect [ad_parameter DefaultTargetUrl adserver "/"]
@@ -44,12 +48,12 @@ ns_conn close
 
 set update_sql "update adv_log 
 set click_count = click_count + 1 
-where adv_key = '$QQadv_key'
-and entry_date = trunc(sysdate)"
+where adv_key = :adv_key 
+and entry_date = trunc (sysdate)"
 
-ns_db dml $db $update_sql
+db_dml adv_update_query $update_sql
 
-set n_rows [ns_ora resultrows $db]
+set n_rows [db_resultrows]
 
 if { $n_rows == 0 } {
     # there wasn't already a row there
@@ -58,23 +62,34 @@ if { $n_rows == 0 } {
     # we won't generate an error in the error log and set off all the server
     # monitor alarms
     set insert_sql "insert into adv_log
-(adv_key, entry_date, click_count)
-select '$QQadv_key', trunc(sysdate), 1 
-from dual
-where 0 = (select count(*) 
-           from adv_log
-           where adv_key='$QQadv_key'
-           and entry_date = trunc(sysdate))"
-    ns_db dml $db $insert_sql
+    (adv_key, entry_date, click_count)
+    select :adv_key, trunc (sysdate), 1 
+    from dual 
+    where 0 = (select count (*) 
+               from adv_log 
+               where adv_key = :adv_key 
+               and entry_date = trunc (sysdate))"
+    db_dml adv_insert $insert_sql
 }
 
 if [ad_parameter DetailedPerUserLoggingP adserver 0] {
     set user_id [ad_get_user_id]
     if { $user_id != 0 } {
 	# we know who this user is
-	ns_db dml $db "insert into adv_user_map
-(user_id, adv_key, event_time, event_type)
-values 
-($user_id, '$QQadv_key', sysdate, 'c')"
+	db_dml adv_known_user_insert "
+	insert into adv_user_map 
+        (user_id, adv_key, event_time, event_type) 
+	values 
+	(:user_id, :adv_key, sysdate, 'c')"
     }
 }
+
+
+
+
+
+
+
+
+
+

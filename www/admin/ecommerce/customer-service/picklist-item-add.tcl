@@ -1,17 +1,32 @@
-# $Id: picklist-item-add.tcl,v 3.0 2000/02/06 03:18:10 ron Exp $
-set_the_usual_form_variables
-# picklist_name, prev_sort_key, next_sort_key
+# picklist-item-add.tcl
+
+ad_page_contract {  
+    @param picklist_name
+    @param prev_sort_key
+    @param next_sort_key
+
+    @author
+    @creation-date
+    @cvs-id picklist-item-add.tcl,v 3.1.6.5 2001/01/12 19:55:35 khy Exp
+} {
+    picklist_name
+    prev_sort_key
+    next_sort_key
+}
+
+
+
 
 # error checking: make sure that there is no picklist_item with the
 # same picklist_name with a sort key equal to the new sort key
 # (average of prev_sort_key and next_sort_key);
 # otherwise warn them that their form is not up-to-date
 
-set db [ns_db gethandle]
-set n_conflicts [database_to_tcl_string $db "select count(*)
+
+set n_conflicts [db_string get_count_items "select count(*)
 from ec_picklist_items
-where picklist_name='$QQpicklist_name'
-and sort_key = ($prev_sort_key + $next_sort_key)/2"]
+where picklist_name=:picklist_name
+and sort_key = (:prev_sort_key + :next_sort_key)/2"]
 
 if { $n_conflicts > 0 } {
     ad_return_complaint 1 "<li>The page you came from appears to be out-of-date;
@@ -21,9 +36,9 @@ if { $n_conflicts > 0 } {
     return
 }
 
-ReturnHeaders
 
-ns_write "[ad_admin_header "Add an Item"]
+
+append doc_body "[ad_admin_header "Add an Item"]
 
 <h2>Add an Item</h2>
 
@@ -32,12 +47,13 @@ ns_write "[ad_admin_header "Add an Item"]
 <hr>
 "
 
-set picklist_item_id [database_to_tcl_string $db "select ec_picklist_item_id_sequence.nextval from dual"]
+set picklist_item_id [db_string get_item_id_from_seq "select ec_picklist_item_id_sequence.nextval from dual"]
 
-ns_write "<ul>
+append doc_body "<ul>
 
-<form method=post action=picklist-item-add-2.tcl>
-[export_form_vars prev_sort_key next_sort_key picklist_name picklist_item_id]
+<form method=post action=picklist-item-add-2>
+[export_form_vars prev_sort_key next_sort_key picklist_name]
+[export_form_vars -sign picklist_item_id]
 Name: <input type=text name=picklist_item size=30>
 <input type=submit value=\"Add\">
 </form>
@@ -46,3 +62,6 @@ Name: <input type=text name=picklist_item size=30>
 
 [ad_admin_footer]
 "
+
+
+doc_return  200 text/html $doc_body

@@ -1,0 +1,48 @@
+<template>
+
+  <name>lesson3</name>
+  <title>Template Three</title>
+  <author>karlg@arsdigita.com</author>
+  <comment>List user names and adressses.</comment>
+
+  <process>
+
+  <datasource>
+
+    <name>users</name>
+    <type>query</type>
+    <structure>multirow</structure>
+    <condition>
+	select 
+	  first_name, last_name, city, state 
+	from 
+	  ad_template_sample_users 
+        order by 
+          state
+    </condition>
+    <comment>Basic user information.</comment>
+
+    <variable>
+      <name>first_name</name>
+      <comment>The user's first name.</comment>
+    </variable>
+    <variable>
+      <name>last_name</name>
+      <comment>The user's last name.</comment>
+    </variable>
+    <variable>
+      <name>city</name>
+      <comment>The user's city of residence.</comment>
+    </variable>
+    <variable>
+      <name>state</name>
+      <comment>The user's state of residence.</comment>
+    </variable>
+
+  </datasource>
+
+  </process>
+
+</template>
+
+

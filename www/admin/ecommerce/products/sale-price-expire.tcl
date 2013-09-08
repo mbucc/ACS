@@ -1,10 +1,18 @@
-# $Id: sale-price-expire.tcl,v 3.0 2000/02/06 03:21:00 ron Exp $
-set_the_usual_form_variables
-# product_id, product_name, sale_price_id
+#  www/admin/ecommerce/products/sale-price-expire.tcl
+ad_page_contract {
+  Confirm sale expire.
 
-ReturnHeaders
+  @author Eve Andersson (eveander@arsdigita.com)
+  @creation-date Summer 1999
+  @cvs-id sale-price-expire.tcl,v 3.1.6.1 2000/07/22 07:57:45 ron Exp
+} {
+  sale_price_id:integer,notnull
+  product_id:integer,notnull
+}
 
-ns_write "[ad_admin_header "Expire Sale Price for $product_name"]
+set product_name [ec_product_name $product_id]
+
+doc_body_append "[ad_admin_header "Expire Sale Price for $product_name"]
 
 <h2>Expire Sale Price for $product_name</h2>
 
@@ -14,9 +22,9 @@ ns_write "[ad_admin_header "Expire Sale Price for $product_name"]
 
 Please confirm that you want to end the sale price right now.
 
-<form method=post action=sale-price-expire-2.tcl>
+<form method=post action=sale-price-expire-2>
 
-[export_form_vars product_id product_name sale_price_id]
+[export_form_vars product_id sale_price_id]
 
 <p>
 

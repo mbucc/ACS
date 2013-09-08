@@ -1,14 +1,21 @@
-# $Id: directory-view.tcl,v 3.0 2000/02/06 03:16:36 ron Exp $
-set_the_usual_form_variables
+ad_page_contract {
+    @param directory
+    @param text_p
 
-# directory, maybe text_p
+    @author ?
+    @creation-date ?
+    @cvs-id directory-view.tcl,v 3.2.2.4 2000/09/22 01:34:42 kevin Exp
+} {
+    directory:notnull
+    text_p:optional
+}
+
 
 # if text_p = t, we are looking at pure text
 
 if ![info exists text_p] {
     set text_p "f"
 }
-
 
 set exception_count 0
 set exception_text ""
@@ -23,9 +30,7 @@ if {$exception_count > 0} {
     return
 }
 
-ReturnHeaders
-
-ns_write "[ad_header "Contents of $directory"]
+set page_content "[ad_header "Contents of $directory"]
 
 <h2>Contents of $directory</h2>
 
@@ -40,7 +45,7 @@ foreach f [glob -nocomplain $directory/*] {
     if { [string match "*CVS" $f ] == 0 && [string match "*~*" $f] == 0 && [string match "*#*" $f] == 0 } {
 	# this is not a CVS directory or a backup file
 	if {[file isdirectory $f]} {
-	    append directory_text "<li><a href=\"directory-view.tcl?directory=[ns_urlencode $f]\">$f</a> (directory)" 
+	    append directory_text "<li><a href=\"directory-view?directory=[ns_urlencode $f]\">$f</a> (directory)" 
 	} else {
 	    set last_accessed [ns_fmttime [file atime $f]   "%m/%d/%Y %T"]
 	    set last_modified [ns_fmttime [file mtime $f]  "%m/%d/%Y %T"]
@@ -65,7 +70,7 @@ foreach f [glob -nocomplain $directory/*] {
 	    }
 
 	    if {$text_p == "t"} {
-		append file_text "<li><a href=\"/doc/sql/display-sql.tcl?url=[ns_urlencode $f]\">$f</a><br> Last modified: $last_modified  | Last accessed: $last_accessed | Size: $size<p>
+		append file_text "<li><a href=\"/doc/sql/display-sql?url=[ns_urlencode $f]\">$f</a><br> Last modified: $last_modified  | Last accessed: $last_accessed | Size: $size<p>
 $comments
 <p>
 " 
@@ -82,10 +87,14 @@ $comments
 	
     }
 }
-ns_write "
+append page_content "
 $file_text
 <p>
 $directory_text
 </ul>
 [ad_admin_footer]"
 
+
+
+
+doc_return  200 text/html $page_content

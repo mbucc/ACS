@@ -1,66 +1,69 @@
-# $Id: post-edit.tcl,v 3.0.4.1 2000/04/28 15:08:27 carsten Exp $
-# File:     admin/calendar/post-edit.tcl
-# Date:     1998-11-18
-# Contact:  philg@mit.edu, ahmeds@arsdigita.com
-# Purpose:  calendar item edit page
+# www/admin/calendar/post-edit.tcl
+ad_page_contract {
+    Step 1/2 in editing an existing calendar item
+    
+    Number of queries: 1
+
+    @author Philip Greenspun (philg@mit.edu)
+    @author Sarah Ahmed (ahmeds@arsdigita.com)
+    @creation-date 1998-11-18
+    @cvs-id post-edit.tcl,v 3.3.2.4 2000/09/22 01:34:26 kevin Exp
+    @last-modified 2000-07-13
+    @last-modified-by Michael Shurpik (mshurpik@arsdigita.com)
+} {
+    calendar_id:integer
+}
+
+
 
 if {[ad_read_only_p]} {
     ad_return_read_only_maintenance_message
     return
 }
 
-set_form_variables 0
-
-# calendar_id
-
 set user_id [ad_get_user_id]
+
 if { $user_id == 0 } {
     ad_returnredirect "/register/index.tcl?return_url=[ns_urlencode [ns_conn url]?[export_url_vars calendar_id]]"
     return
 }
 
-set db [ns_db gethandle]
 
-set selection [ns_db 0or1row $db "select title, body, html_p, approved_p, start_date, end_date, expiration_date, decode(event_url,null,'http://',event_url) as event_url, event_email, country_code, usps_abbrev, zip_code, category_id 
+
+set query_get_item "
+select title, body, html_p, approved_p, start_date, end_date, 
+expiration_date, decode(event_url,null,'http://',event_url) as event_url, 
+event_email, country_code, usps_abbrev, zip_code, category_id 
 from calendar
-where calendar_id = $calendar_id"]
+where calendar_id = :calendar_id"
 
-if { $selection == "" } {
-    ad_return_error "Can't find calendar item" "Can't find news item $calendar_id"
+if { ![db_0or1row get_item $query_get_item] } {
+
+    ad_return_error "Can't find event" "Can't find event $calendar_id"
     return
 }
 
-set_variables_after_query
+db_release_unused_handles
 
 
-ReturnHeaders
-
-ns_write "[ad_admin_header "edit $title"]
-<h2>Edit </h2>
-item <a href=\"item.tcl?calendar_id=$calendar_id\">$title</a>
+set page_content "[ad_admin_header "edit $title"]
+<h2>Edit event <a href=\"item?calendar_id=$calendar_id\"><i>$title</i></a></H2>
 <hr>
 
-<form method=post action=\"post-edit-2.tcl\">
+<form method=post action=\"post-edit-2\">
 <h3>The title</h3>
 
-Remember that in a list of events, users will only see the title.  So
-try to make the title as descriptive as possible, e.g.,
-\"[ad_parameter TitleExample calendar "Ansel Adams show at Getty
-Center in Los Angeles, March 1-June 15"]\".  
-
-<p>
-
-Title: <input type=text size=60 name=title  value=\"[philg_quote_double_quotes $title]\">
+Title: <input type=text size=60 MAXLENGTH=100 name=title  value=\"[philg_quote_double_quotes $title]\">
 
 <h3>Full Description</h3>
 
-This information will be visible to a user who has clicked on a title.
 Make sure to include event hours, e.g., \"10 am to 4 pm\" and
 directions to the event.
 
 <p>
 
-<textarea cols=70 rows=10 wrap=soft name=body>[philg_quote_double_quotes $body]</textarea>
+<textarea cols=70 rows=10 wrap=soft name=body>
+[philg_quote_double_quotes $body]</textarea>
 
 <P>
 
@@ -72,72 +75,53 @@ Text above is
 
 <h3>Dates</h3>
 
-To ensure that users get relevant and accurate information, the
-software is programmed to show only events that are in the future.
-Furthermore, these events are sorted by the time that they start.  So
-an event that happens next week is given more prominence than an evetn
-that happens next year.  Make sure that you get these right!
-
-<p>
-
 <table>
-<tr><th>Event Start Date<td>[philg_dateentrywidget start_date $start_date]
-<tr><th>Event End Date<td>[philg_dateentrywidget end_date $end_date]
+<tr><th>Start Date<td>[ad_dateentrywidget start_date $start_date]
+<tr><th>End Date<td>[ad_dateentrywidget end_date $end_date]
 </table>
-
 
 <h3>Additional contact information</h3>
 
-If there are Internet sources for additional information about this
-event, enter a URL and/or email address below.
+<p>If there is an Internet source for additional information about this
+event, then enter the URL.</p>
 
-<p>
+<p>Internet URL:<br>
+<input type=text name=event_url size=80 MAXLENGTH=200 value=\"http://\"></p>
 
-<table>
-<tr><th align=left>Url<td><input type=text name=event_url size=40 value=\"[philg_quote_double_quotes $event_url]\">
-</tr>
-<tr><th align=left>Contact Email<td><input type=text name=event_email size=30 value=\"[philg_quote_double_quotes $event_email]\">
-</tr>
-</table>
+<P>If attendees can reach an event coordinator via email, then enter the address below.</p>
+
+<p>Contact Email:<br>
+<input type=text name=event_email size=50 MAXLENGTH=100 value=\"\"></p>
+
 
 "
 
 if [ad_parameter EventsHaveLocationsP calendar 1] {
-    ns_write "<h3>Event Location</h3>
+    append page_content "<h3>Event Location</h3>
 
-If this event can be said to occur in one location, then please tell
-us where it is.  This will help our software give special prominence
-to events that are geographically close to a particular user.
-
-<p>
-
-Note that this information is not shown to users but only used by our
-computer programs. The description above should contain information
-about where to find the event.
-
-<p>
+<P>This information is not displayed to the user, and is optional.</p>
 
 <table>
 "
     if [ad_parameter InternationalP] {
 	if {$country_code == "us"} {
-	  ns_write "<tr><th align=left>Country<td>[country_widget $db]</tr>\n"
+	  append page_content "<tr><th align=left>Country<td>[country_widget]</tr>\n"
 	} else {
-	  ns_write "<tr><th align=left>Country<td>[country_widget $db $country_code]</tr>\n"
+	  append page_content "<tr><th align=left>Country<td>[country_widget $country_code]</tr>\n"
 	}
     }
 
     if [ad_parameter SomeAmericanReadersP] {
-	ns_write "<tr><th align=left>State<td>[state_widget $db $usps_abbrev]</tr>\n"
-	ns_write "<tr><th align=left>US Zip Code<td><input type=text name=zip_code size=7 value=\"[philg_quote_double_quotes $zip_code]\"></tr> (5 digits)\n"
+	append page_content "<tr><th align=left>State<td>[state_widget $usps_abbrev]</tr>\n"
+	append page_content "<tr><th align=left>US Zip Code<td>
+	<input type=text name=zip_code size=7 MAXLENGTH=10 value=\"[philg_quote_double_quotes $zip_code]\"></tr> (5 digits)\n"
     }
-    ns_write "</table>\n"
+    append page_content "</table>\n"
 }
 
-ns_write "
+append page_content "
 
 <P>
-
 
 <center>
 <input type=\"submit\" value=\"Submit\">
@@ -147,9 +131,6 @@ ns_write "
 [ad_admin_footer]
 "
 
+doc_return  200 text/html $page_content
 
-
-
-
-
-
+## END FILE post-edit.tcl

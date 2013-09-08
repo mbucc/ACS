@@ -1,39 +1,42 @@
-# /admin/pull-down-menus/items.tcl
-#
-# Author: aure@arsdigita.com, February 2000
-#
-# Shows the menu items and allows the administrator
-# to add, edit, delete, or arrange items
-#
-# $Id: items.tcl,v 1.1.2.2 2000/04/28 15:09:19 carsten Exp $
-# -----------------------------------------------------------------------------
+# /www/admin/pull-down-menus/items.tcl
+ad_page_contract {
 
-ad_page_variables {menu_id}
+  Shows the menu items and allows the administrator
+  to add, edit, delete, or arrange items.
+
+  @param menu_id menu for which the admin UI will be diplayed
+
+  @author aure@arsdigita.com
+  @creation-date February 2000
+  @cvs-id items.tcl,v 1.5.2.6 2000/09/22 01:35:56 kevin Exp
+
+} {
+
+  menu_id:integer
+
+}
 
 set title "Edit Items"
 
-set db [ns_db gethandle]
 
-# Get ALL of the items from the pdm_menus table.  Generally select * is a
-# no-no, but in this case we really need everything and the list would
-# be huge if we typed it all out.
 
-set selection [ns_db 0or1row $db "
-    select *
+set exists_p [db_0or1row menu_key "
+    select
+      menu_key
     from   pdm_menus
-    where  menu_id = $menu_id"]
-set_variables_after_query
+    where  menu_id = :menu_id" ]
 
 # If there aren't any items just redirect back to the index page
 
-if [empty_string_p $selection] {
+if { !$exists_p } {
+    db_release_unused_handles
     ad_returnredirect ""
     return
 }
 
 set page_content "
 
-[ad_header_with_extra_stuff "Pull-Down Menus: $title" [ad_pdm $menu_key 5 5] [ad_pdm_spacer $menu_key]]
+[ad_header_with_extra_stuff "Pull-Down Menus: $title" [ad_pdm $menu_key 5 5 "t"] [ad_pdm_spacer $menu_key]]
 
 <h2>$title</h2>
 
@@ -49,23 +52,20 @@ Pull-Down Menu outline:<p>
 </tr>
 "
 
-set selection [ns_db select $db "
+set count 0
+
+db_foreach menu_items "
 select n1.item_id, n1.label, n1.sort_key, n1.url,
     (select count(*)
     from  pdm_menu_items n2
-    where menu_id = $menu_id
+    where menu_id = :menu_id
     and   n2.sort_key like substr(n1.sort_key,0,length(n1.sort_key)-2)||'__'
     and   n2.sort_key > n1.sort_key) as more_children_p
 from   pdm_menu_items n1
-where  menu_id = $menu_id
-order by n1.sort_key"]
+where  menu_id = :menu_id
+order by n1.sort_key" {
 
-set count 0
-
-while {[ns_db getrow $db $selection]} {
     incr count
-    
-    set_variables_after_query
     
     if {[expr $count % 2]==0} {
 	set color "#eeeeee"
@@ -114,10 +114,9 @@ append page_content "
 
 # release the database handle
 
-ns_db releasehandle $db
+db_release_unused_handles
 
 # serve the page
 
-ns_return 200 text/html $page_content
-
+doc_return  200 text/html $page_content
 

@@ -1,40 +1,48 @@
-# $Id: portrait-thumbnail-bits.tcl,v 3.1 2000/03/10 03:00:04 mbryzek Exp $
-#
-# /shared/portrait-thumbnail-bits.tcl
-# 
-# by philg@mit.edu on September 26, 1999
-# 
-# spits out correctly MIME-typed bits for a user's portrait (thumbnail version)
-# 
+# /www/shared/portrait-thumbnail-bits.tcl
 
-set_form_variables
+ad_page_contract {
+    Spits out correctly MIME-typed bits for portrait (thumbnail size)
 
-# user_id
+    @author minhngo@cory.eecs.berkeley.edu
+    @creation-date 7/26/2000
+    @cvs-id portrait-thumbnail-bits.tcl,v 3.1.10.4 2000/09/09 21:03:51 kevin Exp
+} {
+    {user_id:naturalnum ""}
+    {portrait_id:naturalnum ""}
+}
 
-set db [ns_db gethandle]
+# need to specify user_id or portrait_id
+if {[empty_string_p $user_id] && [empty_string_p $portrait_id]} {
+   ad_return_error "No ID specify" "Cannot leave user_id and portrait_id empty"
+   return
+}
+# spits out correctly MIME-typed bits for a user's portrait
 
-set column portrait_thumbnail
+# if portrait_id is not given, retrieve it
+set file_type ""
+if {[empty_string_p $portrait_id]} {
+   db_0or1row file_type_get "
+      select portrait_file_type as file_type,
+	     portrait_id
+        from general_portraits
+       where on_what_id = :user_id
+	 and upper(on_which_table) = 'USERS'
+	 and approved_p = 't'
+	 and portrait_primary_p = 't'
+   "
+} else {
+   set file_type [db_string file_type_get "
+      select portrait_file_type
+        from general_portraits
+       where portrait_id = :portrait_id"]
+}
 
-set file_type [database_to_tcl_string_or_null $db "select portrait_file_type
-from users
-where user_id = $user_id
-and portrait_thumbnail is not null"]
-
-if { [empty_string_p $file_type] } {
-    # Try to get a regular portrait
-    set file_type [database_to_tcl_string_or_null $db "select portrait_file_type
-from users
-where user_id = $user_id"]
-    if [empty_string_p $file_type] {
-	ad_return_error "Couldn't find thumbnail or portrait" "Couldn't find a thumbnail or a portrait for User $user_id"
-	return
-    }
-    set column portrait
+if [empty_string_p $file_type] {
+    ad_return_error "Couldn't find portrait" "Couldn't find a portrait for User $user_id"
+    return
 }
 
 ReturnHeaders $file_type
+db_write_blob return_file "select portrait_thumbnail from general_portraits where portrait_id = $portrait_id" 
+db_release_unused_handles
 
-ns_ora write_blob $db "select $column
-from users
-where user_id = $user_id"
-    

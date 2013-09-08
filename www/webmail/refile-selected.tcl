@@ -1,20 +1,21 @@
 # /webmail/refile-selected.tcl
-# by jsc@arsdigita.com (2000-02-23)
 
-# Perform bulk refiling of selected messages.
+ad_page_contract {
+    Perform bulk refiling of selected messages.
 
-ad_page_variables {mailbox_id}
-
-validate_integer mailbox_id $mailbox_id
+    @author Jin Choi (jsc@arsdigita.com)
+    @creation-date 2000-02-23
+    @cvs-id refile-selected.tcl,v 1.5.2.4 2000/07/26 17:21:38 mbryzek Exp
+} {
+    mailbox_id:integer
+}
 
 set user_id [ad_verify_and_get_user_id]
-
-set db [ns_db gethandle]
 
 set msg_ids [ad_get_client_property "webmail" "selected_messages"]
 
 
-if { [database_to_tcl_string $db "select count(*)
+if { [db_string mailbox_count "select count(*)
 from wm_mailboxes
 where mailbox_id = $mailbox_id
   and creation_user = $user_id"] == 0 } {
@@ -35,10 +36,10 @@ with_catch errmsg {
 	}
 	incr msg_id_start_index 1000
 	incr msg_id_end_index 1000
-	ns_db dml $db "update wm_message_user_map
-set mailbox_id = $mailbox_id
+	db_dml refile "update wm_message_mailbox_map
+set mailbox_id = :mailbox_id
  where msg_id in ([join $msg_id_chunk ", "])
-  and mailbox_id in (select mailbox_id from wm_mailboxes where creation_user = $user_id)"
+  and mailbox_id in (select mailbox_id from wm_mailboxes where creation_user = :user_id)"
     }
 } {
     ad_return_error "Refiling Failed" "Refiling of messages failed:
@@ -49,5 +50,5 @@ $errmsg
     return
 }
 
-ad_returnredirect "index.tcl"
+ad_returnredirect "index"
 

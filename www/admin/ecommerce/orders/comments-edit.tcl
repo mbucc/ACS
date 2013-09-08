@@ -1,9 +1,16 @@
-# $Id: comments-edit.tcl,v 3.0.4.1 2000/04/28 15:08:43 carsten Exp $
-set_the_usual_form_variables
-# order_id, cs_comments
+# /www/admin/ecommerce/orders/comments-edit.tcl
+ad_page_contract {
 
-set db [ns_db gethandle]
+  Update the comments field of ec_orders.
 
-ns_db dml $db "update ec_orders set cs_comments='$QQcs_comments' where order_id=$order_id"
+  @author Eve Andersson (eveander@arsdigita.com)
+  @creation-date Summer 1999
+  @cvs-id comments-edit.tcl,v 3.1.6.3 2000/08/16 16:28:51 seb Exp
+} {
+  order_id:integer,notnull
+  cs_comments
+}
 
-ad_returnredirect "one.tcl?[export_url_vars order_id]"
+db_dml cs_comments_update "update ec_orders set cs_comments=:cs_comments where order_id=:order_id"
+
+ad_returnredirect "one?[export_url_vars order_id]"

@@ -7,7 +7,7 @@
 <body bgcolor=#ffffff text=#000000>
 <h2>Maintenance</h2>
 
-of the <a href="index.html">ArsDigita Community System</a>
+of the <a href="index">ArsDigita Community System</a>
 by <a href="http://photo.net/philg/">Philip Greenspun</a>
 
 <hr>
@@ -33,7 +33,7 @@ would then consist of the following steps:
 
 <ul>
 <li>put the ArsDigita Community System into read-only mode by editing
-/tcl/ad-read-only.tcl; all the pages in the system that accept user
+/tcl/ad-read-only; all the pages in the system that accept user
 input are supposed to call ad_read_only_p before offering users a form.
 When ad_read_only_p is set to return 1, people will still be able to
 read whatever they want from an ACS installation but they won't be
@@ -46,7 +46,7 @@ when you "flip the switch" to the new Oracle installation
 
 <li>switch AOLserver to talk to the new Oracle installation
 
-<li>edit /tcl/ad-read-only.tcl to put the system back into normal mode
+<li>edit /tcl/ad-read-only to put the system back into normal mode
 
 
 

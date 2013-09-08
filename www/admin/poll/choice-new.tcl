@@ -1,10 +1,23 @@
-# $Id: choice-new.tcl,v 3.1.4.1 2000/04/28 15:09:14 carsten Exp $
-# choice-new.tcl -- insert a new choice, or re-order existing choices
+# /admin/poll/choice-new.tcl
 
-set_the_usual_form_variables
-# expects poll_id, choice_id, count, action, label, option lists of the form
-# 'order_$choice_id', 
+ad_page_contract { 
+    Inserts a new choice, or re-orders existing choices
+    @param poll_id the ID of the poll
+    @param choice_id the ID of the choice
+    @param order option list
+    @choice_new place in list of choices for new choice
+    @label name of new choice
+    @action reorder or add new choice
 
+    @cvs-id choice-new.tcl,v 3.4.2.8 2001/01/11 20:15:56 khy Exp
+} {
+    poll_id:notnull,naturalnum
+    choice_id:notnull,naturalnum,verify
+    action:notnull
+    label:optional
+    order:array,optional
+    choice_new:notnull,naturalnum
+}
 
 # random preliminaries
 
@@ -16,91 +29,69 @@ if {[ad_read_only_p]} {
 set user_id [ad_verify_and_get_user_id]
 ad_maybe_redirect_for_registration
 
-
 if { $action == "Change Ordering" } {
     set just_reorder_p 1
 } else {
     set just_reorder_p 0
 }
 
-
 # collect the ordering options, then sanity check in the input
-
 
 set exception_count 0
 set exception_text ""
 
-set form [ns_getform]
-set form_size [ns_set size $form]
-
-for { set i 0 } { $i < $form_size } { incr i } {
-    set key [ns_set key $form $i]
-    set value [ns_set value $form $i]
-
-    if [regexp {order_([0-9]*)} $key match a_choice_id] {
-
-	if [info exists seen_order_p($value)] {
-	    incr exception_count
-	    append exception_text "<li> You have repeated a number in your re-ordering of items."
-	    break
-	} else {
-	    set seen_order_p($value) 1
-	}
-
-	set choice_order($a_choice_id) $value
+foreach order_choice_id [array names order] {
+    set order_number $order($order_choice_id)
+    if [info exists seen_order_p($order_number)] {
+	incr exception_count
+	append exception_text "<li> You have a repeated number in your re-ordering of items."
+	break
+    } else {
+	set seen_order_p($order_number) 1
     }
+
+    set choice_order($order_choice_id) $order_number
 }
+
 
 if { !$just_reorder_p } {
     if [info exists seen_order_p($choice_new)] {
 	incr exception_count
 	append exception_text "<li> Your new choice has the same ordering number as an existing choice"
     }
-}
-
-
-
-if { ![info exists poll_id] || [empty_string_p $poll_id] } {
-    incr exception_count
-    append exception_text "<li> poll_id is missing.  This could mean there's a problem in our software"
-}
-
-if { !$just_reorder_p } {
-
-    if { ![info exists choice_id] || [empty_string_p $choice_id] } {
-	incr exception_count
-	append exception_text "<li> choice_id is missing.  This could mean there's a problem in our software"
-    }
 
     if { ![info exists label] || [empty_string_p $label] } {
 	incr exception_count
-	append exception_text "<li> Please supply a label for the choice"
+	append exception_text "<li> Please name your new choice"
     }
 }
 
-    
 if { $exception_count > 0 } {
     ad_return_complaint $exception_count $exception_text
     return
 }
 
-
-
 # insert the value
 
-set db [ns_db gethandle]
+
 
 if { !$just_reorder_p } {
+set already_p [db_string get_already_has_choice "select count(*) as cnt from
+poll_choices where poll_id=:poll_id and label=:label"]
+if { $already_p > 0 } {
+    ad_return_complaint 1 "A choice with that label already exists!"
+    return
+}
 
     set insert_sql "
 insert into poll_choices
     (choice_id, poll_id, label, sort_order)
 values
-    ($choice_id, $poll_id, '$QQlabel', $choice_new)
+    (:choice_id, :poll_id, :label, :choice_new)
 "
 
-    if [catch { ns_db dml $db $insert_sql } errmsg ] {
-	ns_return 200 text/html "
+    if [catch { db_dml insert_poll_choice $insert_sql } errmsg ] {
+	doc_return  200 text/html "
 [ad_admin_header "Error inserting poll"]
 <h3>Error in inserting a poll</h3>
 <hr>
@@ -116,32 +107,43 @@ $errmsg
     }
 }
 
-
 # update the sort orders of the existing choices
 
 if [info exists choice_order] {
     
-    ns_db dml $db "begin transaction"
+    db_transaction {
     
-    foreach i [array names choice_order] {
-	ns_db dml $db "
+    foreach i [array names order] {
+	set sort_order $order($i)
+	db_dml reorder_choices "
 update poll_choices
-   set sort_order = $choice_order($i)
- where choice_id = $i
+   set sort_order = :sort_order
+ where choice_id = :i
 "
     }
    
-    ns_db dml $db "end transaction"
+    }
 }
 
-ns_db releasehandle $db
-
+db_release_unused_handles
 
 # update memoized choices
 
-validate_integer "poll_id" $poll_id
 util_memoize_flush "poll_labels_internal $poll_id"
 
 # redirect back to where they came from
 
-ad_returnredirect "one-poll.tcl?[export_url_vars poll_id]"
+ad_returnredirect "one-poll?[export_url_vars poll_id]"
+
+
+
+
+
+
+
+
+
+
+
+
+

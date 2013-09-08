@@ -1,0 +1,13 @@
+# /webroot/web/acs-staging/www/wap/register/logout.tcl
+
+ad_page_contract {
+    Log out.
+
+    @author Andrew Grumet (aegrumet@arsdigita.com)
+    @creation-date Sun May 28 16:31:51 2000
+    @cvs-id logout.wap,v 1.2.2.3 2000/07/24 14:23:32 aegrumet Exp
+} {}
+
+ad_user_logout
+
+wap_returnredirect [wap_home] "Logged out."

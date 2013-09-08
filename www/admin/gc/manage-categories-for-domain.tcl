@@ -1,13 +1,18 @@
-# $Id: manage-categories-for-domain.tcl,v 3.1.2.4 2000/03/15 05:23:57 curtisg Exp $
-set_the_usual_form_variables
+# /www/admin/gc/manage-categories-for-domain.tcl
+ad_page_contract {
+    Displays all categories within a domain.
 
-# domain_id
+    @param domain_id which domain
 
-set db [gc_db_gethandle]
-set selection [ns_db 1row $db "select full_noun, domain from ad_domains where domain_id = $domain_id"]
-set_variables_after_query
+    @author philg@mit.edu
+    @cvs manage-categories-for-domain.tcl,v 3.3.6.6 2000/09/22 01:35:23 kevin Exp
+} {
+    domain_id:integer
+}
 
-append html "[ad_admin_header "Categories for $domain Classified Ads"]
+db_1row domain_info "select full_noun, domain from ad_domains where domain_id = $domain_id"
+
+set page_content "[ad_admin_header "Categories for $domain Classified Ads"]
 
 <h2>Categories</h2>
 
@@ -21,37 +26,36 @@ append html "[ad_admin_header "Categories for $domain Classified Ads"]
 
 "
 
-set selection [ns_db select $db "select ac.primary_category, count(*) as n_ads
+set counter 0 
+
+db_foreach primary_categories_with_ads "select ac.primary_category, max(ac.category_id) as category_id, count(*) as n_ads
 from ad_categories ac, classified_ads ca
-where ac.domain_id = $domain_id
-and ca.domain_id = $domain_id
+where ac.domain_id = :domain_id
+and ca.domain_id = :domain_id
 and ac.primary_category = ca.primary_category
 and (sysdate <= expires or expires is null)
 group by ac.primary_category
-order by upper(ac.primary_category)"]
+order by upper(ac.primary_category)" {
 
-set counter 0 
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
     incr counter
-    append html "<li>
-<a href=\"ads-from-one-category.tcl?domain_id=$domain_id&primary_category=[ns_urlencode $primary_category]\">$primary_category</a>
+    append page_content "<li>
+<a href=\"ads-from-one-category?[export_url_vars domain_id primary_category]\">$primary_category</a>
 ($n_ads)
-\[ <a href=\"delete-category.tcl?domain_id=$domain_id&primary_category=[ns_urlencode $primary_category]\"> delete </a> | 
-<a href=\"category-edit.tcl?domain_id=$domain_id&primary_category=[ns_urlencode $primary_category]\"> edit </a> 
+\[ <a href=\"delete-category?[export_url_vars domain_id category_id]\"> delete </a> | 
+<a href=\"category-edit?[export_url_vars domain_id category_id]\"> edit </a> 
 \]"
 
 }
 
 if { $counter == 0 } {
-    append html "no categories defined currently"
+    append page_content "no categories defined currently"
 }
 
-append html "
+append page_content "
 
 <p>
 
-<li><a href=\"category-add.tcl?domain_id=$domain_id\">add a new category</a>
+<li><a href=\"category-add?domain_id=$domain_id\">add a new category</a>
 
 </ul>
 
@@ -65,33 +69,34 @@ in these categories)
 <ul>
 "
 
-set selection [ns_db select $db "select ac.primary_category
-from ad_categories ac
-where ac.domain_id = $domain_id
-and 0 = (select count(*) from classified_ads ca 
-            where ca.domain_id = $domain_id
-            and ca.primary_category = ac.primary_category)
-order by upper(ac.primary_category)"]
-
 set counter 0
-while {[ns_db getrow $db $selection]} {
+
+db_foreach primary_categories_with_or_without_ads "select ac.primary_category,
+category_id
+from ad_categories ac
+where ac.domain_id = :domain_id
+and 0 = (select count(*) from classified_ads ca 
+            where ca.domain_id = :domain_id
+            and ca.primary_category = ac.primary_category)
+order by upper(ac.primary_category)" {
+
     incr counter
-    set_variables_after_query
-    append html "<li>$primary_category \[ <a href=\"delete-category.tcl?domain_id=$domain_id&primary_category=[ns_urlencode $primary_category]\"> DELETE </a> | 
-<a href=\"category-edit.tcl?domain_id=$domain_id&primary_category=[ns_urlencode $primary_category]\"> EDIT </a> 
+
+    append page_content "<li>$primary_category \[ <a href=\"javascript:if(confirm('Are you sure you want to delete this category?'))location.href='delete-category?[export_url_vars domain_id category_id]'\"> DELETE </a> | 
+<a href=\"category-edit?[export_url_vars domain_id category_id]\"> EDIT </a> 
 \]"
 
 }
 
 if { $counter == 0 } {
-    append html "No orphan categories found."
+    append page_content "No orphan categories found."
 }
 
-append html "
+append page_content "
 </ul>
 
 [ad_admin_footer]
 "
 
-ns_db releasehandle $db
-ns_return 200 text/html $html
+
+doc_return  200 text/html $page_content

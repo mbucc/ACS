@@ -1,26 +1,32 @@
-# $Id: add.tcl,v 3.2.2.1 2000/03/17 08:02:22 mbryzek Exp $
-# File: /www/intranet/procedures/add.tcl
-#
-# Author: mbryzek@arsdigita.com, Jan 2000
-#
-# Purpose: Form to enter necessary info about a new procedure
-#
+# /www/intranet/procedures/add.tcl
 
-ad_maybe_redirect_for_registration
-set user_id [ad_get_user_id]
+ad_page_contract {
+    Form to enter necessary info about a new procedure
 
-set db [ns_db gethandle]
-set procedure_id [database_to_tcl_string $db \
-	"select im_procedures_procedure_id_seq.nextval from dual"]
+    @param none no parameters passed in
+
+    @author mbryzek@arsdigita.com
+    @creation-date Jan 2000
+
+    @cvs-id add.tcl,v 3.7.6.10 2001/01/12 08:53:21 khy Exp
+} {
+    
+}
+
+set user_id [ad_maybe_redirect_for_registration]
+
+set procedure_id [db_nextval "im_procedures_procedure_id_seq"]
 
 set page_title "Add a procedure"
-set context_bar [ad_context_bar [list "/" Home] [list "../index.tcl" "Intranet"] [list "index.tcl" "Procedures"] "Add procedure"]
+set context_bar [ad_context_bar_ws [list "index" "Procedures"] "Add procedure"]
+
+set employee_group_id [im_employee_group_id]
 
 set page_body "
 <blockquote>
 
-<form method=post action=add-2.tcl>
-<input type=hidden name=procedure_id [export_form_value procedure_id]>
+<form method=post action=add-2>
+[export_form_vars -sign procedure_id]
 
 [im_format_number 1] The procedure:
 <br><dd><input type=text size=50 maxlength=200 name=name [export_form_value name]>
@@ -33,11 +39,10 @@ person responsible for certifying others):
 <br><dd>
 <select name=user_id>
 <option value=\"\"> -- Please select --
-[ad_db_optionlist $db "select 
-first_names || ' ' || last_name as name, user_id 
-from users
-where ad_group_member_p ( user_id, [im_employee_group_id] ) = 't'
-order by lower(name)" [value_if_exists creation_user]]
+[db_html_select_value_options -select_option $user_id certifying_user "select 
+user_id, first_names || ' ' || last_name as name 
+from im_employees_active
+order by lower(name)"]
 </select>
 
 <p><center>
@@ -51,4 +56,6 @@ order by lower(name)" [value_if_exists creation_user]]
 
 "
 
-ns_return 200 text/html [ad_partner_return_template]
+
+
+doc_return  200 text/html [im_return_template]

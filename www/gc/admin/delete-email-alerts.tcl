@@ -1,23 +1,29 @@
-# $Id: delete-email-alerts.tcl,v 3.1 2000/03/10 23:58:48 curtisg Exp $
-set_form_variables
-set_form_variables_string_trim_DoubleAposQQ
+# /www/gc/admin/delete-email-alerts.tcl
 
-# bad_addresses (separated by spaces, thus a Tcl list)
+ad_page_contract {
+    @author
+    @creation-date
+    @cvs-id delete-email-alerts.tcl,v 3.3.2.6 2000/09/22 01:37:59 kevin Exp
 
-set db [ns_db gethandle]
+    @param bad_addresses
+} {
+    bad_addresses
+}
 
-set sql "delete from classified_email_alerts where user_id in (select user_id from users where upper(email) in ('[join [string toupper $QQbad_addresses] "','"]'))"
+set bad_addresses_temp [join [string toupper $bad_addresses] "','"]
 
-ns_db dml $db $sql
+set sql "
+    delete from classified_email_alerts 
+    where user_id in (select user_id from users where upper(email) in (:bad_addreses))"
 
-set n_alerts_killed [ns_ora resultrows $db]
+db_dml gc_admin_alerts_delete $sql
 
-set domain [database_to_tcl_string $db "select domain
-from ad_domains where domain_id = $domain_id"]
+set n_alerts_killed [db_resultrows]
 
-ns_db releasehandle $db
+set domain [db_string gc_admin_alerts_delete_domain_get "select domain
+                                  from ad_domains where domain_id = :domain_id"]
 
-ns_return 200 text/html "<html>
+doc_return  200 text/html "<html>
 <head>
 <title>Alerts Deleted</title>
 </head>
@@ -25,9 +31,8 @@ ns_return 200 text/html "<html>
 <body bgcolor=#ffffff text=#000000>
 <h2>Alerts Deleted</h2>
 
-in <a href=\"domain-top.tcl?[export_url_vars domain_id]\">$domain classifieds</a>
+in <a href=\"domain-top?[export_url_vars domain_id]\">$domain classifieds</a>
 <hr>
-
 
 Deleted a total of $n_alerts_killed alerts for the following email addresses:
 
@@ -35,7 +40,5 @@ Deleted a total of $n_alerts_killed alerts for the following email addresses:
 $bad_addresses
 </blockquote>
 
-<hr>
-<address>philg@mit.edu</address>
-</body>
-</html>"
+[ad_footer]
+"

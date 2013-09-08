@@ -1,27 +1,28 @@
-# $Id: index.tcl,v 3.7 2000/03/08 13:13:45 davis Exp $
-# Top level page for the ticket tracker v3.x
+# /www/ticket/index.tcl
+ad_page_contract {
 
-# still a little embarassing since it is so modal...
+    Top level page for the ticket tracker v3.x .
+    still a little embarassing since it is so modal...
 
+    @param expert do we use the expert interface?
+    @param customize
+    @param view
+    @param ticket_table
+    @param ticket_sort
+    @param orderby what to sort the listing by
+    @param default_orderby the default sort
+    @param project_id a project to restrict to
+    @param domain_id domains to restrict to
+    @param advs
+    @param advs_results
+    @param qs
+    @param query_string
+    @param debug
 
-# Retain ns_writes here since otherwise if you as for a huge bunch of
-# tickets (like all of them) you have to wait for the query to finish
-# and the table to be built.  Much better to pop top of page out 
-# quickly.
- 
-# The table itself is returned atomically so you do not have an active 
-# query waiting for a consumer.
-
-
-set db [ns_db gethandle]
-set user_id [ad_get_user_id]
-
-set debug {}
-
-# Load the persistent page defaults
-ad_custom_page_defaults [ad_custom_load $db $user_id ticket_settings [ns_conn url] slider_custom]
-
-ad_page_variables {
+    @author Jeff Davis (davis@arsdigita.com)
+    @author Kevin Scaldeferri (kevin@caltech.edu)
+    @cvs-id index.tcl,v 3.13.2.8 2000/10/25 23:10:39 kevin Exp
+} {
     {expert 1}
     {customize {}} 
     {view {}}
@@ -29,39 +30,59 @@ ad_page_variables {
     {ticket_sort {}} 
     {orderby {}}
     {default_orderby {msg_id*}}
-    {project_id {}}
-    {domain_id -multiple-list}
+    {project_id:integer {}}
+    domain_id:multiple,optional
     {advs 0}
     {advs_results 0}
     {qs 0}
     {query_string {}}
-    {debug -multiple-list}
+    {debug:multiple ""}
 }
 
-if {![empty_string_p $project_id] } {
-    set selection [ns_db 0or1row $db "
- select title_long as project_title_long, code_set, 
-   group_id as project_group_id 
- from ticket_projects  
- where project_id = $project_id"]
+# -----------------------------------------------------------------------------
+#
+# Retain ns_writes here since otherwise if you ask for a huge bunch of
+# tickets (like all of them) you have to wait for the query to finish
+# and the table to be built.  Much better to pop top of page out 
+# quickly.
+#
+# KS - I changed this to build incrementally.  With the new document API
+# we will be able to go back to this behavior if desired
 
-    if {[empty_string_p $selection]} { 
-        ad_return_complaint 1 "<li>Invalid project id\n"
-        return
+# Note on 25 Oct - new document API is largely abandoned.  Put in
+# a crude hack to acheive this
+
+set flushed_p 0
+
+set user_id [ad_verify_and_get_user_id]
+
+# Load the persistent page defaults
+ad_custom_page_defaults [ad_custom_load $user_id ticket_settings \
+	[ns_conn url] slider_custom]
+
+
+if {![empty_string_p $project_id] } {
+    page_validation {
+	if {! [db_0or1row info_for_one_project "
+	select title_long as project_title_long, 
+	       code_set, 
+	       group_id as project_group_id 
+	from   ticket_projects  
+	where  project_id = :project_id"]} {
+
+	    error "Invalid project id"
+        }
     }
-    set_variables_after_query
 }
 
 if { ! [info exists domain_id] || [lsearch $domain_id {all}] > -1 }  {
     set domain_id {}
 }
 
-
 # sorting state a little tricky since we want 
 # to default but we also want ticket_sort not to be overriden 
 # by the defaulting...
-if {[empty_string_p $orderby] 
-    && [empty_string_p $ticket_sort]} { 
+if {[empty_string_p $orderby] && [empty_string_p $ticket_sort]} { 
     set orderby $default_orderby
 }
 
@@ -87,7 +108,6 @@ set state_noproj "[ns_conn url]?[export_ns_set_vars url [list project_id customi
 set state_nodom "[ns_conn url]?[export_ns_set_vars url [list domain_id customize ticket_settings]]"
 set state_nodompro "[ns_conn url]?[export_ns_set_vars url [list domain_id customize project_id ticket_settings]]"
 
-
 #
 # Generate context bar.
 #
@@ -95,7 +115,6 @@ set state_nodompro "[ns_conn url]?[export_ns_set_vars url [list domain_id custom
 set sql_restrict {} 
 set page_title {}
 set remove_column [list]
-
 
 if {![empty_string_p $customize]} { 
     # Customizing (tables, sorts, settings)
@@ -142,7 +161,7 @@ if {![empty_string_p $customize]} {
     }
     
     if {![empty_string_p $project_id]} { 
-        append sql_restrict "and ti.project_id = $project_id"
+        append sql_restrict "and ti.project_id = :project_id"
 
         lappend context [list "[ns_conn url]?domain_id=all&[export_ns_set_vars url [list customize view domain_id]]" "One Project"]    
         append page_title ": Project - $project_title_long"
@@ -154,15 +173,14 @@ if {![empty_string_p $customize]} {
 	    set domain_title_long "Multiple"
             lappend context  [list "[ns_conn url]?view=&[export_ns_set_vars url [list customize view]]" "Multiple Feature Areas"]
 	} else {
-	    set selection [ns_db 0or1row $db "select
-        title_long as domain_title_long, group_id as domain_group_id 
-      from ticket_domains  
-      where domain_id = $domain_id"]
-	    if {[empty_string_p $selection]} { 
-		ad_return_complaint 1 "<li>Invalid domain id\n"
-		return
+	    page_validation {
+		if {![db_0or1row info_for_one_domain "select
+		title_long as domain_title_long, group_id as domain_group_id 
+		from ticket_domains  
+		where domain_id = :domain_id"]} {
+		    error "Invalid domain id"
+		}
 	    }
-	    set_variables_after_query
             lappend context  [list "[ns_conn url]?view=&[export_ns_set_vars url [list customize view]]" "One Feature Area"]
             lappend remove_column domain_title
 	}
@@ -181,14 +199,15 @@ if {![empty_string_p $customize]} {
     }
 }
 
+append page_content "
+[ad_header "[ticket_system_name] $page_title"]
 
-ReturnHeaders
+<h2>[ticket_system_name] $page_title</h2>
 
-ns_write "[ad_header "[ticket_system_name] $page_title"]
- <h3>[ticket_system_name] $page_title</h3>
- [ticket_context $context]    
- <hr>\n"
+[ticket_context $context]    
 
+<hr>
+"
 
 # 
 # Dimensional slider definitions
@@ -229,7 +248,7 @@ set table_def {
     {line_number "Num" no_sort {<td align=right>$Tcount</td>}}
     {score "Score" {} r}
     {msg_id "ID#" {ti.msg_id $order} 
-        {<td align=right><a href="/ticket/issue-view.tcl?msg_id=$msg_id&mode=full&[uplevel set return_url]">$msg_id</a></td>}
+        {<td align=right><a href="/ticket/issue-view?msg_id=$msg_id&mode=full&[uplevel set return_url]">$msg_id</a></td>}
     }
     {priority "Pri" {priority_seq $order} {<td>$priority</td>}}
     {ticket_type "Type" {ticket_type_seq $order} {<td>[string range $ticket_type 0 3]</td>}}
@@ -290,21 +309,19 @@ set table_def {
     }
 }
 
-
 #
 # Load user customized stuff 
 #
 
-
 set col {}
 if {$expert} { 
     if {![empty_string_p $ticket_table]} { 
-        set col [ad_custom_load $db $user_id ticket_table $ticket_table table_view]
+        set col [ad_custom_load $user_id ticket_table $ticket_table table_view]
     }
 
     if {[empty_string_p $orderby]} {
         if { ![empty_string_p $ticket_sort]} { 
-            set orderby [ad_custom_load $db $user_id ticket_sort $ticket_sort table_sort]
+            set orderby [ad_custom_load $user_id ticket_sort $ticket_sort table_sort]
         }
     } else { 
         set ticket_sort {}
@@ -327,14 +344,13 @@ if {[empty_string_p $col]} {
     }
 } 
 
-
 #
 # The ugly query...
 #
 if { $advs } { 
     set tmp [ticket_build_advs_query]
     if {! [empty_string_p $tmp ] } { 
-        append sql_restrict { and } $tmp
+	append sql_restrict { and } $tmp
     }
 } else { 
     append sql_restrict [ad_dimensional_sql $dimensional where]
@@ -352,8 +368,7 @@ if {($qs || $advs) && ![empty_string_p $query_string]} {
             set numsearch {}
         }
     }
-    util_dbq search
-    set psc "pseudo_contains(dbms_lob.substr(content,3000) || u.email || u.first_names || u.last_name || one_line, $DBQsearch)"
+    set psc "pseudo_contains(dbms_lob.substr(content,3000) || u.email || u.first_names || u.last_name || one_line, :search)"
     set search_from ",(select on_what_id, sum($psc) as score from users u, general_comments gc where gc.user_id = u.user_id and ($psc > 0 $numsearch) and on_which_table in('ticket_issues_i','ticket_issues') group by on_what_id) psc"
     set search_columns ", psc.score"
     set search_term " and psc.on_what_id = ti.msg_id"
@@ -361,11 +376,16 @@ if {($qs || $advs) && ![empty_string_p $query_string]} {
     set search_columns ", 0 as score"
     set search_from {}
     set search_term {}
+    set search ""
 }
+
+# need the ns_set to pass to ad_table
+set bind_vars [ad_tcl_vars_to_ns_set project_id search]
 
 set query "select 
    ti.*, 
    gc.content as message,
+   gc.html_p as html_p,
    users.email,
    users.user_id,
    users.first_names || '&nbsp;' || users.last_name as user_name,
@@ -405,7 +425,6 @@ set query "select
 #
 #  Special table breaking code for certain sorts.
 #
-
 
 set rowcode {}
 switch [ad_sort_primary_key $orderby] { 
@@ -468,92 +487,141 @@ if { $customize == "settings" } {
     # customizing page defaults -- nuke from environment anything we will set on the 
     # settings screen.
     set return_url "[ns_conn url]?[export_ns_set_vars url [list ticket_table customize submitby assign status created project_id domain_id expert orderby]]"
-    ns_write "[ad_custom_form $return_url ticket_settings [ns_conn url]]"
-    ns_write "<table>\n[ad_dimensional_settings $dimensional [ns_getform]]"
-    ns_write "<tr><th align=left>Default project</th><td>
-       [ad_db_select_widget -default $project_id -option_list {{{} {-- All Projects --}}} $db "select
+    append page_content "
+    [ad_custom_form $return_url ticket_settings [ns_conn url]]
+    <table>\n[ad_dimensional_settings $dimensional [ns_getform]]
+    <tr><th align=left>Default project</th>
+      <td>
+       [ad_db_select_widget -default $project_id -option_list {{{} {-- All Projects --}}} project_selections "select
           title_long, project_id 
           from ticket_projects
           where end_date is null or end_date > sysdate 
-          order by UPPER(title_long) asc" project_id]</td></tr>"
-    ns_write "<tr><th align=left>feature area</th><td>
-      [ad_db_select_widget -default $domain_id -option_list {{{all} {-- All Feature areas --}}} $db "select distinct td.title_long, td.domain_id 
-          from ticket_domains td, ticket_domain_project_map tgm , ticket_projects tp where td.domain_id = tgm.domain_id and tgm.project_id = tp.project_id and (tp.end_date is null or tp.end_date > sysdate) and (td.end_date is null or td.end_date > sysdate)
-          order by UPPER(td.title_long) asc" domain_id]</td></tr>"
-    ns_write "<tr><th align=left>Default sort </th><td><select name=default_orderby>[html_select_value_options $orderby_list $orderby]</select></td></tr>"
-    ns_write "<tr><th align=left>Ticket tracker mode</th><td><select name=expert>[html_select_value_options {{0 {Normal}} {1 {Expert}}} $expert]</select></td></tr>"
-    ns_write "</table></form>"
+          order by UPPER(title_long) asc" project_id]
+      </td>
+    </tr>
+
+    <tr><th align=left>feature area</th>
+      <td>
+       [ad_db_select_widget -default $domain_id -option_list {{{all} {-- All Feature areas --}}} domain_selections "select 
+          distinct td.title_long, td.domain_id 
+          from ticket_domains td, ticket_domain_project_map tgm , 
+               ticket_projects tp 
+          where td.domain_id = tgm.domain_id 
+          and tgm.project_id = tp.project_id 
+          and (tp.end_date is null or tp.end_date > sysdate) 
+          and (td.end_date is null or td.end_date > sysdate)
+          order by UPPER(td.title_long) asc" domain_id]
+      </td>
+    </tr>
+    <tr><th align=left>Default sort </th>
+      <td><select name=default_orderby>
+          [html_select_value_options $orderby_list $orderby]</select>
+      </td>
+    </tr>
+    <tr><th align=left>Ticket tracker mode</th>
+      <td><select name=expert>
+          [html_select_value_options {{0 {Normal}} {1 {Expert}}} $expert]
+          </select>
+      </td>
+    </tr>
+    </table></form>"
+
 } elseif { $customize == "table" } { 
+
     # If we are in table customization mode.
     set return_url "[ns_conn url]?[export_ns_set_vars url [list ticket_table customize]]"
-    ns_write "[ad_table_form $table_def select $return_url ticket_table $ticket_table $col]"
+    append page_content "[ad_table_form $table_def select $return_url ticket_table $ticket_table $col]"
+
 } elseif { $customize == "sort" } {
+
     # If we are in sort customization mode.
     set return_url "[ns_conn url]?[export_ns_set_vars url [list orderby customize ticket_sort]]"
-    ns_write "[ad_table_sort_form $table_def select $return_url ticket_sort $ticket_sort $orderby]"
+    append page_content "[ad_table_sort_form $table_def select $return_url ticket_sort $ticket_sort $orderby]"
+
 } elseif { $view == "report" || $view == "full_report"} {
     # make a report out of it all.
     
-    set selection [ns_db select $db $query] 
-    ns_write "[ticket_report $db $selection $view $table_def]<p>"
+    append page_content "[ticket_report -bind $bind_vars info_on_all_tickets \
+	    $query $view $table_def]<p>"
+
 } else { 
-    set admin_p [ticket_user_admin_p $db]
+
+    set admin_p [ticket_user_admin_p]
 
     # otherwise spit out some results.
 
     # the top nav bar
-    ns_write "<table width=100% CELLPADDING=0 CELLSPACING=0><tr>
-  <td>Add&nbsp;new:&nbsp;<a href=\"issue-new.tcl?$return_url\">ticket</a>"
+    append page_content "
+    <table width=100% CELLPADDING=0 CELLSPACING=0>
+     <tr>
+      <td>Add&nbsp;new:&nbsp;<a href=\"issue-new?$return_url\">ticket</a>"
+
     if { ![empty_string_p $project_id]} { 
-        ns_write " | <a href=\"issue-new.tcl?[export_url_vars project_id]&$return_url\">ticket in $project_title_long</a>"
+        append page_content " | <a href=\"issue-new?[export_url_vars project_id]&$return_url\">ticket in $project_title_long</a>"
     }
-    ns_write "</td><td valign=top align=right>\[&nbsp;"
+
+    append page_content "</td><td valign=top align=right>\[&nbsp;"
     if { $admin_p } { 
-        ns_write "<a href=\"/ticket/admin/index.tcl?$admin_return\">Project&nbsp;Administration</a>&nbsp|&nbsp;"
+        append page_content "<a href=\"/ticket/admin/index?$admin_return\">Project&nbsp;Administration</a>&nbsp|&nbsp;"
     }
-    ns_write "<a href=\"[ns_conn url]?[export_ns_set_vars url [list orderby customize]]&customize=settings\">Custom Settings</a>&nbsp;|&nbsp;<a href=\"help.adp\">Help</a>&nbsp;\]</td></tr>"
 
+    append page_content "<a href=\"[ns_conn url]?[export_ns_set_vars url [list orderby customize]]&customize=settings\">Custom Settings</a>&nbsp;|&nbsp;<a href=\"help\">Help</a>&nbsp;\]</td></tr>
 
-    # the upleasant loserish UI at the bottom
-    ns_write "<tr><td colspan=2>Summarize by: <a href=\"project-summary.tcl?return_url=[ns_urlencode $state_nodompro]\">project</a> 
-       | <a href=\"domain-summary.tcl?return_url=[ns_urlencode $state_nodompro]\">feature area</a> 
-       | <a href=\"user-summary.tcl?return_url=[ns_urlencode $state_nodompro]\">submitting user</a> 
-       | <a href=\"user-assign-summary.tcl?return_url=[ns_urlencode $state_nodompro]\">assigned user</a></td></tr>"
+    <tr><td colspan=2>Summarize by: <a href=\"project-summary?return_url=[ns_urlencode $state_nodompro]\">project</a> 
+       | <a href=\"domain-summary?return_url=[ns_urlencode $state_nodompro]\">feature area</a> 
+       | <a href=\"user-summary?return_url=[ns_urlencode $state_nodompro]\">submitting user</a> 
+       | <a href=\"user-assign-summary?return_url=[ns_urlencode $state_nodompro]\">assigned user</a></td></tr>"
 
        
 
     # The change project select 
     if { $advs && ! $advs_results } {
         # if we are not displaying adv search results 
-        ns_write "</table>"
+        append page_content "</table>"
     } else { 
-        ns_write "<tr><td colspan=2>View/Print: <a href=\"[ns_conn url]?view=full_report&[export_ns_set_vars url [list customize view]]\">Full Report (with comments)</a>
-       | <a href=\"[ns_conn url]?view=report&[export_ns_set_vars url [list customize view]]\">Summary Report (no comments)</a></td></tr></table>"
+        append page_content "
+	<tr>
+	  <td colspan=2>View/Print: <a href=\"[ns_conn url]?view=full_report&[export_ns_set_vars url [list customize view]]\">Full Report (with comments)</a>
+       | <a href=\"[ns_conn url]?view=report&[export_ns_set_vars url [list customize view]]\">Summary Report (no comments)</a>
+       | <a href=\"bug-listing.tcl?[export_url_vars project_id]\">Bug Report</a></td>
+	</tr>
+	</table>
 
-        ns_write "<form method=GET action=\"index.tcl\">View project:
-      [ad_db_select_widget -default $project_id -option_list {{{} {-- All Projects --}}} $db "select title_long, project_id 
-        from ticket_projects tp where 
-          (end_date is null or end_date > sysdate)
-          and exists (select 1 from ticket_issues_i ti where ti.project_id = tp.project_id)
+        <form method=GET action=\"index\">View project:
+	[export_ns_set_vars form [list domain_id project_id]]
+	[ad_db_select_widget -default $project_id \
+		-option_list {{{} {-- All Projects --}}} \
+		projects_with_tickets "
+	select title_long, project_id 
+        from ticket_projects tp 
+	where (end_date is null or end_date > sysdate)
+	and   exists (select 1 from ticket_issues_i ti 
+	              where ti.project_id = tp.project_id)
         order by UPPER(title_long) asc" project_id]"
+
         if {![empty_string_p $project_id]} { 
-            ns_write "&nbsp; $project_title_long feature area:"
-            set project_restrict_sql " and tp.project_id = $project_id"
+            append page_content "&nbsp; $project_title_long feature area:"
+            set project_restrict_sql " and tp.project_id = :project_id"
         } else { 
-            ns_write "&nbsp; feature area:"
+            append page_content "&nbsp; feature area:"
             set project_restrict_sql {}
         }
         # HP wants multiselect yech.
-        ns_write "[ad_db_select_widget -multiple 0 -size 1 -default $domain_id -option_list {{{all} {-- All Feature areas --}}} $db "select distinct td.title_long, td.domain_id 
-        from ticket_domains td, ticket_domain_project_map tgm , ticket_projects tp 
+        append page_content "
+	[ad_db_select_widget -multiple 0 -size 1 -default $domain_id \
+		-option_list {{{all} {-- All Feature areas --}}} \
+		-bind $bind_vars domains_with_tickets "
+	select distinct td.title_long, td.domain_id 
+        from  ticket_domains td, ticket_domain_project_map tgm , 
+	      ticket_projects tp 
         where td.domain_id = tgm.domain_id 
           and tgm.project_id = tp.project_id 
           and (tp.end_date is null or tp.end_date > sysdate) 
-          and (td.end_date is null or tp.end_date > sysdate) $project_restrict_sql
+          and (td.end_date is null or td.end_date > sysdate) $project_restrict_sql
           and exists (select 1 from ticket_issues_i ti where ti.domain_id = td.domain_id)
         order by UPPER(td.title_long) asc" domain_id]
-     <input type=submit value=\"Go\">
-     [export_ns_set_vars form [list domain_id project_id]]</form>"
+	<input type=submit value=\"Go\">
+	</form>"
     }
 
     # quick search
@@ -561,8 +629,10 @@ if { $customize == "settings" } {
     #  kludgey that we have to unrestrict slider variables 
     #  explicitly rather than have an ad_dimensional_unrestrict
     regsub "score\\*?," "$orderby," {} orderby_search
-    ns_write "<form method=post action=\"index.tcl\">Quick search: <input type=text maxlength=100 name=query_string [export_form_value query_string]>
-        [export_ns_set_vars form [list advs advs_results query_string domain_id submitby assign status created orderby]]
+    append page_content "
+    <form method=post action=\"index\">
+    Quick search: <input type=text maxlength=100 name=query_string [export_form_value query_string]>
+        [export_ns_set_vars form [list advs advs_results query_string domain_id submitby assign status created orderby qs]]
         <input type=hidden name=qs value=\"1\">
         <input type=hidden name=domain_id value=\"all\">
         <input type=hidden name=submitby value=\"any\">
@@ -570,49 +640,66 @@ if { $customize == "settings" } {
         <input type=hidden name=status value=\"any\">
         <input type=hidden name=created value=\"any\">
         <input type=hidden name=orderby value=\"[philg_quote_double_quotes [ad_new_sort_by "score*" $orderby_search]]\">
-        <input type=submit value=\"Go\"> &nbsp;&nbsp;&nbsp;&nbsp;<em>or</em> &nbsp; <a href=\"[ns_conn url]?advs_results=0&advs=1&[export_ns_set_vars url [list advs advs_results]]\">Advanced search</a> </form>"
+        <input type=submit value=\"Go\"> &nbsp;&nbsp;&nbsp;&nbsp;<em>or</em> &nbsp; <a href=\"[ns_conn url]?advs_results=0&advs=1&[export_ns_set_vars url [list advs advs_results]]\">Advanced search</a> 
+    </form>"
 
     if {[lsearch $debug {query}] > -1} {
-        ns_write "<pre>$query</pre>"
+        append page_content "<pre>$query</pre>"
     }
-
-
 
     if { ! $advs || $advs_results } { 
         if { $expert } { 
             # now the table views
             set cust "[ns_conn url]?[export_ns_set_vars url [list customize ticket_table]]&customize=table&ticket_table="
             set use "[ns_conn url]?[export_ns_set_vars url ticket_table]&ticket_table="
-            ns_write "Table Views: [ad_custom_list $db $user_id ticket_table $ticket_table table_view $use $cust]<br>"
+            append page_content "Table Views: [ad_custom_list $user_id ticket_table $ticket_table table_view $use $cust]<br>"
 
             # now the sorts
             set cust "[ns_conn url]?[export_ns_set_vars url [list customize orderby ticket_sort]]&customize=sort&ticket_sort="
             set use "[ns_conn url]?[export_ns_set_vars url [list orderby ticket_sort]]&ticket_sort="
-            ns_write "Sorts: [ad_custom_list $db $user_id ticket_sort $ticket_sort table_sort $use $cust "new sort"]<br>"
+            append page_content "Sorts: [ad_custom_list $user_id ticket_sort $ticket_sort table_sort $use $cust "new sort"]<br>"
         }
 
         if { $advs } { 
-            ns_write "<table border=0 cellspacing=0 cellpadding=3 width=100%>\n<tr>\n"
-            ns_write "<th bgcolor=\"#ECECEC\">Advanced search </th></tr>\n"
+            #append page_content "
+	    #<table border=0 cellspacing=0 cellpadding=3 width=100%>
+	    #  <tr>
+            #    <th bgcolor=\"#ECECEC\">Advanced search </th>
+	    #  </tr>
+	    #"
         } else { 
-            ns_write "[ad_dimensional $dimensional]<p>"
+            append page_content "[ad_dimensional $dimensional]<p>"
         }
 
-        set selection [ns_db select $db $query] 
-        ns_write "[ad_table -Taudit {msg_id} -Torderby $orderby -Tcolumns $col -Tpre_row_code $rowcode $db $selection $table_def]<p>"
+	# This table can be big!
+	ad_return_top_of_page $page_content
+	set flushed_p 1
+	set page_content ""
+
+        append page_content "
+	[ad_table -Taudit {msg_id} -Torderby $orderby -Tcolumns $col \
+		-Tpre_row_code $rowcode -bind $bind_vars info_for_all_tickets \
+		$query $table_def]<p>"
     }
 
     if {$advs} { 
         set advs 1
         set advs_results 1 
-        ns_write "<form>
- [ticket_advs_query_page_fragment $db]
- [export_ns_set_vars form [concat [ticket_exclude_regexp {^advs}] {qs}]]
- [export_form_vars advs advs_results]
- </form>"
+        append page_content "
+	<form>
+	[ticket_advs_query_page_fragment]
+	[export_ns_set_vars form [concat [ticket_exclude_regexp {^advs}] {qs} {query_string}]]
+	[export_form_vars advs advs_results]
+	</form>"
 
     }
     
 }
 
-ns_write "[ad_footer]"
+append page_content "[ad_footer]"
+
+if { $flushed_p } {
+    ns_write $page_content
+} else {
+    doc_return  200 text/html $page_content
+}

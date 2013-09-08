@@ -1,46 +1,39 @@
-# $Id: category-add-2.tcl,v 3.0 2000/02/06 03:25:47 ron Exp $
-set_form_variables 
+# /www/admin/neighbor/category-add-2.tcl
+ad_page_contract {
+    Adds a new neighbor-to-neighbor category.
 
-# category_id, user_id_from_search, category_name
-# first_names_from_search, last_name_from_search, email_from_search
-# approval_policy
-
-# submit
-
-
-# user error checking
-
-set exception_text ""
-set exception_count 0
-
-
-if { ![info exist primary_category] || [empty_string_p $primary_category] } {
-    incr exception_count
-    append exception_text "<li>Please enter a category name."
+    @author Philip Greenspun (philg@mit.edu)
+    @creation-date 1 January 1996
+    @cvs-id category-add-2.tcl,v 3.2.2.5 2001/01/11 19:15:17 khy Exp
+    @param category_id the new category's ID
+    @param user_id_from_search the primary maintainer's user ID
+    @param primary_category the category's name
+    @param first_names_from_search the primary maintainer's first names
+    @param last_name_from_search the primary maintainer's last name
+    @param email_from_search the primary maintainer's email
+    @param approval_policy the category's approval policy
+} {
+    category_id:integer,notnull,verify
+    user_id_from_search:integer,notnull
+    primary_category
+    first_names_from_search
+    last_name_from_search
+    email_from_search
+    approval_policy
 }
 
-
-if { $exception_count > 0 } { 
-  ad_return_complaint $exception_count $exception_text
-  return
-}
-
-
-
-ReturnHeaders
-
-ns_write "[neighbor_header "$primary_category values"]
+set page_content "[neighbor_header "$primary_category values"]
 
 <h2>$primary_category values</h2>
 
-in <a href=\"index.tcl\">[neighbor_system_name] administration</a>
+in <a href=\"index\">[neighbor_system_name] administration</a>
 <hr>
 
-<form action=\"category-update-2.tcl\" method=post>
+<form action=\"category-update-2\" method=post>
 [export_form_vars primary_category]
 "
 
-set db [ns_db gethandle]
+
 
 # edit the form vars so we can use the magic insert/update
 ns_set delkey [ns_conn form] submit
@@ -50,18 +43,27 @@ ns_set delkey [ns_conn form] first_names_from_search
 ns_set delkey [ns_conn form] email_from_search
 ns_set update [ns_conn form] primary_maintainer_id $user_id_from_search
 
+
 # Check the database to see if there is a row for this category already.
 # If there is a row, update the database with the information from the form.
 # If there is no row, insert into the database with the information from the form.
 
-if { [database_to_tcl_string $db "select count(category_id) from n_to_n_primary_categories where category_id = $category_id"] > 0 } {
-    set sql_statement  [util_prepare_update $db n_to_n_primary_categories category_id $category_id [ns_conn form]]
+if { [db_string unused "select count(category_id) from n_to_n_primary_categories where category_id = :category_id"] > 0 } {
+    set statement_name "category_update"
+    set sql_statement_and_bind_vars [util_prepare_update n_to_n_primary_categories category_id $category_id [ns_conn form]]
 } else {
-    set sql_statement  [util_prepare_insert $db n_to_n_primary_categories category_id $category_id [ns_conn form]]
+    set statement_name "category_insert"
+    set form_data [ns_conn form]
+
+    ns_set delkey $form_data "category_id:sig"
+
+    set sql_statement_and_bind_vars [util_prepare_insert n_to_n_primary_categories $form_data]
 }
 
- 
-if [catch { ns_db dml $db $sql_statement } errmsg] {
+set sql_statement [lindex $sql_statement_and_bind_vars 0]
+set bind_vars [lindex $sql_statement_and_bind_vars 1]
+
+if [catch { db_dml $statement_name $sql_statement -bind $bind_vars} errmsg] {
 	    ad_return_error "Failure to update category  information" "The database rejected the attempt:
 	    <blockquote>
 <pre>
@@ -74,12 +76,12 @@ $errmsg
 
 # there is now a row for this category
 # get the category information to fill in the form
+db_1row select_category "
+  select * 
+    from n_to_n_primary_categories
+   where category_id = :category_id"
 
-set selection [ns_db 1row $db "select * from n_to_n_primary_categories
-where category_id = $category_id"] 
-set_variables_after_query
-
-ns_write "
+append page_content "
 <H3>User Interface</H3>
 By default, the category name will be used for the user interface.
 If you wish to use a different title, state it here:<br>
@@ -111,12 +113,12 @@ set html_form "<input type=radio name=regional_p value=\"t\">Yes
 <input type=radio name=regional_p value=\"f\">No<br>"
 
 if { [info exists regional_p] } {
-    ns_write [bt_mergepiece $html_form $selection]
+    append page_content [bt_mergepiece $html_form [ad_tcl_vars_to_ns_set category_id primary_category top_title top_blurb primary_maintainer_id approval_policy regional_p region_type noun_for_about decorative_photo pre_post_blurb]]
 } else {
-    ns_write $html_form
+    append page_content $html_form
 }
 
-ns_write "<p>If so, what type of groupings?
+append page_content "<p>If so, what type of groupings?
 <select name=region_type>
 [ad_generic_optionlist { "" Country "US State" "US County"} { "" country us_state us_country} [export_var region_type]]
 </select>
@@ -128,3 +130,6 @@ ns_write "<p>If so, what type of groupings?
 </form>
 [neighbor_footer]
 "
+
+
+doc_return  200 text/html $page_content

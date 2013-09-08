@@ -1,20 +1,20 @@
-# $Id: lump-into-about-2.tcl,v 3.0 2000/02/06 03:26:17 ron Exp $
-set_form_variables_string_trim_DoubleAposQQ
-set_form_variables
-   
-# lump_about, lump_ids
+#amdin/neighbor/lump-into-about-2.tcl
+ad_page_contract {
+    Not sure it gets used, lumps postings does a dml
+    @cvs-id: lump-into-about-2.tcl,v 3.0.12.4 2000/09/22 01:35:43 kevin Exp
+} {
+    lump_about:sql_identifier
+    lump_ids
+}
 
 set lump_ids [util_GetCheckboxValues [ns_conn form] lump_ids]
 
 if { $lump_ids == 0 } {
-    ns_return 200 text/plain "oops!  You didn't pick any posting"
+    doc_return  200 text/plain "oops!  You didn't pick any posting"
 }
 
-set db [neighbor_db_gethandle]
 
-ReturnHeaders
-
-ns_write "[neighbor_header "lumping"]
+append doc_body "[neighbor_header "lumping"]
 
 <h2>Lumping</h2>
 
@@ -30,12 +30,13 @@ Going to lump
 
 into \"$lump_about\" ..."
 
-ns_db dml $db "update neighbor_to_neighbor 
-set about = '$QQlump_about'
+db_dml neighbor_to_neighbor_update "update neighbor_to_neighbor 
+set about = :lump_about
 where neighbor_to_neighbor_id in ([join $lump_ids ","])"
 
-ns_write "... done.
+append doc_body "... done.
 
 [neighbor_footer]
 "
 
+doc_return  200 text/html $doc_body

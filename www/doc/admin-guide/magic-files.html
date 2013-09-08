@@ -1,0 +1,55 @@
+<html>
+
+<head>
+<title>Magic Files</title>
+<link rel="stylesheet" type="text/css" href="admin-guide.css">
+</head>
+
+<body>
+
+<h1>Magic Files</h1>
+
+<a href="/doc/">ACS Documentation</a> :
+<a href="">ACS Administrator's Guide</a> :
+Magic Files
+
+<hr>
+
+You will probably want to customize all of the following files:
+
+<ul>
+
+<li><a href="/global/copyright.adp">/global/copyright.adp</a> explains the site's copyright policy
+
+<li><a href="/global/server-busy">/global/server-busy</a> is served by AOLserver when the threads are
+stacked up (presumably because the RDBMS is overwhelmed)
+
+<li><a href="/global/file-not-found">/global/file-not-found</a> is served by AOLserver when the user
+hits a non-existent URL; presumably this will contain some search tips
+
+<li><a href="/global/unauthorized">/global/unauthorized</a> is served by AOLserver when the user hasn't
+typed in a valid HTTP username/password (this shouldn't really ever be
+part of the user experience since the ArsDigita Community System doesn't
+use HTTP usernames/passwords)
+
+<li><a href="/global/forbidden">/global/forbidden</a> is served by AOLserver when the nsperm system
+isn't happy and refuses to say why (not sure why this should ever happen)
+
+<li><a href="/global/error">/global/error</a> is served by AOLserver when it chokes on a Tcl
+API program or CGI script 
+
+<li><a href="/global/privacy.adp">/global/privacy.adp</a> is the site's privacy statement.
+
+<li><a href="/global/legal.adp">/global/legal.adp</a> is the site's legal statement.
+
+</ul>
+
+<hr>
+
+<a href="mailto:michael@arsdigita.com">
+<address>michael@arsdigita.com</address>
+</a>
+
+</body>
+
+</html>

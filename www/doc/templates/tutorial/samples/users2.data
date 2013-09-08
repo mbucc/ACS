@@ -1,0 +1,14 @@
+<template>
+
+  <name>lesson3</name>
+  <title>Template Three</title>
+  <author>karlg@arsdigita.com</author>
+  <comment>List user names and adressses.</comment>
+
+  <process>
+  <datasource src="users.data" name="users">
+  </process>
+
+</template>
+
+

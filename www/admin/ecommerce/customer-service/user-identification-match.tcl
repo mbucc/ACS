@@ -1,6 +1,16 @@
-# $Id: user-identification-match.tcl,v 3.0 2000/02/06 03:18:30 ron Exp $
-set_the_usual_form_variables
-# user_identification_id, d_user_id
+# user-identification-match.tcl
+
+ad_page_contract {
+    @param  user_identification_id
+    @param d_user_id
+
+    @author
+    @creation-date
+    @cvs-id user-identification-match.tcl,v 3.1.6.3 2000/09/22 01:34:54 kevin Exp
+} {
+    user_identification_id
+    d_user_id
+}
 
 set exception_count 0
 set exception_text ""
@@ -15,9 +25,9 @@ if { $exception_count > 0 } {
     return
 }
 
-ReturnHeaders
+
 set page_title "Confirm Match"
-ns_write "[ad_admin_header $page_title]
+append doc_body "[ad_admin_header $page_title]
 <h2>$page_title</h2>
 
 [ad_admin_context_bar [list "../index.tcl" "Ecommerce"] [list "index.tcl" "Customer Service Administration"] $page_title]
@@ -26,10 +36,12 @@ ns_write "[ad_admin_header $page_title]
 
 Please confirm that you want to make this match.  This cannot be undone.
 <center>
-<form method=post action=user-identification-match-2.tcl>
+<form method=post action=user-identification-match-2>
 [export_form_vars d_user_id user_identification_id]
 <input type=submit value=\"Confirm\">
 </form>
 </center>
 [ad_admin_footer]
 "
+
+doc_return  200 text/html $doc_body

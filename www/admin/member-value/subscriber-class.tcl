@@ -1,15 +1,22 @@
-# $Id: subscriber-class.tcl,v 3.0 2000/02/06 03:25:04 ron Exp $
-set_the_usual_form_variables
+# /www/admin/member-value/subscriber-class.tcl
 
-# subscriber_class
+ad_page_contract {
+    Allows the user to view/edit/delete the subscriber class.
 
-ReturnHeaders
+    @author mbryzek@arsdigita.com
+    @creation-date Tue Jul 11 19:43:26 2000
+    @cvs-id subscriber-class.tcl,v 3.1.6.7 2000/09/22 01:35:32 kevin Exp
 
-ns_write "[ad_no_menu_header "$subscriber_class"]
+} {
+    subscriber_class:notnull
+}
+
+set page_content "[ad_admin_header "$subscriber_class"]
 
 <h2>$subscriber_class</h2>
 
-a subscription class in <a href=\"index.tcl\">[ad_system_name]</a>
+[ad_admin_context_bar [list "" "Member Value"] "Subscriber class"]
+
 
 <hr>
 
@@ -17,28 +24,25 @@ a subscription class in <a href=\"index.tcl\">[ad_system_name]</a>
 
 "
 
-set db [ns_db gethandle]
+db_1row mv_rate_query "select rate, currency from mv_monthly_rates where subscriber_class = :subscriber_class"
 
-set selection [ns_db 1row $db "select * from mv_monthly_rates where subscriber_class = '$QQsubscriber_class'"]
+db_release_unused_handles
 
-set_variables_after_query
-
-ns_write "<li><form method=get action=\"subscriber-class-new-rate.tcl\">
+append page_content "<li><form method=get action=\"subscriber-class-new-rate-currency\">
 [export_form_vars subscriber_class]
-Set rate:
+Rate:
 <input type=text size=7 name=rate value=\"$rate\">
-</form>
-<li>
-<form method=get action=\"subscriber-class-new-currency.tcl\">
-[export_form_vars subscriber_class]
-Set currency:
+<li>Currency:
 <input type=text size=7 name=currency value=\"$currency\">
+<p>
+<input type=submit value=\"Set\">
 </form>
 
 </ul>
 
 If you decide that this subscriber class isn't working anymore, you can 
-<a href=\"subscriber-class-delete.tcl?subscriber_class=[ns_urlencode $subscriber_class]\">delete it and move all the subscribers into another class</a>.
+<a href=\"subscriber-class-delete?subscriber_class=[ns_urlencode $subscriber_class]\">delete it and move all the subscribers into another class</a>.
 
-[ad_no_menu_footer]
+[ad_admin_footer]
 "
+doc_return  200 text/html $page_content

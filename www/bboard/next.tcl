@@ -1,52 +1,59 @@
-# $Id: next.tcl,v 3.0.4.1 2000/04/28 15:09:42 carsten Exp $
-set_form_variables_string_trim_DoubleAposQQ
-set_form_variables
+# /www/bboard/next.tcl
+ad_page_contract {
+    Goes to the next posting.
 
-# msg_id is the key, topic_id
+    @param msg_id the current message
+    @param topic_id the ID of the topic being looked at
 
-set db [bboard_db_gethandle]
-if { $db == "" } {
-    bboard_return_error_page
-    return
+    @author ?
+    @creation-date ?
+    @cvs-id
+} {
+    msg_id
+    topic_id:integer
+    topic
 }
 
+# -----------------------------------------------------------------------------
 
-set selection [ns_db select $db "select msg_id, sort_key
+set do_returnredirect 1
+
+db_foreach later_postings "
+select msg_id as next_msg_id, sort_key
 from bboard 
-where sort_key > (select sort_key from bboard where msg_id = '$msg_id')
-and topic_id = $topic_id
-order by sort_key"]
+where sort_key > (select sort_key from bboard where msg_id = :msg_id)
+and topic_id = :topic_id
+order by sort_key" {
 
-# get one row
+    # get one row
+    # we don't want the rest of the rows so we
 
-ns_db getrow $db $selection
+    break
 
-set next_msg_id [ns_set value $selection 0]
+    # boy, this is pretty sick
 
-# we don't want the rest of the rows
-
-ns_db flush $db
-
-if { $next_msg_id != "" } {
-
-    ad_returnredirect "fetch-msg.tcl?msg_id=$next_msg_id"
-
-} else {
+} if_no_rows {
 
     # no msg to return
 
-    ns_return 200 text/html "<html>
-<head>
-<title>End of BBoard</title>
-</head>
-<body bgcolor=[ad_parameter bgcolor "" "white"] text=[ad_parameter textcolor "" "black"]>
+    doc_return  200 text/html "<html>
+    <head>
+    <title>End of BBoard</title>
+    </head>
+    <body bgcolor=[ad_parameter bgcolor "" "white"] text=[ad_parameter textcolor "" "black"]>
+    
+    <h3>No Next Message</h3>
+    
+    You've read the last message in the <a target=_top href=\"main-frame?[export_url_vars topic topic_id]\">$topic</a> BBoard.
+    
+    </body>
+    </html>
+    "
 
-<h3>No Next Message</h3>
+    set do_returnredirect 0
+    return
+}
 
-You've read the last message in the <a target=_top href=\"main-frame.tcl?[export_url_vars topic topic_id]\">$topic</a> BBoard.
-
-</body>
-</html>
-"
-
+if { $do_returnredirect } {
+    ad_returnredirect "fetch-msg.tcl?msg_id=$next_msg_id"
 }

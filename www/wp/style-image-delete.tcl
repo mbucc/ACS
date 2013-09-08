@@ -1,18 +1,27 @@
-# $Id: style-image-delete.tcl,v 3.0.4.1 2000/04/28 15:11:42 carsten Exp $
-# File:        style-image-delete.tcl
-# Date:        28 Nov 1999
-# Author:      Jon Salz <jsalz@mit.edu>
-# Description: Add an image.
-# Inputs:      style_id, file_name
+# /wp/style-image-delete.tcl
+
+ad_page_contract {
+    Deletes an image from a style.
+
+    @param style_id the id of the style from which to delete the image
+    @param file_name file name of the image to delete
+
+    @creation-date  28 Nov 1999
+    @author Jon Salz <jsalz@mit.edu>
+    @cvs-id style-image-delete.tcl,v 3.2.2.5 2000/08/16 21:49:45 mbryzek Exp
+} {
+    style_id:naturalnum,notnull
+    file_name:notnull
+}
 
 set user_id [ad_maybe_redirect_for_registration]
 
-set_the_usual_form_variables
+wp_check_style_authorization $style_id $user_id
 
-set db [ns_db gethandle]
+db_dml wp_del_style_img "delete from wp_style_images 
+where style_id = :style_id 
+and file_name = :file_name"
 
-wp_check_style_authorization $db $style_id $user_id
-
-ns_db dml $db "delete from wp_style_images where style_id = $style_id and file_name = '$QQfile_name'"
+db_release_unused_handles
 
 ad_returnredirect "style-view.tcl?style_id=$style_id"

@@ -1,9 +1,17 @@
-# $Id: delete.tcl,v 3.0 2000/02/06 03:20:02 ron Exp $
-set_the_usual_form_variables
-# product_id, product_name
+#  www/admin/ecommerce/products/delete.tcl
+ad_page_contract {
+  Product delete confirm.
 
-ReturnHeaders
-ns_write "[ad_admin_header "Confirm Deletion of $product_name"]
+  @author Eve Andersson (eveander@arsdigita.com)
+  @creation-date Summer 1999
+  @cvs-id delete.tcl,v 3.1.6.1 2000/07/22 07:57:38 ron Exp
+} {
+  product_id:integer,notnull
+}
+
+set product_name [ec_product_name $product_id]
+
+doc_body_append "[ad_admin_header "Confirm Deletion of $product_name"]
 
 <h2>Confirm Deletion</h2>
 
@@ -16,8 +24,8 @@ will not let you delete a product if anyone has already ordered it
 (you might want to mark the product \"discontinued\" instead).
 
 <p>
-<form method=post action=delete-2.tcl>
-[export_form_vars product_id product_name]
+<form method=post action=delete-2>
+[export_form_vars product_id]
 <center>
 <input type=submit value=\"Yes\">
 </center>

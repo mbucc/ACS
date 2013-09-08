@@ -3,7 +3,7 @@
 
 <h2>Your Gift Certificate Order</h2>
 
-<form method=post action=gift-certificate-order-3.tcl>
+<form method=post action=gift-certificate-order-3>
 
 <ol>
 <li><table border=0 cellspacing=0 cellpadding=0>

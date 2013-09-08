@@ -1,12 +1,31 @@
-# $Id: proc-one.tcl,v 3.0 2000/02/06 03:36:59 ron Exp $
-# print out documentation for one procedure
-# created by philg@mit.edu
-# March 27th, 1999. teadams@mit.edu modified to list default arguments
-# 19981223 added ad_proc arg usage messages. jcd
+# /www/doc/proc-one.tcl
 
-set_form_variables
+ad_page_contract {
+    Print out documentation for one procedure.
+    
+    @param proc_name The name of the procedure.
 
-# proc_name
+    @author philg@mit.edu
+    @author teadamas@mit.edu
+    @author jcd
+
+    @creation-date ?
+    @cvs-id proc-one.tcl,v 3.1.6.4 2000/09/22 01:37:22 kevin Exp
+} {
+    proc_name:notnull
+}
+
+ad_returnredirect /api-doc/proc-view?proc=[ns_urlencode $proc_name]
+return
+
+# -----------------------------------------------------------------------------
+# The rest of this page has been superceded by the api-doc package,
+# but we'll leave it in place until doc/proc* is fully removed. If you
+# get an error from proc-doc, make sure the latest version of acs-core
+# is enabled.  
+# -----------------------------------------------------------------------------
+
+set document ""
 
 if [nsv_exists proc_doc $proc_name] {
     set backlink_anchor "the documented procedures"
@@ -43,14 +62,12 @@ if {[nsv_exists ad_proc_args $proc_name]} {
 
 append Usage "</i>\n"
 
-ReturnHeaders
-
-ns_write "
+append document "
 [ad_header "$proc_name"]
 
 <h2>$proc_name</h2>
 
-one of <a href=\"procs.tcl\">$backlink_anchor</a> in this
+one of <a href=\"procs\">$backlink_anchor</a> in this
 installation of the ACS
 
 <hr>
@@ -67,3 +84,4 @@ Source code:
 
 [ad_admin_footer]
 "
+doc_return 200 text/html $document

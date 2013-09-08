@@ -1,0 +1,203 @@
+<html>
+<head>
+<title>VC (Version Control)</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Version Control</h2>
+
+part of the <a href=index>ArsDigita Community System</a> by 
+<a href=mailto:ron@arsdigita.com>Ron Henderson</a>
+
+<hr>
+
+<ul>
+<li> Tcl procedures: /tcl/vc-defs
+<li> User-accessible directory: none
+<li> Site administrator directory: none
+<li> Data model: none
+</ul>
+
+<p>The <code>vc</code> module provides an interface to the Concurrent
+Versions System (CVS).
+
+<h3>The Big Picture</h3>
+
+<p> At this point we are all used to working collaboratively on site
+development, and to using CVS for managing the code base as
+the site is programmed.  But what about modules that provide access to
+site content or software management tools?  Do we give up version
+control in this case?  Do we have to rewrite the machinery of a system
+like CVS?  Absolutely not!
+
+<p>The <code>vc</code> module provides a simple interface to CVS that
+can be used by any module to add version control capabilities.  It
+also provides procedures to obtain version control information for any
+file in the project, i.e. to display additional information in the
+page footer or for integration with bug tracking systems.  Current
+modules that use <code>vc</code> include the <a
+href=/doc/packages>package manager</a>, the <a
+href=/doc/file-manager>file manager</a>, and the <a
+href=/doc/manuals>manual system</a>.  
+
+<h3>API</h3>
+
+The <code>vc</code> module does not have any user pages, just a set of
+procs that allow you to access the version control system.  Every proc
+takes the full pathname of a file to operate on.  The public API
+consists of the following (all are direct analogies to the
+corresponding CVS command):
+
+<blockquote>
+<dl>
+<dt>vc_add <i>path</i></dt>
+<dt>vc_log <i>path</i></dt>
+<dt>vc_status <i>path</i></dt>
+<dt>vc_remove <i>path</i></dt>
+<dt>vc_commit <i>path message</i></dt>
+<dt>vc_update <i>path</i></dt>
+<dt>vc_checkout <i>module</i> <i>path</i>
+</dl>
+</blockquote>
+
+<p>This last command (equivalent to <code>cvs co -d path
+module</code>) is useful for grabbing a private copy of a file,
+e.g. to support simultaneous editors in a content-management system.
+The utility 
+
+<blockquote>
+<dl>
+<dt>vc_path_to_module <i>path</i></dt>
+</dl>
+</blockquote>
+
+<p> will convert an absolute pathname into the corresponding CVS
+module that it was originally checked out of.
+
+<p>There are also a number of procs that simply grab information from
+CVS either by exec-ing the executable or by reading the appropriate
+version control information from the file system:
+
+<blockquote>
+<dl>
+<dt>vc_fetch_repository <i>path</i></dt>
+<dt>vc_fetch_root <i>path</i></dt>
+<dt>vc_fetch_status <i>path</i></dt>
+<dt>vc_fetch_summary <i>path</i></dt>
+<dt>vc_fetch_date <i>path</i></dt>
+<dt>vc_fetch_revision <i>path</i></dt>
+</dl>
+</blockquote>
+
+<p>An individual query can be relatively expensive, particularly if
+CVS has to go over the network to access information from a remote
+repository.  Therefore, all information managed by the <code>vc</code>
+module is cached within the server based on the modification time of
+the corresponding file.
+
+<h3>Setup</h3>
+
+<p>To use the <code>vc</code> module you will need to set the
+following parameters:
+
+<blockquote>
+<pre>
+[ns/server/yourservername/acs/vc]
+; Location of the CVS repository.  If the repository is on a remote
+; host, you need to make sure that CVS can connect without being
+; prompted for a password.
+CVSROOT=/cvsweb
+; Location of the CVS executable
+CvsPath=/usr/local/bin/cvs
+</pre>
+</blockquote>
+
+<p>The parameter <code>CVSROOT</code> is exactly the same as the
+environment variable used by CVS.  The parameter <code>CvsPath</code>
+specifies the location of the CVS executable.  If you are running a
+chrooted server then the CVS executable must be located within the
+restricted path of the server.</p>
+
+<h3>Remote Repositories</h3>
+
+<p>The <code>vc</code> module will happily talk across the network to a
+remote repository, e.g. <code>CVSROOT=hostname:/cvsweb/</code> will
+allow you to access the repository <code>/cvsweb</code> on
+<code>hostname</code>.   The only connection methods currently
+supported are <a
+href=http://www.loria.fr/~molli/cvs/doc/cvs_2.html#SEC29>pserver</a>
+and <a
+href=http://www.loria.fr/~molli/cvs/doc/cvs_2.html#SEC28>ext</a> using
+secure shell as the connection agent (strongly recommended).  For this
+to work the user <i>nsadmin</i> (or whatever user account the
+AOLserver binary runs as) must be able to connect to the repository
+host without being prompted for a password.
+
+
+<p>This is easy to set up and relatively secure using ssh with RSA
+authentication.  We'll assume the server runs as <i>nsadmin</i>.
+
+<ol>
+
+<li> Login to the server host as nsadmin.
+
+<li> Run <code>ssh-keygen</code> with no passphrase to generate
+<code>~nsadmin/.ssh/identity.pub</code>.
+
+<li> Copy <code>~nsadmin/.ssh/identity.pub</code> to the repository
+host and append it to <code>~nsadmin/.ssh/authorized_keys</code>. 
+
+<li>Make sure the <code>authorized_keys</code> file has its
+permissions set to 400 and that <code>/home/nsadmin</code> is set to 755. 
+
+<li> Try logging in from the server host to the repository host using
+<code>ssh -v nsadmin@repository-host</code>.  If you fail to connect
+automatically, check the log output for some explanation as to why the
+authentication failed.
+
+<li> As a final test, try running <code>cvs -n update</code> from the
+top-level directory of your project while logged in as nsadmin to make
+sure that CVS can connect to the repository host correctly.
+
+</ol>
+
+<p>The most common problem is bad permissions.  If your connection is
+failing then double-check the permissions on
+<code>/home/nsadmin/</code> and
+<code>/home/nsadmin/.ssh/authorized_keys</code>.
+
+<h4>chroot</h4>
+
+<p>If you're running a chrooted server there are two more steps.
+First, the <code>cvs</code> and <code>ssh</code> 
+executables must be accessible in the restricted path.  Second, you
+will need to copy the <code>ssh</code> configuration files into the
+correct chrooted location; if you're following the standard layout
+then:
+
+<blockquote>
+<pre>
+cp /home/nsadmin/.ssh /webroot/aol30/.ssh
+</pre>
+</blockquote>
+
+<p>Once again, double-check the permissions as <code>ssh</code> is
+extremely picky about this.
+
+<h3>Future Improvements</h3>
+
+<p>Might be nice to integerate with things like the ticket tracker or
+general comments on a page.
+
+<p>As written these procs are tied specifically to CVS, but they could
+be extended to work with RCS or SCCS repositories, or any other
+revision control system we might adopt in the future.</p>
+
+<hr>
+<a href=mailto:ron@arsdigita.com>ron@arsdigita.com</a>
+
+</body>
+</html>
+
+
+

@@ -37,6 +37,7 @@ cd dev
 mknod kmem c 13 1
 mknod mem c 13 0
 mknod zero c 13 12
+mknod null c 13 2
 chmod a+w zero
 
 # Copy necessary files to /etc.
@@ -63,15 +64,25 @@ mkdir usr/bin
 cp /usr/bin/unzip usr/bin
 
 # Copy shared libraries to usr.
+# Note that it may be desirable to recompile
+# with static linked binaries to avoid having
+# these libraries in the chroot environment.
+# See <A HREF="dynamic_linking_notes">dynamic_linking_notes</A>
+# to get a more accurate list of files needed.
 mkdir usr/lib
 cp /usr/lib/*.a /usr/lib/*.so.* usr/lib
 
 # If using the ecommerce module with ImageMagick to do image resizing,
-# copy ImageMagick files if available.
+# copy ImageMagick files.
 mkdirhier usr/local/bin
 mkdirhier usr/local/lib
 cp /usr/local/bin/convert usr/local/bin
 cp /usr/local/lib/ImageMagick* usr/local/lib
+mkdirhier usr/openwin/lib
+cp /usr/openwin/lib/libdpstk.so.5 usr/openwin/lib
+cp /usr/openwin/lib/libdps.so.5 usr/openwin/lib
+cp /usr/openwin/lib/libdpstk.so usr/openwin/lib
+cp /usr/openwin/lib/libtif.so usr/openwin/lib
 
 # Copy timezone files.
 mkdirhier usr/share/lib
@@ -80,6 +91,8 @@ cp -r /usr/share/lib/zoneinfo usr/share/lib
 # The page root must also be within the chroot environment.
 mkdir web
 mv /web/servername /home/aolserver/web
+
+# (Optional) make a link to the chrooted pages from the old web directory
 ln -s /home/aolserver/web/servername /web/servername
 
 # Copy necessary Oracle files to new root.
@@ -116,13 +129,14 @@ If you insist on using IPC, you must configure the database to run in
 multi-threaded server (MTS) mode. Configuring MTS mode can be somewhat
 tricky (see <a
 href="http://oradoc.photo.net/ora81/DOC/server.815/a67772/manproc.htm#1369">this
-doc</a>). In brief, you must:
+8.1.5 doc</a> and <a href="http://oradoc.photo.net/ora816/network.816/a76933/mts.htm">this 8.1.6 doc</a>).  
+In brief, you must:
 <ul>
 
 <li>add the following to your initSID.ora file:
 <pre>
 # Configure MTS for IPC connections and start up one server.
-mts_dispatchers = "(PROTOCOL = IPC)(DISP=1)(mul=OFF)(pool=OFF)(PRES=TTC)"
+mts_dispatchers = "(PROTOCOL=IPC)(DISP=1)(mul=OFF)(pool=OFF)(PRES=TTC)"
 mts_max_dispatchers = 5
 mts_servers = 1
 mts_max_servers = 20
@@ -209,9 +223,56 @@ path.
 
 <h3>Running AOLserver</h3>
 
-Run AOLserver using <code>/home/aolserver/bin/nsd-oracle -ikc
-/home/aolserver/servername.ini -r /home/aolserver</code> from inittab.
+At this point, you can run AOLserver using
+<code>/home/aolserver/bin/nsd-oracle -ikc
+/home/aolserver/servername.ini -r /home/aolserver</code> from
+inittab. This, however, introduces a way to get out of the chroot
+sandbox. The problem arises because /home/aolserver/bin/nsd-oracle and
+bin/nsd8x, which it calls, are run by init, as root, outside of the
+chroot environment. If someone were to replace either of those files
+with a shell script that executes some other program (such as "rm -rf
+/"), it will be executed by root.
 
+<p>
+
+The way to get around this problem is to move nsd8x, nsd-oracle, and
+the server.ini file outside of the chroot environment, and run it
+using <code>/somewhere/not/in/chroot/nsd-oracle -ikc
+/somewhere/not/in/chroot/servername.ini -r /home/aolserver</code> from
+inittab, where nsd-oracle calls /somewhere/not/in/chroot/nsd8x instead
+of the one within the chroot environment.
+
+<h3>Running ACS</h3>
+
+Several modules in the ACS depend on the existence of other
+programs. These programs should be installed in the appropriate
+directory under your web root (i.e. /home/aolserver):
+
+<ul>
+<li><b>top</b> needs to be installed for admin/monitoring/top<br>
+<b>Note that we do not recommend installing top in chroot</b>.  Recent versions of top require the
+proc filesystem in the chroot environment to run, which is the sort of security risk that you are trying to
+avoid with chroot.  You could use an older version of top based on kmem (since kmem is unfortunately needed for
+our web serving),  or you could write a simple script to cat top (running outside the webserver's chroot jail) into a 
+text file (inside the chroot jail) regularly and just display that text file from the monitoring page.
+<li><b>ImageMagick</b> is required for ecommerce - see earlier file copying notes
+<li><b>perl</b> is needed for watchdog<br>
+   <ul><lh>This can be addressed in two ways:</lh>
+       <li>Install perl and all associated library files in the chroot directory structure</li>
+           <b>This is not recommended</b> - PERL is rather dangerous to be having in a chroot environment.
+           If you do decide to go this route, be sure to manually enter the chroot environment and test 
+           the script out to be sure that you have installed all of the files needed for PERL.</LI>
+       <li>Compile aolserver-restart.pl with perlcc.  This is the preferred method, but will be more difficult
+           than just installing PERL.  See <A HREF="#static_linking_notes">static linking notes</A> for more
+           information</LI>
+   </ul>
+   If you do not compile aolserver-errors or install PERL in the chroot environment, <b>be sure to shut
+   off watchdog</b> by setting WatchDogFrequency=0 in your parameters/yourservername.ini file.  Otherwise
+   <defunct> processes will collect every time the server tries to run watchdog.
+<li><b>qmail</b> is needed for ecommerce
+<li><b>ispell</b>
+<li><b>CVS</b> and <b>ssh</b> for the version control module
+</ul>
 
 <h3>Disk Issues</h3>
 
@@ -222,9 +283,79 @@ with disk space, since what before was split up onto two directories
 directory. One workaround is to mount a separate disk as
 /home/aolserver/web and symlink it to /web.
 
+<A NAME="static_linking_notes"></A><h3>Static Linking Notes</h3>
+In order to avoid having shared libraries in the chroot environment, and in particular to
+avoid having PERL available, you may wish to recompile some binaries with static linking.
+This may be as simple as adding the "-static" flag to the gcc compile command.  For PERL, it's a bit
+more involved (note that this is only required if you want to run watchdog, since that's the only
+place the webserver presently uses a PERL script):
+<UL><LI>First, we need to determine if your PERL is dynamically or statically linked.
+    <UL><LI>Go to your server's /bin directory.</LI>
+        <LI>Run <tt>perlcc -sav aolserver-errors.pl</tt>.  Examine the output.  If you don't see a reference to the file
+            "Fcntl.so", your PERL is probably statically linked: You should be able to cut-and-paste the last gcc command
+            perlcc used, add "-static" to the end, and have a static aolserver-errors binary.</LI>
+        <LI>If you do see a reference to "Fcntl.so" when running perlcc, your PERL is probably dynamically linked.
+            You'll need to install another copy of PERL that is statically linked and compile with that (or, you could live
+            with having shared libraries in your chroot environment - see <A HREF="#dynamic_linking_notes">
+            dynamic linking notes</A>.)</LI>
+    </UL>
+    <LI>If your PERL is dynamically linked, you'll need to install a statically linked PERL:
+       <UL>
+          <LI> get a copy of perl5 (wget http://www.perl.com/CPAN-local/src/5.0/perl5.005_03.tar.gz) and extract it.</LI>
+          <LI>Change into your new perl5 directory and read the INSTALL file.</LI>
+          <LI>Read the appropriate file in the hints subdirectory for your operating system.</LI>
+          <LI>Run the Configure program, specifying "-Dusedl=n" for static linking (along with whatever
+              other parameters the hints file recommended) (for our Solaris 2.7 (SunOS 5.7) systems, we used
+              <tt>sh Configure -Dcc='gcc -B/usr/ccs/bin/' -Dusedl=n -Dprefix=/testroot/perl5 -Uusemymalloc</tt>)</LI> 
+              (any directory you have write access to will do for the -Dprefix parameter)</LI>
+          <LI>Run make, make test, and make install.  Watch for errors.  Read the INSTALL, README, and hints files
+              again if you have errors.</LI>
+       </UL>
+    <LI>Maybe having a statically linked PERL is enough - try running the 
+        <tt>path/perlcc -sav aolserver-errors.pl</tt> command again, 
+        (be sure to specify the
+        path to your new statically linked PERL, .ie. /testroot/perl5/bin/perlcc aolserver-errors.pl.  You may
+        want to temporarily remove your normal PERL directory from your path to be sure you don't accidentally 
+        use it), cut-and-paste the gcc command, and add "-static" as before.</LI>
+    <LI>On a Solaris system, this will probably fail to link.  Solaris does not support static linking of a few 
+        functions.  Work around this by including this <A HREF="fake_dl.c">fake_dl.c</A> file in the subdirectory
+        and adding it after aolserver-errors.c on the gcc command line.  This will replace the dlopen, dlclose,
+        dlsym, and dlerror functions with simple stubs - enough to link, but not enough to let a program work
+        if it relied on those functions (specifically /etc/nsswitch.conf, such as getYYYbyZZZ, getpwYYY, etc) -
+        but luckily our aolserver-errors program does not rely on these.</LI>
+    <LI>Now you should have a statically linked aolserver-errors executable.  Feel free to delete your statically linked
+        PERL, you won't need it to run aolserver-errors.</LI>
+    <LI>Final verification: Manually test by chrooting w/ your webserver directory (the command will be something like
+        <tt>sudo chroot /home/aolserver /bin/sh</tt>, but the directory, location of sh, and whether you need to use sudo could vary
+        depending on your system).  Enter the aolserver-errors command from your parameters.ini file (with full path).  If 
+        you get no error message, watchdog should be ready to go chrooted.
+</UL>
+
+<A NAME="dynamic_linking_notes"></A><h3>Dynamic Linking Notes</h3>
+If you're willing to have shared libraries in your chroot environment, then you'll want to make sure you have
+all of the .so files you need.  There are two ways to do this:
+<UL><LI>For every binary file in your chroot environment, run it from within a chrooted shell, look for errors, copy the 
+        missing .so file into the chroot environment, and repeat until the program works.  This is a slightly
+        inferior method.</LI>
+    <LI>For every binary file in your chroot environment, run <tt>ldd [filename]</tt> and note the .so files listed.
+        Make sure that these .so files are in the chroot environment.  Repeat for the .so files, making sure any
+        .so files they need are also in the chroot environment.  You can feel like a smarter better Unix user for 
+        knowing how to use the list dynamic dependencies tool.</LI>
+    <LI>Note that you should not need perl to be in the chroot environment even if it's dynamically linked - 
+        you can compile your perl programs with perlcc, and just keep the libraries in the chroot jail.  This is 
+        definitely better than providing access to perl, although it's not as ideal as having a statically linked
+        program.  But try running them from within a chrooted shell when you're done anyway, just to be sure that you 
+        got everything.</LI>
+</UL>
+
+<B>One last change for either static or dynamically linked</B>: Edit your parameters.ini file and replace 
+"<tt>aolserver-errors.pl</tt>" with just "<tt>aolserver-errors</tt>".
+
 <hr>
 <address><a href="mailto:jsc.arsdigita.com">jsc@arsdigita.com</a></address>
 
 </body>
 </html>
 
+<!--  LocalWords:  ch kmem mem nsswitch conf resolv conf netconfig passwd
+ -->

@@ -1,31 +1,59 @@
-ReturnHeaders
-ns_write "[ad_header "[ad_system_name] Administration"]"
+# File:  events/admin/venues.tcl
+# Owner: bryanche@arsdigita.com
+# Purpose:  Add a new venue.  
+#####
 
-set db_pools [ns_db gethandle subquery 2]
-set db [lindex $db_pools 0]
-set db_sub [lindex $db_pools 1]
+ad_page_contract {
+    Lists event venues.
 
-ns_write "
+    @param orderby for ad_table
+
+    @author Bryan Che (bryanche@arsdigita.com)
+    @cvs_id venues.tcl,v 3.10.2.5 2000/09/22 01:37:40 kevin Exp
+} {
+    {orderby "venue_name"}
+}
+
+set whole_page ""
+append whole_page "[ad_header "Venues"]"
+
+append whole_page "
 <h2>Venues</h2>
 [ad_context_bar_ws [list "index.tcl" "Events Administration"] "Venues"]
 <hr>
-<form method=post action=\"venues-ae.tcl\">
-<table cellpadding=5>
+
+<ul>
+<li><a href=\"venues-ae\">Add a new venue</a>
+</ul>
+<p>
 "
 
-set venues_widget [events_venues_widget $db $db_sub]
+#the columns for ad_table
+set col [list venue_name city state country_name]
 
-if {![empty_string_p $venues_widget]} {
-    ns_write "<tr><td valign=top>view/edit a venue:
-    <td valign=top>$venues_widget
-    <td valign=top><input type=submit value=\"View Venue\">
-"
+set table_def {
+    {venue_name "Venue Name" {} {<td><a href=\"venues-ae.tcl?[export_url_vars venue_id]\">$venue_name</a></td>}}
+    {city "City" {} {<td>$city</td>}}
+    {state "State" {} {<td>$state</td>}}
+    {country_name "Country" {} {<td>$country_name</td>}}
 }
 
-ns_write "
-</select>
-<p>
-<tr><td valign=top><a href=\"venues-ae.tcl\">Add a new venue</a>
-</table>
-</form>
-[ad_footer]"
+set sql "select
+v.venue_id, v.venue_name, v.city,
+v.usps_abbrev as state, cc.country_name
+from events_venues v, country_codes cc
+where v.iso = cc.iso
+[ad_order_by_from_sort_spec $orderby $table_def]
+"
+
+append whole_page "
+[ad_table -Tcolumns $col -Tmissing_text "<em>There are no venues to display</em>" -Torderby $orderby venues_list $sql $table_def]
+
+[ad_footer]
+"
+## clean up, return.
+
+
+
+doc_return  200 text/html $whole_page
+##### EOF

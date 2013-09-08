@@ -1,13 +1,13 @@
-# $Id: index.tcl,v 3.0 2000/02/06 02:44:50 ron Exp $
-#
-# /admin/address-book/index.tcl
-#
-# by philg@mit.edu on November 1, 1999
-# 
-# shows who is using the address book system
-#
-
-set db [ns_db gethandle]
+ad_page_contract {
+    index.tcl,v 3.2.2.3 2000/07/21 03:55:59 ron Exp
+    
+    /admin/address-book/index.tcl
+    
+    by philg@mit.edu on November 1, 1999
+    
+    shows who is using the address book system
+} {
+}
 
 
 ReturnHeaders
@@ -20,7 +20,7 @@ ns_write "
 
 <hr>
 
-Documentation:  <a href=\"/doc/address-book.html\">/doc/address-book.html</a>
+Documentation:  <a href=\"/doc/address-book\">/doc/address-book.html</a>
 <br>
 User pages:  <a href=\"/address-book/\">/address-book/</a>
 
@@ -31,24 +31,20 @@ module:
 
 <ul>
 "
-
-
-set selection [ns_db select $db "select users.user_id, users.first_names, users.last_name, count(*) as n_records
+set items ""
+db_foreach address_book_admin_index "select users.user_id,
+ users.first_names, users.last_name, count(*) as n_records
 from users, address_book
 where users.user_id = address_book.user_id
-group by users.user_id, users.first_names, users.last_name"]
-
-set items ""
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
-    append items "<li><a href=\"/admin/users/one.tcl?[export_url_vars user_id]\">$first_names $last_name</a>:  
-<a href=\"one-user.tcl?[export_url_vars user_id]\">$n_records</a>
+group by users.user_id, users.first_names, users.last_name" {
+    append items "<li><a href=\"/admin/users/one?[export_url_vars user_id]\">$first_names $last_name</a>:  
+<a href=\"one-user?[export_url_vars user_id]\">$n_records</a>
 "
-}
-
-if [empty_string_p $items] {
+} if_no_rows {
     ns_write "no users currently have any address records"
-} else {
+} 
+
+if {![empty_string_p $items]} {
     ns_write $items
 }
 
@@ -59,3 +55,4 @@ ns_write "
 [ad_admin_footer]
 "
 
+db_release_unused_handles

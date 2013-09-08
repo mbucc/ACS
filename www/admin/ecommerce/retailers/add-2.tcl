@@ -1,23 +1,34 @@
-# $Id: add-2.tcl,v 3.0 2000/02/06 03:21:15 ron Exp $
-set_the_usual_form_variables
-# retailer_name, primary_contact_name, secondary_contact_name,
-# primary_contact_info, secondary_contact_info, line1, line2,
-# city, usps_abbrev, zip_code, phone, fax, url, country_code, reach,
-# nexus_states, financing_policy, return_policy,
-# price_guarantee_policy, delivery_policy, installation_policy
+#  www/admin/ecommerce/retailers/add-2.tcl
+ad_page_contract {
+    This page confirms that the information of new retailer.
 
-# nexus_states is a select multiple, so deal with that separately
-set form [ns_getform]
-set form_size [ns_set size $form]
-set form_counter 0
-
-set nexus_states [list]
-while { $form_counter < $form_size} {
-    if { [ns_set key $form $form_counter] == "nexus_states" } {
-	lappend nexus_states [ns_set value $form $form_counter]
-    }
-    incr form_counter
+  @author
+  @creation-date
+  @cvs-id add-2.tcl,v 3.1.6.8 2001/01/12 18:32:52 khy Exp
+} {
+    retailer_name
+    primary_contact_name
+    secondary_contact_name
+    primary_contact_info
+    secondary_contact_info
+    line1
+    line2
+    city
+    usps_abbrev
+    zip_code
+    phone
+    fax
+    url
+    country_code
+    reach
+    financing_policy
+    return_policy
+    price_guarantee_policy
+    delivery_policy
+    installation_policy
+    nexus_states:multiple
 }
+
 
 # I think retailer_name, line1, city, usps_abbrev, zip_code, phone,
 # country_code, and reach should be required
@@ -39,8 +50,7 @@ if { $exception_count > 0 } {
     return
 }
 
-ReturnHeaders
-ns_write "[ad_admin_header "Confirm New Retailer"]
+set page_html "[ad_admin_header "Confirm New Retailer"]
 
 <h2>Confirm New Retailer</h2>
 
@@ -83,8 +93,8 @@ Address
 </td>
 <td>
 "
-set db [ns_db gethandle]
-ns_write "[bboard_convert_plaintext_to_html [ad_pretty_mailing_address_from_args $db $line1 $line2 $city $usps_abbrev $zip_code $country_code]]
+
+append page_html "[bboard_convert_plaintext_to_html [ad_pretty_mailing_address_from_args  $line1 $line2 $city $usps_abbrev $zip_code $country_code]]
 </td>
 </tr>
 <tr>
@@ -168,13 +178,15 @@ Installation
 </table>
 </blockquote>
 
-<form method=post action=add-3.tcl>
+<form method=post action=add-3>
 "
 
-set retailer_id [database_to_tcl_string $db "select ec_retailer_sequence.nextval from dual"]
+#set retailer_id [db_string get_retailer_id_seq "select ec_retailer_sequence.nextval from dual"]
+set retailer_id [db_nextval ec_retailer_sequence]
 
-ns_write "[export_form_vars retailer_id retailer_name primary_contact_name secondary_contact_name primary_contact_info secondary_contact_info line1 line2 city usps_abbrev zip_code phone fax url country_code reach nexus_states financing_policy return_policy price_guarantee_policy delivery_policy installation_policy]
+append page_html "[export_form_vars retailer_name primary_contact_name secondary_contact_name primary_contact_info secondary_contact_info line1 line2 city usps_abbrev zip_code phone fax url country_code reach nexus_states financing_policy return_policy price_guarantee_policy delivery_policy installation_policy]
 
+[export_form_vars -sign retailer_id]
 <center>
 <input type=submit value=\"Confirm\">
 </center>
@@ -183,3 +195,7 @@ ns_write "[export_form_vars retailer_id retailer_name primary_contact_name secon
 [ad_admin_footer]
 "
 
+
+
+
+doc_return  200 text/html $page_html

@@ -7,24 +7,24 @@
 <body bgcolor=#ffffff text=#000000>
 <h2>Group Spam System</h2>
 
-part of the <a href="index.html">ArsDigita Community System</a>
+part of the <a href="index">ArsDigita Community System</a>
 by <a href="mailto:ahmeds@mit.edu/">Sarah Ahmed</a>
 
 <hr>
 
 <ul>
-<li>User directory:  /groups/$short_name/spam-index.tcl
-<li>Admin directory:  /groups/admin/$short_name/spam-index.tcl
+<li>User directory:  /groups/$short_name/spam-index
+<li>Admin directory:  /groups/admin/$short_name/spam-index
 <li>Data model:  subsection within 
-<a href="/doc/sql/display-sql.tcl?url=/doc/sql/user-groups.sql">/doc/sql/user-groups.sql</a> and <a href="/doc/sql/display-sql.tcl?url=/doc/sql/community-core.sql">/doc/sql/community-core.sql</a>
-<li>Procedures:  within /tcl/user-group-defs.tcl<br>
+<a href="/doc/sql/display-sql?url=/user-groups.sql&package_key=acs-core">/packages/acs-core/user-groups.sql</a> and <a href="/doc/sql/display-sql?url=/user-groups.sql&package_key=acs-core">/packages/acs-core/community-core.sql</a>
+<li>Procedures:  within /tcl/user-group-defs<br>
      <ul>
-         <li><a href=proc-one.tcl?proc_name=send_one_group_spam_message>send_one_group_spam_message</a>
-         <li><a href=proc-one.tcl?proc_name=send_all_group_spam_messages>send_all_group_spam_messages</a>
-         <li><a href=proc-one.tcl?proc_name=group_spam_removal_blurb>group_spam_removal_blurb</a>
-         <li><a href=proc-one.tcl?proc_name=bozo_filter_blurb>bozo_filter_blurb</a>
+         <li><a href=proc-one?proc_name=send_one_group_spam_message>send_one_group_spam_message</a>
+         <li><a href=proc-one?proc_name=send_all_group_spam_messages>send_all_group_spam_messages</a>
+         <li><a href=proc-one?proc_name=group_spam_removal_blurb>group_spam_removal_blurb</a>
+         <li><a href=proc-one?proc_name=bozo_filter_blurb>bozo_filter_blurb</a>
      </ul>
-<li>Related modules: <a href="spam.html">Spam System</a> and <a href="email-handler.html">automatic email processing</a>
+<li>Related modules: <a href="spam">Spam System</a> and <a href="email-handler">automatic email processing</a>
 </ul>
 
 <h3>The Big Picture</h3>
@@ -36,11 +36,11 @@ This system is designed to handle group level spamming. The site-wide administra
 
 <ul>
 
-<li>The system allows each group member to set his/her own email preferences; i.e. a group member will receive group spams only if he sets his personal profile to receive spams. Personal email profile can be set at the user pages. Also, a <a href=proc-one.tcl?proc_name=group_spam_removal_blurb>group spam removal blurb</a> is added at the bottom of each group spam.
+<li>The system allows each group member to set his/her own email preferences; i.e. a group member will receive group spams only if he sets his personal profile to receive spams. Personal email profile can be set at the user pages. Also, a <a href=proc-one?proc_name=group_spam_removal_blurb>group spam removal blurb</a> is added at the bottom of each group spam.
 
 <p>
 
-<li>The system also employs a user-level bozo filter. At the bottom of every group spam ( or any spam for that matter), a <a href=proc-one.tcl?proc_name=bozo_filter_blurb>bozo filter blurb</a> is (can be)appended, which is used to set or unset a filter against the specific sender. This filter can be used to prevent a user from any site-wide email from the sender.   
+<li>The system also employs a user-level bozo filter. At the bottom of every group spam ( or any spam for that matter), a <a href=proc-one?proc_name=bozo_filter_blurb>bozo filter blurb</a> is (can be)appended, which is used to set or unset a filter against the specific sender. This filter can be used to prevent a user from any site-wide email from the sender.   
 
 <p>
 <li>The system supports personalization of emails - in the message body, one can use variables like &#60first_names> , &#60last_name>, &#60email>,&#60group_name>,&#60admin_email>, which are respectively replaced by the receiver's first name, last name, email, the group's name and the group's administrative email.

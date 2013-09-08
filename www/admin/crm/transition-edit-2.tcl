@@ -1,17 +1,19 @@
-# $Id: transition-edit-2.tcl,v 3.0.4.1 2000/04/28 15:08:32 carsten Exp $
-set user_id [ad_verify_and_get_user_id]
-if { $user_id == 0 } {
-    ad_returnredirect "/register/index.tcl?return_url=[ns_urlencode [ns_conn url]]"
-    return
+# /www/admin/crm/transition-edit-2.tcl
+
+ad_page_contract {
+    @param state_name
+    @param next_state
+    @cvs-id transition-edit-2.tcl,v 3.2.2.5 2000/07/21 03:56:35 ron Exp
+} {
+    state_name
+    next_state
+    transition_condition
 }
 
-set_the_usual_form_variables
-# state_name, next_state, transition_condition
+set user_id [ad_maybe_redirect_for_registration]
 
 set exception_count 0
 set exception_text ""
-
-set db [ns_db gethandle]
 
 if { [empty_string_p $transition_condition] } {
     incr exception_count
@@ -19,13 +21,15 @@ if { [empty_string_p $transition_condition] } {
 } else {
     # Check to see if the SQL fragment is valid.
     with_catch errmsg {
-	database_to_tcl_string $db "select count(*) from users where crm_state = '$QQstate_name' and ($transition_condition)"
+	# transition_condition can not be a bind variable, as it
+	# is a sql clause by definition
+
+	db_string get_user_count "select count(*) from users where crm_state = :state_name and ($transition_condition)"
     } {
 	incr exception_count
 	append exception_text "<li>Your SQL was invalid: <pre>$errmsg</pre>\n"
     }
 }
-
 
 if { $exception_count > 0 } {
     ad_return_complaint $exception_count $exception_text
@@ -33,10 +37,10 @@ if { $exception_count > 0 } {
 }
 
 with_catch errmsg {
-    ns_db dml $db "update crm_state_transitions 
-set transition_condition = '$QQtransition_condition'
-where state_name = '$QQstate_name'
-and next_state = '$QQnext_state'"
+    db_dml crm_update_transition "update crm_state_transitions 
+set transition_condition = :transition_condition
+where state_name = :state_name
+and next_state = :next_state"
 } {
     ad_return_warning "Database Error" "We encountered a database error while trying to edit
 your new state transition.
@@ -46,4 +50,6 @@ $errmsg
 [ad_admin_footer]"
 }
 
-ad_returnredirect "index.tcl"
+db_release_unused_handles
+
+ad_returnredirect "index"

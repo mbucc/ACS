@@ -1,6 +1,6 @@
 <html>
 <!--AD_DND-->
-<!--$Id: xml.html,v 3.0 2000/02/06 03:27:31 ron Exp $-->
+<!--xml.html,v 3.1.2.1 2000/07/08 03:01:18 mbryzek Exp-->
 <head>
 <title>Working with XML Data in ArsDigita Community System</title>
 </head>
@@ -8,7 +8,7 @@
 <body bgcolor=white>
 <h2>Working with XML</h2>
 
-in the <a href="index.html">ArsDigita Community System</a>
+in the <a href="index">ArsDigita Community System</a>
 by <a href="mailto:karlg@arsdigita.com">Karl Goldstein</a>
 
 <hr>
@@ -187,12 +187,12 @@ show errors;
 <h3>Publish an XML document from Oracle data</h3>
 
 <p>To actually publish the query as an XML document, create an AOLserver 
-tcl page called <tt>xmltest-publish.tcl</tt>:
+tcl page called <tt>xmltest-publish</tt>:
 
 <pre><tt>
-set db [ns_db gethandle]
 
-ns_db dml $db "begin transaction"
+
+db_transaction {
 
 set doc_id [ns_ora exec_plsql $db "
   begin 
@@ -204,7 +204,7 @@ set result [ns_db 1row $db "select doc from xmldocs where doc_id = $doc_id"]
 
 set xmldoc [ns_set value $result 0]
 
-ns_db dml $db "end transaction"
+}
 
 ns_return 200 text/plain $xmldoc
 </tt></pre>
@@ -221,14 +221,14 @@ XML document is automatically deleted once the page is written.
 
 <p>To retrieve an XML document and store its field values into a database table,
 create another copy of the above table named <tt>xmltest2</tt>.
-Then create an AOLserver tcl page called <tt>xmltest-retrieve.tcl</tt>:
+Then create an AOLserver tcl page called <tt>xmltest-retrieve</tt>:
 
 <pre><tt>
-set xmldoc [ns_httpget http://yourdomain/xmltest-publish.tcl]
+set xmldoc [ns_httpget http://yourdomain/xmltest-publish]
 
 regsub -all "\[\r\n\]" $xmldoc {} xmldoc
 
-set db [ns_db gethandle]
+
 
 set statement "
 declare
@@ -238,7 +238,7 @@ begin
 end;
 "
 
-ns_db dml $db $statement
+db_dml unused $statement
 
 ns_return 200 text/html "XML inserted."
 </tt></pre>

@@ -1,0 +1,79 @@
+<html>
+
+<head>
+<title>Directories</title>
+<link rel="stylesheet" type="text/css" href="admin-guide.css">
+</head>
+
+<body>
+
+<h2>Directories</h2>
+
+<a href="/doc/">ACS Documentation</a> :
+<a href="">ACS Administrator's Guide</a> :
+Directories
+
+<hr>
+
+<ul>
+
+<h4>Not Under the Page Root</h4>
+
+<li>/web/yourdomain/parameters/ -- stores definitions such as the
+service name
+
+<li>/web/yourdomain/tcl/ -- pre-APM Tcl procedures used system-wide
+
+<h4>Under the Page Root</h4>
+
+<li>/doc/ -- this directory
+
+<li>/doc/sql/ -- pre-APM data model files
+
+<li>/install/ -- files needed for installation only
+
+<li>/global/ -- files served up by AOLserver when it gets unhappy (e.g.
+file not found or too many threads), also for privacy statements, etc.
+
+<li>/graphics/ -- for site-wide logos and other images that aren't
+specific to content sections
+
+<li>/ads/ -- banners ads to be served by /adserver scripts (below)
+
+<li>/pvt/ -- material private to a particular member
+
+<li>/shared/ -- material available to members but not private to a particular member
+
+<li>/incoming/ -- material that authorized users need to FTP up to
+you 
+
+<li>/acs-examples/ -- scripts that show programmers how to use
+various ACS features
+
+Pre-APM, each module generally defined a top-level subdirectory with
+the same name as itself; there are some exceptions with weird names
+below.
+
+<p>
+
+<li>/adserver/ -- banner ad server
+
+<li>/comments/ -- comments on static pages
+
+<li>/gc/ -- generic classified ad system
+
+<li>/links/ -- Tcl scripts that show related links on the bottom of a page
+
+<li>/ug/ --  viewing and creating user groups
+
+</ul>
+
+<hr>
+
+<a href="mailto:michael@arsdigita.com">
+<address>michael@arsdigita.com</address>
+</a>
+
+</body>
+
+</html>

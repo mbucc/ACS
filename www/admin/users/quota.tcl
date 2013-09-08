@@ -1,58 +1,51 @@
-# $Id: quota.tcl,v 3.1 2000/03/09 00:01:36 scott Exp $
-# File:     /admin/users/quota.tcl
-# Date:     Thu Jan 27 03:57:32 EST 2000
-# Location: 42Å∞21'N 71Å∞04'W
-# Location: 80 PROSPECT ST CAMBRIDGE MA 02139 USA
-# Author:   mobin@mit.edu (Usman Y. Mobin)
-# Purpose:  User Quota Management
+ad_page_contract {
+    @cvs-id quota.tcl,v 3.3.2.4.2.3 2000/09/22 01:36:20 kevin Exp
+    File:     /admin/users/quota.tcl
+    Date:     Thu Jan 27 03:57:32 EST 2000
+    Location: 42Å∞21'N 71Å∞04'W
+    Location: 80 PROSPECT ST CAMBRIDGE MA 02139 USA
+    Author:   mobin@mit.edu (Usman Y. Mobin)
+    Purpose:  User Quota Management
+} {
+    user_id:integer,notnull
+}
 
-set_the_usual_form_variables
 
-# user_id
-
-set db [ns_db gethandle]
-
-set selection [ns_db 1row $db "
+db_1row unused "
 select users.first_names as first_names,
        users.last_name as last_name,
        users_special_quotas.max_quota as max_quota
 from users_special_quotas, users
 where users_special_quotas.user_id(+) = users.user_id
-and users.user_id=$user_id"]
-
-set_variables_after_query
+and users.user_id = :user_id"
 
 # Checking for site-wide administration status
-set admin_p [ad_administrator_p $db $user_id]
+set admin_p [ad_administrator_p $user_id]
 
 set sql "
 select (select count(*) * [ad_parameter DirectorySpaceRequirement users]
         from users_files
         where directory_p='t'
-        and owner_id=$user_id) +
+        and owner_id = :user_id) +
        (select nvl(sum(file_size),0)
         from users_files
-        where directory_p='f'
-        and owner_id=$user_id) as quota_used,
+        where directory_p = 'f'
+        and owner_id = :user_id) as quota_used,
        (decode((select count(*) from
                 users_special_quotas
-                where user_id=$user_id),
+                where user_id = :user_id),
                 0, [ad_parameter [ad_decode $admin_p \
 			 0 NormalUserMaxQuota \
 			 1 PrivelegedUserMaxQuota \
 			 PrivelegedUserMaxQuota] users],
                 (select max_quota from
                  users_special_quotas
-                 where user_id=$user_id))) * power(2,20) as quota_max
+                 where user_id = :user_id))) * power(2,20) as quota_max
 from dual
 "
 
 # Extract results from the query
-set selection [ns_db 1row $db $sql]
-
-# This will  assign the  variables their appropriate values 
-# based on the query.
-set_variables_after_query
+db_1row admin_users_quota_big_space_query $sql
 
 
 set puny_mortal_quota [ad_parameter NormalUserMaxQuota users]
@@ -70,7 +63,7 @@ for $first_names $last_name
 Max Quota : [util_commify_number $quota_max] bytes<br>
 Quota Used: [util_commify_number $quota_used] bytes<br>
 
-<form method=POST action=\"quota-2.tcl\">
+<form method=POST action=\"quota-2\">
 [export_form_vars user_id]
 
 <table>
@@ -96,5 +89,7 @@ Quota Used: [util_commify_number $quota_used] bytes<br>
 
 [ad_admin_footer]
 "
-ns_db releasehandle $db
-ns_return 200 text/html $whole_page
+
+
+
+doc_return  200 text/html $whole_page
