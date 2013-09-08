@@ -36,7 +36,7 @@ log=log
 [ns/parameters]
 User={{ AOL_SERVER_USER }}
 ServerLog={{ AOL_HOME }}/log/{{ ACS_SERVICE_NAME }}-error.log
-Home={{ AOL_HOME }}
+Home={{ AOL_SERVER_PREFIX }}
 StackSize=500000
 auxconfigdir={{ AOL_SERVER_WEBROOT }}/{{ ACS_SERVICE_NAME }}/parameters
 
@@ -48,7 +48,7 @@ SystemScope=on
 CacheADP=on
 
 [ns/server/{{ ACS_SERVICE_NAME }}]
-PageRoot={{ AOL_SERVER_WEBROOT }}/{{ ACS_SERVICE_NAME }}/www
+PageRoot={{ AOL_SERVER_WEBROOT }}/{{ DOMAIN_NAME }}/www
 DirectoryFile=index.tcl, index.adp, index.html, index.htm 
 Webmaster={{ ACS_ADMINISTRATOR_EMAIL }}
 NoticeBgColor=#ffffff
@@ -87,19 +87,13 @@ enablehostnamelookup=Off
 [ns/server/{{ ACS_SERVICE_NAME }}/module/nssock]
 timeout=120
 Address={{ ACS_IP_ADDRESS }}
-Hostname={{ ACS_DOMAIN_NAME }}
-
-[ns/server/{{ ACS_SERVICE_NAME }}/module/nsssl]
-Address={{ ACS_IP_ADDRESS }}
-Hostname={{ ACS_DOMAIN_NAME }}
-CertFile={{ AOL_HOME }}/cert.pem
-KeyFile={{ AOL_HOME }}/key.pem
+Hostname={{ ACS_IP_ADDRESS }}
+Port={{ ACS_PORT }}
 
 [ns/server/{{ ACS_SERVICE_NAME }}/modules]
 nsperm=nsperm.so
 nssock=nssock.so
 nslog=nslog.so
-nsssl=nsssle.so
 
 [ns/server/{{ ACS_SERVICE_NAME }}/MimeTypes]
 Default=text/plain
@@ -108,7 +102,7 @@ NoExtension=text/plain
 .prc=application/x-pilot
 
 [ns/server/{{ ACS_SERVICE_NAME }}/tcl]
-Library=/{{ AOL_SERVER_WEBROOT }}/{{ ACS_SERVICE_NAME }}/tcl
+Library={{ AOL_SERVER_WEBROOT }}/{{ DOMAIN_NAME }}/tcl
 
 [ns/servers]
 {{ ACS_SERVICE_NAME }}={{ ACS_DOMAIN_NAME }} community system
