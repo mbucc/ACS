@@ -1,9 +1,13 @@
-# bulkmail_sendmail.tcl
-#
-# Lots hacked from sendmail.tcl
-# not useful as a general purpose mailer.
+# tcl/bulkmail_sendmail.tcl
 
-util_report_library_entry
+ad_library {
+    
+  Definitions for bulkmail multithreaded mail sending module
+  
+    @author gregh@arsdigita.com 
+    @cvs-id bulkmail-sendmail.tcl,v 3.3.2.1 2000/07/21 08:17:52 hqm Exp
+}
+
 
 proc bulkmail_header_exists_p {header_name headers} {
     if { [empty_string_p $headers] || ([ns_set ifind $headers $header_name] == -1) } {
@@ -20,7 +24,6 @@ proc bulkmail_smtp_send {wfp string timeout} {
     puts $wfp $string\r
     flush $wfp
 }
-
 
 proc bulkmail_smtp_recv {rfp check timeout} {
     while (1) {
@@ -143,7 +146,6 @@ proc bulkmail_build_message { bulkmail_id user_id sender from to subject body {h
     ## Put the tolist in the headers
     set rfcto [join $tolist ", "]
 
-
     set msg ""
 
     if [empty_string_p $headers] {
@@ -177,7 +179,6 @@ proc bulkmail_build_message { bulkmail_id user_id sender from to subject body {h
     
     append msg "\n$body"
 
-
     ## Terminate body with a solitary period
     foreach line [split $msg "\n"] { 
 	regsub {^[.]} $line ".." quoted_line
@@ -197,8 +198,6 @@ proc bulkmail_sendmail { messages mailhost } {
     if [string match "" $timeout] {
 	set timeout 60
     }
-
-    bulkmail_reset_hosts_if_needed
 
     if { [catch {
 	set sock [bulkmail_smtp_open $mailhost $timeout]
@@ -224,7 +223,6 @@ proc bulkmail_sendmail { messages mailhost } {
 	set bcclist [bulkmail_message_bcclist $message]
 	set body [bulkmail_message_body $message]
 
-
 	_bulkmail_sendmail $rfp $wfp $timeout $tolist $bcclist $sender $body
 	lappend flush_queue [list $bulkmail_id $user_id [bulkmail_ansi_current_time]]
 #	bulkmail_record_sent_message $bulkmail_id $user_id [bulkmail_ansi_current_time]
@@ -243,9 +241,8 @@ proc bulkmail_sendmail { messages mailhost } {
     bulkmail_smtp_close $rfp $wfp $timeout
     ns_sema release $bulkmail_threads_sema
     bulkmail_decrement_threadcount
-    ns_log Notice "Threads active: [bulkmail_current_threadcount]"
+#    ns_log Notice "Threads active: [bulkmail_current_threadcount]"
 }
-
 
 proc _bulkmail_sendmail {rfp wfp timeout tolist bcclist \
 	sender data } {
@@ -283,4 +280,4 @@ proc _bulkmail_sendmail {rfp wfp timeout tolist bcclist \
 
 }
 
-util_report_successful_library_load
+

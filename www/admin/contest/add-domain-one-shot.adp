@@ -1,13 +1,11 @@
 <% 
 
-set_form_variables 
+ad_page_contract {
+    @cvs-id add-domain-one-shot.adp,v 3.1.10.3 2000/07/27 20:22:19 bryanche Exp
+} {  
+    user_id_from_search:naturalnum
+}
 
-# user_id_from_search is the one we care about
-
-set db [ns_db gethandle]
-set domain_id [database_to_tcl_string $db "select contest_domain_id_sequence.nextval from dual"]
-ns_db releasehandle $db
-  
 %>
 
 <%=[ad_header "Add New Contest"]%>

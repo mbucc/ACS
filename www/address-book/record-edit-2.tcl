@@ -1,38 +1,102 @@
-# $Id: record-edit-2.tcl,v 3.0.4.1 2000/04/28 15:08:22 carsten Exp $
-# File:     /address-book/index.tcl
-# Date:     12/24/99
-# Contact:  teadams@arsdigita.com, tarik@arsdigita.com
-# Purpose:  address book main page
-#
-# Note: if page is accessed through /groups pages then group_id and group_vars_set are already set up in 
-#       the environment by the ug_serve_section. group_vars_set contains group related variables (group_id, 
-#       group_name, group_short_name, group_admin_email, group_public_url, group_admin_url, group_public_root_url,
-#       group_admin_root_url, group_type_url_p, group_context_bar_list and group_navbar_list)
+# /www/address-book/record-edit-2.tcl
 
-set_the_usual_form_variables 0
-# maybe scope, maybe scope related variables (user_id, group_id, on_which_group, on_what_id)
-# address_book_id, first_names, last_name, email, email2, line1, line2, city, usps_abbrev, zip_code, phone_home, phone_work, 
-# phone_cell, phone_other, country, birthmonth, birthday, birthyear, days_in_advance_to_remind, days_in_advance_to_remind_2, notes
-# maybe return_url
+ad_page_contract {
+
+    address book main page
+
+    @param scope
+    @param user_id
+    @param group_id
+    @param address_book_id
+    @param first_names
+    @param last_name
+    @param email
+    @param email2
+    @param line1
+    @param line2
+    @param city
+    @param usps_abbrev
+    @param zip_code
+    @param phone_home
+    @param phone_work
+    @param  phone_cell
+    @param phone_other
+    @param country
+    @param birthmonth
+    @param birthday
+    @param birthyear
+    @param days_in_advance_to_remind
+    @param days_in_advance_to_remind_2
+    @param notes
+    @param return_url
+
+    @cvs-id record-edit-2.tcl,v 3.2.2.16 2000/10/14 00:46:29 bcalef Exp
+    @creation-date 12/24/99
+    @author teadams@arsdigita.com
+    @author tarik@arsdigita.com
+
+} {
+    scope:optional
+    user_id:optional,integer
+    group_id:optional,integer
+    address_book_id:integer
+    first_names:trim,notnull
+    last_name:trim,notnull
+    email
+    email2
+    line1
+    line2
+    city
+    usps_abbrev
+    zip_code
+    phone_home
+    phone_work
+    phone_cell
+    phone_other
+    country
+    { birthmonth:naturalnum,optional "" }
+    { birthday:naturalnum,optional "" }
+    { birthyear:optional "" }
+    days_in_advance_to_remind:naturalnum,optional
+    days_in_advance_to_remind_2:naturalnum,optional
+    notes
+    return_url:optional
+} -validate {
+    is_valid_date {
+    if { [exists_and_not_null birthmonth] && [exists_and_not_null birthday] } {
+	if { [catch { db_string date_verify "select to_date('$birthmonth-$birthday','MM-DD') from dual" } errmsg ] } {
+	    ad_complain "Your date \"$birthmonth-$birthday\" was invalid."
+	}
+	if { [exists_and_not_null birthyear] } {
+	    if { [catch { db_string date_verify "select to_date('$birthmonth-$birthday-$birthyear','MM-DD-YYYY') from dual" } errmsg ] } {
+		ad_complain "Your date \"$birthmonth-$birthday-$birthyear\" was invalid."
+	    }   
+	}
+    }   
+return 1
+}
+}
 
 ad_scope_error_check user
-set db [ns_db gethandle]
-ad_scope_authorize $db  $scope none group_admin user
+
+ad_scope_authorize  $scope none group_admin user
 
 set column_list [list first_names last_name email email2 line1 line2 city usps_abbrev zip_code phone_home phone_work phone_cell phone_other country birthmonth birthday birthyear days_in_advance_to_remind days_in_advance_to_remind_2 notes]
 
 foreach column $column_list {
-    lappend column_and_QQvalue_list "$column = '[set QQ$column]'"
+    lappend column_and_value_list "$column = :$column"
 }
 
-set update_string "
-update address_book set [join $column_and_QQvalue_list ,] where address_book_id='$address_book_id'
-"
+db_dml address_book_update "
+update address_book 
+set    [join $column_and_value_list ,] 
+where  address_book_id= :address_book_id"
 
-ns_db dml $db $update_string
+
+db_release_unused_handles
 
 if [info exists return_url] {
     ad_returnredirect $return_url
 } else {
-    ad_returnredirect "record.tcl?[export_url_scope_vars address_book_id]"
+    ad_returnredirect "record?[export_url_scope_vars address_book_id]"
 }

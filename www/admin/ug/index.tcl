@@ -1,7 +1,11 @@
-# $Id: index.tcl,v 3.0 2000/02/06 03:29:29 ron Exp $
-ReturnHeaders 
+ad_page_contract {
+    Main user group administration page.
+    @cvs-id index.tcl,v 3.1.6.6 2000/09/22 01:36:15 kevin Exp
+    # 3.4 upgrade coded by teadams on July 9th
+} {}
 
-ns_write "[ad_admin_header "User Group Administration"]
+
+append return_string "[ad_admin_header "User Group Administration"]
 
 <h2>User Group Administration</h2>
 
@@ -11,33 +15,26 @@ ns_write "[ad_admin_header "User Group Administration"]
 
 Currently, the system is able to handle the following types of groups:
 
-<ul>
+<ul>"
 
-"
 
-set db [ns_db gethandle]
-set selection [ns_db select $db "select ugt.group_type, ugt.pretty_name, count(ug.group_id) as n_groups
+db_foreach user_group_types "select ugt.group_type, ugt.pretty_name, count(ug.group_id) as n_groups
 from user_group_types ugt, user_groups ug
 where ugt.group_type = ug.group_type(+)
 group by ugt.group_type, ugt.pretty_name
-order by upper(ugt.pretty_name)"]
-
-set count 0 
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
-    incr count
-    ns_write "<li><a href=\"group-type.tcl?group_type=[ns_urlencode $group_type]\">$pretty_name</a> (number of groups defined: $n_groups)\n"
+order by upper(ugt.pretty_name)" {
+    append return_string "<li><a href=\"group-type?group_type=[ns_urlencode $group_type]\">$pretty_name</a> (number of groups defined: $n_groups)\n"
+} if_no_rows {
+    append return_string "no group types currently defined"
 }
 
-if { $count == 0 } {
-    ns_write "no group types currently defined"
-}
+append return_string "<p>
 
-ns_write "<p>
-
-<li><a href=\"group-type-new.tcl\">Define a new group type</a>
+<li><a href=\"group-type-new\">Define a new group type</a>
 
 </ul>
 
 [ad_admin_footer]
 "
+
+doc_return  200 text/html  $return_string

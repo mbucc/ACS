@@ -1,4 +1,19 @@
-# $Id: blacklist.tcl,v 3.0.4.1 2000/04/28 15:09:09 carsten Exp $
+# /admin/links/blacklist.tcl
+
+ad_page_contract {
+    Keep a URL from reappearing, on one page or all pages
+
+    @param page_id The ID of the page the blacklist came from
+    @param url The URL to blacklist
+
+    @author Original Author Unknown
+    @creation-date Original Date Unknown
+    @cvs-id blacklist.tcl,v 3.3.2.7 2000/09/22 01:35:29 kevin Exp
+} {
+    page_id:notnull,naturalnum
+    url:notnull
+}
+
 set admin_id [ad_verify_and_get_user_id]
 
 if { $admin_id == 0 } {
@@ -6,14 +21,14 @@ if { $admin_id == 0 } {
     return
 }
 
-set_the_usual_form_variables
 
-# page_id, url
+set url_stub [db_string select_url_stub "select url_stub from static_pages where page_id = :page_id"]
 
-set db [ns_db gethandle]
-set url_stub [database_to_tcl_string $db "select url_stub from static_pages where page_id = $page_id"]
+set pattern_id [db_string select_patern_id "select link_kill_pattern_id.nextval from dual"]
 
-ns_return 200 text/html "[ad_admin_header "Blacklist $url"]
+db_release_unused_handles
+
+set page_content "[ad_admin_header "Blacklist $url"]
 
 <h2>Blacklist $url</h2>
 
@@ -21,7 +36,8 @@ on <a href=\"$url_stub\">$url_stub</a> (or everywhere)
 
 <hr>
 
-<form method=POST action=blacklist-2.tcl>
+<form method=POST action=\"blacklist-2\">
+[export_form_vars pattern_id]
 <input type=radio name=page_id value=\"*\" CHECKED> On all pages
 <input type=radio name=page_id value=\"$page_id\"> Just on $url_stub
 <p>
@@ -63,3 +79,5 @@ naughty document.
 
 [ad_admin_footer]
 "
+
+doc_return  200 text/html $page_content

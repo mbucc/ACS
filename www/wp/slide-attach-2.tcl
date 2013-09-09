@@ -1,17 +1,29 @@
-# $Id: slide-attach-2.tcl,v 3.0.4.1 2000/04/28 15:11:41 carsten Exp $
-# File:        slide-attach-2.tcl
-# Date:        28 Nov 1999
-# Author:      Jon Salz <jsalz@mit.edu>
-# Description: Adds an attachment.
-# Inputs:      slide_id, attachment (file), inline_image_p, display
+# /wp/slide-attach-2.tcl
 
-set_the_usual_form_variables
-set db [ns_db gethandle]
+ad_page_contract {
+    Adds an attachment.
+
+    @param slide_id the slide to which to attach the file
+    @param attachment the file to attach
+    @param inline_image_p is this an inline image
+    @param display
+
+    @creation-date  28 Nov 1999
+    @author Jon Salz <jsalz@mit.edu>
+    @cvs-id slide-attach-2.tcl,v 3.2.2.6 2000/09/05 18:56:16 tina Exp
+} {
+    slide_id:naturalnum,notnull
+    attachment:notnull
+    inline_image_p:notnull
+    display:notnull
+}
+
 set user_id [ad_maybe_redirect_for_registration]
 
-set selection [ns_db 1row $db "select * from wp_slides where slide_id = $slide_id"]
-set_variables_after_query
-wp_check_authorization $db $presentation_id $user_id "write"
+db_1row wp_pres_id_select "
+select presentation_id from wp_slides where slide_id = :slide_id"
+
+wp_check_authorization $presentation_id $user_id "write"
 
 set tmp_filename [ns_queryget attachment.tmpfile]
 set guessed_file_type [ns_guesstype $attachment]
@@ -41,13 +53,15 @@ if { $exception_count > 0 } {
 }
 
 if { $inline_image_p == "f" } {
-    set QQdisplay ""
+    set display ""
 }
 
-ns_ora blob_dml_file $db "
+db_dml wp_insert_attachment "
     insert into wp_attachments(attach_id, slide_id, attachment, file_size, file_name, mime_type, display)
-    values(wp_ids.nextval, $slide_id, empty_blob(), $n_bytes, '[DoubleApos $client_filename]', '$guessed_file_type', '$QQdisplay')
+    values(wp_ids.nextval, :slide_id, empty_blob(), :n_bytes, :client_filename, :guessed_file_type, :display)
     returning attachment into :1
-" $tmp_filename
+" -blob_files $tmp_filename
+
+db_release_unused_handles
 
 ad_returnredirect "slide-attach.tcl?slide_id=$slide_id"

@@ -1,5 +1,16 @@
-# $Id: index.tcl,v 3.1 2000/03/11 00:45:12 curtisg Exp $
-append html "[ad_admin_header "Classified Administration"]
+# /www/admin/gc/index.tcl
+ad_page_contract {
+    Shows active and inactive domains, allowing you to toggle between states.
+    
+    @author xxx
+    @creation-date unknown
+    @cvs-id index.tcl,v 3.2.6.6 2000/09/22 01:35:23 kevin Exp
+} {
+
+}
+
+set html "
+[ad_admin_header "Classified Administration"]
 
 <h2>Classified Administration</h2>
 
@@ -10,17 +21,18 @@ append html "[ad_admin_header "Classified Administration"]
 
 <h4>Active domains</h4>"
 
-set db [gc_db_gethandle]
-
-set selection [ns_db select $db "select * 
-from ad_domains
-order by active_p desc, upper(domain)"]
 
 set count 0
 set inactive_title_shown_p 0
 
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+db_foreach active_domains "
+select domain_id,
+       domain,
+       active_p
+from   ad_domains
+order by active_p desc, upper(domain)" {
+    # shows active and inactive domains
+    
     if { $active_p == "f" } {
 	if { $inactive_title_shown_p == 0 } {
 	    # we have not shown the inactive title yet
@@ -35,9 +47,8 @@ while { [ns_db getrow $db $selection] } {
 	set anchor "deactivate"
     }
 
-    set_variables_after_query
-
-    append html "<li><a href=\"domain-top.tcl?domain_id=$domain_id\">$domain</a>\n  (<a href=\"toggle-active-p.tcl?[export_url_vars domain_id]\">$anchor</a>)\n"
+    append html "<li><a href=\"domain-top?[export_url_vars domain_id]\">$domain</a>\n
+    (<a href=\"toggle-active-p?[export_url_vars domain_id]\">$anchor</a>)\n"
     incr count
 }
 
@@ -45,11 +56,11 @@ append html "
 
 <p>
 
-<li><a href=\"domain-add.tcl\">create a new domain</a>
+<li><a href=\"domain-add\">create a new domain</a>
 
 </ul>
 
 [ad_admin_footer]"
 
-ns_db releasehandle $db
-ns_return 200 text/html $html
+
+doc_return  200 text/html $html

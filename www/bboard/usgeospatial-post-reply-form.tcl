@@ -1,54 +1,55 @@
-# $Id: usgeospatial-post-reply-form.tcl,v 3.0.4.1 2000/04/28 15:09:45 carsten Exp $
+# /www/bboard/usgeospatial-post-reply-form.tcl
+ad_page_contract {
+    Form to reply to a message
+
+    @param refers_to the ID of the message being refered to 
+
+    @cvs-id usgeospatial-post-reply-form.tcl,v 3.3.2.4 2000/09/22 01:36:58 kevin Exp
+} {
+    refers_to:notnull
+}
+
+# -----------------------------------------------------------------------------
+
+page_validation {
+    bboard_validate_msg_id $refers_to
+}
+
+
 if {[ad_read_only_p]} {
     ad_return_read_only_maintenance_message
     return
 }
 
-set form_refers_to [ns_queryget refers_to]
-
-# we can't just use set_form_variables because that would set
-# "refers_to" which is about to be overwritten by the db query
-
-set db [bboard_db_gethandle]
-if { $db == "" } {
-    bboard_return_error_page
-    return
-}
-
+set form_refers_to $refers_to
 
 set user_id [ad_verify_and_get_user_id]
-
-if {$user_id == 0} {
-
-   ad_returnredirect /register.tcl?return_url=[ns_urlencode "[bboard_partial_url_stub]usgeospatial-post-reply-form.tcl?refers_to=$form_refers_to"]
-    return
-}
+ad_maybe_redirect_for_registration
 
 
-set selection [ns_db 0or1row $db "select users.first_names || ' ' || users.last_name as name, bboard.*, users.*  from bboard, users 
-where users.user_id = bboard.user_id
-and msg_id = '$form_refers_to'"]
+if {! [db_0or1row original_message "
+select users.first_names || ' ' || users.last_name as name, 
+       bboard.*, 
+       users.*  
+from   bboard, 
+       users 
+where  users.user_id = bboard.user_id
+and    msg_id = :form_refers_to"]} {
 
-if { $selection == "" } {
     # message was probably deleted
-    ns_return 200 text/html "Couldn't find message $msg_id.  Probably the message to which you are currently trying to reply has deleted by the forum maintainer."
+    doc_return  200 text/html "Couldn't find message $msg_id.  Probably the message to which you are currently trying to reply has deleted by the forum maintainer."
     return
 }
 
-
-set_variables_after_query
-
-if [catch {set selection [ns_db 1row $db "select unique * from bboard_topics where topic='[DoubleApos $topic]'"]} errmsg] {
+if {![db_0or1row get_topic "
+select unique * from bboard_topics where topic_id = :topic_id"]} {
     bboard_return_cannot_find_topic_page
     return
 }
-set_variables_after_query
 
 
-
-ReturnHeaders 
-
-ns_write "[bboard_header "Respond"]
+append page_content "
+[bboard_header "Respond"]
 
 <h2>Respond</h2>
 
@@ -56,7 +57,7 @@ to \"$one_line\"
 
 <p>
 
-in <a href=\"usgeospatial-2.tcl?[export_url_vars topic epa_region]\">the $topic (region $epa_region) forum</a>
+in <a href=\"usgeospatial-2?[export_url_vars topic epa_region]\">the $topic (region $epa_region) forum</a>
 
 <hr>
 
@@ -70,7 +71,7 @@ from $name (<a href=\"mailto:$email\">$email</a>)
 
 <hr>
 
-<form method=post action=\"insert-msg.tcl\">
+<form method=post action=\"insert-msg\">
 
 <input type=hidden name=usgeospatial_p value=t>
 <input type=hidden name=refers_to value=$form_refers_to>
@@ -103,12 +104,9 @@ from $name (<a href=\"mailto:$email\">$email</a>)
 <input type=submit value=Respond>
 </center>
 </form>
-"
 
-set QQtopic [DoubleApos $topic]
-bboard_get_topic_info
-
-ns_write "
 
 [bboard_footer]
 "
+
+doc_return 200 text/html $page_content

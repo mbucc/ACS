@@ -1,5 +1,5 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
 <html>
-<!--AD_DND-->
 <head>
 <title>ArsDigita Community System Documentation</title>
 </head>
@@ -7,459 +7,461 @@
 <body bgcolor=#ffffff text=#000000>
 <h2>ArsDigita Community System Documentation</h2>
 
-by <a href="http://photo.net/philg/">Philip Greenspun</a>
-
 <hr>
 
-<h3>Documentation</h3>
+<h3>For everyone:</h3>
 
 <ul>
 
-<li>/doc/index.html -- this document
+<li><a href=arsdigita-faq>ACS FAQ</a>
 
-<li><a href="arsdigita-faq.html">/doc/arsdigita-faq.html</a> -- ArsDigita Community System FAQ 
+<li><a href=release-notes/>Release Notes</a>
 
-<li><a href="installation.html">/doc/installation.html</a> 
+<li><a href=version-history>Version History</a>
+</ul>
 
-<li><a href="upgrading.html">/doc/upgrading.html</a> -- moving from one
-ACS version to the next
+<p> And if you're a programmer, <a href="acs-3-3-and-beyond">the ACS 3.2 developers' guide 
+to ACS 3.3 and beyond</a>
 
-<li><a href="developers.html">/doc/developers.html</a> -- including <a
-href="procs.tcl">procedure-by-procedure documentation</a> (for programmers)
+<h3>For people using the ACS to build and operate a website:</h3>
 
-<li><a href="style.html">/doc/style.html</a> -- templates and
-multi-lingual support
+<ul>
 
-<li><a href="monitoring.html">/doc/monitoring.html</a>
-
-<li><a href="mainframe-integration.html">/doc/mainframe-integration.html</a>
-
-<li><a href="xml.html">working with XML</a>
-
-<li><a href="help.html">/doc/help.html</a> -- building documentation for
-the end-user
-
-<li><a href="security-sessions.html">/doc/security-sessions.html</a> --
-information on the security subsystem, and associating state with user
-sessions and browsers
-
-<li><a href="abstract-url.html">/doc/abstract-url.html</a> --
-information on the system allowing use of abstract (extensionless) URLs
-
-<li><a href="webmasters.html">/doc/webmasters.html</a> -- for the person
-who makes publishing decisions
-
-<li><a href="patches.html">/doc/patches.html</a> -- documentation of
-patches/fixes to the ArsDigita Community System (ACS) on this site;
-useful when you are upgrading and when we are building a new version
-of the system
-
-<li><a href="custom.html">/doc/custom.html</a> -- documentation of 
-custom features that you've added to this site that will/can never
-be rolled into the ACS.
-
-<li><a href="/acs-examples/">/acs-examples/</a> -- source code that
-shows how to use the rest of the software
+<li><a href="install-guide/"><strong>ACS Installation Guide</strong></a>
 
 <p>
 
-<li><a href="standards">Development Standards</a>
-
-<li><a href="version-history.html">Version History</a>
+The following documents are being integrated into the Installation
+Guide; in case of information conflicts, the Installation Guide should
+usually be given precedence.
 
 <p>
 
-<li><a href="http://www.aolserver.com/">AOLserver documentation</a>, a
-notably useful part of which is 
-<a href="http://www.aolserver.com/server/docs/2.3/html/tcldev.htm">the
-Tcl Developer's Guide</a>
+<ul>
 
-<h4>Individual Modules</h4>
+<li><a href="architecture-install">ArsDigita Server Architecture</a>
+for ensuring web service reliability
+
+<li><a href="installation">Installing under Unix</a>
+
+<li><a href="win2k-installation">Installing under Windows 2000 (and Windows 98)</a>
+
+<li><a href="upgrading">Upgrading the ACS</a>
+
+<li><a href="install-guide/webmail">Installing Webmail</a>
+</ul>
+
+<p>
+
+<li><strong>Getting Started with the ACS</strong>
+(coming soon)
+
+<p>
+
+<li><strong><a href="admin-guide/">ACS Administrators's Guide</a></strong>
+
+<ul>
+
+<li><a href="admin-guide/magic-files">Magic Files</a>
+
+<li><a href="admin-guide/filters-and-other-tricks.html">Filters and Other Tricks</a>
+
+<li><a href="admin-guide/database-pools.html">Database Pools</a>
+
+<li><a href="admin-guide/directories.html">Directories</a>
+
+<li>Obtaining and Installing APM Packages
+(coming soon)
+
+<li><a href="admin-guide/monitoring">Monitoring</a>
+
+<li><a href="admin-guide/server-cluster">Server Clustering</a>: a
+facility for keeping state synchronized between a group of
+load-balanced servers
+
+<li><a href="redirect">Redirects</a>: ensuring that legacy URLs
+pointed to by bookmarks and search engines still work
+
+<li><a href="robot-detection">Robot detection</a>: making sure
+that your entire site gets indexed
+
+<li><a href="crm">Customer relationship management</a>: tracking a
+customer relationship through its various states.
+
+<li><a href="member-value">Member value</a>: a way of accumulating
+charges for users and then billing them out at the end of each month
+(commercial sites) or excluding them from the community if the charges
+get too high (non-commercial)
+
+</ul>
+
+<p>
+
+
+<li><strong>Installed Package Documentation</strong><p>
+    All package documentation is availabe <a href="/api-doc">here</a>.
+
+<p>
 
 Each module is owned by at least one programmer.  The current list
-is in <a href="module-owners.html">module-owners.html</a>; each
+is in <a href="module-owners">module-owners</a>; each
 programmer
 is responsible for maintaining the module and 
 the relevant portion of <a
-href="acceptance-test.html">acceptance-test.html</a>
+href="acceptance-test">acceptance-test</a>
 
 <p>
 
-<li><a href="address-book.html">/doc/address-book.html</a>
-<li><a href="adserver.html">/doc/adserver.html</a>
-<li><a href="bannerideas.html">/doc/bannerideas.html</a>
-<li><a href="bboard.html">/doc/bboard.html</a> -- the discussion forum
+<ul>
+<li><a href="/api-doc/procs-file-view?path=tcl/ad-functional.tcl">/doc/ad-functional</a>
+<li><a href="/api-doc/procs-file-view?path=tcl/ad-trees.tcl">/doc/ad-trees</a>
+<li><a href="address-book">/doc/address-book</a>
+<li><a href="adserver">/doc/adserver</a>
+<li><a href="bannerideas">/doc/bannerideas</a>
+<li><a href="bboard">/doc/bboard</a> -- the discussion forum
 system
 
-<li><a href="bookmarks.html">/doc/bookmarks.html</a>
+<li><a href="bookmarks">/doc/bookmarks</a>
 
 
-<li><a href="calendar.html">/doc/calendar.html</a>
+<li><a href="calendar">/doc/calendar</a>
 
-<li><a href="chat.html">/doc/chat.html</a>
-<li><a href="classifieds.html">/doc/classifieds.html</a>
+<li><a href="chat">/doc/chat</a>
+<li><a href="classifieds">/doc/classifieds</a>
 
-<li><a href="clickthrough.html">/doc/clickthrough.html</a>
+<li><a href="clickthrough">/doc/clickthrough</a>
 
-<li><a href="contact-manager.html">/doc/contact-manager.html</a> -- good
+<li><a href="contact-manager">/doc/contact-manager</a> -- good
 for sites with an extranet-y flavor 
 
-<li><a href="content-sections.html">/doc/content-sections.html</a> -- lets
+<li><a href="content-sections">/doc/content-sections</a> -- lets
 administrators add/manage different content sections of the site
 
-<li><a href="contest.html">/doc/contest.html</a> -- run give-away contests
+<li><a href="contest">/doc/contest</a> -- run give-away contests
 
-<li><a href="custom-sections.html">/doc/custom-sections.html</a> -- allows
+<li><a href="custom-sections">/doc/custom-sections</a> -- allows
 group administrators add/manage custom sections of the site
 
-<li><a href="curriculum.html">/doc/curriculum.html</a>
+<li><a href="curriculum">/doc/curriculum</a>
 
-<li><a href="directory.html">/doc/directory.html</a> -- letting users
+<li><a href="directory">/doc/directory</a> -- letting users
 find each other
 
-<li><a href="display.html">/doc/display.html</a> -- lets administrators
+<li><a href="display">/doc/display</a> -- lets administrators
 set display settings and upload logo of the site
 
-<li><a href="download.html">/doc/download.html</a> -- offering versions
+<li><a href="download">/doc/download</a> -- offering versions
 of software or other stuff to people
 
-<li><a href="dw.html">/doc/dw.html</a> -- a toolkit for data
+<li><a href="dw">/doc/dw</a> -- a toolkit for data
 warehouse-style queries
 
-<li><a href="ecommerce.html">/doc/ecommerce.html</a> 
+<li><a href="ecommerce">/doc/ecommerce</a> 
 
-<li><a href="education.html">/doc/education.html</a> 
-
-<li><a href="events.html">/doc/events.html</a> -- facilitates online 
+<li><a href="events">/doc/events</a> -- facilitates online 
 registration for events
 
-<li><a href="faq.html">/doc/faq.html</a> 
+<li><a href="faq">/doc/faq</a> 
 
-<li><a href="file-storage.html">/doc/file-storage.html</a> -- users who
+<li><a href=file-manager>/doc/file-manager</a> -- simple content management tool
+     
+<li><a href="file-storage">/doc/file-storage</a> -- users who
 don't know HTML can collaboratively maintain a set of files on the server
 
-<li><a href="glassroom.html">/doc/glassroom.html</a> -- the ArsDigita
-Glass Room system, for coordinating people involved in keeping a Web
-service up and running
+<li><a href="general-alerts.html">/doc/general-alerts</a> -- module programmers who need a generalized way of sending users email alerts.
 
-<li><a href="glossary.html">/doc/glossary.html</a> -- the ArsDigita
+<li><a href="glossary">/doc/glossary</a> -- the ArsDigita
 Glossary, for creating an on-site dictionary of specialized terminology.
 
-<li><a href="homepage.html">/doc/homepage.html</a> -- give your users
+<li><a href="homepage">/doc/homepage</a> -- give your users
 personal homepages on your system
 
-<li><a href="intranet.html">/doc/intranet.html</a> -- run your
+<li><a href="intranet">/doc/intranet</a> -- run your
 organization from this toolkit
 
-<li><a href="neighbor.html">/doc/neighbor.html</a> -- Neighbor to
+<li><a href="neighbor">/doc/neighbor</a> -- Neighbor to
 Neighbor (hard to explain; see example at <a
 href="http://photo.net/neighbor/">http://photo.net/neighbor/</a>)
 
-<li><a href="news.html">/doc/news.html</a>
+<li><a href="news">/doc/news</a>
 
-<li><a href="partner.html">/doc/partner.html</a> -- site-wide cobranding 
+<li><a href="partner">/doc/partner</a> -- site-wide cobranding 
 
-<li><a href="poll.html">/doc/poll.html</a> -- opinion polls
+<li><a href="poll">/doc/poll</a> -- opinion polls
 
-<li><a href="portals.html">/doc/portals.html</a> -- using only a Web
-browser,
-build some portals
-for different groups within your organization (or the public)
+<li><a href="portals">/doc/portals</a> -- using only a Web browser,
+build some portals for different groups within your organization (or
+the public)
 
-<li><a href="press.html">/doc/press.html</a> -- show press coverage
+<li><a href="press">/doc/press</a> -- show press coverage
 about your site or company
 
-<li><a href="pull-down-menus.html">/doc/pull-down-menus.html</a> -- create Macintosh style menu bars
+<li><a href="pull-down-menus">/doc/pull-down-menus</a> -- create
+Macintosh-style menu bars
 
+<li><a href="spam">/doc/spam</a> -- send email to a group of users
 
-<li><a href="spam.html">/doc/spam.html</a> -- send email to a group of users
+<li><a href="static">/doc/static</a> -- support for collecting
+comments, links, and download statistics for static  files
 
-<li><a href="static.html">/doc/static.html</a> -- support for collecting
-comments, links, and download statistics for static .html files
-
-<li><a href="survey-simple.html">/doc/survey-simple.html</a> -- ask the
+<li><a href="survey-simple">/doc/survey-simple</a> -- ask the
 users a series of questions
 
-<li><a href="ticket.html">/doc/ticket.html</a> -- a project 
+<li><a href="ticket">/doc/ticket</a> -- a project 
 and bug tracking system
 
-
-<li><a href="wp.html">/doc/wp.html</a> -- WimpyPoint, a replacement for desktop
+<li><a href="wp">/doc/wp</a> -- WimpyPoint, a replacement for desktop
 bloatware like PowerPoint, allowing you to create and view presentations
 in your Web browsers
-
-<p>
-
-<li><a href="user-session-tracking.html">User session tracking</a> --
-getting a meaningful handle on usage
-
-<li><a href="user-registration.html">User registration and access control</a> 
-
-
-<li><a href="user-admin.html">User administration</a> -- how the
-publisher can select a class of users and what can then be done with
-that class
-
-<li><a href="crm.html">Customer relationship management</a> -- tracking a customer relationship through its various states. 
-
-<li><a href="user-groups.html">User groups</a> -- a general mechanism
-for lumping users together in groups, e.g., all students in a particular
-course 
-
-<li><a href="member-value.html">Member value</a> -- a way of
-accumulating charges for users and then billing them out at the end of
-each month (commercial sites) or excluding them from the community if
-the charges get too high (non-commercial)
-
-<li><a href="redirect.html">Redirects</a> -- ensuring that legacy URLs
-pointed to by bookmarks and search engines still work
-
-<li><a href="robot-detection.html">Robot detection</a> -- making sure
-that your entire site gets indexed
-
-<h4>Two Related Modules</h4>
-
-
-<li><a href="user-profiling.html">User profiling and content categorization</a> -- matching users
-to content 
-
-<li><a href="site-wide-search.html">Site-wide-search</a> -- a
-system for indexing all of a site's content from one big table
-
-
-
-
-<h4>Module Tools</h4>
-
-<li><a href="audit.html">Audit</a> -- adding a change history to a table
-
-<li><a href="calendar-widget.html">Calendar widget</a> -- displaying
-calendars
-
-<li><a href="content-tagging.html">Content tagging</a> -- useful for
-finding/screening naughty words but with wider potential as well
-
-<li><a href="email-handler.html">Email handler</a> -- queues incoming
-email into an Oracle table; let's you do things like unified customer
-support or email replies to tickets
-
-<li><a href="graphing.html">Graphing</a> -- generating bar charts
-
-<li><a href="new-stuff.html">New stuff</a> -- showing folks what is new site-wide
-
-<li><a href="permissions.html">Permissions</a> -- a standardized way of 
-answering: <i>"Is user x allowed to do y?"</i>
-
-<li><a href="general-permissions.html">General permissions</a> -- a
-way to answer the question "can a particular user, group, or role do
-this on a particular row?", where this can be an arbitrary action
-(e.g., read, comment, write, administer, etc.)
-
-<li><a href="general-comments.html">General comments</a> -- allows you to collect user comments on any item
-
-<li><a href="general-links.html">General links</a> -- allows you to collect user links on any item
-
-<li><a href="prototype.html">Prototype builder</a> -- quickly build standard ACS pages via a user interface
-
-<li><a href="tools.html">Tools</a> -- collections of scripts providing services to perform common tasks such as spell checking.
-
-<li><a href="server-cluster.html">Server Clusters</a> -- a facility for keeping
-state synchronized between a group of load-balance servers.
+</ul>
 
 </ul>
 
-
-<h4>The Glorious Future</h4>
-
-Here we link to plans that are in the works; it is a collaboration area
-for toolkit programmers to look at.
+<h3>For engineers working on the development of ACS packages, both inside
+and outside ArsDigita:</h3>
 
 <ul>
 
-<li><a href="bboard-revision.html">/bboard revision</a>
+<li><a href="core-arch-guide/"><strong>ACS Core Architecture Guide</strong></a>
 
-<li><a href="templating-etc.html">templating, navigation, forms, and other enhancements</a>
-
-<li><a href="general-cleanup.html">general cleanup</a>
-
-
-
-</ul>
-
-
-<h3>Directories</h3>
-
-<ul>
-
-<h4>Not Under the Page Root</h4>
-
-<li>/web/yourdomain/parameters/ -- stores definitions such as the
-service name
-<li>/web/yourdomain/tcl/ -- Tcl procedures used system-wide
-
-<h4>Under the Page Root</h4>
-
-<li>/doc/ -- this directory
-
-<li>/doc/sql/ -- data model files
-
-<li>/install/ -- files needed for installation only
-
-<li>/global/ -- files served up by AOLserver when it gets unhappy (e.g.
-file not found or too many threads), also for privacy statements, etc.
-
-<li>/graphics/ -- for site-wide logos and other images that aren't
-specific to content sections
-
-<li>/ads/ -- banners ads to be served by /adserver scripts (below)
-
-<li>/pvt/ -- material private to a particular member
-
-<li>/shared/ -- material available to members but not private to a particular member
-
-<li>/incoming/ -- material that authorized users need to FTP up to
-you 
-
-<li>/acs-examples/ -- scripts that show programmers how to use
-various ACS features
-
-
-<h4>Subsystems</h4>
-
-Each module generally defines a top-level subdirectory with the same
-name as itself; there are some exceptions with weird names below.
-
-<p>
-
-<li>/adserver/ -- banner ad server
-
-<li>/comments/ -- comments on static pages
-
-<li>/gc/ -- generic classified ad system
-
-<li>/links/ -- Tcl scripts that show related links on the bottom of a page
-
-<li>/ug/ --  viewing and creating user groups
-
-</ul>
-
-<h3>Magic Files</h3>
-
-<ul>
-
-<li><a href="/global/copyright.adp">/global/copyright.adp</a> explains the site's copyright policy
-
-<li><a href="/global/server-busy.html">/global/server-busy.html</a> is served by AOLserver when the threads are
-stacked up (presumably because the RDBMS is overwhelmed)
-
-<li><a href="/global/file-not-found.html">/global/file-not-found.html</a> is served by AOLserver when the user
-hits a non-existent URL; presumably this will contain some search tips
-
-<li><a href="/global/unauthorized.html">/global/unauthorized.html</a> is served by AOLserver when the user hasn't
-typed in a valid HTTP username/password (this shouldn't really ever be
-part of the user experience since the ArsDigita Community System doesn't
-use HTTP usernames/passwords)
-
-<li><a href="/global/forbidden.html">/global/forbidden.html</a> is served by AOLserver when the nsperm system
-isn't happy and refuses to say why (not sure why this should ever happen)
-
-<li><a href="/global/error.html">/global/error.html</a> is served by AOLserver when it chokes on a Tcl
-API program or CGI script 
-
-<li><a href="/global/privacy.adp">/global/privacy.adp</a> is the site's privacy statement.
-
-<li><a href="/global/legal.adp">/global/legal.adp</a> is the site's legal statement.
-
-</ul>
-
-<h3>Filters and Other Tricks</h3>
-
-To be sure that you're getting them all on a particular server, do:
-
-<blockquote><pre>
-cd /web/yourservername/tcl/ 
-grep 'ad_register_filter' *.tcl
-</pre>
-</blockquote>
-
-<ul>
-
-<li>service of all /*.html files follows the following sequence:
 <ol>
 
-<li>the ad_verify_identity filter from /tcl/ad-security.tcl may run to
-abort service of the page, depending on which directories are specified
-for protection in /tcl/ad-security.tcl
+<li><a href="core-arch-guide/apm">ACS Package Manager (APM)</a>
 
-<li>ad_serve_html_page in /tcl/ad-html.tcl delivers the page, with
-included comments and related links 
+<li><a href="core-arch-guide/request-processor">Request Processor</a>
 
-<li>ad_maintain_user_content_map from /tcl/ad-user-content-map.tcl runs
-after the page has been served, to insert rows into the
-<code>user_content_map</code> table
+<li><a href="core-arch-guide/bootstrap">Bootstrapping ACS</a>
 
-<li>ad_pics_filter from /tcl/ad-pics.tcl will add a PICS header saying
-"I'm a naughty page" (or whatever else you've put in the ad.ini file) to
-the directories and files specified in ad.ini
+<li><a href="core-arch-guide/general-permissions">General Permissions</a>
+and <a href="permissions">the Permissions Package</a>
+
+<li><a href="user-registration">user registration</a>
+
+<li><a href="user-admin">user administration</a>: how the publisher
+can select a class of users and what can then be done with that class
+
+<li><a href="user-profiling">user profiling and content categorization</a>:
+matching users to content
+
+<li><a href="user-groups">user groups</a>: a general mechanism for
+lumping users together in groups, e.g., all students in a particular
+course
+
+<li><a href="user-session-tracking">user session tracking</a>
+
+<!--
+<li>Parties (Users and Groups)
+(coming soon)
+
+<li><a href="core-arch-guide/subcommunities">Subcommunities</a>
+(coming soon)
+-->
+
+<li><a href="core-arch-guide/security-and-sessions">Security and Sessions</a>
+
+<ul>
+<li><a href="core-arch-guide/security-sql-smuggling">Preventing SQL-Smuggling Attacks</a>
+</ul>
+
+<li><a href="documents">Building Documents</a>
+
+<li><a href="templates/">Dynamic Publishing System</a>
+
+<li><a href="core-arch-guide/api-publication">API Publication</a>
+
+<ul>
+
+<li><a href="core-arch-guide/api-publication-tcl-procs">Tcl Procedures:
+<code>ad_proc</code> and <code>ad_library</code></a>
+
+<li><a href="core-arch-guide/api-publication-urls">URLs:
+<code>ad_page_contract</code></a>
+
+<li><a href="core-arch-guide/api-publication-db">Database Views and Stored
+Procedures/Functions</a>
+</ul>
+
+<li><a href="core-arch-guide/database-access-api">Database Access API</a>
+
+<li>Content Repository
+(coming soon)
+
+<!-- <li>Content Management and Personalization -->
+
+<li><a href="writing-a-module">Writing an ACS Module</a>
+
+<li><a href="content-sections">Content Sections</a>
+
+<li><a href="site-wide-search">Site-wide Search</a>: a system for
+indexing all of a site's content in one big table
+
+<!--
+<li><a href="confirmation-dialog">Confirmation Dialog</a> -- a
+facility for displaying confirmation dialogs to the end user.
+-->
 
 </ol>
 
 <p>
 
-<li>/tcl/ad-admin.tcl defines filters to restrict /admin pages to SSL
-(when available) and to registered users in the site-wide administration
-group
+<li><strong>ACS Developer's Guide</strong></a>
 
-<p>
+<ul>
 
-<li>/tcl/ad-last-visit.tcl defines a filter to maintain the last visit
-cookie and database rows 
-
-<p>
-
-<li>/tcl/ad-referer.tcl defines a filter to update referral counters in
-the database
-
-<p>
-
-<li>/tcl/ad-robot-defs.tcl may define a filter to look for robots
-visiting particular directories
-
-<p>
-
-<li>/tcl/ad-user-content-map.tcl defines a trace filter to enter rows
-into the <code>user_content_map</code>
-
-<P>
-
-<li>/tcl/curriculum.tcl defines a filter to maintain the curriculum
-cookie 
+<li><a href="/acs-examples/">/acs-examples/</a> -- source code that
+shows how to use the rest of the software
 
 </ul>
 
+<p>
 
-<a name=pools>
-<h3>Database Pools</h3>
+<li><a name="engineering_manual"><strong>ACS Engineering Manual</strong></a>
 
-The community system depends on the existence of three database
-pools:  main, subquery, and log.  They must be named as such.  The
-default pool will be "main".
+<ul>
 
-<h3>Substrate</h3>
+<li><a href="standards">Standards</a>
 
-If you want to have a reliable service, you should read and apply 
-<a href="architecture-install.html">this installation guide</a> for the
-<a href="http://photo.net/wtr/arsdigita-server-architecture.html"</a>ArsDigita Server
-Architecture</a> (don't confuse this with the ACS intallation guide 
-in <a href="installation.html">/doc/installation.html</a>).
+<li><a href="programming-with-aolserver">Programming with AOLserver</a>
 
+<!--
+<li>User Interface/Information Design
 
+<li>Process (design, review, testing)
+
+<li>Performance Tuning
+
+<li>Development Process (how to write, test, and release ACS code)
+-->
+
+<li><a href=release-numbering>Release Version Numbering</a>
+
+<p>
+
+<li><a href="xml">Working with XML</a>
+
+<li><a href="wap">Supporting WAP (Wireless Application Protocol)</a>
+
+<p>
+
+<li> <a href="developers">Philip's Developer Guide</a>
+
+<li><a href="style">Templates and Multi-lingual Support</a>
+
+<li><a href="help">Building "Help" Documentation for the End-User</a>
+
+<p>
+
+<li><a href="procs">Tcl API</a> (procedure-by-procedure)
+
+</ol>
+
+<p>
+
+See also:
+
+<p>
+
+<ul>
+<li><a href="http://www.aolserver.com/doc/3.0/">AOLserver documentation</a>, a
+notably useful part of which is 
+<a href="http://www.aolserver.com/doc/3.0/tcldev/tcldev.htm">the
+Tcl Developer's Guide</a>
+</ul>
+
+<p>
+
+<li><strong>Module Tools (Library Packages)</strong>
+
+<ul>
+<li><a href="audit">Audit</a> -- adding a change history to a table
+
+<li><a href="calendar-widget">Calendar widget</a> -- displaying
+calendars
+
+<li><a href="content-tagging">Content tagging</a> -- useful for
+finding/screening naughty words but with wider potential as well
+
+<li><a href="email-handler">Email handler</a> -- queues incoming
+email into an Oracle table; let's you do things like unified customer
+support or email replies to tickets
+
+<li><a href="graphing">Graphing</a> -- generating bar charts
+
+<li><a href="new-stuff">New stuff</a> -- showing folks what is new site-wide
+
+<li><a href="general-comments">General comments</a> -- allows you to collect user comments on any item
+
+<li><a href="general-links">General links</a> -- allows you to collect user links on any item
+
+<li><a href="prototype">Prototype builder</a> -- quickly build standard ACS pages via a user interface
+
+<li><a href="tools">Tools</a> -- collections of scripts providing services to perform common tasks such as spell checking.
+
+<li><a href=version-control>Version Control</a> -- an interface to CVS for modules
+     that need access to a version control system
+     
+</ul>
+
+</ul>
+
+</ul>
+
+<h3>For systems integrators:</h3>
+
+<ul>
+
+<li><a href="systems-integrator-guide/"><strong>Systems Integrator's Guide to the ACS</strong></a>
+
+<ul>
+
+<li><a href="systems-integrator-guide/ejb-and-corba-interfaces">Enterprise Java Beans (EJB) and CORBA Interfaces</a>
+
+<li><a href="systems-integrator-guide/mainframe-integration">Mainframe Integration</a>
+
+<li><a href="ldap-authentication">LDAP Authentication</a>
+
+<li>ERP Integration (e.g., SAP, Oracle Applications)
+(coming soon)
+
+</ul>
+
+</ul>
+
+<h3>Installation-Specific</h3>
+
+<ul>
+
+<li><a href="patches">/doc/patches</a> -- documentation of
+patches/fixes to the ArsDigita Community System (ACS) on this site;
+useful when you are upgrading and when we are building a new version
+of the system
+
+<li><a href="custom">/doc/custom</a> -- documentation of 
+custom features that you've added to this site that will/can never
+be rolled into the ACS.
+
+</ul>
+
+<p>
+
+<h4>The Glorious Future</h4>
+
+Here we link to plans that are in the works; it is a collaboration
+area for ACS programmers.
+
+<ul>
+
+<li><a href="bboard-revision">/bboard revision</a>
+
+<li><a href="general-cleanup">general cleanup</a>
+
+</ul>
 
 <h3>Copyright and Legal Status of this Software</h3>
 
-<p> This software is mostly Copyright 1995-99 Philip Greenspun and
-licensed under <a href="license.text">the GNU General Public License,
-version 2 (June 1991)</a>.</p>
+<p> This software is mostly Copyright 1995-2000 ArsDigita Corporation
+and licensed under <a href="license.text">the GNU General Public
+License, version 2 (June 1991)</a>.</p>
 
 <hr>
 <a href="http://photo.net/philg/"><address>philg@mit.edu</address></a>

@@ -1,14 +1,21 @@
-# $Id: ad-monitor.tcl,v 3.0 2000/02/06 03:12:32 ron Exp $
-# created by philg@mit.edu on 11/6/98
-# internal error monitors, beyond the static files in /SYSTEM
-# that external monitors such as Uptime use
+# /tcl/ad-monitor.tcl
 
-# the overall goal here is that the ad_host_administrator gets
-# notified if something is horribly wrong, but not more than once
-# every 15 minutes
+ad_library {
 
-# we store the last [ns_time] (seconds since 1970) notification time 
-# in ad_host_administrator_last_notified
+Internal error monitors, beyond the static files in /SYSTEM that
+external monitors such as Uptime use.
+
+The overall goal here is that the ad_host_administrator gets notified
+if something is horribly wrong, but not more than once every 15
+minutes.
+
+We store the last [ns_time] (seconds since 1970) notification time in
+ad_host_administrator_last_notified
+
+    @creation-date 6 Nov 1998
+    @author philg@mit.edu
+    @cvs-id ad-monitor.tcl,v 3.0.14.2 2000/07/25 11:27:48 ron Exp
+}
 
 ns_share -init { set ad_host_administrator_last_notified 0 } ad_host_administrator_last_notified
 

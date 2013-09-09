@@ -1,7 +1,16 @@
-# $Id: custom-field-add-2.tcl,v 3.0 2000/02/06 03:19:50 ron Exp $
-set_the_usual_form_variables
+#  www/admin/ecommerce/products/custom-field-add-2.tcl
+ad_page_contract {
+  Add a custom product field.
 
-# field_identifier, field_name, default_value, column_type
+  @author Eve Andersson (eveander@arsdigita.com)
+  @creation-date Summer 1999
+  @cvs-id custom-field-add-2.tcl,v 3.2.2.2 2000/07/22 07:57:37 ron Exp
+} {
+  field_identifier
+  field_name
+  default_value
+  column_type
+}
 
 set field_identifier [string tolower $field_identifier]
 
@@ -18,16 +27,15 @@ if { [empty_string_p $field_identifier] } {
     incr exception_count
     append exception_text "<li>The unique identifier is too long.  It can be at most 30 characters.  The current length is [string length $field_identifier] characters."
 } else {
-    set db [ns_db gethandle]
-    if { [database_to_tcl_string $db "select count(*) from ec_custom_product_fields where field_identifier='$QQfield_identifier'"] > 0 } {
+    
+    if { [db_string dupliciate_field_identifier_select "select count(*) from ec_custom_product_fields where field_identifier=:field_identifier"] > 0 } {
 	incr exception_count
 	append exception_text "<li>The identifier $field_identifier has already been used.  Please choose another."
-    } elseif { [database_to_tcl_string $db "select count(*) from user_tab_columns where column_name='[string toupper $QQfield_identifier]' and table_name='EC_PRODUCTS'"] } {
+    } elseif { [db_string ec_products_column_conflict_select "select count(*) from user_tab_columns where column_name=upper(:field_identifier) and table_name='EC_PRODUCTS'"] } {
 	incr exception_count
 	append exception_text "<li>The identifier $field_identifer is already being used by the system in a different table.  Please choose another identifier to avoid ambiguity."
     }
 }
-
 
 if { [empty_string_p $field_name] } {
     incr exception_count
@@ -44,9 +52,7 @@ if { $exception_count > 0 } {
     return
 }
 
-ReturnHeaders
-
-ns_write "[ad_admin_header "Confirm Custom Field"]
+doc_body_append "[ad_admin_header "Confirm Custom Field"]
 
 <h2>Confirm Custom Field</h2>
 
@@ -80,7 +86,7 @@ Identifier cannot be changed and, in most cases, neither can Kind of Information
 
 <p>
 
-<form method=post action=custom-field-add-3.tcl>
+<form method=post action=custom-field-add-3>
 [export_form_vars field_identifier field_name default_value column_type]
 <center>
 <input type=submit value=\"Confirm\">

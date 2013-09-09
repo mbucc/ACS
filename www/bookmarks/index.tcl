@@ -1,28 +1,30 @@
-# /bookmarks/index.tcl
-#
-# Front page to the bookmarks system
-#
-# by aure@arsdigita.com and dh@arsdigita.com, June 1999
-#
-# $Id: index.tcl,v 3.0.4.1 2000/03/15 04:54:31 aure Exp $
+# /www/bookmarks/index.tcl
+
+ad_page_contract {
+    Front page to the bookmarks system
+    @author David Hill (dh@arsdigita.com)
+    @author Aurelius Prochazka (aure@arsdigita.com)
+    @creation-date June 1999  
+    @cvs-id index.tcl,v 3.2.2.8 2000/09/22 01:37:02 kevin Exp
+} {} 
 
 set user_id [ad_verify_and_get_user_id]
 ad_maybe_redirect_for_registration
 
-set db [ns_db gethandle]
-
 set page_title [ad_parameter SystemName bm]
 
-# get generic display parameters from the .ini file
-set folder_bgcolor [ad_parameter FolderBGColor bm]
-set bookmark_bgcolor [ad_parameter BookmarkBGColor bm]
+# get generic Display parameters from the .ini file
+
+set folder_bgcolor    [ad_parameter FolderBGColor    bm]
+set bookmark_bgcolor  [ad_parameter BookmarkBGColor  bm]
 set folder_decoration [ad_parameter FolderDecoration bm]
 set hidden_decoration [ad_parameter HiddenDecoration bm]
-set dead_decoration [ad_parameter DeadDecoration bm]
+set dead_decoration   [ad_parameter DeadDecoration   bm]
 
 set edit_anchor "<font size=-2 face=\"verdana, arial, helvetica\">edit</font>"
 
 # the javascript function that spawns the bookmark window
+
 set javascript "
 <script runat=client>
 function launch_window(file) {
@@ -32,6 +34,7 @@ function launch_window(file) {
 "
 
 # display header and list of user options 
+
 set page_content "
 [ad_header $page_title $javascript]
 
@@ -47,7 +50,7 @@ set page_content "
  <a href=\"javascript:launch_window('tree')\">Javascript version</a> |
  <a href=public-bookmarks>View public bookmarks</a> \] <p>"
 
-set name [database_to_tcl_string $db "select first_names || ' ' || last_name as name from users where user_id = $user_id"]
+set name [db_string name "select first_names || ' ' || last_name as name from users where user_id = $user_id"]
 
 append page_content "
 <table bgcolor=$folder_bgcolor cellpadding=0 cellspacing=0 border=0 width=100%>
@@ -57,7 +60,10 @@ append page_content "
 </tr>
 </table>"
 
-set bookmark_query "
+set bookmark_count 0
+set bookmark_list ""
+
+db_foreach bookmark_list {
     select   bookmark_id, 
              bm_list.url_id, 
              nvl(local_title, url_title) as bookmark_title, 
@@ -69,18 +75,13 @@ set bookmark_query "
              closed_p, 
              length(parent_sort_key)*8 as indent_width 
     from     bm_list, bm_urls
-    where    owner_id = $user_id
+    where    owner_id = :user_id
     and      in_closed_p = 'f'
     and      bm_list.url_id = bm_urls.url_id(+)
-    order by parent_sort_key || local_sort_key"
+    order by parent_sort_key || local_sort_key
+} {
 
-set selection [ns_db select $db $bookmark_query]
-
-set bookmark_count 0
-set bookmark_list ""
-
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
+    incr bookmark_count
 
     # decoration refers to color and font of the associated text
     set decoration ""
@@ -91,7 +92,7 @@ while {[ns_db getrow $db $selection]} {
     }
 
     # make dead links appear  as defined in the .ini file
-    if {$last_checked_date != $last_live_date} {
+    if [string compare $last_checked_date $last_live_date] {
 	append decoration $dead_decoration
     }
     
@@ -106,7 +107,6 @@ while {[ns_db getrow $db $selection]} {
 
     # this fancy edit link shows "Edit foo" in the status bar
     set edit_link "<a onMouseOver=\"window.status='Edit $javascript_title'; return true;\" onMouseOut=\"window.status=' '; return true;\" href=edit-bookmark?return_url=index&[export_url_vars bookmark_id]>$edit_anchor</a>"
-
 
     # define url, background color, and image depending on whether we are display a bookmark or folder
     if {$folder_p == "f"} {
@@ -134,9 +134,10 @@ while {[ns_db getrow $db $selection]} {
     <td>$edit_link</td>
     </tr>
     </table>"
-    
-    incr bookmark_count
 }
+ 
+# release the database handle
+db_release_unused_handles 
 
 # write the bookmarks if there are any to show
 if {$bookmark_count!=0} {
@@ -145,8 +146,9 @@ if {$bookmark_count!=0} {
     append page_content "You don't have any bookmarks stored in the database. <p>"
 }
 
-append page_content "<form action=search method=post>
- Search bookmarks for: <input name=search_text type=text size=20><input type=hidden name=return_url value=index><input type=submit value=Search></form>
+append page_content "
+<form action=search method=post>
+Search bookmarks for: <input name=search_text type=text size=20><input type=hidden name=return_url value=index><input type=submit value=Search></form>
 <p>
 Key to bookmark display:
 <table>
@@ -161,8 +163,23 @@ Key to bookmark display:
 # Add a footer
 append page_content "[bm_footer]"
 
-# release the database handle
-ns_db releasehandle $db 
-
 # serve the page
-ns_return 200 text/html $page_content 
+doc_return  200 text/html $page_content 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

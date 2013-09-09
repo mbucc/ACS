@@ -1,17 +1,20 @@
-# $Id: for-one-page.tcl,v 3.0 2000/02/06 03:46:35 ron Exp $
 # /help/for-one-page.tcl 
 #
-# by philg@mit.edu on July 2, 1999
-#
-# displays the help file associated with a particular URL
-# typically called by help_link (defined in /tcl/help-defs.tcl)
 
-# tries to find the best help file according to the user's language
-# preference
+ad_page_contract {
+    Displays the help file associated with a particular URL.
+    Typically called by help_link (defined in /tcl/help-defs.tcl).
 
-set_the_usual_form_variables
+    Tries to find the best help file according to the user's language
+    preference.
 
-# url 
+    @cvs-id for-one-page.tcl,v 3.0.12.4 2000/09/22 01:38:15 kevin Exp
+
+    @author philg@mit.edu on July 2, 1999
+} {
+    url:notnull
+}
+
 
 set pageroot [ns_info pageroot]
 set helproot [ad_parameter HelpPageRoot help ""]
@@ -25,7 +28,7 @@ set glob_pattern "${help_file_directory}/${just_the_filename}*.help"
 set available_help_files [glob -nocomplain $glob_pattern]
 
 if { [llength $available_help_files] == 0 } {
-    ns_log Notice "$helproot/for-one-page.tcl reports that User requested help for \"$url\" but no .help file found"
+    ns_log Notice "$helproot/for-one-page reports that User requested help for \"$url\" but no .help file found"
     ad_return_error "No help available" "No help is available for this page (\"$url\"), contrary to what you presumably were told.  This is either our programming bug or (maybe) a bug in your browser."
     return
 }
@@ -36,4 +39,8 @@ set sorted_list [lsort -decreasing -command ad_style_sort_by_score $list_of_list
 set top_scoring_help_file_filename [lindex [lindex $sorted_list 0] 1]
 set fully_qualified_help_file_filename $top_scoring_help_file_filename
 
-ns_return 200 text/html [ns_adp_parse -file $fully_qualified_help_file_filename]
+doc_return  200 text/html [ns_adp_parse -file $fully_qualified_help_file_filename]
+
+
+
+

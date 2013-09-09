@@ -1,0 +1,294 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+
+<head>
+<title>Documenting Tcl Files: Page Contracts and Libraries</title>
+<link rel="stylesheet" type="text/css" href="core-arch-guide.css">
+</head>
+
+<body>
+
+<h2>Documenting Tcl Files: Page Contracts and Libraries</h2>
+
+by <a href="mailto:jsalz@mit.edu">Jon Salz</a> on 3 July 2000
+
+<p>
+
+<a href="/doc/">ACS Documentation</a> :
+<a href="">ACS Core Architecture Guide</a> :
+Documenting Tcl Files
+
+<hr>
+
+<ul>
+<li>Tcl procedures: /packages/acs-core/tcl-documentation-procs.tcl</ul>
+</ul>
+
+<h3>The Big Picture</h3>
+
+<p>In versions of the ACS prior to 3.4, <a href="/doc/standards">the
+standard place</a> to document Tcl files (both Tcl pages and Tcl library
+files) was in a comment at the top of the file:
+
+<blockquote>
+<pre><code>
+#
+# <em>path from server home</em>/<em>filename</em>
+#
+# <em>Brief description of the file's purpose</em>
+#
+# <em>author's email address</em>, <em>file creation date</em>
+#
+# <a href="http://www.loria.fr/~molli/cvs/doc/cvs_12.html#SEC93">&#36;Id&#36;</a>
+#
+</code></pre>
+</blockquote>
+
+In addition, the inputs expected by a Tcl page (i.e., form variables)
+would be enumerated in a call to <code>ad_page_variables</code>, in
+effect, documenting the page's argument list.
+
+<p>
+
+The problem with these practices is that the documentation is only
+accessible by reading the source file itself. For this reason, ACS 3.4
+introduces a new API for documenting Tcl files and, on top of that, a
+web-based user interface for browsing the documentation:
+
+<ul>
+
+<li><strong><code><a
+href="#ad_page_contract">ad_page_contract</a></code></strong>:
+
+Every Tcl page has a <b>contract</b> that explicitly defines what
+inputs the page expects (with more precision than
+<code>ad_page_variables</code>) and incorporates metadata about the
+page (what used to live in the top-of-page comment). Like
+<code>ad_page_variables</code>, <code>ad_page_contract</code> also
+sets the specified variables in the context of the Tcl page.
+
+<li><strong><code><a href="#ad_library">ad_library</a></code></strong>:
+
+To be called at the top of every library file (i.e., all files in the
+<code>/tcl/</code> directory under the server root and
+<code>*-procs.tcl</code> files under <code>/packages/</code>).
+
+</ul>
+
+This has the following benefits:
+
+<ul>
+<li>Facilitates automatic generation of human-readable documentation.
+<li>Promotes security, by introducing a standard and automated way to check inputs to scripts for
+correctness.
+<li>Allows graphical designers to determine easily how to customize sites' UIs, e.g.,
+what properties are available in templates.
+<li>Allows the request processor to be intelligent: a script can specify in its contract
+which type of abstract <a href="/doc/documents">document</a> it returns, and the request
+processor can transform it automatically into something useful to a particular user
+agent. (Don't worry about this for now - it's not complete for ACS 3.4.)
+</ul>
+
+<h3><a name=ad_page_contract><code>ad_page_contract</code></a></h3>
+
+Currently <code>ad_page_contract</code> serves mostly as a replacement for
+<code>ad_page_variables</code>. Eventually, it will be integrated closely with the
+documents API so that each script's contract will document precisely the set of
+properties available to graphical designers in templates. (Document API integration is
+subject to change, so we don't decsribe it here yet; for now,
+you can just consider <code>ad_page_contract</code> a newer, better, documented
+<code>ad_page_variables</code>.)
+
+<p>Let's look at an example usage of <code>ad_page_contract</code>:
+
+<blockquote><pre>
+# /packages/acs-core/api-doc/www/package-view.tcl
+ad_page_contract {
+    version_id:integer
+    public_p:optional
+    kind
+    { format "html" }
+} {
+    Shows APIs for a particular package.
+
+    @param version_id the ID of the version whose API to view.
+    @param public_p view only public APIs?
+    @param kind view the type of API to view. One of &lt;code>procs_files&lt;/code>,
+        &lt;code>procs&lt;/code>, &lt;code>content&lt;/code>, &lt;code>types&lt;/code>, or
+        &lt;code>gd&lt;/code>.
+    @param format the format for the documentation. One of &lt;code>html&lt;/code> or &lt;code>xml&lt;/code>.
+
+    @author Jon Salz (jsalz@mit.edu)
+    @creation-date 3 Jul 2000
+    @cvs-id tcl-documentation.html,v 1.3 2000/07/06 05:59:06 michael Exp
+}
+</pre></blockquote>
+
+Note that:
+
+<ul>
+
+<li><b>By convention, <code>ad_page_contract</code> should be preceded by
+a comment line containing the file's path</b>. The comment is on line 1, and
+the contract starts on line 2.
+</p>
+
+<li><b><code>ad_page_contract</code></b>'s first argument is
+the list of expected arguments from the HTTP query (<code>version_id</code>, <code>public_p</code>,
+<code>kind</code>, and <code>format</code>). Like <code>ad_page_variables</code>,
+<code>ad_page_contract</code> sets the corresponding Tcl variables when the page is
+executed.
+</p>
+
+<li><b>Arguments can have defaults</b>, specified using the same syntax as in
+the Tcl <code>proc</code> (a two-element list where the first element is the parameter
+name and the second argument is the default value).
+</p>
+
+<li><b>Arguments can have flags</b>, specified by following the name of the query
+argument with a colon and one or more of the following strings (separated by commas):
+</p>
+
+<ul type=disc>
+
+<li><b><code>optional</code></b>: the query argument doesn't need to be provided;
+if it's not, the variable for that argument simply won't be set. For instance, if
+I call the script above without a <code>public_p</code> in the query, then in the
+page body <code>[info exists public_p]</code> will return 0.
+</p>
+
+<li><b><code>integer</code></b>: the argument must be an integer (<code>ad_page_contract</code>
+will fail and display and error if not). This flag, like the next, is intended to prevent
+clients from fudging query arguments to trick scripts into executing arbitrary SQL.
+</p>
+
+<li><b><code>sql_identifier</code></b>: the argument must be a SQL identifier
+(i.e., <code>[string is wordchar $the_query_var]</code> must return true).
+</p>
+
+<li><b><code>trim</code></b>: the argument will be [string trim]'ed.
+</p>
+
+<li><b><code>multiple</code></b>: the argument may be specified arbitrarily many times
+in the query string, and the variable will be set to a list of all those values
+(or an empty list if it's unspecified). This is analogous to the <code>-multiple-list</code>
+flag to <code>ad_page_variables</code>, and is useful for handling
+form input generated by <code>&lt;SELECT MULTIPLE></code> tags and checkboxes.
+
+<p>For instance, if <code>dest_user_id:multiple</code>
+is specified in the contract, and the query string is
+
+<blockquote><pre>
+?dest_user_id=913&dest_user_id=891&dest_user_id=9
+</pre></blockquote>
+
+then <code>$dest_user_id</code> is set to <code>[list 913 891 9]</code>.
+</p>
+
+<li><b><code>array</code></b>: the argument may be specified arbitrarily many
+times in the query string, with parameter names with suffixes like <code>_1</code>,
+<code>_2</code>, <code>_3</code>, etc. The variable is set to a list of all those values
+(or an empty list if none are specified).
+
+<p>For instance, if <code>dest_user_id:array</code>
+is specified in the contract, and the query string is
+
+<blockquote><pre>
+?dest_user_id_0=913&dest_user_id_1=891&dest_user_id_2=9
+</pre></blockquote>
+
+then <code>$dest_user_id</code> is set to <code>[list 913 891 9]</code>.
+</ul>
+</p>
+
+<li><b>You can provide structured, HTML-formatted documentation for your contract</b>.
+Note that format is derived heavily from Javadoc: a general description of the script's
+functionality, followed optionally by a series of named attributes tagged by
+at symbols (<code>@</code>). You are encouraged to provide:
+</p>
+
+<ul type=disc>
+<li>A description of the functionality of the page. If the
+description contains more than one sentence, the first sentence should be a brief
+summary.
+</p>
+<li>A <code><b>@param</b></code> tag for each allowable query argument.
+The format is
+
+<blockquote><pre>@param <i>parameter-name</i> <i>description...</i></pre></blockquote>
+</p>
+
+<li>An <code><b>@author</b></code> tag for each author. Specify the author's
+name, followed his or her email address in parentheses.
+
+<li>A <code><b>@creation-date</b></code> tag indicating when the script was
+first created.
+
+<li>A <code><b>@cvs-id</b></code> tag containing the page's CVS identification
+string. Just use <code>tcl-documentation.html,v 1.3 2000/07/06 05:59:06 michael Exp</code> when creating the file, and CVS will substitute
+an appropriate string when you check the file in.
+
+</ul>
+
+</p>
+These <code>@</code> tags are optional, but highly recommended!
+
+</ul>
+
+<h3><a name=ad_library><code>ad_library</code> Syntax</a></h3>
+
+<code>ad_library</code> provides a replacement for the informal documentation (described
+above) found at the beginning of every Tcl page. Instead of:
+
+<blockquote><pre>
+# /packages/acs-core/00-proc-procs.tcl
+#
+# Routines for defining procedures and libraries of procedures (-procs.tcl files).
+#
+# jsalz@mit.edu, 7 Jun 2000
+#
+# tcl-documentation.html,v 1.3 2000/07/06 05:59:06 michael Exp
+</pre></blockquote>
+
+you'll now write:
+
+<blockquote><pre>
+# /packages/acs-core/00-proc-procs.tcl
+ad_library {
+
+    Routines for defining procedures and libraries of procedures (&lt;code>-procs.tcl&lt;/code>
+    files).
+
+    @creation-date 7 Jun 2000
+    @author Jon Salz (jsalz@mit.edu)
+    @cvs-id tcl-documentation.html,v 1.3 2000/07/06 05:59:06 michael Exp
+
+}
+</pre></blockquote>
+
+Note that format is derived heavily from Javadoc: a general description of the script's
+functionality, followed optionally by a series of named attributes tagged by
+at symbols (<code>@</code>). HTML formatting is allowed. You are encouraged to provide:
+
+<ul>
+
+<li>An <code><b>@author</b></code> tag for each author. Specify the author's
+name, followed his or her email address in parentheses.
+
+<li>A <code><b>@creation-date</b></code> tag indicating when the script was
+first created.
+
+<li>A <code><b>@cvs-id</b></code> tag containing the page's CVS identification
+string. Just use <code>tcl-documentation.html,v 1.3 2000/07/06 05:59:06 michael Exp</code> when creating the file, and CVS will substitute
+an appropriate string when you check the file in.
+
+</ul>
+
+<hr>
+
+<a href="mailto:jsalz@mit.edu">
+<address>jsalz@mit.edu</address>
+</a>
+
+</body>
+</html>

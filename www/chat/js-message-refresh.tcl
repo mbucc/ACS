@@ -1,15 +1,33 @@
-# $Id: js-message-refresh.tcl,v 3.0 2000/02/06 03:36:45 ron Exp $
-# File:     /chat/js-message-refresh.tcl
-# Date:     1998-11-18
-# Contact:  aure@arsdigita.com,philg@mit.edu, ahmeds@arsdigita.com
+# /www/chat/js-message-refresh.tcl
+ad_page_contract {
+    Refresh messages
 
-# Note: if page is accessed through /groups pages then group_id and group_vars_set 
-#       are already set up in the environment by the ug_serve_section. group_vars_set 
-#       contains group related variables (group_id, group_name, group_short_name, 
-#       group_admin_email, group_public_url, group_admin_url, group_public_root_url,
-#       group_admin_root_url, group_type_url_p, group_context_bar_list and group_navbar_list)
+    Note: if page is accessed through /groups pages then group_id and group_vars_set
+    are already set up in the environment by the ug_serve_section. group_vars_set
+    contains group related variables (group_id, group_name, group_short_name,
+    group_admin_email, group_public_url, group_admin_url, group_public_root_url,
+    group_admin_root_url, group_type_url_p, group_context_bar_list and group_navbar_list)
 
-set_the_usual_form_variables
+    @author Aure (aure@arsdigita.com)
+    @author Philip Greenspun (philg@mit.edu)
+    @author Sarah Ahmeds (ahmeds@arsdigita.com)
+    @param chatter_id
+    @param scope
+    @param owner
+    @param group_id
+    @param on_which_group
+    @param on_what_id
+    @creation-date 11/18/1998
+    @cvs-id js-message-refresh.tcl,v 3.1.2.5 2000/09/22 01:37:12 kevin Exp
+
+} {
+    {chatter_id:notnull,naturalnum}
+    {scope:optional}
+    {owner_id:optional}
+    {group_id:optional}
+    {on_which_group:optional}
+    {on_what_id:optional}
+}
 
 # chatter_id
 # maybe scope, maybe scope related variables (owner_id, group_id, on_which_group, on_what_id)
@@ -17,17 +35,13 @@ set_the_usual_form_variables
 
 ad_scope_error_check
 
-set db [ns_db gethandle]
-ad_scope_authorize $db $scope registered group_member none
-ns_db releasehandle $db
+ad_scope_authorize $scope registered group_member none
 
 set time_user_id [chat_last_personal_post $chatter_id]
 set last_time [lindex $time_user_id 0]
 set last_poster [lindex $time_user_id 1]
 
-ReturnHeaders
-
-ns_write "
+set page_content "
 <meta http-equiv=\"Refresh\" content=\"[ad_parameter CacheTimeout chat]\">
 <script language=javascript>
 var newest_poster='$last_poster'
@@ -38,3 +52,12 @@ function load_new () {
 </script>
 <body bgcolor=white onLoad=\"load_new()\">
 "
+
+
+doc_return  200 text/html $page_content
+
+
+
+
+
+

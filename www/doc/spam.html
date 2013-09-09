@@ -7,7 +7,7 @@
 <body bgcolor=#ffffff text=#000000>
 <h2>/admin/spam system</h2>
 
-part of the <a href="index.html">ArsDigita Community System</a>
+part of the <a href="index">ArsDigita Community System</a>
 by <a href="http://photo.net/philg/">Philip Greenspun</a>
 
 <hr>
@@ -16,10 +16,11 @@ by <a href="http://photo.net/philg/">Philip Greenspun</a>
 <li>User directory:  none
 <li>Admin directory:  <a href="/admin/spam/">/admin/spam/</a> 
 <li>Data model:  subsection within 
-<a href="/doc/sql/display-sql.tcl?url=/doc/sql/spam.sql">/doc/sql/spam.sql</a>
+<a href="/doc/sql/display-sql?url=/doc/sql/spam.sql">/doc/sql/spam.sql</a>
 
-<li>Procedures:  within /tcl/spam-daemon.tcl
-<li>Related modules: <a href="email-handler.html">automatic email processing</a>, bulkmail
+<li>Procedures:  within /tcl/spam-daemon
+<li>Related modules: <a href="email-handler">automatic email processing</a>, 
+<a href=bulkmail>bulkmail and qmail configuration</a>
 </ul>
 
 <h3>The Big Picture</h3>
@@ -29,7 +30,9 @@ This is a module to be used only by the publisher.  Moreover, it has
 very little user interface of its own: URLs underneath /admin/spam are
 typically only invoked from within /admin/users.  The data model is in
 <a
-href="sql/display-sql.tcl?url=/doc/sql/spam.sql">/doc/sql/spam.sql</a>.
+href="sql/display-sql?url=/doc/sql/spam.sql">/doc/sql/spam.sql</a>.
+However, there is a facility for posting scheduled, periodic alerts or mailings,
+which has an interface under /admin/spam.
 
 <h3>Under the Hood</h3>
 <P>
@@ -39,7 +42,7 @@ href="sql/display-sql.tcl?url=/doc/sql/spam.sql">/doc/sql/spam.sql</a>.
 <code>spam_history</code> table
 <p>
 <li>forms that allow a publisher to spam (e.g.,
-/admin/users/action-choose.tcl) generate a new spam_id for the blank
+/admin/users/action-choose) generate a new spam_id for the blank
 form; this way a double click does not result in a spam being sent twice
 (spam is bad enough!)
 <p>
@@ -64,9 +67,10 @@ handling scripts work.
 
 <p>
 
+
 <h3>General Tcl Substitution in Message Body and Subject Line</h3>
 The spam entry forms all have a checkbox labeled <b>Template?</b>. 
-
+<p>
 If checked, then Tcl evaluator will be run <i>at the time the message
 is actually sent</i> on message subject and body, substituting
 variables or procedure calls wherever \$ and \[\] chars are
@@ -78,6 +82,15 @@ Note: if you have the <i>Template? </i> option selected, make sure you
 use backslash to quote any $ or '[]' characters in your message, if you do
 not want them to undergo evaluation by the Tcl parser.
 <p>
+The following variables are guaranteed to be set in the environment,
+for use by your template.
+<ul>
+<li><code>db2</code> a database handle for any subqueries you want to make
+<li><code>user_id</code> the user_id of the current target user 
+<li><code>email</code> the email address of the current target user
+<li><code>first_names</code> 
+<li><code>last_name</code> 
+</ul>
 
 <h3>Guessing user's email preferences</h3>
 In the site .ini file, you can set up a list of patterns to be used to
@@ -102,163 +115,609 @@ send the spam using them as the content to the target user class of your choice.
 
 <h3>Spam Which Is Sent Automatically: Newsletter Groups</h3>
 
-The spam daemon can send out daily (or any period you want) email to
-groups of users in  designated user classes. There is a configurable list of "daily spam"
-files, accessible from the /admin/spam page via the 
-"View/modify automatic daily spam file settings " link.
+The spam system will periodically check a "drop zone" directory for
+uploaded files. You can associate a filename prefix with a scheduled
+spam message, so that every time a new file is uploaded, it is
+scheduled to be sent out to a particular target class of users. The
+system can check either for a file containing static content, or for a
+<i>template</i> file which contains Tcl code that is executed to
+generate the message body. The template option is useful for
+generating periodic status reports or alerts.
 <p>
-Every time you create a new user group, a new user_class will be created to 
-go along with it. You may want to designate a specific group type to be the "Newsletter"
-group type, and then you can make a user self-service subscriptions page, which simply
-adds or removes the user from the groups of type Newsletter. You can then configure
-the Daily Spam Locations admin page to look for content files which correspond to
-the different Newsletter groups. Here is an example of what the admin page
-might look like for sending three types of newsletters; Daily, Weekly, and Special Updates.
+
+Below is an example of the periodic spam  admin form, showing the options for
+configuring periodic messages which get their content from named files the drop-zone directory:
 <p>
-<form action="none" method=post>
 <table border=1>
 <tr><td>
-<p>
+
 <h2>Daily Spam File Locations</h2>
 
-<a href="/pvt/home.tcl">Your Workspace</a> : <a href="/admin/">Admin Home</a> : <a href="index.tcl">Spam</a> : List Daily Spam Files
+<a href="/pvt/home">Your Workspace</a> : <a href="/admin/">Admin Home</a> : <a href="index">Spam</a> : List Daily Spam Files
 
 <hr>
 <p>
-Spam files to look for in drop-zone directory "/web/greentravel-dev/spam/".
+Spam files to look for in drop-zone directory "/web/arsdigita/spam/".
 <p>
 To delete an entry, just enter an empty string for the filename and subject, and press the Modify button.
+<p>
+'From address' is optional; if left blank, the default spam system from-address will be used.
 
-<form action=modify-daily-spam.tcl method=post>
+<form action=modify-daily-spam method=post>
 <table>
 <tr><th>User Class</th>
 <th>Subject</th>
 <th>Filename</th></tr>
 
+
+<form action="" method=post>
+
+
+<h3>Periodic Email (Spam) Entries</h3><br>
     
-<tr><td><select name=user_class_id_0>
-<option value=28>test
-<option value=30>Females
-<option value=31>Archaelogy users
-<option value=41>Gay Tours
-<option value=44>honeymoon
-<option value=45>Homestays
-<option value=46>Great contacts
-<option value=61>A last names
-<option value=62>Last name starts with A
-<option value=81>Old female climbers
-<option value=101>My first query
-<option value=102>Artist
-<option value=122>Cycling Women
-<option value=142>My favorites
-<option value=164>Last name starts with a
-<option value=182>Archeology users
-<option value=202>Testers
-<option value=222>HQM group
-<option value=283>Unusual specials
-<option value=282>Weekly newsletter
-<option value=263 selected>Daily newsletter
+<table border=1 cellpadding=2>
+<tr>
+<th align=right>User Class</th><td><select name=user_class_id_0>
+<option value="21">Client Project Leaders
+<option value="1">Employees
+<option value="101">Employees on their 15th day
+<option value="141">Employees's on their 6th day
+<option value="3">Eve's Team
+<option value="121">HQM Test
+<option value="2">Missing Project Reports
+<option value="5">Team Leaders
+<option value="22">The Bryzek
+<option value="41">Tracy
+<option value="4" selected>no hours for a week
+<option value="61">richardl@arsdigita.com
+<option value="81">ross
 
 </select></td>
-<td><input name=subject_0 type=text value="Greentravel Daily Newsletter for %%DATE%%" size=40></td>
-<td><input name=file_prefix_0 type=text size=24 value="daily"></td></tr>
+<tr><th align=right>Subject </th>
+<td><input name=subject_0 type=text value="Logging your work is important" size=40></td></tr>
+<tr><th align=right>Filename </th>
+<td><input name=file_prefix_0 type=text size=24 value="loghours"></td></tr>
+<tr><th align=right>From Address </th>
+<td><input name=from_address_0 type=text size=24 value="teadams@arsdigita.com"></td></tr>
+<tr><th align=right>Period </th>
+<td><select name=period_0>
+  <option SELECTED value="daily">Daily
+<option value="weekly">Weekly
+<option value="monthly">Monthly
+<option value="yearly">Yearly
 
-<tr><td><select name=user_class_id_1>
-<option value=28>test
-<option value=30>Females
-<option value=31>Archaelogy users
-<option value=41>Gay Tours
-<option value=44>honeymoon
-<option value=45>Homestays
-<option value=46>Great contacts
-<option value=61>A last names
-<option value=62>Last name starts with A
-<option value=81>Old female climbers
-<option value=101>My first query
-<option value=102>Artist
-<option value=122>Cycling Women
-<option value=142>My favorites
-<option value=164>Last name starts with a
-<option value=182>Archeology users
-<option value=202>Testers
-<option value=222>HQM group
-<option value=283>Unusual specials
-<option value=282 selected>Weekly newsletter
-<option value=263>Daily newsletter
+  </select>
+
+Day of week <select name=day_of_week_0><option value=null></option><option value="1">Monday
+<option value="2">Tuesday
+<option value="3">Wednesday
+<option value="4">Thursday
+<option value="5">Friday
+<option value="6">Saturday
+<option value="7">Sunday
+ </select>
+
+Day of month <select name=day_of_month_0><option value=null></option><option value="1">1
+<option value="2">2
+<option value="3">3
+<option value="4">4
+<option value="5">5
+<option value="6">6
+<option value="7">7
+<option value="8">8
+<option value="9">9
+<option value="10">10
+<option value="11">11
+<option value="12">12
+<option value="13">13
+<option value="14">14
+<option value="15">15
+<option value="16">16
+<option value="17">17
+<option value="18">18
+<option value="19">19
+<option value="20">20
+<option value="21">21
+<option value="22">22
+<option value="23">23
+<option value="24">24
+<option value="25">25
+<option value="26">26
+<option value="27">27
+<option value="28">28
+<option value="29">29
+<option value="30">30
+<option value="31">31
+</select>
+
+
+</td></tr><tr><th align=right>Template?</th><td><input type=checkbox name=template_p_0 value=t checked></td></tr></table>
+  <p>
+  
+<table border=1 cellpadding=2>
+<tr>
+<th align=right>User Class</th><td><select name=user_class_id_1>
+<option value="21">Client Project Leaders
+<option value="1">Employees
+<option value="101">Employees on their 15th day
+<option value="141">Employees's on their 6th day
+<option value="3">Eve's Team
+<option value="121">HQM Test
+<option value="2" selected>Missing Project Reports
+<option value="5">Team Leaders
+<option value="22">The Bryzek
+<option value="41">Tracy
+<option value="4">no hours for a week
+<option value="61">richardl@arsdigita.com
+<option value="81">ross
 
 </select></td>
-<td><input name=subject_1 type=text value="Greentravel Weekly Newsletter for %%DATE%%" size=40></td>
-<td><input name=file_prefix_1 type=text size=24 value="weekly"></td></tr>
+<tr><th align=right>Subject </th>
+<td><input name=subject_1 type=text value="Late Project Reports" size=40></td></tr>
+<tr><th align=right>Filename </th>
+<td><input name=file_prefix_1 type=text size=24 value="lateprojects"></td></tr>
+<tr><th align=right>From Address </th>
+<td><input name=from_address_1 type=text size=24 value="teadams@arsdigita.com"></td></tr>
+<tr><th align=right>Period </th>
+<td><select name=period_1>
+  <option SELECTED value="daily">Daily
+<option value="weekly">Weekly
+<option value="monthly">Monthly
+<option value="yearly">Yearly
 
-<tr><td><select name=user_class_id_2>
-<option value=28>test
-<option value=30>Females
-<option value=31>Archaelogy users
-<option value=41>Gay Tours
-<option value=44>honeymoon
-<option value=45>Homestays
-<option value=46>Great contacts
-<option value=61>A last names
-<option value=62>Last name starts with A
-<option value=81>Old female climbers
-<option value=101>My first query
-<option value=102>Artist
-<option value=122>Cycling Women
-<option value=142>My favorites
-<option value=164>Last name starts with a
-<option value=182>Archeology users
-<option value=202>Testers
-<option value=222>HQM group
-<option value=283 selected>Unusual specials
-<option value=282>Weekly newsletter
-<option value=263>Daily newsletter
+  </select>
+
+Day of week <select name=day_of_week_1><option value=null></option><option value="1">Monday
+<option value="2">Tuesday
+<option value="3">Wednesday
+<option value="4">Thursday
+<option value="5">Friday
+<option value="6">Saturday
+<option value="7">Sunday
+ </select>
+
+Day of month <select name=day_of_month_1><option value=null></option><option value="1">1
+<option value="2">2
+<option value="3">3
+<option value="4">4
+<option value="5">5
+<option value="6">6
+<option value="7">7
+<option value="8">8
+<option value="9">9
+<option value="10">10
+<option value="11">11
+<option value="12">12
+<option value="13">13
+<option value="14">14
+<option value="15">15
+<option value="16">16
+<option value="17">17
+<option value="18">18
+<option value="19">19
+<option value="20">20
+<option value="21">21
+<option value="22">22
+<option value="23">23
+<option value="24">24
+<option value="25">25
+<option value="26">26
+<option value="27">27
+<option value="28">28
+<option value="29">29
+<option value="30">30
+<option value="31">31
+</select>
+
+
+</td></tr><tr><th align=right>Template?</th><td><input type=checkbox name=template_p_1 value=t checked></td></tr></table>
+  <p>
+  
+<table border=1 cellpadding=2>
+<tr>
+<th align=right>User Class</th><td><select name=user_class_id_2>
+<option value="21">Client Project Leaders
+<option value="1" selected>Employees
+<option value="101">Employees on their 15th day
+<option value="141">Employees's on their 6th day
+<option value="3">Eve's Team
+<option value="121">HQM Test
+<option value="2">Missing Project Reports
+<option value="5">Team Leaders
+<option value="22">The Bryzek
+<option value="41">Tracy
+<option value="4">no hours for a week
+<option value="61">richardl@arsdigita.com
+<option value="81">ross
 
 </select></td>
-<td><input name=subject_2 type=text value="Greentravel Specials Newsletter for %%DATE%%" size=40></td>
-<td><input name=file_prefix_2 type=text size=24 value="specials"></td></tr>
+<tr><th align=right>Subject </th>
+<td><input name=subject_2 type=text value="ArsDigita Status Report" size=40></td></tr>
+<tr><th align=right>Filename </th>
+<td><input name=file_prefix_2 type=text size=24 value="intranetstatus"></td></tr>
+<tr><th align=right>From Address </th>
+<td><input name=from_address_2 type=text size=24 value="teadams@arsdigita.com"></td></tr>
+<tr><th align=right>Period </th>
+<td><select name=period_2>
+  <option SELECTED value="daily">Daily
+<option value="weekly">Weekly
+<option value="monthly">Monthly
+<option value="yearly">Yearly
 
-<tr><td colspan=3>Add new daily spam</tr>
+  </select>
 
-<tr><th>User Class</th>
-<th>Subject</th>
-<th>Filename</th></tr>
+Day of week <select name=day_of_week_2><option value=null></option><option value="1">Monday
+<option value="2">Tuesday
+<option value="3">Wednesday
+<option value="4">Thursday
+<option value="5">Friday
+<option value="6">Saturday
+<option value="7">Sunday
+ </select>
 
-<tr><td>
-<select name=user_class_id_3>
-<option value=28>test
-<option value=30>Females
-<option value=31>Archaelogy users
-<option value=41>Gay Tours
-<option value=44>honeymoon
-<option value=45>Homestays
-<option value=46>Great contacts
-<option value=61>A last names
-<option value=62>Last name starts with A
-<option value=81>Old female climbers
-<option value=101>My first query
-<option value=102>Artist
-<option value=122>Cycling Women
-<option value=142>My favorites
-<option value=164>Last name starts with a
-<option value=182>Archeology users
-<option value=202>Testers
-<option value=222>HQM group
-<option value=283>Unusual specials
-<option value=282>Weekly newsletter
-<option value=263>Daily newsletter
+Day of month <select name=day_of_month_2><option value=null></option><option value="1">1
+<option value="2">2
+<option value="3">3
+<option value="4">4
+<option value="5">5
+<option value="6">6
+<option value="7">7
+<option value="8">8
+<option value="9">9
+<option value="10">10
+<option value="11">11
+<option value="12">12
+<option value="13">13
+<option value="14">14
+<option value="15">15
+<option value="16">16
+<option value="17">17
+<option value="18">18
+<option value="19">19
+<option value="20">20
+<option value="21">21
+<option value="22">22
+<option value="23">23
+<option value="24">24
+<option value="25">25
+<option value="26">26
+<option value="27">27
+<option value="28">28
+<option value="29">29
+<option value="30">30
+<option value="31">31
+</select>
+
+
+</td></tr><tr><th align=right>Template?</th><td><input type=checkbox name=template_p_2 value=t checked></td></tr></table>
+  <p>
+  
+<table border=1 cellpadding=2>
+<tr>
+<th align=right>User Class</th><td><select name=user_class_id_3>
+<option value="21">Client Project Leaders
+<option value="1">Employees
+<option value="101">Employees on their 15th day
+<option value="141">Employees's on their 6th day
+<option value="3">Eve's Team
+<option value="121">HQM Test
+<option value="2" selected>Missing Project Reports
+<option value="5">Team Leaders
+<option value="22">The Bryzek
+<option value="41">Tracy
+<option value="4">no hours for a week
+<option value="61">richardl@arsdigita.com
+<option value="81">ross
+
+</select></td>
+<tr><th align=right>Subject </th>
+<td><input name=subject_3 type=text value="Please do your late status reports ASAP" size=40></td></tr>
+<tr><th align=right>Filename </th>
+<td><input name=file_prefix_3 type=text size=24 value="reallylateprojects"></td></tr>
+<tr><th align=right>From Address </th>
+<td><input name=from_address_3 type=text size=24 value="teadams@arsdigita.com"></td></tr>
+<tr><th align=right>Period </th>
+<td><select name=period_3>
+  <option value="daily">Daily
+<option SELECTED value="weekly">Weekly
+<option value="monthly">Monthly
+<option value="yearly">Yearly
+
+  </select>
+
+Day of week <select name=day_of_week_3><option value=null></option><option value="1">Monday
+<option value="2">Tuesday
+<option value="3">Wednesday
+<option value="4">Thursday
+<option value="5">Friday
+<option value="6">Saturday
+<option value="7">Sunday
+ </select>
+
+Day of month <select name=day_of_month_3><option value=null></option><option value="1">1
+<option value="2">2
+<option value="3">3
+<option value="4">4
+<option value="5">5
+<option value="6">6
+<option value="7">7
+<option value="8">8
+<option value="9">9
+<option value="10">10
+<option value="11">11
+<option value="12">12
+<option value="13">13
+<option value="14">14
+<option value="15">15
+<option value="16">16
+<option value="17">17
+<option value="18">18
+<option value="19">19
+<option value="20">20
+<option value="21">21
+<option value="22">22
+<option value="23">23
+<option value="24">24
+<option value="25">25
+<option value="26">26
+<option value="27">27
+<option value="28">28
+<option value="29">29
+<option value="30">30
+<option value="31">31
+</select>
+
+
+</td></tr><tr><th align=right>Template?</th><td><input type=checkbox name=template_p_3 value=t checked></td></tr></table>
+  <p>
+  
+<table border=1 cellpadding=2>
+<tr>
+<th align=right>User Class</th><td><select name=user_class_id_4>
+<option value="21">Client Project Leaders
+<option value="1">Employees
+<option value="101" selected>Employees on their 15th day
+<option value="141">Employees's on their 6th day
+<option value="3">Eve's Team
+<option value="121">HQM Test
+<option value="2">Missing Project Reports
+<option value="5">Team Leaders
+<option value="22">The Bryzek
+<option value="41">Tracy
+<option value="4">no hours for a week
+<option value="61">richardl@arsdigita.com
+<option value="81">ross
+
+</select></td>
+<tr><th align=right>Subject </th>
+<td><input name=subject_4 type=text value="Now that you've been here a while..." size=40></td></tr>
+<tr><th align=right>Filename </th>
+<td><input name=file_prefix_4 type=text size=24 value="employee_day_15"></td></tr>
+<tr><th align=right>From Address </th>
+<td><input name=from_address_4 type=text size=24 value="tracy@arsdigita.com"></td></tr>
+<tr><th align=right>Period </th>
+<td><select name=period_4>
+  <option SELECTED value="daily">Daily
+<option value="weekly">Weekly
+<option value="monthly">Monthly
+<option value="yearly">Yearly
+
+  </select>
+
+Day of week <select name=day_of_week_4><option value=null></option><option value="1">Monday
+<option value="2">Tuesday
+<option value="3">Wednesday
+<option value="4">Thursday
+<option value="5">Friday
+<option value="6">Saturday
+<option value="7">Sunday
+ </select>
+
+Day of month <select name=day_of_month_4><option value=null></option><option value="1">1
+<option value="2">2
+<option value="3">3
+<option value="4">4
+<option value="5">5
+<option value="6">6
+<option value="7">7
+<option value="8">8
+<option value="9">9
+<option value="10">10
+<option value="11">11
+<option value="12">12
+<option value="13">13
+<option value="14">14
+<option value="15">15
+<option value="16">16
+<option value="17">17
+<option value="18">18
+<option value="19">19
+<option value="20">20
+<option value="21">21
+<option value="22">22
+<option value="23">23
+<option value="24">24
+<option value="25">25
+<option value="26">26
+<option value="27">27
+<option value="28">28
+<option value="29">29
+<option value="30">30
+<option value="31">31
+</select>
+
+
+</td></tr><tr><th align=right>Template?</th><td><input type=checkbox name=template_p_4 value=t></td></tr></table>
+  <p>
+  
+<table border=1 cellpadding=2>
+<tr>
+<th align=right>User Class</th><td><select name=user_class_id_5>
+<option value="21">Client Project Leaders
+<option value="1">Employees
+<option value="101">Employees on their 15th day
+<option value="141" selected>Employees's on their 6th day
+<option value="3">Eve's Team
+<option value="121">HQM Test
+<option value="2">Missing Project Reports
+<option value="5">Team Leaders
+<option value="22">The Bryzek
+<option value="41">Tracy
+<option value="4">no hours for a week
+<option value="61">richardl@arsdigita.com
+<option value="81">ross
+
+</select></td>
+<tr><th align=right>Subject </th>
+<td><input name=subject_5 type=text value="How is ArsDigita?" size=40></td></tr>
+<tr><th align=right>Filename </th>
+<td><input name=file_prefix_5 type=text size=24 value="employee_day_6"></td></tr>
+<tr><th align=right>From Address </th>
+<td><input name=from_address_5 type=text size=24 value="tracy@arsdigita.com"></td></tr>
+<tr><th align=right>Period </th>
+<td><select name=period_5>
+  <option SELECTED value="daily">Daily
+<option value="weekly">Weekly
+<option value="monthly">Monthly
+<option value="yearly">Yearly
+
+  </select>
+
+Day of week <select name=day_of_week_5><option value=null></option><option value="1">Monday
+<option value="2">Tuesday
+<option value="3">Wednesday
+<option value="4">Thursday
+<option value="5">Friday
+<option value="6">Saturday
+<option value="7">Sunday
+ </select>
+
+Day of month <select name=day_of_month_5><option value=null></option><option value="1">1
+<option value="2">2
+<option value="3">3
+<option value="4">4
+<option value="5">5
+<option value="6">6
+<option value="7">7
+<option value="8">8
+<option value="9">9
+<option value="10">10
+<option value="11">11
+<option value="12">12
+<option value="13">13
+<option value="14">14
+<option value="15">15
+<option value="16">16
+<option value="17">17
+<option value="18">18
+<option value="19">19
+<option value="20">20
+<option value="21">21
+<option value="22">22
+<option value="23">23
+<option value="24">24
+<option value="25">25
+<option value="26">26
+<option value="27">27
+<option value="28">28
+<option value="29">29
+<option value="30">30
+<option value="31">31
+</select>
+
+
+</td></tr><tr><th align=right>Template?</th><td><input type=checkbox name=template_p_5 value=t checked></td></tr></table>
+  <p>
+  
+    <p>
+    <i>Modify Spam Entries submit button goes here</i>
+<p>
+<h3>Add New Periodic Email Entry</h3>
+<table border=1 cellpadding=2>
+<tr><th align=right>User Class</th><td>
+<select name=user_class_id_6>
+<option value="21">Client Project Leaders
+<option value="1">Employees
+<option value="101">Employees on their 15th day
+<option value="141">Employees's on their 6th day
+<option value="3">Eve's Team
+<option value="121">HQM Test
+<option value="2">Missing Project Reports
+<option value="5">Team Leaders
+<option value="22">The Bryzek
+<option value="41">Tracy
+<option value="4">no hours for a week
+<option value="61">richardl@arsdigita.com
+<option value="81">ross
+
+</select></td></tr>
+<tr><th align=right>Subject</th><td> <input name=subject_6 type=text size=40></td></tr>
+<tr><th align=right>Filename</th><td><input name=file_prefix_6 type=text size=24></td></tr>
+<tr><th align=right>From Address</th><td><input name=from_address_6 type=text size=24></td></tr>
+<tr><th align=right>Period</th><td><select name=period_6>
+<option value="daily">Daily
+<option value="weekly">Weekly
+<option value="monthly">Monthly
+<option value="yearly">Yearly
 
 </select>
-<td> <input name=subject_3 type=text size=40></td>
-<td><input name=file_prefix_3 type=text size=24></td>
-</tr>
+
+Day of week <select name=day_of_week_6><option value=null></option><option value="1">Monday
+<option value="2">Tuesday
+<option value="3">Wednesday
+<option value="4">Thursday
+<option value="5">Friday
+<option value="6">Saturday
+<option value="7">Sunday
+ </select>
+
+Day of month <select name=day_of_month_6><option value=null></option><option value="1">1
+<option value="2">2
+<option value="3">3
+<option value="4">4
+<option value="5">5
+<option value="6">6
+<option value="7">7
+<option value="8">8
+<option value="9">9
+<option value="10">10
+<option value="11">11
+<option value="12">12
+<option value="13">13
+<option value="14">14
+<option value="15">15
+<option value="16">16
+<option value="17">17
+<option value="18">18
+<option value="19">19
+<option value="20">20
+<option value="21">21
+<option value="22">22
+<option value="23">23
+<option value="24">24
+<option value="25">25
+<option value="26">26
+<option value="27">27
+<option value="28">28
+<option value="29">29
+<option value="30">30
+<option value="31">31
+</select>
+
+
+</td></tr>
+<tr><th align=right>Template?</th><td><input type=checkbox name=template_p_6 value=t></td></tr>
 </table>
 
-<input type=submit value="Modify Spam Entries">
+<p>
+<i>Add New Entry button goes here</i>
+
 </form>
 </td></tr></table>
-</form>
+
 
 <p>
+
 You can enter the following information for an automatic spam daily message:
 
 <dl>
@@ -270,6 +729,15 @@ the spam, by including the string "%%DATE%%" in the subject.
 
 <dt>File Prefix
 <dd>The filename prefix where you will deposit the new content for periodic mailings.
+<dt>Period
+<dd>How often the message should be sent. This only makes sense for
+template files, i.e., where the message content is generated automatically on demand.
+If the <code>template?</code> option is
+selected, then the named file will be used as a Tcl template. <p>
+If you are supplying
+"static" content by uploading new files to the dropzone with the date conventions described
+in the next section, then leave the default setting of <code>Daily</code> for the period.
+
 </dl>
 
 <p>
@@ -281,7 +749,7 @@ parameter <code>DailySpamDirectory</code>:
 
 Example:
 <pre>
-DailySpamDirectory=/home/johnny/spam
+DailySpamDirectory=/web/eplay/spam
 </pre>
 
 For each spam defined in the Daily Spam list, the system will look for
@@ -327,6 +795,79 @@ Then content from these files will be sent preferentially to users who have
 their email types preferences set in the database.
 <p>
 
+<h3> Internal API for other modules to post scheduled spam messages to
+a user or group of users</h3>
+
+If another module in the ACS wishes to post a spam message, they should use the
+following interface function:
+
+<pre>
+# insert a new spam message into the spam queue, returns the spam_id of the new message
+spam_post_new_spam_message {{
+          -db 0 
+          -template_p "f"
+          -from_address ""
+          -title ""
+          -body_plain ""
+          -body_html ""
+          -body_aol ""
+          -target_users_description ""
+          -target_users_query ""
+          -send_date "sysdate"
+          -creation_user ""
+          }}
+</pre>
+
+The <code>target_users_description</code> should be an English description of
+who the designated target users are, for administrative documentation purposes.
+<p>
+
+The <code>target_users_query</code> should be a SQL query which returns the user_id
+for each user you want to send email to. Example
+<p>
+<pre>
+select user_id from users where last_name = 'Kennedy'
+</pre>
+
+<p>
+<h4>Example SQL Queries for spam messages</h4>
+
+
+You supply a SQL query which will be used to generate the target list of
+recipients for your spam message. 
+Your query should return a single column, <code>user_id</code>. 
+The spam system will automatically join this with the users_spammable view, 
+which is a view that filters out users who have elected not to receive
+email from the system. 
+So don't worry about pre-filtering your query via the users_spammable view. Just
+supply SQL which coughs up a list of user_ids. 
+<p>
+
+<blockquote>
+A simple plain text spam to members of a specific user_group:
+<pre>
+select <font color=red>u.user_id</font>
+from users u, user_group_map ugm 
+where ugm.group_id = 12345
+and ugm.user_id = u.user_id
+</pre>
+<p>
+
+A query which gets all users with an email address at aol.com.
+<pre>
+select <font color=red>user_id</font>
+from users  
+where email  like '%@aol.com'
+</pre>
+
+
+</blockquote>
+
+
+
+<p>
+
+
 <h3>Setting the .ini Parameters</h3>
 
 Here is a summary of the .ini params you will need
@@ -350,9 +891,17 @@ possible. This will soon be available as part of the core ACS
 distribution, and the spam module will have an option to use this as
 the mail transport rather than sendmail.
 <p>
-For more info on the configuration of bulkmail and qmail, see <a href=bulkmail.html>bulkmail and qmail configuration</a>
+For more info on the configuration of bulkmail and qmail, see <a href=bulkmail>bulkmail and qmail configuration</a>
+
+<h3>Utilities</h3>
+There are some useful utilities defined by the spam and email handling modules:
+<ul>
+<li><code><b><a href="/doc/proc-one?proc_name=send_email_attachment_from_file">send_email_attachment_from_file</a></b></code> allows you to send a file via ns_sendmail as a MIME encoded email attachment. The file
+can have binary content such as a JPEG image or PDF document.
+</ul>
 
 
+<p>
 <hr>
 <a href="http://photo.net/philg/"><address>philg@mit.edu</address></a>
 <br><a href=mailto:hqm@arsdigita.com><address>hqm@arsdigita.com</address></a>

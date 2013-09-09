@@ -7,7 +7,7 @@
 <body bgcolor=#ffffff text=#000000>
 <h2>Homepage</h2>
 
-part of the <a href="index.html">ArsDigita Community System</a>
+part of the <a href="index">ArsDigita Community System</a>
 by <a href="http://web.mit.edu/mobin/web">mobin</a>
 <br>
 <hr>
@@ -16,8 +16,8 @@ by <a href="http://web.mit.edu/mobin/web">mobin</a>
 <li>worldViewableContent:  <a href="/users/">/users/</a>
 <li>siteAdministratorDirectory:  <a href="/admin/users/">/admin/users/</a>
 <li>userHomepageMaintenance:  <a href="/homepage/">/homepage/</a>
-<li>dataModel:  <a href="/doc/sql/display-sql.tcl?url=/doc/sql/homepage.sql">/doc/sql/homepage.sql</a>
-<li>TclProcs:  /tcl/homepage-defs.tcl 
+<li>dataModel:  <a href="/doc/sql/display-sql?url=/doc/sql/homepage.sql">/doc/sql/homepage.sql</a>
+<li>TclProcs:  /tcl/homepage-defs 
 <li>userContent:  /web/servername/users/ (determined by [ad_parameter ContentRoot users])
 </ul>
 
@@ -91,7 +91,7 @@ you cannot create, modify, delete, move, or rename neighbourhoods. An
 attempt at doing so will result only in a meaningless error message
 such as "Insufficient permission to perform requested database access
 in AddNeighborhood". The neighbourhoods page is located at
-/homepage/neighbourhoods.tcl. Alternatively, there is a link to it
+/homepage/neighbourhoods. Alternatively, there is a link to it
 from your workspace.
 <p>
 
@@ -99,7 +99,7 @@ from your workspace.
 <p>
 A list of the users who have initialized their webspace (webspace
 initialization is discussed in 1.1.3) can be seen at
-/homepage/all.tcl. There is a link to it, marked as "User Homepages",
+/homepage/all. There is a link to it, marked as "User Homepages",
 at your workspace.
 <p>
 
@@ -133,7 +133,7 @@ with reads "You have not set up a screen name as yet. Click here to
 set one up.". You can set up your screen name by clicking on the
 "here" or alternatively, you can set up your screen name by clicking
 on the "update" link in your "Basic Information" section in your
-workspace /pvt/home.tcl.
+workspace /pvt/home.
 <p>
 
 1.1.4&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Homepage Maintenance Page
@@ -165,9 +165,9 @@ content rooted at it (in the tree view).
 You can create files by clicking on the "create file" link. You will
 be prompted for the name, and an empty file with that name will be
 created. Mind however that to be able to invoke the editor on a file,
-it should have a .text, .html, .htm, .txt or anyother extension that
+it should have a .text, , .htm, .txt or anyother extension that
 represents a mime type of text/*. If you're unsure of what this means,
-just end the filename in .html if it's an html file or .text if it's a
+just end the filename in  if it's an html file or .text if it's a
 text file. If you do not know html then, for your own good, I advise
 you to learn it. It is a very good advice. Take it. Html is very very
 easy to learn. Meanwhile, you can just name your files ending with
@@ -198,7 +198,7 @@ following the links in your workspace) in the top right, your name as
 heading, and "webspace at your-system-name" as subheading. Then it
 displays a listing of files in the directory. If you do not wish to
 have a generated index, you can create an index file in that
-directory. By default filenames index.html, index.htm, and Default.htm
+directory. By default filenames index, index.htm, and Default.htm
 will be treated by the system as index files and will be served when a
 directory is requested by the web browser. The presence of an index
 file makes it impossible for the web browser to lit the contents of
@@ -316,7 +316,7 @@ via /admin/users/
 <p>
 
 Administration of neighbourhoods is done at
-/homepage/neighbourhoods.tcl. This page will hereby be referred to as
+/homepage/neighbourhoods. This page will hereby be referred to as
 the "neighbourhoods page". If the homepage module is enabled in your
 system, a link should appear to the neighbourhoods page at your
 workspace. The neighbourhoods page is essentially for browsing through
@@ -1435,7 +1435,7 @@ create table users_files_access_log (
 	ip_address		varchar(50) not null
 );
 </pre>
-We log accesses after we serve files from homepage-defs.tcl's hp_serve
+We log accesses after we serve files from homepage-defs's hp_serve
 procedure.
 
 <hr>

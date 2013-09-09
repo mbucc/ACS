@@ -1,0 +1,62 @@
+# /www/wap/register/user-login-2.wap
+
+ad_page_contract {
+    Verify password and log in
+
+    @param email User's email address. This is the standard login ID.
+    @param password_from_form password from the form
+    @param return_url_stub Where to redirect to after we are done.
+
+    @author Andrew Grumet (aegrumet@arsdigita.com) 
+    @creation-date Wed May 24 03:42:45 2000
+    @cvs-id user-login-2.wap,v 1.2.2.3 2000/07/24 14:23:32 aegrumet Exp
+} {
+    {email {}}
+    {password_from_form {}}
+    {return_url_stub {}}
+}
+
+# Assign return url
+if [empty_string_p $return_url_stub] {
+    set return_url_stub /wap/i.wap
+}
+
+# Get UID from email passed in
+if ![philg_email_valid_p $email] {
+    set db_email "${email}@[wap_default_email_domain]"
+} else {
+    set db_email $email
+}
+
+# Get the user ID
+set flag [db_0or1row wap_user_id_or_empty "
+    select user_id, user_state, converted_p 
+           from users 
+           where upper(email)=upper(:db_email)"]
+
+if {!$flag} {
+    # not in the database
+    db_release_unused_handles
+    wml_return_complaint "Bad email or passwd."
+    return
+} 
+
+if { [string compare $user_state authorized] != 0 } {
+    db_release_unused_handles
+    wml_return_complaint "Bad email or passwd."
+    return
+}
+
+
+if { ![ad_check_password $user_id $password_from_form] } {
+    db_release_unused_handles
+    wml_return_complaint "Bad email or passwd."
+    return
+}
+
+# Log the dude in!
+ad_user_login -forever t $user_id
+
+set return_url $return_url_stub
+
+wap_returnredirect $return_url "Login successful."

@@ -1,13 +1,21 @@
-# $Id: delete.tcl,v 3.0 2000/02/06 03:21:42 ron Exp $
-set_the_usual_form_variables
-# template_id
+#  www/admin/ecommerce/templates/delete.tcl
+ad_page_contract {
+    @param template_id
+  @author
+  @creation-date
+  @cvs-id delete.tcl,v 3.1.6.5 2000/09/22 01:35:04 kevin Exp
+} {
+    template_id:integer
+}
+
+
 
 # check if this is the template that the admin has assigned as the default
 # in which case they'll have to select a new default before they can delete
 # this one
 
-set db [ns_db gethandle]
-set default_template_id [database_to_tcl_string $db "select default_template
+
+set default_template_id [db_string get_default_id "select default_template
 from ec_admin_settings"]
 
 if { $template_id == $default_template_id } {
@@ -20,9 +28,8 @@ if { $template_id == $default_template_id } {
     return
 }
 
-ReturnHeaders
 
-ns_write "[ad_admin_header "Confirm Deletion"]
+set page_html "[ad_admin_header "Confirm Deletion"]
 
 <h2>Confirm Deletion</h2>
 
@@ -33,7 +40,7 @@ ns_write "[ad_admin_header "Confirm Deletion"]
 Please confirm that you want to delete this template.  If any products are set to use this template, they will
 now be displayed with the default template.
 
-<form method=post action=delete-2.tcl>
+<form method=post action=delete-2>
 [export_form_vars template_id]
 <center>
 <input type=submit value=\"Confirm\">
@@ -43,3 +50,7 @@ now be displayed with the default template.
 
 [ad_admin_footer]
 "
+
+
+
+doc_return  200 text/html $page_html

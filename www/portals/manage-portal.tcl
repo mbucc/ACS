@@ -1,16 +1,13 @@
-#
-# /portals/manage-portal.tcl
-#
-# GUI that facilitates page layout (USER VERSION)
-#
-# by aure@arsdigita.com and dh@arsdigita.com
-#
-# Last modified: 10/8/1999
-#
-# $Id: manage-portal.tcl,v 3.2 2000/03/10 22:57:39 richardl Exp $
-#
+#/portals/manage-portal.tcl
 
-set db [ns_db gethandle]
+ad_page_contract {
+    GUI that facilitates page layout (USER VERSION)
+
+    @author aure@arsdigita.com 
+    @author dh@arsdigita.com
+    @cvs-id manage-portal.tcl,v 3.3.2.8 2000/09/22 01:39:01 kevin Exp
+} {
+}
 
 # -------------------------------------
 # get user info
@@ -18,28 +15,28 @@ set db [ns_db gethandle]
 set user_id [ad_verify_and_get_user_id]
 
 set user_name test
-set user_name [database_to_tcl_string $db "
-	    select first_names||' '||last_name from users where user_id=$user_id"]
+set user_name [db_string portal_manage_portal_get_user_name "
+	    select first_names||' '||last_name from users where user_id=:user_id"]
  					    
 # Get generic display information
 portal_display_info
 
 # get number of existing pages +1
-set max_page [database_to_tcl_string $db "select max(page_number)+1 from portal_pages
-where     user_id = $user_id"]
+set max_page [db_string portal_manage_portal_get_max_page "select max(page_number)+1 from portal_pages
+where user_id = :user_id" -default ""]
 
 if {[empty_string_p $max_page]} {
     set max_page 1
 }
 
-set total [database_to_tcl_string $db "select count(*) from portal_tables"]
+set total [db_string portal_manage_portal_get_total "select count(*) from portal_tables"]
 
 set page_content "
 <html>
 <head>
 <title>Personalize Page Layout</title>
 
-<script src=manage-portal-js?[export_url_vars max_page group_id total]></script>
+<script src=manage-portal-js?[export_url_vars max_page group_id total]></script> 
 </head>
 $body_tag $font_tag
 <h2>[ad_parameter SystemName portals] Administration for $user_name</h2>
@@ -73,7 +70,7 @@ while {$x <= $total} {
 
 for {set current_page 1} {$current_page <= $max_page} {incr current_page} {
 
-    set sql_query "
+    ns_log notice "
     select    table_name, page_number, page_side, map.table_id, page_name
     from      portal_table_page_map map, portal_tables p_t, portal_pages p_p
     where     user_id = $user_id
@@ -82,15 +79,21 @@ for {set current_page 1} {$current_page <= $max_page} {incr current_page} {
     and       page_number = $current_page
     order by  page_side, sort_key"
 
-    set selection [ns_db select $db $sql_query]
+    set sql_query "
+    select    table_name, page_number, page_side, map.table_id, page_name
+    from      portal_table_page_map map, portal_tables p_t, portal_pages p_p
+    where     user_id = :user_id
+    and       map.page_id = p_p.page_id
+    and       map.table_id = p_t.table_id
+    and       page_number = :current_page
+    order by  page_side, sort_key"
+
 
     set left_select ""
     set right_select ""
     set page_name ""
 
-    while { [ns_db getrow $db $selection] } {
-	set_variables_after_query
-
+    db_foreach portal_manage_portal_list_of_tables $sql_query  {
 	set table_name [string range [string toupper [ns_adp_parse -string $table_name]] 0 31]
 
 	if {$page_side == "l"} {
@@ -99,13 +102,17 @@ for {set current_page 1} {$current_page <= $max_page} {incr current_page} {
 	    append right_select "<option value=\"$table_id\">$table_name</option>\n"
 	}
     }
-    regsub -all { } [string tolower $user_name] {-} lower_user_name
+
+
+#    not used set lower_user_name [ad_urlencode [string tolower $user_name]]
 
     if {$current_page != $max_page} {
 	set right_link "<td align=right>(<a target=_new href=/portals/user$user_id-$current_page[ad_parameter PortalExtension portals .ptl]>current version</a>)</td>"
     } else {
 	set right_link "<td align=right>(a new page if needed)</td>"
     }
+
+
 	    
     append page_content "
 	<table width=100% bgcolor=#0000 border=0 cellpadding=0 cellspacing=1><tr><td>
@@ -166,9 +173,8 @@ set sql_query "
 select   table_name, pt.table_id 
 from     portal_tables pt
 where    pt.table_id not in (select map.table_id from portal_table_page_map map, portal_pages pp
-where pp.user_id=$user_id and map.page_id=pp.page_id)
+where pp.user_id=:user_id and map.page_id=pp.page_id)
 order by table_name" 
-set selection [ns_db select $db $sql_query]
     
 append page_content "
 	<table width=100% bgcolor=#0000 border=0 cellpadding=0 cellspacing=1><tr><td>
@@ -183,8 +189,9 @@ append page_content "
 	           </tr>
 	        </table></td>
 <td valign=top><font face=courier size=-1><select name=new size=5>"
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+
+
+db_foreach portal_manage_portal_list_of_tables_2 $sql_query {
 
     set table_name [string toupper [ns_adp_parse -string $table_name]]
 
@@ -210,7 +217,38 @@ Key:<td valign=top align=right>Click here when completed: <input type=submit val
 <br><img src=pics/left width=18 height=15 border=0> - Move item from the right side of the page to the left
 <br><img src=pics/down width=18 height=15 border=0> - Move item down (to next page if it is already at the bottom of the current page)"
 
-ns_return 200 text/html $page_content
+
+doc_return  200 text/html $page_content
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

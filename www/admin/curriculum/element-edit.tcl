@@ -1,16 +1,20 @@
-# $Id: element-edit.tcl,v 3.0 2000/02/06 03:15:59 ron Exp $
-#This file should be called element-edit.tcl
-#Called from element-list.tcl
-set_the_usual_form_variables
+# /www/admin/curriculum/element-edit.tcl
 
-# curriculum_element_id
+ad_page_contract {
+    This file should be called element-edit.tcl
+    Called from element-list.tcl
+    @author unknown
+    @cvs-id element-edit.tcl,v 3.2.2.5 2000/09/22 01:34:39 kevin Exp
+    @param curriculum_element_id The curriculum element to edit
+} {
+    curriculum_element_id
+}
 
 ad_maybe_redirect_for_registration
-set db [ns_db gethandle]
-if {[catch {set selection [ns_db 1row $db "
-    select element_index, url, very_very_short_name, one_line_description, full_description
+
+if {[catch {db_1row  get_element_to_edit "select element_index, url, very_very_short_name, one_line_description, full_description
     from curriculum 
-    where curriculum_element_id=$curriculum_element_id"]} errmsg]} {
+    where curriculum_element_id=:curriculum_element_id"} errmsg]} {
     ad_return_error "Error in finding the data" "We encountered an error in querying the database for your object.
 Here is the error that was returned:
 <p>
@@ -23,14 +27,11 @@ $errmsg
 } 
 
 
-set_variables_after_query
 
 #now we have the values from the database.
 
-ReturnHeaders
 
-ns_write "
-[ad_admin_header "Edit the entry for $one_line_description"]
+set body "[ad_admin_header "Edit the entry for $one_line_description"]
 
 <h2>Edit the entry for $one_line_description</h2>
 
@@ -38,12 +39,12 @@ ns_write "
 
 <hr>
 
-<form method=POST action=element-edit-2.tcl>
+<form method=POST action=element-edit-2>
 [export_form_vars curriculum_element_id]" 
 
 # Make the forms:
 
-ns_write "<table>
+append body "<table>
 <tr><th valign=top align=right>Sequence (0 is the first element in the curriculum)</th>
 <TD><input type=text size=10 MAXLENGTH=22 name=element_index [export_form_value element_index]></TD></TR>
 
@@ -67,3 +68,8 @@ ns_write "<table>
 </form>
 <p>
 [ad_admin_footer]"
+
+
+
+
+doc_return  200 text/html $body

@@ -1,0 +1,54 @@
+# This is an ad-hoc check to make sure users aren't trying to pass in
+# "naughty" form variables in an effort to hack the database by passing
+# in SQL. It is called in all instances where a Tcl variable
+# is set from a form variable.
+proc check_for_form_variable_naughtiness { name value } {
+    if { [string compare $name user_id] == 0 } {
+        if { [string length $value] > 0 && ![regexp {^[0-9]+$} $value] } {
+            # user_id not null, and not an integer
+            error "The user_id value must be an integer!"
+        }
+    }
+     # security patch contributed by michael@cleverly.com
+    if { [string match "QQ*" $name] } {
+        error "Form variables should never begin with QQ!"
+    }
+     # contributed by michael@cleverly.com
+    if { [string match Vform_counter_i $name] } {
+        error "Vform_counter_i not an allowed form variable"
+    }
+    # no naughtiness with uploaded files (discovered by ben@mit.edu)
+    # patch by richardl@arsdigita.com, with no thanks to
+    # jsc@arsdigita.com.
+    if { [string match "*tmpfile" $name] } {
+        set tmp_filename [ns_queryget $name]
+         # check for .. anywhere in path
+        if { [string match "*..*" $tmp_filename] } {
+            error "Form variables shoud never have a ..!"
+        }
+         set passed_check_p 0
+         # check to make sure path is to an authorized directory
+        set tmpdir_list [ad_parameter_all_values_as_list TmpDir]
+        if { [null_p $tmpdir_list] } {
+            set tmpdir_list [list "/var/tmp" "/tmp"]
+        }
+         foreach tmpdir $tmpdir_list {
+            if { [string match "$tmpdir*" $tmp_filename] } {
+                set passed_check_p 1
+                break
+            }
+         }
+         if { !$passed_check_p } {
+            error "You specified a path to a file that is not allowed on the system!"
+        }
+     }
+ }
+
+
+NOTE: If you don't have ad-functional.tcl (where null_p is defined),
+here is the definition:
+
+proc_doc null_p {xs} "checks if xs is the empty list" {
+    expr [llength $xs]==0
+}
+

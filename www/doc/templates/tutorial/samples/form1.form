@@ -1,0 +1,124 @@
+<form>
+
+  <name>register</name>
+  <title>Register</title>
+  <author>karlg@arsdigita.com</author>
+  <action>users.adp</action>
+  <dbaction>insert</dbaction>
+  <comment>A user registration form.</comment>
+
+  <elements>
+
+  <element>
+
+    <name>user_id</name>
+    <widget>hidden</widget>
+    <datatype>number</datatype>
+    <defaults method="query">
+      select max(user_id) + 1 from ad_template_sample_users
+    </defaults>
+    <comment>The unique user ID.</comment>
+
+    <datamap key="parent">
+      <table>ad_template_sample_users</table>
+      <column>user_id</column>
+    </datamap>
+
+  </element>
+
+  <element>
+
+    <name>first_name</name>
+    <label>First Name</label>
+    <widget>text</widget>
+    <datatype>string</datatype>
+    <comment>The user's first name.</comment>
+
+    <datamap>
+      <table>ad_template_sample_users</table>
+      <column>first_name</column>
+    </datamap>
+
+  </element>
+
+  <element>
+
+    <name>last_name</name>
+    <label>Last Name</label>
+    <widget>text</widget>
+    <datatype>string</datatype>
+    <comment>The user's last name.</comment>
+
+    <datamap>
+      <table>ad_template_sample_users</table>
+      <column>last_name</column>
+    </datamap>
+
+  </element>
+
+  <element>
+
+    <name>address1</name>
+    <label>Address 1</label>
+    <widget>text</widget>
+    <datatype>string</datatype>
+    <comment>First line of the user's address.</comment>
+
+    <datamap>
+      <table>ad_template_sample_users</table>
+      <column>address1</column>
+    </datamap>
+
+  </element>
+
+  <element status="optional">
+
+    <name>address2</name>
+    <label>Address 2</label>
+    <widget>text</widget>
+    <datatype>string</datatype>
+    <comment>Second line of the user's address.</comment>
+
+    <datamap>
+      <table>ad_template_sample_users</table>
+      <column>address2</column>
+    </datamap>
+
+  </element>
+
+  <element>
+
+    <name>city</name>
+    <label>City</label>
+    <widget>text</widget>
+    <datatype>string</datatype>
+    <comment>User's city of residence.</comment>
+
+    <datamap>
+      <table>ad_template_sample_users</table>
+      <column>city</column>
+    </datamap>
+
+  </element>
+
+  <element>
+
+    <name>state</name>
+    <label>State</label>
+    <widget>select</widget>
+    <datatype>text</datatype>
+    <options method="static">
+      AK=AK,CA=CA,ID=ID,MT=MT,NV=NV,WA=WA
+    </options>
+    <comment>User's state of residence.</comment>
+
+    <datamap>
+      <table>ad_template_sample_users</table>
+      <column>state</column>
+    </datamap>
+
+  </element>
+
+  </elements>
+
+</form>

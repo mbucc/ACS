@@ -1,46 +1,44 @@
-
 # admin/faq/faq-edit.tcl
 #
-#   A form for editing a faq (just the name and associated group)
-#
-#  by dh@arsdigita.com , Created on Dec 20, 1999
-#
-# $Id: faq-edit.tcl,v 3.0.4.1 2000/03/16 03:18:53 dh Exp $
-#-------------------------------------------------
 
-ad_page_variables {faq_id}
+ad_page_contract {
+    A form for editing a faq (just the name and associated group)
 
-set db [ns_db gethandle]
+    @author dh@arsdigita.com
+    @creation-date Dec 20, 1999
+    @cvs-id faq-edit.tcl,v 3.3.2.7 2000/09/22 01:35:08 kevin Exp
+} {
+faq_id:integer,notnull
+}
+
 
 # get the faq_name, group_id, scope
-set selection [ns_db 1row $db "
+db_1row faq_name_get "
 select faq_name, group_id as current_group_id, scope
 from faqs
-where faq_id = $faq_id"]
-set_variables_after_query
+where faq_id = :faq_id"
+
 
 # make and option list of all the group names
-set selection [ns_db select $db "
+set sql "
 select group_name, 
        group_id 
 from  user_groups
 where user_groups.group_type <> 'administration' 
-order by group_name "]
+order by group_name "
 
 set group_option_list "<select name=group_id> \n"
 append group_option_list "<option value=\"\" [expr {""==$current_group_id?"selected":""}]>No group \n"
 
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
+
+db_foreach faq_group_get $sql {
     append group_option_list "<option value=$group_id [expr {$group_id==$current_group_id?"selected":""}]>$group_name \n"
 }
 append group_option_list "</select>"
-ns_db releasehandle $db
+db_release_unused_handles
 
 
-# -- serve the page -------------------------------
-
-ns_return 200 text/html "
+set page_content "
 [ad_admin_header "Edit a FAQ"]
 
 <h2>Edit a FAQ</h2>
@@ -49,7 +47,7 @@ ns_return 200 text/html "
 
 <hr>
 
-<form action=faq-edit-2.tcl  method=post>
+<form action=faq-edit-2 method=post>
 [export_form_vars faq_id]
 <table>
 <tr>
@@ -68,3 +66,6 @@ ns_return 200 text/html "
 
 [ad_admin_footer]"
 
+
+
+doc_return  200 text/html $page_content

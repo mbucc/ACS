@@ -1,0 +1,259 @@
+<! -- packaging.html,v 3.5.2.1 2000/08/06 05:32:58 bquinn Exp -->
+<html>
+<head>
+<title>5-Minute Guide to Packaging Your Module</title>
+</head>
+
+<body bgcolor=white text=black>
+<h2>5-Minute Guide to Packaging Your Module</h2>
+
+part of the <a href="">ArsDigita Community System</a><br>
+by <a href="mailto:jsalz@mit.edu">Jon Salz</a> and <a
+href="mailto:bquinn@arsdigita.com">Bryan Quinn</a> 
+
+<hr>
+
+<h3>About This Document</h3>
+
+This guide is intended primarily for programmers writing new modules
+for the ArsDigita Community System.  It provides instructions for
+turning an ACS module into an ACS package with the new <a
+href="core-arch-guide/apm">ACS Package Manager</a>.
+
+<h3>Background</h3>
+
+From the ACS 4.0 <a href="/doc/core-arch-guide/apm">package manager documentation</a> (as of 25 April 2000):
+
+<blockquote>The ACS is composed of a set of software components known as
+<em>packages</em>. Some packages merely provide services to other
+packages (e.g., the community core routines, or the security
+and session management routines). Other packages provide
+a service directly to the end-user (e.g., registration,
+news, or FAQs); these application packages are known as <em>modules</em>.
+(Thus every module is a package, but not vice versa.)
+
+<p>In the past, there has never been any sort of official distinction
+between packages and no system for tracking which files belong to which package,
+aside from informal documentation.
+Our goal is to provide a central registry and manager for packages. The benefits:
+
+<ul>
+  <li>Clear ownership and responsibility for individual services.
+  <li>A standard process for installing and upgrading packages.
+  <li>Independent versioning of packages, so components can be upgraded individually,
+      preserving local changes.
+  <li>Standard interfaces (contracts) for interdependent packages, so I won't break
+      your package by changing mine.
+  <li>A good interface for installing and configuring ACS.
+</ul>
+
+<p>ACS 3.3 includes an APM that provides a subset of the
+desired functionality.  ACS 3.3 was the last monolithic release of
+ACS: ACS 4.0 will consist of a set of distinct packages (the address
+book, the bboard, etc.)  which will be individually versionable and
+upgrading. During the wait for the ACS 4.0 release, package owners can
+still distribute upgrades to their packages by posting tarballs
+(<code>.apm</code> files) on <code>software.arsdigita.com</code>. The package
+manager will automate all this.
+</blockquote>
+
+<h3>So What Do I Have To Do?</h3>
+
+Every package owner (a.k.a. module owner) needs to use the
+package manager on dev.arsdigita.com
+to register their packages. The process is very easy. Just
+
+<ol>
+
+<li>Register as a site-wide administrator on your web service.<p>
+
+<li>Go to the package manager on your server.  The URL is <a href="/admin/apm">http://yourservername/admin/apm/</a>.<p>
+
+<li>Click the <i>Add a new package</i> link.<p>
+
+<li>Follow the prompts to type in the information for your package.
+If this is a new package under development, use 0.5 for the initial
+    version.  Otherwise, exercise your judgement and choose an
+    appropriate version number.
+Note that the package URL and version URL are filled in automatically
+    for you. <p>
+   Choose your <strong>package key</strong> with care, as it will be
+    used in the file registration process next.<p>
+
+<li>Click <i>Create Package</i>.<p>
+
+<li>At this point, your package is created, but no files are yet
+    registered as a part of it.  APM enforces a number of conventions
+    with regards to file names and locations that must be followed.
+    Please refer to this table for help in conforming to the
+    conventions.  A package must include some of these files, but not
+    all of them depending on your software.  Carefully check to make
+    sure that you have moved all the files to
+    their new locations.  You can optionally add the files to CVS.
+    <p>
+
+    Your <code>package-root</code> is installation
+    specific and is usually something like
+    <code>/web/yourservername/packages</code>.
+    We will use the <strong>address-book</strong> table as an
+    example in this table.  You should be able to substitute your
+    package key when following the table below.  For
+    further information, please consult the <a
+    href="/doc/core-arch-guide/apm">APM documentation</a>.<p>
+
+<table>
+  <tr>
+    <th>File Purpose</th><th>Convention</th><th>Address-Book Example</th>
+  </tr>
+  <tr>
+    <td>Package specification.</td>
+    <td><code>package-root/<em>package</em>/<em>package</em>.info</code>
+	<br><center>(created automatically)<center></td>
+    <td><code>package-root/address-book/address-book.info</code></td>
+  </tr>
+
+  <tr>
+    <td>
+	SQL to load the data model.
+    </td>
+    <td>
+<code>package-root/<em>package</em>/<em>package</em>-create.sql</code>
+    </td>
+    <td>
+<code>package-root/address-book/address-book-create.sql</code>
+    </td>
+  </tr>
+  <tr>
+    <td>SQL to drop the data model</td>
+    <td><code>package-root/<em>package</em>/<em>package</em>-drop.sql</code></td>
+    <td><code>package-root/address-book/address-book-drop.sql</code></td>
+  </tr>
+  <tr>
+    <td>SQL files to upgrade the data model</td>
+    <td><code>package-root/<em>package</em>/<em>package</em>/upgrade/</code></td>
+    <td>
+	<code>package-root/address-book/upgrade/upgrade-2.0-2.0.1.sql</code><br>
+	<code>package-root/address-book/upgrade/upgrade-2.0.1-2.1.sql</code><br>	
+    </td>
+  </tr>
+  
+  <tr>
+    <td>Tcl init scripts to be run at server startup<br>(e.g. filter registration)</td>
+    <td><code>package-root/<em>package</em>/<em>package</em>-init.tcl</code></td>
+    <td><code>package-root/address-book/address-book-init.tcl</code></td>
+  </tr>
+  <tr>
+    <td>Tcl scripts that define procedures<br>(e.g. procedures that
+	multiple pages use)</td>
+    <td><code>package-root/<em>package</em>/<em>package</em>-procs.tcl</code></td>
+    <td><code>package-root/address-book/address-book-procs.tcl</code></td>
+  </tr>
+  
+  <tr>
+    <td>User-viewable pages</td>
+    <td><code>package-root/<em>package</em>/www/</code></td>
+    <td><code>package-root/address-book/www/</code></td>
+  </tr>
+<tr>
+    <td>Admin pages</td>
+    <td><code>package-root/<em>package</em>/admin-www/</code></td>
+    <td><code>package-root/address-book/admin-www/</code></td>
+  </tr>
+  <tr>
+    <td>Documentation</td>
+    <td><code>package-root/<em>package</em>/www/doc/</code></td>
+    <td><code>package-root/address-book/www/doc/</code></td>
+  </tr>
+</table>
+<p>
+
+The directory hierarchy might look like this:
+
+<blockquote><pre>
+/web/yourservername
+  +-- packages (directory)
+        +-- address-book (directory)
+        |     +-- address-book.html
+        |     +-- address-book-procs.tcl
+        |     +-- address-book-init.tcl
+        |     +-- address-book.info
+        |     +-- upgrade (directory)
+        |     |     +-- upgrade-2.0-2.0.1.sql
+        |     |     +-- upgrade-2.0.1-2.1.sql
+        |     +-- www (directory)
+        |           +-- index.tcl
+        |           +-- records.tcl
+        |           +--   ...
+        |           +-- admin (directory)
+        |                 +-- index.tcl
+        |                 +--   ...
+        +-- bboard
+              ...
+</pre></blockquote>
+<p>
+
+<li>Now, from the package information page for your package, select
+    <em>Manage File Information</em>.  Click the
+    <em>Scan</em> link to have APM scan the package
+    directory.  It should provide you with options to add all of your
+    package files.  Double check that all of your files are included.
+    If so, confirm the addition.
+    <p>
+    If there are any files in your package which the package manager
+    wasn't able to find or if you need to add files later, copy the
+    file into the package directory and click the
+    <em>Manage File Information</em> and <em>Scan</em> 
+    link just as before.  Your new files should be detected.  You can
+    remove files using the file manager.  Repeat this step as necessary until you've
+    nailed down all the files in your package.<p>
+
+<li>Your package is now installed.  You can now toggle the activation
+    status of your package.  To 
+    toggle the activation status, go to your package's page and select 
+    <em>Enable this version of the package</em>.  This
+    instructs the request processor to start serving your page.  The
+    request processor will automatically translate URLs of the style
+    <code>http://yourserver.com/package/*</code> to read files from
+    <code>package-root/package/www/</code>.  However, you will need to 
+    restart the server and to run data model scripts yourself before your module will work.
+    At any time you can disable your package and after the server is
+    restarted its URLs will no longer be served.<p>
+
+<li>Once you've restarted your server and verified that your package
+    is working, you can <em>Generate a distribution file</em> from
+    your package's information page.  This will create a
+    <code>.apm</code> tarball that you can distribute to anyone using
+    the ArsDigita Community System for easy installation.
+    <p>
+        
+<li>Repeat steps 3 through 9 for each additional package you own.<p>
+
+</ul>
+
+And you're done! ACS thanks you.
+
+<h3>And Why Am I Doing This Again?</h3>
+
+Most importantly:
+
+<ul>
+<li>So we can keep track of ownership and responsibility the individual components of ACS.
+<li>So we can release upgrades of individual packages without monolithic ACS releases.
+<li>To make installation and upgrading of ACS far easier and more automated, especially
+on client sites where lots of files have been locally modified/customized.
+</ul>
+
+This things will make ACS much more approachable and desirable to new users, and
+make it easier for us to keep improving and streamlining ACS.
+
+<hr>
+<address>jsalz@mit.edu</address>
+<div align=left>
+<!-- hhmts start -->
+Last modified: Sun Aug  6 01:32:44 EDT 2000
+<!-- hhmts end -->
+</div>
+</body>
+</html>
+
+

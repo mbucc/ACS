@@ -1,6 +1,16 @@
-# $Id: customer-search.tcl,v 3.0 2000/02/06 03:17:40 ron Exp $
-set_the_usual_form_variables
-# amount, days
+# customer-search.tcl
+
+ad_page_contract {  
+    @param amount:optional
+    @param days:optional
+    @author
+    @creation-date
+    @cvs-id customer-search.tcl,v 3.2.2.3 2000/09/22 01:34:51 kevin Exp
+} { 
+    amount:optional
+    days:optional
+}
+
 
 # error checking
 set exception_count 0
@@ -27,8 +37,8 @@ if { $exception_count > 0 } {
     return
 }
 
-ReturnHeaders
-ns_write "[ad_admin_header "Customer Search"]
+
+append doc_body "[ad_admin_header "Customer Search"]
 
 <h2>Customer Search</h2>
 
@@ -39,34 +49,37 @@ Customers who spent more than [ec_pretty_price $amount [ad_parameter Currency ec
 <ul>
 "
 
-set db [ns_db gethandle]
 
-set selection [ns_db select $db "select unique o.user_id, u.first_names, u.last_name, u.email
+
+set sql "select unique o.user_id, u.first_names, u.last_name, u.email
 from ec_orders o, users u
 where o.user_id=u.user_id
 and o.order_state not in ('void','in_basket')
-and sysdate - o.confirmed_date <= $days
-and $amount <= (select sum(i.price_charged) from ec_items i where i.order_id=o.order_id and (i.item_state is null or i.item_state not in ('void','received_back')))
-"]
+and sysdate - o.confirmed_date <= :days
+and :amount <= (select sum(i.price_charged) from ec_items i where i.order_id=o.order_id and (i.item_state is null or i.item_state not in ('void','received_back')))
+"
 
 set user_id_list [list]
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
-    ns_write "<li><a href=\"/admin/users/one.tcl?user_id=$user_id\">$first_names $last_name</a> ($email)"
+db_foreach get_user_ids_from_search $sql {
+    
+    append doc_body "<li><a href=\"/admin/users/one?user_id=$user_id\">$first_names $last_name</a> ($email)"
     lappend user_id_list $user_id
 }
 
-
 if { [llength $user_id_list] == 0 } {
-    ns_write "None found."
+    append doc_body "None found."
 } 
 
-ns_write "</ul>
+append doc_body "</ul>
 "
 
 if { [llength $user_id_list] != 0 } {
-    ns_write "<a href=\"spam-2.tcl?show_users_p=t&[export_url_vars user_id_list]\">Spam these users</a>"
+    append doc_body "<a href=\"spam-2?show_users_p=t&[export_url_vars user_id_list]\">Spam these users</a>"
 }
 
-ns_write "[ad_admin_footer]
+append doc_body "[ad_admin_footer]
 "
+
+db_release_unused_handles
+
+doc_return 200 text/html $doc_body

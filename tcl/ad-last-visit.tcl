@@ -1,14 +1,9 @@
-# $Id: ad-last-visit.tcl,v 3.1 2000/02/26 12:55:27 jsalz Exp $
-# ad-last-visit.tcl, created February 13, 1999 by philg@mit.edu
-#  (this is actually a modification of code from cognet.mit.edu,
-#   built in summer 1998)
-
-# substantially modified on March 26, 1999 to include session tracking
-
-# teadams - substantially modified on Sept 17 to not overcount non-cookied browsers
-
-# we adhere to the algorithm specified in 
-#   http://photo.net/wtr/thebook/community.html 
+ad_library {
+    @author Philip Greenspun (philg@arsdigita.com)
+    @author Tracy Adams (teadams@arsdigita.com)
+    @date February 13, 1999
+    @cvs-id ad-last-visit.tcl,v 3.2.2.5 2000/08/02 19:50:56 bquinn Exp
+}
 
 # this file also handles the maintenance of last_visit and
 # second_to_last_visit cookies
@@ -16,22 +11,25 @@
 # each of these is a number returned by [ns_time] (seconds
 # since January 1, 1970).
 
-proc ad_update_last_visits {db user_id} {
-    ns_db dml $db "update users
-set last_visit = sysdate,
-    second_to_last_visit = last_visit,
-    n_sessions = n_sessions + 1
-where user_id = $user_id"
+proc ad_update_last_visits {user_id} {
+    db_dml update_last_visits {
+	update users
+	set last_visit = sysdate,
+	second_to_last_visit = last_visit,
+	n_sessions = n_sessions + 1
+	where user_id = :user_id
+    }
 }
 
-
-proc ad_update_last_visit {db user_id} {
-    ns_db dml $db "update users
-set last_visit = sysdate
-where user_id = $user_id"
+proc ad_update_last_visit {user_id} {
+    db_dml update_last_visit {
+	update users
+	set last_visit = sysdate
+	where user_id = :user_id
+    }
 }
 
-proc ad_update_session_statistics {db repeat_p {session_p 1}} {
+proc ad_update_session_statistics {repeat_p {session_p 1}} {
     if $repeat_p {
 	if $session_p {
 	    set update_sql "update session_statistics 
@@ -50,26 +48,26 @@ where entry_date = trunc(sysdate)"
 	   # know that this is a repeat visit.
 
 	    set update_sql "update session_statistics 
-set repeat_count = repeat_count + 1 
-where entry_date = trunc(sysdate)"
+			    set repeat_count = repeat_count + 1 
+			    where entry_date = trunc(sysdate)"
+
 	    set insert_sql "insert into session_statistics (session_count, repeat_count, entry_date)
-	    values
-	    (0,1,trunc(sysdate))"
-       }
-   } else {
+			    values
+			    (0,1,trunc(sysdate))"
+	}
+    } else {
 	# not a repeat user
 	set update_sql "update session_statistics 
-set session_count = session_count + 1
-where entry_date = trunc(sysdate)"
+			set session_count = session_count + 1
+			where entry_date = trunc(sysdate)"
         set insert_sql "insert into session_statistics (session_count, repeat_count, entry_date)
-values
-(1,0,trunc(sysdate))"
+			values
+			(1,0,trunc(sysdate))"
     }
-    ns_db dml $db $update_sql
-    set n_rows [ns_ora resultrows $db]
-    if { $n_rows == 0 } {
+    db_dml last_visit_update $update_sql
+    if { [db_resultrows] == 0 } {
 	# there wasn't already a row there
-	ns_db dml $db $insert_sql
+	db_dml last_visit_insert $insert_sql
     }
 }
 
@@ -127,15 +125,13 @@ proc ad_maintain_last_visits_internal {} {
 	if { [ns_time] - $last_visit > $expiration_seconds } {
 	    # let's consider this a new visit and update the cookie
 	    ns_set put [ns_conn outputheaders]  "Set-Cookie" "last_visit=[ns_time]; path=/; expires=Fri, 01-Jan-2010 01:00:00 GMT"
-	    ns_set put [ns_conn outputheaders]  "Set-Cookie" "second_to_last_visit=$last_visit; path=/; expires=Fri, 01-Jan-2010 01:00:00 GMT"
-	    set db [ns_db gethandle -timeout -1]
+	    ns_set put [ns_conn outputheaders]  "Set-Cookie" "second_to_last_visit=$last_visit; path=/; expires=Fri, 01-Jan-2010 01:00:00 GMT"	  
 	    # let's record this as a repeat user
-	    ad_update_session_statistics $db 1
+	    ad_update_session_statistics 1
 	    # if the person is a registered user, update the users table
 	    if { $user_id != 0 } {
-		ad_update_last_visits $db $user_id
+		ad_update_last_visits $user_id
 	    }
-	    ns_db releasehandle $db
 	}
     } else {
 
@@ -157,36 +153,32 @@ proc ad_maintain_last_visits_internal {} {
 	    return
 	}
 
-	set db [ns_db gethandle -timeout -1]
-	if { [empty_string_p $db] } {
-	    return
-	}
-
 	# let's record this as a new visit
 	if {$user_id == 0} {
-	    ad_update_session_statistics $db 0
+	    ad_update_session_statistics 0
 	} else {
 	    # this is the very rare case where the user
 	    # has a user_id cooke, but not a last visit cookie
 	    # if the person is a user, update the last_visit dates in the database
-	    ad_update_session_statistics $db 1
-	    ad_update_last_visits $db $user_id
+	    ad_update_session_statistics 1
+	    ad_update_last_visits $user_id
 	    # we use an explicit to_char here in case someone is
 	    # using an older version of our Oracle driver (which had
 	    # a bug in pulling through large numbers)
 	    # the hard part of this is turning what Oracle gives us 
 	    # (local time) into universal time (GMT)
-	    set second_to_last_visit_ut [database_to_tcl_string $db "select to_char(86400*(second_to_last_visit - to_date('1970-01-01') - ([ad_current_hours_difference_from_GMT]/24)),'9999999999')
-from users
-where user_id = $user_id"]
+	    set time_diff [ad_current_hours_difference_from_GMT]
+	    set second_to_last_visit_ut [db_string second_to_last_visit_ut {
+		select to_char(86400*(second_to_last_visit - to_date('1970-01-01') - (:time_diff/24)),'9999999999')
+		from users
+		where user_id = :user_id
+	    }]
             if ![empty_string_p $second_to_last_visit_ut] {
 		ns_set put [ns_conn outputheaders] "Set-Cookie" "second_to_last_visit=$second_to_last_visit_ut; path=/; expires=Fri, 01-Jan-2010 01:00:00 GMT"
 	    }
 	}
-	ns_db releasehandle $db
     }
 }
-
 
 # Same as above, but updates last_visit more frequently, in order to support
 # querying for who's online.
@@ -226,31 +218,20 @@ proc ad_maintain_last_visits_for_whosonline_internal {} {
 
 	    ns_set put [ns_conn outputheaders]  "Set-Cookie" "last_visit=$now; path=/; expires=Fri, 01-Jan-2010 01:00:00 GMT"
 	    ns_set put [ns_conn outputheaders]  "Set-Cookie" "second_to_last_visit=$last_visit; path=/; expires=Fri, 01-Jan-2010 01:00:00 GMT"
-
-	    set db [ns_db gethandle -timeout -1]
-	    if { ![empty_string_p $db] } {
-		# let's record this as a repeat user
-		ad_update_session_statistics $db 1
-
-		# if the person is a registered user, update the users table
-		if {$user_id != 0} {
-		    ad_update_last_visits $db $user_id
-		}
-		
-		ns_db releasehandle $db
+	    # let's record this as a repeat user
+	    ad_update_session_statistics 1
+	    
+	    # if the person is a registered user, update the users table
+	    if {$user_id != 0} {
+		ad_update_last_visits $user_id
 	    }
 	} elseif { $now - $last_visit > $update_seconds } {
 	    # This counts as the same session; just update the last_visit
 	    # cookie and database field.
 	    ns_set put [ns_conn outputheaders]  "Set-Cookie" "last_visit=$now; path=/; expires=Fri, 01-Jan-2010 01:00:00 GMT"
-	    set db [ns_db gethandle -timeout -1]
-	    if { ![empty_string_p $db] } {
-		# if the person is a registered user, update the users table
-		if {$user_id != 0} {
-		    ad_update_last_visit $db $user_id
-		}
-		
-		ns_db releasehandle $db
+	    # if the person is a registered user, update the users table
+	    if {$user_id != 0} {
+		ad_update_last_visit $user_id
 	    }
 	}
 	# last visit was too recent to do anything about, don't do anything
@@ -265,10 +246,6 @@ proc ad_maintain_last_visits_for_whosonline_internal {} {
 	    # session
 	    ns_set put [ns_conn outputheaders]  "Set-Cookie" "last_visit=[ns_time]; path=/; expires=Fri, 01-Jan-2010 01:00:00 GMT"
 	    set ad_last_visit_ip_cache($ip_address) [ns_time]
-	    set db [ns_db gethandle -timeout -1]
-	    if { [empty_string_p $db] } {
-		return
-	    }
 	} else {
 	    # We've already seen this IP.
 	    # Since there is no last visit cookie, we
@@ -277,29 +254,31 @@ proc ad_maintain_last_visits_for_whosonline_internal {} {
 
 	    return
 	}
-
+    
 	if {$user_id == 0} {
-	    ad_update_session_statistics $db 0
+	    ad_update_session_statistics 0
 	} else {
 	    # this is the rare case where the user has a user_id
 	    # cookie, but not a last visit cookie
-	    ad_update_session_statistics $db 1
+	    ad_update_session_statistics 1
 	    # let's record this as a new user
 	    # if the person is a user, update the last_visit dates in the database
-	    ad_update_last_visits $db $user_id
+	    ad_update_last_visits $user_id
 	    # we use an explicit to_char here in case someone is
 	    # using an older version of our Oracle driver (which had
 	    # a bug in pulling through large numbers)
 	    # the hard part of this is turning what Oracle gives us 
 	    # (local time) into universal time (GMT)
-	    set second_to_last_visit_ut [database_to_tcl_string $db "select to_char(86400*(second_to_last_visit - to_date('1970-01-01') - ([ad_current_hours_difference_from_GMT]/24)),'9999999999')
-from users
-where user_id = $user_id"]
+	    set time_diff [ad_current_hours_difference_from_GMT]
+	    set second_to_last_visit_ut [db_string second_to_last_visit_ut {
+		select to_char(86400*(second_to_last_visit - to_date('1970-01-01') - (:time_diff/24)),'9999999999')
+		from users
+		where user_id = :user_id
+	    }]	     
             if ![empty_string_p $second_to_last_visit_ut] {
 		ns_set put [ns_conn outputheaders] "Set-Cookie" "second_to_last_visit=$second_to_last_visit_ut; path=/; expires=Fri, 01-Jan-2010 01:00:00 GMT"
 	    }
 	}
-	ns_db releasehandle $db
     }
 }
 
@@ -319,5 +298,4 @@ proc ad_maintain_last_visits {conn args why} {
     }
     return filter_ok
 }
-
 

@@ -4,16 +4,7 @@
 --
 -- mbryzek@arsdigita.com, January 2000
 --
--- $Id: intranet.sql,v 3.4.2.6 2000/03/17 21:58:51 ron Exp $
-
-
--- What states can our customers be in?
-create sequence im_customer_status_seq start with 1;
-create table im_customer_status (
-	customer_status_id	integer primary key,
-	customer_status		varchar(100) not null unique,
-	display_order		integer default 1
-);
+-- intranet.sql,v 3.58.2.1 2000/07/26 17:24:03 mbryzek Exp
 
 
 -- we store simple information about a customer
@@ -21,31 +12,28 @@ create table im_customer_status (
 create table im_customers (
 	group_id 	 	primary key references user_groups,
 	deleted_p        	char(1) default('f') constraint im_customers_deleted_p check(deleted_p in ('t','f')),
-	customer_status_id      references im_customer_status,
+	customer_status_id      references categories,
+	customer_type_id	references categories,
 	primary_contact_id	references address_book,
 	note			varchar(4000),
+	referral_source		varchar(1000),
+	annual_revenue		references categories,
 	-- keep track of when status is changed
         status_modification_date date,
 	-- and what the old status was
-        old_customer_status_id  references im_customer_status
+        old_customer_status_id  references categories,
+	-- is this a customer we can bill?
+	billable_p		char(1) default('f')
+                                constraint im_customers_billable_p_ck check(billable_p in ('t','f')),
+	-- What kind of site does the customer want?
+	site_concept   		varchar(100),
+	-- Who in Client Services is the manager?
+	manager   		integer references users,
+  	-- How much do they pay us?
+	contract_value   	integer,
+  	-- When does the project start?
+	start_date   		date
 );
-
--- What are the different project types that we support
-create sequence im_project_types_id_seq start with 1;
-create table im_project_types (
-	project_type_id		integer primary key,
-	project_type		varchar(200) not null unique,
-	display_order		integer default 1
-);
-
--- In what states can our projects be?
-create sequence im_project_status_id_seq start with 1;
-create table im_project_status (
-	project_status_id	integer primary key,
-	project_status		varchar(100) not null unique,
-	display_order		integer default 1
-);
-
 
 -- What types of urls do we ask for when creating a new project
 -- and in what order?
@@ -80,8 +68,8 @@ create table im_projects (
     group_id                primary key references user_groups,
     parent_id               integer references im_projects,
     customer_id             integer references im_customers,
-    project_type_id	    not null references im_project_types,
-    project_status_id	    not null references im_project_status,
+    project_type_id	    not null references categories,
+    project_status_id	    not null references categories,
     description             varchar(4000),
     -- fees
     fee_setup               number(12,2),
@@ -96,28 +84,30 @@ create table im_projects (
     project_lead_id	    integer references users,
     -- supervisor (team leader)
     supervisor_id	    integer references users,
-    ticket_project_id 	    references ticket_projects
+    ticket_project_id 	    references ticket_projects,
+    requires_report_p       char(1) default('t')
+		            constraint im_project_requires_report_p check (requires_report_p in ('t','f'))
 );
 create index im_project_parent_id_idx on im_projects(parent_id);
-
 
 -- we store all urls and their types
 create table im_project_url_map (
 	group_id		not null references im_projects,
 	url_type_id		not null references im_url_types,
 	url			varchar(250),
-	-- each project can have exactly one type of url
+	-- each project can have exactly one type of each type
+	-- of url
 	primary key (group_id, url_type_id)
 );
 -- We need to create an index on url_type_id if we ever want to ask
 -- "What are all the staff servers?"
 create index im_proj_url_url_proj_idx on im_project_url_map(url_type_id, group_id);
 
-
 -- What states can our customers be in?
 
 create table im_employee_info (
 	user_id             integer primary key references users,
+	-- this column in out of date; now current_job_id is typically used (eveander)
 	job_title           varchar(200),
 	job_description     varchar(4000),
 	-- is this person an official team leader?
@@ -129,6 +119,8 @@ create table im_employee_info (
 	-- percent of a full time person this person works
 	percentage	    integer,
 	supervisor_id       integer references users,
+	-- add a constraint to prevent a user from being her own supervisor
+	constraint iei_user_supervise_self_ck check (supervisor_id is null or user_id <> supervisor_id),
 	group_manages       varchar(100),
 	current_information   varchar(4000),
 	--- send email if their information is too old
@@ -157,6 +149,8 @@ create table im_employee_info (
 	resume_html_p		 char(1) 
 		constraint im_employee_resume_html_p_con check (resume_html_p in ('t','f')),
 	start_date          date,
+	-- when did the employee leave the company
+	termination_date          date,
 	received_offer_letter_p	char(1) 
 		constraint im_employee_recv_offer_con check(received_offer_letter_p in ('t','f')),
 	returned_offer_letter_p char(1) 
@@ -173,7 +167,20 @@ create table im_employee_info (
         featured_employee_blurb clob,
         featured_employee_blurb_html_p char(1) default 'f'
               constraint featured_emp_blurb_html_p_con check (featured_employee_blurb_html_p in ('t','f')),
-	referred_by 		references users
+	referred_by 		references users,
+	referred_by_recording_user  	integer references users,
+	experience_id			integer references categories,
+	source_id			integer references categories,		
+	original_job_id			integer references categories,
+	current_job_id			integer references categories,
+	qualification_id		integer references categories,
+	department_id			integer references categories,
+	termination_reason		varchar(4000),
+	voluntary_termination_p		char(1) default 'f'
+              constraint iei_voluntary_termination_p_ck check (voluntary_termination_p in ('t','f')),
+        recruiting_blurb clob,
+        recruiting_blurb_html_p char(1) default 'f'
+              constraint recruiting_blurb_html_p_con check (recruiting_blurb_html_p in ('t','f'))
 );
 
 create index im_employee_info_referred_idx on im_employee_info(referred_by);
@@ -194,10 +201,11 @@ create table im_hours (
 );
 create index im_hours_table_id_idx on im_hours(on_which_table, on_what_id);
 
+create sequence im_facilities_seq start with 1;
 
--- Offices - linked to user groups
-create table im_offices (
-	group_id               	integer primary key references user_groups,
+create table im_facilities (
+        facility_id             integer primary key,
+        facility_name           varchar(80) not null,
 	phone                   varchar(50),
 	fax                     varchar(50),
 	address_line1           varchar(80),
@@ -205,13 +213,51 @@ create table im_offices (
 	address_city            varchar(80),
 	address_state           varchar(80),
 	address_postal_code     varchar(80),
-	address_country_code    char(2) references country_codes(iso),
+	address_country_code    char(2) 
+                                constraint if_address_country_code_fk references country_codes(iso),
 	contact_person_id       integer references users,
 	landlord                varchar(4000),
 	--- who supplies the security service, the code for
 	--- the door, etc.
 	security                varchar(4000),
 	note                    varchar(4000)
+);
+
+
+-- Offices - linked to user groups
+create table im_offices (
+	group_id	integer 
+                        constraint im_offices_group_id_pk primary key
+                        constraint im_offices_group_id_fk references user_groups,
+        facility_id 	integer
+                    	constraint im_offices_facility_id references im_facilities
+                    	constraint im_offices_facility_id_nn not null,
+	--- is this office and contact information public?
+	public_p		char(1) default 'f'
+	                        constraint im_offices_public_p_ck check(public_p in ('t','f'))
+);
+
+
+-- a very simple way to add links to a particular office.
+-- e.g. Here are the documents for the Boston office
+create sequence im_office_links_seq start with 1;
+create table im_office_links (
+	link_id			integer
+ 				constraint iol_group_id_pk primary key,
+	-- which office
+	group_id		integer 
+ 				constraint iol_group_id_nn not null 
+ 				constraint iol_group_id_fk references im_offices,
+	-- which user posted this link
+	user_id			integer 
+ 				constraint iol_users_id_nn not null 
+ 				constraint iol_users_id_fk references users,
+	url			varchar(300) 
+ 				constraint iol_url_nn not null,
+	link_title		varchar(100) 
+ 				constraint iol_link_title_nn not null,
+	active_p		char(1) default('t') 
+ 				constraint iol_active_p_ck check (active_p in ('t','f'))
 );
 
 
@@ -249,8 +295,22 @@ show errors
 
 create table im_start_blocks (
 	start_block   date not null primary key,
+	-- We might want to tag a larger unit
+	-- For example, if start_block is the first
+	-- Sunday of a week, those tagged with
+	-- start_of_larger_unit_p might tag
+	-- the first Sunday of a month
+	start_of_larger_unit_p	char(1) default 'f'  check (start_of_larger_unit_p in ('t','f')),
 	note          varchar(4000)
 );
+
+-- use im_emploee_percentage_time to find out when and how
+-- much an employee worked or will work.
+
+-- to figure out "how many people worked in the block
+-- starting with start_block, take the sum the percentage_time/100
+-- of the rows with that start_block
+
 
 create table im_employee_percentage_time ( 
 	start_block 	date references im_start_blocks, 
@@ -260,6 +320,8 @@ create table im_employee_percentage_time (
 	primary key (start_block, user_id) 
 ); 
 
+-- need to quickly find percentage_time for a given start_block/user_id
+create unique index im_employee_perc_time_idx on im_employee_percentage_time (start_block, user_id, percentage_time);
 
 -- tracks the money coming into a contract over time
 
@@ -351,6 +413,10 @@ create table im_allocations (
 	-- If the start_blocks don't align, reports get very difficult.
 	start_block      date references im_start_blocks,
 	percentage_time	 integer not null,
+	--- is this allocation too small to track?
+	--- in that case, we will set percentage_time to 0
+	-- and mark too_small_to_give_percentage_p = "t"
+	too_small_to_give_percentage_p   char(1) default 'f' check (too_small_to_give_percentage_p in ('t','f')), 
 	note		 varchar(1000),
 	last_modified           date not null,
         last_modifying_user     not null references users,
@@ -497,33 +563,18 @@ END im_projects_stock_fee;
 show errors
 
 
-
-create sequence im_partner_types_seq start with 1;
-create table im_partner_types (
-	partner_type_id	        integer primary key,
-	partner_type		varchar(100) not null unique,
-	display_order		integer default 1
-);
-
--- In what states can our projects be?
-create sequence im_partner_status_id_seq start with 1;
-create table im_partner_status (
-	partner_status_id	integer primary key,
-	partner_status		varchar(100) not null unique,
-	display_order		integer default 1
-);
-
-
 -- we store simple information about a customer
 -- all contact information goes in the address book
 create table im_partners (
 	group_id 	 	primary key references user_groups,
 	deleted_p        	char(1) default('f') constraint im_partners_deleted_p check(deleted_p in ('t','f')),
-	partner_type_id         references im_partner_types,
-	partner_status_id       references im_partner_status,
-	primary_contact_id	references users,
+	partner_type_id         references categories,
+	partner_status_id       references categories,
+	primary_contact_id	references address_book,
 	url			varchar(200),
-	note			varchar(4000)
+	note			varchar(4000),
+	referral_source		varchar(1000),
+	annual_revenue		references categories
 );
 
 
@@ -576,27 +627,19 @@ create table im_procedure_events (
 -- Now the pls definitions
 
 -- Some helper functions to make our queries easier to read
-create or replace function im_proj_type_from_id ( v_project_type_id IN integer )
+
+create or replace function im_category_from_id ( v_category_id IN integer )
 return varchar
 IS 
-  v_project_type    im_project_types.project_type%TYPE;
+  v_category    categories.category%TYPE;
 BEGIN
-  select project_type into v_project_type from im_project_types where project_type_id=v_project_type_id;
-  return v_project_type;
+  select category into v_category from categories where category_id = v_category_id;
+  return v_category;
 END;
 /
 show errors;
 
-create or replace function im_proj_status_from_id ( v_project_status_id IN integer )
-return varchar
-IS 
-  v_project_status    im_project_status.project_status%TYPE;
-BEGIN
-  select project_status into v_project_status from im_project_status where project_status_id=v_project_status_id;
-  return v_project_status;
-END;
-/
-show errors;
+
 
 create or replace function im_proj_url_from_type ( v_group_id IN integer, v_url_type IN varchar )
 return varchar
@@ -617,19 +660,6 @@ END;
 show errors;
 
 
-create or replace function im_cust_status_from_id ( v_customer_status_id IN integer )
-return varchar
-IS 
-  v_customer_status    im_customer_status.customer_status%TYPE;
-BEGIN
-  select customer_status into v_customer_status from im_customer_status where customer_status_id=v_customer_status_id;
-  return v_customer_status;
-END;
-/
-show errors;
-
-
-
 --- Define an administration group for the Intranet
 
 begin
@@ -647,9 +677,9 @@ begin
  if n_system_group_types = 0 then 
    -- create the group type
    insert into user_group_types
-     (group_type, pretty_name, pretty_plural, approval_policy, default_new_member_policy, group_module_administration)
+     (group_type, pretty_name, pretty_plural, approval_policy, default_new_member_policy, group_module_administration, user_group_types_id)
    values
-     ('intranet', 'Intranet', 'Intranet Groups', 'closed', 'closed', 'full');
+     ('intranet', 'Intranet', 'Intranet Groups', 'closed', 'closed', 'none', user_group_types_seq.nextval);
 
  end if;
 end;
@@ -658,7 +688,7 @@ end;
 
 -- stuff we need for the Org Chart
 -- Oracle will pop a cap in our bitch ass if do CONNECT BY queries 
--- on im_users without these indices
+-- on im_us<ers without these indices
 
 create index im_employee_info_idx1 on im_employee_info(user_id, supervisor_id);
 create index im_employee_info_idx2 on im_employee_info(supervisor_id, user_id);
@@ -693,7 +723,126 @@ BEGIN
    return v_exists_p;
 END im_supervises_p;
 /
+show errors
+
+-- returns 1 if the employee has logged his hours within the last 7 work days
+create or replace function im_delinquent_employee_p ( v_employee_id IN integer, v_report_date IN date, v_interval IN integer)
+RETURN integer
+IS
+  v_vacation_days integer;
+  v_total_days integer;
+  v_work_days integer;
+  v_employee_start_date date;
+  v_delinquent_employee_p integer;
+BEGIN
+
+  v_delinquent_employee_p := 0;
+
+  -- fetch the number of vacation days between (trunc(v_report_date) - v_interval) 
+  --   and (trunc(v_report_date)) 
+  SELECT nvl(sum(least(end_date,trunc(v_report_date)) - greatest(start_date,trunc(v_report_date)-v_interval) + 1),0)
+    INTO v_vacation_days
+    FROM user_vacations
+    where (start_date between trunc(v_report_date)-v_interval and trunc(v_report_date)
+           or end_date between trunc(v_report_date)-v_interval and trunc(v_report_date))
+    and user_id = v_employee_id;
+  v_work_days := v_interval - v_vacation_days;
+  v_total_days := v_interval + v_vacation_days;
+
+  -- while there are < v_interval valid work days, look for more valid work days
+  WHILE v_work_days < v_interval LOOP
+     -- fetch the number of vacation days between (trunc(v_report_date) - v_total_days) 
+     --   and (trunc(v_report_date)) 
+    SELECT nvl(sum(least(end_date,trunc(v_report_date)) - greatest(start_date,trunc(v_report_date)-v_total_days) + 1),0)
+      INTO v_vacation_days
+      FROM user_vacations
+      where (start_date between trunc(v_report_date)-v_total_days and trunc(v_report_date)
+             or end_date between trunc(v_report_date)-v_total_days and trunc(v_report_date))
+      and user_id = v_employee_id;
+    v_work_days := v_total_days - v_vacation_days;
+    v_total_days := v_interval + v_vacation_days;
+  END LOOP;
+
+  SELECT start_date 
+    INTO v_employee_start_date
+    from im_employee_info
+    where user_id = v_employee_id;
+
+  v_total_days := greatest(least(v_total_days,trunc(v_report_date)-v_employee_start_date+1),0);
+
+
+  select nvl(count(1),0)
+  into v_delinquent_employee_p
+  from users u
+  where user_id = v_employee_id
+  and exists (select 1 
+      from im_employee_percentage_time pt
+      where user_id = u.user_id
+      and start_block between trunc(sysdate)-7 and trunc(sysdate)
+      and percentage_time > 0)
+  and not exists (select 1 
+      from im_hours h
+      where user_id = u.user_id
+      and day between trunc(v_report_date)-v_total_days and trunc(v_report_date)
+      and day > v_employee_start_date)
+  and trunc(v_report_date) - v_total_days - 7  > v_employee_start_date;
+
+  return v_delinquent_employee_p;
+
+END;
+/
 show errors;
+
+
+-- we need an easy way to get all information about
+-- active employees
+create or replace view im_employees_active as
+select u.*, 
+       info.JOB_TITLE,
+       info.JOB_DESCRIPTION,
+       info.TEAM_LEADER_P,
+       info.PROJECT_LEAD_P,
+       info.PERCENTAGE,
+       info.SUPERVISOR_ID,
+       info.GROUP_MANAGES,
+       info.CURRENT_INFORMATION,
+       info.LAST_MODIFIED,
+       info.SS_NUMBER,
+       info.SALARY,
+       info.SALARY_PERIOD,
+       info.DEPENDANT_P,
+       info.ONLY_JOB_P,
+       info.MARRIED_P,
+       info.DEPENDANTS,
+       info.HEAD_OF_HOUSEHOLD_P,
+       info.BIRTHDATE,
+       info.SKILLS,
+       info.FIRST_EXPERIENCE,
+       info.YEARS_EXPERIENCE,
+       info.EDUCATIONAL_HISTORY,
+       info.LAST_DEGREE_COMPLETED,
+       info.RESUME,
+       info.RESUME_HTML_P,
+       info.START_DATE,
+       info.RECEIVED_OFFER_LETTER_P,
+       info.RETURNED_OFFER_LETTER_P,
+       info.SIGNED_CONFIDENTIALITY_P,
+       info.MOST_RECENT_REVIEW,
+       info.MOST_RECENT_REVIEW_IN_FOLDER_P,
+       info.FEATURED_EMPLOYEE_APPROVED_P,
+       info.FEATURED_EMPLOYEE_BLURB_HTML_P,
+       info.FEATURED_EMPLOYEE_BLURB,
+       info.REFERRED_BY
+from users_active u, 
+     (select * 
+        from im_employee_info info 
+       where sysdate>info.start_date
+         and sysdate > info.start_date
+         and sysdate <= nvl(info.termination_date, sysdate)
+         and ad_group_member_p(info.user_id, (select group_id from user_groups where short_name='employee')) = 't'
+     ) info
+where info.user_id=u.user_id;
+
 
 
 create or replace function im_project_ticket_project_id ( v_group_id IN integer )
@@ -713,4 +862,290 @@ show errors;
 
 -- Populate all the status/type/url with the different types of 
 -- data we are collecting
+
+create or replace function im_first_letter_default_to_a ( p_string IN varchar ) 
+RETURN char
+IS
+   v_initial   char(1);
+BEGIN
+
+   v_initial := substr(upper(p_string),1,1);
+
+   IF v_initial IN ('A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z') THEN
+	RETURN v_initial;
+   END IF;
+  
+   RETURN 'A';
+
+END;
+/
+show errors;
+	
+
+
+-- at given stages in the employee cycle, certain checkpoints
+-- must be competed. For example, the employee should receive
+-- an offer letter and it should be put in the employee folder
+
+create sequence im_employee_checkpoint_id_seq;
+
+create table im_employee_checkpoints (
+	checkpoint_id	integer primary key,
+	stage		varchar(100) not null,
+	checkpoint	varchar(500) not null
+);
+
+create table im_emp_checkpoint_checkoffs (
+	checkpoint_id	integer references im_employee_checkpoints,
+	checkee		integer not null references users,
+	checker		integer not null references users,
+	check_date	date,
+	check_note	varchar(1000),
+	primary key (checkee, checkpoint_id)
+);
+
+
+-- We need to keep track of in influx of employees.
+-- For example, what employees have received offer letters?
+
+create table im_employee_pipeline (
+	user_id			integer primary key references users,
+	state_id		integer not null references categories,
+	office_id		integer references user_groups,
+	team_id		 	integer references user_groups,
+	prior_experience_id 	integer references categories,
+	experience_id		integer references categories,
+	source_id		integer references categories,		
+	job_id			integer references categories,
+	projected_start_date	date,
+	-- the person at the company in charge of reeling them in.
+	recruiter_user_id	integer references users,	
+	referred_by		integer references users,
+	note			varchar(4000),
+	probability_to_start	integer
+);
+
+
+-- keep track of the last_modified on im_employee_info
+create or replace trigger im_employee_info_last_modif_tr
+before update on im_employee_info
+for each row
+DECLARE
+BEGIN
+     :new.last_modified := sysdate;
+END;
+/
+show errors;
+
+
+-- views on intranet categories to make queries cleaner
+create or replace view im_project_status as 
+select category_id as project_status_id, category as project_status
+from categories 
+where category_type = 'Intranet Project Status';
+
+create or replace view im_project_types as
+select category_id as project_type_id, category as project_type
+from categories
+where category_type = 'Intranet Project Type';
+
+create or replace view im_customer_status as 
+select category_id as customer_status_id, category as customer_status
+from categories 
+where category_type = 'Intranet Customer Status';
+
+create or replace view im_customer_types as
+select category_id as customer_type_id, category as customer_type
+from categories
+where category_type = 'Intranet Customer Type';
+
+create or replace view im_partner_status as 
+select category_id as partner_status_id, category as partner_status
+from categories 
+where category_type = 'Intranet Partner Status';
+
+create or replace view im_partner_types as
+select category_id as partner_type_id, category as partner_type
+from categories
+where category_type = 'Intranet Partner Type';
+
+create or replace view im_prior_experiences as
+select category_id as experience_id, category as experience
+from categories
+where category_type = 'Intranet Prior Experience';
+
+create or replace view im_hiring_sources as
+select category_id as source_id, category as source
+from categories
+where category_type = 'Intranet Hiring Source';
+
+create or replace view im_job_titles as
+select category_id as job_title_id, category as job_title
+from categories
+where category_type = 'Intranet Job Title';
+
+create or replace view im_departments as
+select category_id as department_id, category as department
+from categories
+where category_type = 'Intranet Department';
+
+create or replace view im_qualification_processes as
+select category_id as qualification_id, category as qualification
+from categories
+where category_type = 'Intranet Qualification Process';
+
+create or replace view im_annual_revenue as
+select category_id as revenue_id, category as revenue
+from categories
+where category_type = 'Intranet Annual Revenue';
+
+create or replace view im_employee_pipeline_states as
+select category_id as state_id, category as state
+from categories
+where category_type = 'Intranet Employee Pipeline State';
+
+
+
+
+create or replace function im_cust_status_from_id ( v_status_id IN integer )
+return varchar
+IS 
+  v_status    im_customer_status.customer_status%TYPE;
+BEGIN
+  select customer_status into v_status from im_customer_status where customer_status_id = v_status_id;
+  return v_status;
+END;
+/
+show errors;
+
+-- teadams
+create sequence intranet_task_board_id_seq;
+
+create table intranet_task_board (
+	task_id		integer primary key,	
+	task_name	varchar(200) not null,
+	body		clob not null,
+	next_steps	varchar(1000),
+	post_date	date,
+	-- person who posted the job
+	poster_id	integer references users(user_id),
+	-- how long this task should take
+	time_id		integer references categories(category_id),
+	-- if this visible right now; when the task is filled
+	-- removed the job
+	active_p	char(1) check (active_p in ('t','f')),
+	-- post this task until a given date
+	expiration_date	date
+);
+
+
+-- INTRANET STATUS REPORT 
+
+-- all employee status report preferences go in here
+create table im_status_report_preferences (
+       user_id			integer not null
+       constraint isrp_user_id_fk references im_employee_info,
+       -- a space separated list of sections not to be displayed
+       --   in the customized status report
+       killed_sections		varchar(4000),
+       -- a space separated list of offices not to be displayed
+       --   in the customized status report
+       killed_offices		varchar(4000),
+       -- whether to display just my projects or everyone's in 
+       --   the customized status report
+       my_projects_only_p	char(1) default ('f')
+       constraint isrp_my_projects_only_p_ck check (my_projects_only_p in ('t','f')), 
+       -- whether to display just my customer groups or everyone's in
+       --   the customized status report      
+       my_customers_only_p      char(1)	default ('f')
+       constraint isrp_my_customers_only_p_ck check (my_customers_only_p in ('t','f'))
+);
+
+
+-- a mapping of status report sections and Tcl procedures
+create table im_status_report_sections (
+       sr_section_id	integer 
+         constraint isrs_sr_section_id_pk primary key,
+       -- the name of the status report section
+       sr_section_name  varchar(50) not null
+         constraint isrs_sr_section_name_un unique,
+       -- the name of the Tcl procedure used to generate
+       --   the status report section 
+       sr_function_name varchar(50) not null
+         constraint isrs_sr_function_name_un unique
+);
+
+create sequence sr_section_id_sequence start with 1;
+
+-- insert sections into im_status_report_sections
+insert into im_status_report_sections 
+(sr_section_id, sr_section_name, sr_function_name) 
+values 
+(sr_section_id_sequence.nextval, 'Population Count', 'im_num_employees');
+
+insert into im_status_report_sections 
+(sr_section_id, sr_section_name, sr_function_name) 
+values 
+(sr_section_id_sequence.nextval, 'New Employees', 'im_recent_employees');
+
+insert into im_status_report_sections 
+(sr_section_id, sr_section_name, sr_function_name) 
+values 
+(sr_section_id_sequence.nextval, 'Future Employees', 'im_future_employees');
+
+insert into im_status_report_sections 
+(sr_section_id, sr_section_name, sr_function_name) 
+values 
+(sr_section_id_sequence.nextval, 'Employees Out of the Office', 'im_absent_employees');
+
+insert into im_status_report_sections 
+(sr_section_id, sr_section_name, sr_function_name) 
+values 
+(sr_section_id_sequence.nextval, 'Future Office Excursions', 'im_future_absent_employees');
+
+insert into im_status_report_sections 
+(sr_section_id, sr_section_name, sr_function_name) 
+values 
+(sr_section_id_sequence.nextval, 'Delinquent Employees', 'im_delinquent_employees');
+
+insert into im_status_report_sections 
+(sr_section_id, sr_section_name, sr_function_name) 
+values 
+(sr_section_id_sequence.nextval, 'Downloads', 'im_downloads_status');
+
+insert into im_status_report_sections 
+(sr_section_id, sr_section_name, sr_function_name) 
+values 
+(sr_section_id_sequence.nextval, 'Customers: Bids Out', 'im_customers_bids_out');
+
+insert into im_status_report_sections 
+(sr_section_id, sr_section_name, sr_function_name) 
+values 
+(sr_section_id_sequence.nextval, 'Customers: Status Changes', 'im_customers_status_change');
+
+insert into im_status_report_sections 
+(sr_section_id, sr_section_name, sr_function_name) 
+values 
+(sr_section_id_sequence.nextval, 'New Registrants', 'im_new_registrants');
+
+insert into im_status_report_sections
+(sr_section_id, sr_section_name, sr_function_name)
+values
+(sr_section_id_sequence.nextval, 'Progress Reports', 'im_project_reports');
+
+commit;
+
+-- END INTRANET STATUS REPORTS
+
+
+
 @intranet-population.sql
+
+
+
+
+
+
+
+
+

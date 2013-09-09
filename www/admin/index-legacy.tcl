@@ -1,11 +1,13 @@
-# $Id: index-legacy.tcl,v 3.0 2000/02/06 02:44:49 ron Exp $
-# /admin/index.tcl
+ad_page_contract {
 
-ReturnHeaders
+    The legacy admin index page.
+    @cvs-id index-legacy.tcl,v 3.3.2.4 2000/09/22 01:34:15 kevin Exp
+} { }
 
-set db [ns_db gethandle]
+set page_content ""
 
-ns_write "[ad_admin_header "Admin Home for [ad_system_name]"]
+
+append page_content "[ad_admin_header "Admin Home for [ad_system_name]"]
 
 <h2>[ad_system_name] Administration</h2>
 
@@ -13,13 +15,13 @@ ns_write "[ad_admin_header "Admin Home for [ad_system_name]"]
 
 <hr>
 
-Help:  see <a href=\"/doc/webmasters.html\">the webmasters guide</a>
+Help:  see <a href=\"/doc/webmasters\">the webmasters guide</a>
 
 <ul>
 
 <li>New stuff site-wide:  
-<a href=\"new-stuff.tcl\">all</a> |
-<a href=\"new-stuff.tcl?only_from_new_users_p=t\">only from new users</a>
+<a href=\"new-stuff\">all</a> |
+<a href=\"new-stuff?only_from_new_users_p=t\">only from new users</a>
 
 <p>
 
@@ -28,16 +30,15 @@ Help:  see <a href=\"/doc/webmasters.html\">the webmasters guide</a>
 "
 
 if [mv_enabled_p] {
-    ns_write "<P>
+    append page_content "<P>
 <li><a href=\"member-value/\">member value</a> (money)
 "
 }
 
-ns_write "
+append page_content "
 <p>
 
 <li><a href=\"ug/\">user groups</a>
-
 
 <p>
 
@@ -75,6 +76,8 @@ ns_write "
 
 <li><A HREF=\"faq/\">FAQ</A>
 
+<li><A HREF=\"survsimp/\">surveys</A>
+
 <p>
 
 <li><a href=\"intranet/\">intranet</A>
@@ -93,19 +96,16 @@ ns_write "
 <li><a href=\"static/\">static content</a>
 <li><a href=\"comments/\">comments on static pages</a>
 
-
-
-<li><a href=\"click/report.tcl\">clickthroughs</a>
+<li><a href=\"click/report\">clickthroughs</a>
 
 <li><a href=\"referer/\">referrals</a>
 
 <p>
 <li><a href=\"documentation\">documentation</a>
 <li><a href=\"monitoring\">monitoring</a>
-<li><a href=\"ticket/index.tcl\">project and bug tracking</a> (/ticket system)
+<li><a href=\"ticket/index\">project and bug tracking</a> (/ticket system)
 
 </ul>
-
 
 <h3>Heavy Duty Maintenance</h3>
 
@@ -115,7 +115,7 @@ with extreme caution.
 <ul>
 <li><a href=\"content-sections/\">content sections</a>
 <li><a href=\"categories/\">categories</a>
-<li><a href=\"curriculum/element-list.tcl\">curriculum</a>
+<li><a href=\"curriculum/element-list\">curriculum</a>
 <li><a href=\"portals/\">portals</a>
 
 <p>
@@ -136,6 +136,4 @@ with extreme caution.
 [ad_admin_footer]
 "
 
-
-
-
+doc_return  200 text/html $page_content

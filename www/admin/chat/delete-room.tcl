@@ -1,27 +1,26 @@
-# $Id: delete-room.tcl,v 3.0 2000/02/06 03:10:09 ron Exp $
-# File:     admin/chat/delete-room.tcl
-# Date:     1998-11-18
-# Contact:  aure@arsdigita.com,philg@mit.edu, ahmeds@arsdigita.com
-# Purpose:  deletes a chat room
+# /www/admin/chat/delete-room.tcl
+ad_page_contract {
 
-set_the_usual_form_variables
+    Display confirmation before delete a chat room.
+    @param chat_room_id chat room identifier
+    @author Aure (aure@arsdigita.com)
+    @author Philip Greenspun (philg@mit.edu)
+    @author ahmeds@arsdigita.com
+    @creation-date 11/18/1998
+    @cvs-id delete-room.tcl,v 3.2.2.6 2000/09/22 01:34:29 kevin Exp
 
-# chat_room_id 
+} {
+    {chat_room_id:naturalnum,notnull}
+}
 
-set db [ns_db gethandle]
+set selection [db_0or1row admin_chat_delete_room_get_pretty_name {select pretty_name from chat_rooms where chat_room_id = :chat_room_id}]
 
-set selection [ns_db 0or1row $db "select * from chat_rooms where chat_room_id = $chat_room_id"]
-
-if { $selection == "" } {
+if { $selection == 0 } {
     ad_return_error "Not Found" "Could not find chat_room $chat_room_id"
     return
 }
 
-set_variables_after_query
-
-ReturnHeaders 
-
-ns_write "[ad_admin_header "Confirm deletion of $pretty_name"]
+set page_content "[ad_admin_header "Confirm deletion of $pretty_name"]
 
 <h2>Confirm deletion of $pretty_name</h2>
 
@@ -30,17 +29,19 @@ ns_write "[ad_admin_header "Confirm deletion of $pretty_name"]
 <hr>
 
 Are you sure that you want to delete $pretty_name (and its 
-[database_to_tcl_string $db "select count(*) from chat_msgs where chat_room_id = $chat_room_id"] messages)?
+[db_string admin_chat_delete_room_count_msgs {select count(*) from chat_msgs where chat_room_id = :chat_room_id}] messages)?
 
 <p>
 
 <center>
-<form method=GET action=\"delete-room-2.tcl\">
+<form method=GET action=\"delete-room-2\">
 [export_form_vars chat_room_id]
 <input type=submit value=\"Yes, I'm sure\">
 </form>
 </center>
 
-
 [ad_admin_footer]
 "
+
+
+doc_return  200 text/html $page_content

@@ -1,20 +1,30 @@
-# $Id: user-identification.tcl,v 3.0.4.1 2000/04/28 15:08:41 carsten Exp $
-set_the_usual_form_variables
-# user_identification_id
+# user-identification.tcl
 
-set db [ns_db gethandle]
-set selection [ns_db 1row $db "select * from ec_user_identification where user_identification_id=$user_identification_id"]
-set_variables_after_query
+ad_page_contract {
+    @param user_identification_id
+    @author
+    @creation-date
+    @cvs-id user-identification.tcl,v 3.3.2.5 2000/09/22 01:34:54 kevin Exp
+} {
+    user_identification_id
+}
+# 
+
+
+
+
+db_1row get_user_id_info "select * from ec_user_identification where user_identification_id=:user_identification_id"
+
 
 if { ![empty_string_p $user_id] } {
     ad_returnredirect "/admin/users/one.tcl?user_id=$user_id"
     return
 }
 
-ReturnHeaders
+
 
 set page_title "Unregistered User"
-ns_write "[ad_admin_header $page_title]
+append doc_body "[ad_admin_header $page_title]
 <h2>$page_title</h2>
 
 [ad_admin_context_bar [list "../index.tcl" "Ecommerce"] [list "index.tcl" "Customer Service Administration"] $page_title]
@@ -41,12 +51,12 @@ ns_write "[ad_admin_header $page_title]
 <td>$postal_code
 "
 
-set location [ec_location_based_on_zip_code $db $postal_code]
+set location [ec_location_based_on_zip_code $postal_code]
 if { ![empty_string_p $location] } {
-    ns_write " ($location)"
+    append doc_body " ($location)"
 }
 
-ns_write "</td>
+append doc_body "</td>
 </tr>
 <tr>
 <td align=right><b>Other Identifying Info</td>
@@ -60,11 +70,11 @@ ns_write "</td>
 
 <h3>Customer Service Issues</h3>
 
-[ec_all_cs_issues_by_one_user $db "" $user_identification_id]
+[ec_all_cs_issues_by_one_user "" $user_identification_id]
 
 <h3>Edit User Info</h3>
 
-<form method=post action=user-identification-edit.tcl>
+<form method=post action=user-identification-edit>
 [export_form_vars user_identification_id]
 <table>
 <tr>
@@ -92,23 +102,19 @@ ns_write "</td>
 
 <h3>Try to match this user up with a registered user</h3>
 <ul>
-<form method=post action=user-identification-match.tcl>
+<form method=post action=user-identification-match>
 [export_form_vars user_identification_id]
 "
 
 set positively_identified_p 0
 
-
 # if their email address was filled in, see if they're a registered user
 if { ![empty_string_p $email] } {
-    set selection [ns_db 0or1row $db "select first_names as d_first_names, last_name as d_last_name, user_id as d_user_id from users where upper(email) = '[string toupper $email]'"]
-    
-    if { ![empty_string_p $selection] } {
-	set_variables_after_query
-    }
+    set email [string toupper $email]
+    set row_exists_p [db_0or1row get_row_exists_name "select first_names as d_first_names, last_name as d_last_name, user_id as d_user_id from users where upper(email) = :email"]
     
     if { [info exists d_user_id] } {
-	ns_write "<li>This is a registered user of the system: <a target=user_window href=\"/admin/users/one.tcl?user_id=$d_user_id\">$d_first_names $d_last_name</a>.
+	append doc_body "<li>This is a registered user of the system: <a target=user_window href=\"/admin/users/one?user_id=$d_user_id\">$d_first_names $d_last_name</a>.
 	[export_form_vars d_user_id]"
 	set positively_identified_p 1
     }
@@ -120,56 +126,59 @@ if { !$positively_identified_p } {
     
     if { ![empty_string_p $first_names] || ![empty_string_p $last_name] } {
 	if { ![empty_string_p $first_names] && ![empty_string_p $last_name] } {
-	    set selection [ns_db select $db "select user_id as d_user_id from users where upper(first_names)='[DoubleApos [string toupper $first_names]]' and upper(last_name)='[DoubleApos [string toupper $last_name]]'"]
-	    while { [ns_db getrow $db $selection] } {
-		set_variables_after_query
-		ns_write "<li>This may be the registered user <a target=user_window href=\"/admin/users/one.tcl?user_id=$d_user_id\">$first_names $last_name</a> (check here <input type=checkbox name=d_user_id value=$d_user_id> if this is correct).\n"
+	    set sql "select user_id as d_user_id from users where upper(first_names)=upper(:first_names) and upper(last_name)=upper(:last_name)"
+	    db_foreach get_user_ids_like_person $sql {
+		
+		append doc_body "<li>This may be the registered user <a target=user_window href=\"/admin/users/one?user_id=$d_user_id\">$first_names $last_name</a> (check here <input type=checkbox name=d_user_id value=$d_user_id> if this is correct).\n"
 	    }
 	} elseif { ![empty_string_p $first_names] } {
-	    set selection [ns_db select $db "select user_id as d_user_id, last_name as d_last_name from users where upper(first_names)='[DoubleApos [string toupper $first_names]]'"]
+	    set sql "select user_id as d_user_id, last_name as d_last_name from users where upper(first_names)=upper(:first_names)"
 	    
-	    while { [ns_db getrow $db $selection] } {
-		set_variables_after_query
-		ns_write "<li>This may be the registered user <a target=user_window href=\"/admin/users/one.tcl?user_id=$d_user_id\">$first_names $d_last_name</a> (check here <input type=checkbox name=d_user_id value=$d_user_id> if this is correct).\n"
+	    db_foreach get_d_user_ids_by_first_name $sql {
+		
+		append doc_body "<li>This may be the registered user <a target=user_window href=\"/admin/users/one?user_id=$d_user_id\">$first_names $d_last_name</a> (check here <input type=checkbox name=d_user_id value=$d_user_id> if this is correct).\n"
 	    }
 	    
 	} elseif { ![empty_string_p $last_name] } {
-	    set selection [ns_db select $db "select user_id as d_user_id, first_names as d_first_names from users where upper(last_name)='[DoubleApos [string toupper $last_name]]'"]
+	    set sql "select user_id as d_user_id, first_names as d_first_names from users where upper(last_name)=upper(:last_name)"
 	    
-	    while { [ns_db getrow $db $selection] } {
-		set_variables_after_query
-		ns_write "<li>This may be the registered user <a target=user_window href=\"/admin/users/one.tcl?user_id=$d_user_id\">$d_first_names $last_name</a> (check here <input type=checkbox name=d_user_id value=$d_user_id> if this is correct).\n"
+	    db_foreach get_maybe_last_name $sql {
+		
+		append doc_body "<li>This may be the registered user <a target=user_window href=\"/admin/users/one?user_id=$d_user_id\">$d_first_names $last_name</a> (check here <input type=checkbox name=d_user_id value=$d_user_id> if this is correct).\n"
 	    }
 	    
 	}
     }
     # see if they have a gift certificate that a registered user has claimed.
     # email_template_id 5 is the automatic email sent to gift certificate recipients.
-    # it's kind of convoluted, but so is this whole user_identification thing
-    set selection [ns_db select $db "select g.user_id as d_user_id, u.first_names as d_first_names, u.last_name as d_last_name
+    
+    set sql "select g.user_id as d_user_id, u.first_names as d_first_names, u.last_name as d_last_name
     from ec_automatic_email_log l, ec_gift_certificates g, users u
     where g.user_id=u.user_id
     and l.gift_certificate_id=g.gift_certificate_id
     and l.user_identification_id=$user_identification_id
     and l.email_template_id=5
-    group by g.user_id, u.first_names, u.last_name"]
+    group by g.user_id, u.first_names, u.last_name"
 
-    while { [ns_db getrow $db $selection] } {
-	set_variables_after_query
-	ns_write "<li>This may be the registered user <a target=user_window href=\"/admin/users/one.tcl?user_id=$d_user_id\">$d_first_names $d_last_name</a> who claimed a gift certificate sent to $email (check here <input type=checkbox name=d_user_id value=$d_user_id> if this is correct).\n"
+    db_foreach get_user_id_by_gcs $sql {
+	
+	append doc_body "<li>This may be the registered user <a target=user_window href=\"/admin/users/one?user_id=$d_user_id\">$d_first_names $d_last_name</a> who claimed a gift certificate sent to $email (check here <input type=checkbox name=d_user_id value=$d_user_id> if this is correct).\n"
     }
 }
 
 if { [info exists d_user_id] } {
-    ns_write "<p>
+    append doc_body "<p>
     <center>
     <input type=submit value=\"Confirm they are the same person\">
     </center>"
 } else {
-    ns_write "No matches found."
+    append doc_body "No matches found."
 }
 
-ns_write "</form>
+append doc_body "</form>
 </ul>
 [ad_admin_footer]
 "
+
+
+doc_return  200 text/html $doc_body

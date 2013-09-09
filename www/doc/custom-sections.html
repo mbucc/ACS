@@ -7,21 +7,21 @@
 <body bgcolor=#ffffff text=#000000>
 <h2>Custom Sections</h2>
 
-part of the <a href="index.html">ArsDigita Community System</a>
+part of the <a href="index">ArsDigita Community System</a>
 by <a href="mailto:tarik@arsdigita.com">Tarik Alatovic </a> and  <a href="mailto:ahmeds@mit.edu/">Sarah Ahmed</a> 
 
 <hr>
 
 <ul>
-<li>Group Administrator directory:  <a href="/groups/admin/$group_name/custom-sections/index.tcl?section_id=$section_id">/groups/admin/$group_name/custom-sections/index.tcl?section_id=$section_id</a>
-<li>data model: <a href="/doc/sql/display-sql.tcl?url=/doc/sql/community-core.sql">/doc/sql/community-core.sql</a>
-<li>procedures:  in tcl/user-groups-defs.tcl
+<li>Group Administrator directory:  <a href="/groups/admin/$group_name/custom-sections/index?section_id=$section_id">/groups/admin/$group_name/custom-sections/index?section_id=$section_id</a>
+<li>data model: <a href="/doc/sql/display-sql?url=/community-core.sql&package_key=acs-core">/packages/acs-core/community-core.sql</a>
+<li>procedures:  in tcl/user-groups-defs
 
 </ul>
 
 <h3>The Big Picture</h3>
 
-This module allows the group administrator to create and manage different custom sections of the site. Custom sections serve like url directories. so if group administrator of group travel at photo.net defines custom section sweden (e.g. photo.net/travel/sweden), he will be able to upload files for this section (see content_files table) in order to display the file photo.net/groups/travel/sweeden/stockholm.html. 
+This module allows the group administrator to create and manage different custom sections of the site. Custom sections serve like url directories. so if group administrator of group travel at photo.net defines custom section sweden (e.g. photo.net/travel/sweden), he will be able to upload files for this section (see content_files table) in order to display the file photo.net/groups/travel/sweeden/stockholm. 
 
 <p>
 
@@ -29,7 +29,7 @@ At this stage, we only support creation and administration of custom sections at
 
 <h3>The Medium-Sized Picture</h3>
 
-The system consists of one table. The content_files table holds information about different files that belong to a custom section. The files can be of type text/binary. Note that each content file references a custom section stored in the content_sections table. The documentation on content sections can be found in <a href="/doc/content-sections.html">/doc/content-sections.html</a>
+The system consists of one table. The content_files table holds information about different files that belong to a custom section. The files can be of type text/binary. Note that each content file references a custom section stored in the content_sections table. The documentation on content sections can be found in <a href="/doc/content-sections">/doc/content-sections</a>
 
 <blockquote>
 <pre>
@@ -56,7 +56,7 @@ create table content_files (
 <P>
 
 <h3>Legal Transactions</h3>
-From the group administration pages at <a href="/groups/admin/$group_name/custom-sections/index.tcl?section_id=$section_id">/groups/admin/$group_name/custom-sections/index.tcl?section_id=$section_id</a>, the group administrator can
+From the group administration pages at <a href="/groups/admin/$group_name/custom-sections/index?section_id=$section_id">/groups/admin/$group_name/custom-sections/index?section_id=$section_id</a>, the group administrator can
 
 <p> 
 <ul>

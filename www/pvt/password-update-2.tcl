@@ -1,26 +1,31 @@
-# $Id: password-update-2.tcl,v 3.0.4.1 2000/04/28 15:11:24 carsten Exp $
-set_the_usual_form_variables
+ad_page_contract {
+    Updates the users password if 
+    <ul>
+    <li>password_old is correct
+    <li>password_1 matches password_2
 
-# password_1, password_2, password_old
-
-set user_id [ad_verify_and_get_user_id]
-
-if { $user_id == 0 } {
-    ad_returnredirect /register/
-    return
+    @cvs-id password-update-2.tcl,v 3.1.8.6 2000/09/22 01:39:10 kevin Exp
+} {
+    password_1
+    password_2
+    password_old
 }
 
-set db [ns_db gethandle]
+
+set user_id [ad_verify_and_get_user_id]
+ad_maybe_redirect_for_registration
+
+set bind_vars [ad_tcl_vars_to_ns_set user_id password_1]
 
 set exception_text ""
 set exception_count 0
 
 set password_query "select password 
 from users 
-where user_id = $user_id
+where user_id = :user_id
 and user_state = 'authorized'"
 
-set dbpasswd [database_to_tcl_string_or_null $db $password_query]
+set dbpasswd [db_string  pvt_password_update_user_password $password_query -bind $bind_vars -default ""]
 
 if {[ad_parameter EncryptPasswordsInDBP "" 0]} {
     if {[ns_crypt $password_old [ad_crypt_salt]] == $dbpasswd}  {
@@ -66,19 +71,20 @@ if { $exception_count > 0 } {
 
 # If we are encrypting passwords in the database, do it now.
 if {[ad_parameter EncryptPasswordsInDBP "" 0]} { 
-    set QQpassword_1 [philg_quote_double_quotes [ns_crypt $password_1 [ad_crypt_salt]]]
+    set new_password [ns_crypt $password_1 [ad_crypt_salt]]
+    ns_set update $bind_vars password_1 $new_password
 }
 
-set sql "update users set password = '$QQpassword_1' where user_id = $user_id"
+set sql "update users set password = :password_1 where user_id = :user_id"
 
-if [catch { ns_db dml $db $sql } errmsg] {
+if [catch { db_dml pvt_password_user_password_update $sql -bind $bind_vars } errmsg] {
     ad_return_error "Ouch!"  "The database choked on our update:
 <blockquote>
 $errmsg
 </blockquote>
 "
 } else {
-    ns_return 200 text/html "[ad_header "Password Updated"]
+    doc_return  200 text/html "[ad_header "Password Updated"]
 
 <h2>Password Updated</h2>
 

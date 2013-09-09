@@ -1,46 +1,49 @@
-# $Id: neighbor-defs.tcl,v 3.0.4.2 2000/04/28 15:08:18 carsten Exp $
-# 
-# neighbor-defs.tcl 
-#
-# by philg@mit.edu in 1996 or so
-# 
-# modified November 1, 1999 by philg to interface to 
-# ad-user-contributions-summary.tcl system
+# /tcl/neighbor-defs.tcl
 
-# definitions for the neighbor-to-neighbor service (like a discussion
-# forum but more layers of structure and intended for long-term
-# storage of stories )
+ad_library {
 
-util_report_library_entry
+    Procedure definitions for the neighbor-to-neighbor module.
 
-proc neighbor_db_gethandle {} {
-    if [catch {set db [ns_db gethandle]} errmsg] {
-    # something wrong with the NaviServer/db connection
-	ad_notify_host_administrator "please fix [ns_conn location]" "please fix the neighbor to neighbor service
-at [ns_conn location] so that it can connect to the database
+    @creation-date 1 Jan 1996
+    @author Philip Greenspun (philg@mit.edu)
+    @cvs-id $id$
 
-Thanks,
-
-The Ghost of the NaviServer
-
-Note:  this message was automatically sent by a Tcl CATCH statement running
-inside [ns_conn location]
-"
-        return ""
-    } else {
-        return $db
-    }
 }
 
-proc neighbor_header {title} {
+# removed neighbor_db_gethandle since explicit handle management is no longer necessary
+
+ad_proc neighbor_header {
+    title
+} {
+    Returns a header for the neighbor-to-neighbor pages.
+
+    @author Philip Greenspun (philg@mit.edu)
+    @param title the title of the page to put into the header.
+    @return the page header.
+    @error if the title is not specified.
+
+} {
     return [ad_header $title]
 }
 
-proc neighbor_footer {{signatory ""}} {
+ad_proc neighbor_footer {
+    {signatory ""}
+} {
+    Returns a footer for the neighbor-to-neighbor pages.
+
+    @author Philip Greenspun (philg@mit.edu)
+    @param signatory the person signing the page.
+    @return the page footer.
+} {
     return [ad_footer $signatory]
 }
 
-proc neighbor_system_name {} {
+ad_proc neighbor_system_name {} {
+    Returns the name specified for the neighbor-to-neighbor system in the parameters files.
+
+    @author Philip Greenspun (philg@mit.edu)
+    @return the custom name for the neighbor-to-neighbor system if it is set, or the system name with "Neighbor to Neighbor" appended to it.
+} {
     set custom_name [ad_parameter SystemName neighbor]
     if ![empty_string_p $custom_name] {
 	return $custom_name 
@@ -49,23 +52,43 @@ proc neighbor_system_name {} {
     }
 }
 
-proc neighbor_uplink {} {
+ad_proc neighbor_uplink {} {
+    Returns a link to the top of the neighbor-to-neighbor system.
+
+    @author Philip Greenspun (philg@mit.edu)
+    @return an HTML link to the top of the neighbor-to-neighbor system.
+} {
     if [ad_parameter OnlyOnePrimaryCategoryP neighbor 0] {
 	return [ad_site_home_link]
     } else {
-	return "<a href=\"index.tcl\">[neighbor_system_name]</a>"
+	return "<a href=\"index\">[neighbor_system_name]</a>"
     }
 }
 
-proc neighbor_home_link {category_id primary_category} {
+ad_proc neighbor_home_link {
+    category_id primary_category
+} {
+    Returns a link to the primary category in the neighbor-to-neighbor system.
+
+    @author Philip Greenspun (philg@mit.edu)
+    @param category_id id of the primary category.
+    @param primary_category name of the primary category.
+    @return an HTML link to the primary category.
+    @error if category_id or primary_category is not specified.
+} {
     if { [ad_parameter OnlyOnePrimaryCategoryP neighbor 0] && ![empty_string_p [ad_parameter DefaultPrimaryCategory neighbor]] } {
-	return "<a href=\"opc.tcl?category_id=$category_id\">[neighbor_system_name]</a>"
+	return "<a href=\"opc?category_id=$category_id\">[neighbor_system_name]</a>"
     } else {
-	return "<a href=\"opc.tcl?category_id=$category_id\">$primary_category</a>"
+	return "<a href=\"opc?category_id=$category_id\">$primary_category</a>"
     }
 }
 
-proc neighbor_system_owner {} {
+ad_proc neighbor_system_owner {} {
+    Returns the name of the owner of the neighbor-to-neighbor system.
+
+    @author Philip Greenspun (philg@mit.edu)
+    @return the name of the neighbor-to-neighbor system owner if specified, or the name of the site owner.
+} {
     set custom_owner [ad_parameter SystemOwner neighbor]
     if ![empty_string_p $custom_owner] {
 	return $custom_owner
@@ -76,24 +99,30 @@ proc neighbor_system_owner {} {
 
 # for opc.tcl
 
-proc_doc neighbor_summary_items_approved {category_id} "returns list of Tcl lists; each list contains a subcategory ID, subcategory_1 name and a count; we expect this to be memoized" {
-    set db [ns_db gethandle subquery]
-    set selection [ns_db select $db "select sc.subcategory_id, sc.subcategory_1, count(n.neighbor_to_neighbor_id) as count
+ad_proc neighbor_summary_items_approved {
+    category_id
+} { 
+    Returns list of Tcl lists of approved postings.  Each list contains a subcategory ID, subcategory_1 name and a count.  We expect this to be memoized.
+
+    @author Philip Greenspun (philg@mit.edu)
+    @param category_id id of the category to list.
+    @return a list of lists with subcategory id, subcategory_1 name and count.
+    @error if category_id is not specified.
+} {
+    set sql_query "select sc.subcategory_id, sc.subcategory_1, count(n.neighbor_to_neighbor_id) as count
 from neighbor_to_neighbor n, n_to_n_subcategories sc
-where n.category_id  = $category_id
+where n.category_id  = :category_id
 and n.subcategory_id = sc.subcategory_id
 and n.approved_p='t'
 group by sc.subcategory_id, sc.subcategory_1
-order by sc.subcategory_1"]
+order by sc.subcategory_1"
     set return_list [list]
-    while {[ns_db getrow $db $selection]} {
-	set_variables_after_query
+    db_foreach neighbor_approved_items $sql_query {
 	lappend return_list [list $subcategory_id $subcategory_1 $count]
     }
-    ns_db releasehandle $db
+    db_release_unused_handles
     return $return_list
 }
-
 
 ##################################################################
 #
@@ -105,26 +134,35 @@ if { ![info exists ad_new_stuff_module_list] || [util_search_list_of_lists $ad_n
     lappend ad_new_stuff_module_list [list [neighbor_system_name] neighbor_new_stuff]
 }
 
-proc neighbor_new_stuff {db since_when only_from_new_users_p purpose} {
+ad_proc neighbor_new_stuff {
+    since_when only_from_new_users_p purpose
+} {
+    Return a list of new items in the neighbor-to-neighbor system.
+
+    @author Philip Greenspun (philg@mit.edu)
+    @params since_when only show stuff posted after this date.
+    @params only_from_new_users_p only show stuff posted by new users.
+    @params purpose specifies whether the data returned will be used for web display, site admin, or e-mail summary, so it can be formatted properly.
+    @return a list (possibly HTML formatted) of new items posted in the neighbor-to-neighbor system.
+    @error if since_when, only_from_new_users_p, or purpose are not specified.
+} {
     if { $only_from_new_users_p == "t" } {
 	set users_table "users_new"
     } else {
 	set users_table "users"
     }
-    set query "select nn.neighbor_to_neighbor_id, nn.about, nn.title, ut.first_names, ut.last_name, ut.email
-from neighbor_to_neighbor nn, $users_table ut
-where posted > '$since_when'
+    set sql_query "select nn.neighbor_to_neighbor_id, nn.about, nn.title, ut.first_names, ut.last_name, ut.email
+from neighbor_to_neighbor nn, [db_quote_name $users_table] ut
+where posted > :since_when
 and nn.poster_user_id = ut.user_id
 order by posted desc"
     set result_items ""
-    set selection [ns_db select $db $query]
-    while { [ns_db getrow $db $selection] } {
-	set_variables_after_query
+    db_foreach neighbor_new_items $sql_query {
 	switch $purpose {
 	    web_display {
-		append result_items "<li><a href=\"/neighbor/view-one.tcl?[export_url_vars neighbor_to_neighbor_id]\">$about : $title</a> -- $first_names $last_name \n" }
+		append result_items "<li><a href=\"/neighbor/view-one?[export_url_vars neighbor_to_neighbor_id]\">$about : $title</a> -- $first_names $last_name \n" }
 	    site_admin { 
-		append result_items "<li><a href=\"/admin/neighbor/view-one.tcl?[export_url_vars neighbor_to_neighbor_id]\">$about : $title</a> -- $first_names $last_name ($email) \n"
+		append result_items "<li><a href=\"/admin/neighbor/view-one?[export_url_vars neighbor_to_neighbor_id]\">$about : $title</a> -- $first_names $last_name ($email) \n"
 	    }
 	    email_summary {
 		append result_items "A story about $about from $first_names $last_name titled 
@@ -135,6 +173,8 @@ order by posted desc"
             }
 	}
     }
+
+    db_release_unused_handles
     # we have the result_items or not
     if { $purpose == "email_summary" } {
 	return $result_items
@@ -144,7 +184,6 @@ order by posted desc"
 	return ""
     }
 }
-
 
 ##################################################################
 #
@@ -156,27 +195,38 @@ if { ![info exists ad_user_contributions_summary_proc_list] || [util_search_list
     lappend ad_user_contributions_summary_proc_list [list "Neighbor to Neighbor" neighbor_user_contributions 0]
 }
 
-proc_doc neighbor_user_contributions {db user_id purpose} {Returns list items, one for each posting} {
+ad_proc neighbor_user_contributions {
+    user_id purpose
+} {
+    Returns list items, one for each posting by a given user.
+    
+    @author Philip Greenspun (philg@mit.edu)
+    @params user_id the user id of the person whose posts you want to view.
+    @params purpose purpose of the request, so links can point to the user pages or the admin pages.
+    @return an HTML formatted list of postings, or an empty list if there are no postings.
+    @error is user_id or purpose are not specified.
+} {
+    set sql_query "select neighbor_to_neighbor_id, about, title, approved_p, to_char(posted,'Month dd, yyyy') as posted
+from neighbor_to_neighbor
+where poster_user_id = :user_id"
+
     if { $purpose == "site_admin" } {
 	set target_url "/admin/neighbor/view-one.tcl"
-	set restriction_clause ""
     } else {
 	set target_url "/neighbor/view-one.tcl"
-	set restriction_clause "\nand neighbor_to_neighbor.approved_p = 't'"
+	append sql_query "\nand neighbor_to_neighbor.approved_p = 't'"
     }
-    set selection [ns_db select $db "select neighbor_to_neighbor_id, about, title, approved_p, to_char(posted,'Month dd, yyyy') as posted
-from neighbor_to_neighbor
-where poster_user_id = $user_id $restriction_clause
-order by neighbor_to_neighbor_id"]
+    append sql_query "\norder by neighbor_to_neighbor_id"
 
     set neighbor_items ""
-    while {[ns_db getrow $db $selection]} {
-	set_variables_after_query
+    db_foreach neighbor_user_postings $sql_query {
 	append neighbor_items "<li>$posted: <A HREF=\"$target_url?[export_url_vars neighbor_to_neighbor_id]\">$about : $title</a>\n"
 	if { $approved_p == "f" } {
 	    append neighbor_items "<font color=red>unapproved</font>\n"
 	}
     }
+
+    db_release_unused_handles
     if [empty_string_p $neighbor_items] {
 	return [list]
     } else {
@@ -185,23 +235,4 @@ order by neighbor_to_neighbor_id"]
 }
 
 
-### legacy redirects
 
-ns_register_proc GET /classified/NtoNPostNewStage1 ad_returnredirect http://db.photo.net/neighbor/
-ns_register_proc POST /classified/NtoNPostNewStage2 ad_returnredirect http://db.photo.net/neighbor/
-ns_register_proc POST /classified/EnterUpdateNtoN ad_returnredirect http://db.photo.net/neighbor/
-ns_register_proc GET /classified/WelcomeToPhotoNetNeighbor_To_Neighbor ad_returnredirect http://db.photo.net/neighbor/
-ns_register_proc GET /classified/NtoN  ad_returnredirect http://db.photo.net/neighbor/
-ns_register_proc GET /classified/ViewNtoNByDate ad_returnredirect http://db.photo.net/neighbor/
-ns_register_proc GET /classified/ViewNtoNByAbout ad_returnredirect http://db.photo.net/neighbor/
-ns_register_proc GET /classified/ViewNtoNInOneCategory ad_returnredirect http://db.photo.net/neighbor/
-ns_register_proc POST /classified/ViewNtoNInOneCategory ad_returnredirect http://db.photo.net/neighbor/
-ns_register_proc GET /classified/ViewOneNtoN  ad_returnredirect http://db.photo.net/neighbor/
-ns_register_proc GET /classified/NtoNSearchForm  ad_returnredirect http://db.photo.net/neighbor/
-ns_register_proc POST /classified/ViewNtoNFullTextSearch  ad_returnredirect http://db.photo.net/neighbor/
-
-ns_register_proc POST /classified/ModifyNtoNFirstMenu  ad_returnredirect http://db.photo.net/neighbor/
-ns_register_proc GET /classified/ModifyNtoNChallenge ad_returnredirect http://db.photo.net/neighbor/
-ns_register_proc POST /classified/ModifyNtoNPostChallenge  ad_returnredirect http://db.photo.net/neighbor/
-
-util_report_successful_library_load

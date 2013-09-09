@@ -1,8 +1,14 @@
-# $Id: recommendations.tcl,v 3.0 2000/02/06 03:20:47 ron Exp $
+#  www/admin/ecommerce/products/recommendations.tcl
+ad_page_contract {
+  Product recomendations.
 
-ReturnHeaders
+  @author eveander@arsdigita.com
+  @creation-date Summer 1999
+  @cvs-id recommendations.tcl,v 3.1.6.2 2000/07/22 07:57:42 ron Exp
+} {
+}
 
-ns_write "[ad_admin_header "Product Recommendations"]
+doc_body_append "[ad_admin_header "Product Recommendations"]
 
 <h2>Product Recommendations</h2>
 
@@ -28,18 +34,7 @@ only want people in that user class to see a given recommendation.
 # For Audit tables
 set table_names_and_id_column [list ec_product_recommendations ec_product_recommend_audit product_id]
 
-set db [ns_db gethandle]
 
-set selection [ns_db select $db "
-select 
-  r.recommendation_id, r.the_category_name, r.the_subcategory_name, r.the_subsubcategory_name,
-  p.product_name, 
-  c.user_class_name
-from ec_recommendations_cats_view r, ec_products p, ec_user_classes c
-where r.active_p='t'
-and r.user_class_id = c.user_class_id(+)
-and r.product_id = p.product_id
-order by decode(the_category_name,NULL,0,1), upper(the_category_name), upper(the_subcategory_name), upper(the_subsubcategory_name)"]
 
 set last_category ""
 set last_subcategory ""
@@ -49,8 +44,16 @@ set subsubcat_ul_open_p 0
 
 set moby_string ""
 
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+db_foreach recommendations_select "
+select 
+  r.recommendation_id, r.the_category_name, r.the_subcategory_name, r.the_subsubcategory_name,
+  p.product_name, 
+  c.user_class_name
+from ec_recommendations_cats_view r, ec_products p, ec_user_classes c
+where r.active_p='t'
+and r.user_class_id = c.user_class_id(+)
+and r.product_id = p.product_id
+order by decode(the_category_name,NULL,0,1), upper(the_category_name), upper(the_subcategory_name), upper(the_subsubcategory_name)" {
     if { $the_category_name != $last_category } {
 	append moby_string "<h4>$the_category_name</h4>\n"
 	set last_category $the_category_name
@@ -80,7 +83,7 @@ while { [ns_db getrow $db $selection] } {
 	set last_subsubcategory $
 	set subsubcat_ul_open_p 1
     }
-    append moby_string "<li><a href=\"recommendation.tcl?[export_url_vars recommendation_id]\">$product_name</a> [ec_decode $user_class_name "" "" "($user_class_name)"]\n"
+    append moby_string "<li><a href=\"recommendation?[export_url_vars recommendation_id]\">$product_name</a> [ec_decode $user_class_name "" "" "($user_class_name)"]\n"
 }
 
 if $subsubcat_ul_open_p {
@@ -92,7 +95,7 @@ if $subcat_ul_open_p {
     set subcat_ul_open_p 0
 }
 
-ns_write "
+doc_body_append "
 
 $moby_string
 
@@ -100,7 +103,7 @@ $moby_string
 
 <h3>Add a Recommendation</h3>
 
-<form method=post action=recommendation-add.tcl>
+<form method=post action=recommendation-add>
 
 <blockquote>
 Search for a product to recommend:
@@ -111,7 +114,7 @@ Search for a product to recommend:
 <h3>Options</h3>
 <ul>
 
-<li><a href=\"/admin/ecommerce/audit-tables.tcl?[export_url_vars table_names_and_id_column]\">Audit all Recommendations</a>
+<li><a href=\"/admin/ecommerce/audit-tables?[export_url_vars table_names_and_id_column]\">Audit all Recommendations</a>
 
 </ul>
 [ad_admin_footer]

@@ -1,0 +1,97 @@
+<html>
+<!--AD_DND-->
+<!--3.4.html,v 1.2.2.17 2000/08/29 09:12:12 ron Exp-->
+<head>
+<title>ACS 3.4 Release Notes</title>
+</head>
+<body bgcolor=white>
+
+<h2>ACS 3.4 Release Notes</h2>
+
+by Richard Li, Bryan Quinn, and Michael Yoon
+
+<hr>
+
+<h3>Supported Platforms</h3>
+
+Requires <a href=http://www.arsdigita.com/aol3/>AOLserver 3.0 + ad5</a>
+and the ArsDigita Oracle Driver v.2.2, available for download from <a
+href=http://www.arsdigita.com/download/>http://www.arsdigita.com/download/</a>.
+
+<h3>Notes</h3>
+
+<p>ACS 3.4 includes a significant set of improvements in the core
+architecture and basic APIs, including the Database Access API and the
+Publishing API.  These improvements include:
+
+<p>
+<ul>
+  <li><a href="/doc/core-arch-guide/database-access-api">Database
+      Access API</a> upgraded to support bind variables by default.
+      Note that this feature requires the latest <a
+      href="http://www.arsdigita.com/free-tools/oracle-driver">Oracle
+      driver</a>.
+
+  <li>Every module of the ACS has been upgraded to use the new
+      Database Access API with bind variables.  This has substantial security 
+      benefits as a user's form variables cannot result in a change to 
+      a SQL statement sent to the RDBMS. Moreover, the new Database
+      Access API lays the groundwork for SQL abstraction to assist the
+      efforts of the <a href="http://openacs.org">OpenACS Project</a>. 
+
+  <li>Every user-visible page now includes an <a
+      href="/doc/core-arch-guide/api-publication-urls#ad_page_contract"><code>ad_page_contract</code></a> call, which provides type checking, input filtering (HTML, integer, etc.), and Javadoc-style documentation.  
+      Every Tcl library file now uses the new Javadoc-style <a
+      href="/doc/core-arch-guide/api-publication-tcl-procs"><code>ad_library</code></a>.  Both of these functions are
+      described in the new <a
+      href="/doc/core-arch-guide/api-publication">API Publication</a> spec.
+
+  <li>Every user-viewable page now deprecates <code>ns_write</code> in favor of
+      returning all content with a single call to the command:
+      <blockquote>
+      <pre>
+      <a href="/api-doc/proc-view?proc=doc_return">doc_return</a> 200 text/html $result
+      </pre></blockquote>
+
+  <li>There are some small data model changes from ACS 3.3.  You must load 
+      <code><a href="/doc/sql/display-sql?url=/doc/sql/upgrade-3.3.1-3.4.sql">/doc/sql/upgrade-3.3.1-3.4.sql</a></code> if you are upgrading from ACS 3.3.1.
+
+</ul>
+
+<p>
+
+Other improvements to this version of the ACS include:
+
+<ul>
+
+<li>Improved support for server clustering with the addition of
+<tt><a href="/doc/proc-one?proc_name=ad%5fcanonical%5fserver%5fp">ad_canonical_server_p</a></tt>
+and a rewritten <tt><a
+href="/doc/proc-one?proc_name=ad%5fschedule%5fproc">ad_schedule_proc</a></tt>
+that schedules procedures to run only on the canonical server by default.
+
+<li>The latest set of patches for the <a href="/doc/templates/">Dynamic
+Publishing System</a>, including updates for the documentation.
+
+<li>Patches to support international character sets in the ACS.
+
+</ul>
+
+<p>Note that the new <a href="/doc/core-arch-guide/database-access-api">Database 
+Access API</a> requires each statement to have a logical name; this
+requirement simplifies the ultimate goal of SQL abstraction. However,
+any code written using the original Database Access API will not work with
+this upgrade.</b> 
+
+<p>Please report bugs or feature requests using the <a
+href="http://www.arsdigita.com/sdm/">Software Development Manager</a>
+(contributed by the <a href=http://openacs.org/>OpenACS Project</a>).
+To facilitate this, any page throwing an exception will offer
+the option of submitting a bug report to <a
+href=http://arsdigita.com/sdm/>http://arsdigita.com/sdm/</a>.  Please take
+advantage of this feature!
+
+<hr>
+<address>bquinn@arsdigita.com</address>
+</body>
+</html>

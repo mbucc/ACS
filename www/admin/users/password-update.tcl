@@ -1,14 +1,12 @@
-# $Id: password-update.tcl,v 3.1 2000/03/09 00:01:35 scott Exp $
-set_the_usual_form_variables
+ad_page_contract {
+    @cvs-id password-update.tcl,v 3.2.6.3.2.3 2000/09/22 01:36:19 kevin Exp
+} {
+    user_id:integer,notnull
+}
 
-# user_id
 
-set db [ns_db gethandle]
+db_1row user_info_by_id "select first_names, last_name, email, url from users where user_id = :user_id"
 
-set selection [ns_db 1row $db "select first_names, last_name, email, url from users where user_id=$user_id"]
-set_variables_after_query
-
-ns_db releasehandle $db
 
 append whole_page "
 [ad_admin_header "Update Password"]
@@ -19,7 +17,7 @@ for $first_names $last_name in [ad_site_home_link]
 
 <hr>
 
-<form method=POST action=\"password-update-2.tcl\">
+<form method=POST action=\"password-update-2\">
 
 <table>
 [export_form_vars user_id first_names last_name]
@@ -39,4 +37,7 @@ for $first_names $last_name in [ad_site_home_link]
 
 [ad_admin_footer]
 "
-ns_return 200 text/html $whole_page
+
+
+
+doc_return  200 text/html $whole_page

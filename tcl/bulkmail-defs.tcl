@@ -1,10 +1,16 @@
 #
-# bulkmail-defs.tcl
+# tcl/bulkmail-defs.tcl
 #
 
-# by gregh@arsdigita.com in October 1999
+ad_library {
+    
+  Definitions for bulkmail multithreaded mail sending module
+  
+    @author gregh@arsdigita.com 
+    @cvs-id bulkmail-defs.tcl,v 3.2.2.1 2000/07/21 08:17:52 hqm Exp
+}
 
-util_report_library_entry
+
 
 proc bulkmail_default_mailerthreads {} {
     return 50
@@ -56,7 +62,6 @@ proc bulkmail_max_mailerthreads {} {
 
 proc bulkmail_parse_host {host} {
     set parsed_host [split $host ":"]
-
 
     # If length is 1, we didn't have an attached port.  Default to 25.
     if { [llength $parsed_host] == 1 } {
@@ -228,4 +233,4 @@ if { [ad_parameter BulkmailActiveP bulkmail] == 1 } {
 
 }
 
-util_report_successful_library_load
+

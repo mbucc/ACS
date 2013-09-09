@@ -1,25 +1,38 @@
-# $Id: edit-3.tcl,v 3.1 2000/02/29 04:39:04 jsc Exp $
-set_the_usual_form_variables
+# /www/neighbor/edit-3.tcl
 
-# neighbor_to_neighbor_id,  edit_or_delete
+ad_page_contract {
+    If edit_or_delete is "Delete", moves the given entry into
+    an audit table and deletes it from the live entries.  Otherwise,
+    presents the user with a form to edit the entry.
 
-set db [neighbor_db_gethandle]
+    @author Philip Greenspun (philg@mit.edu)
+    @creation-date 1 January 1998
+    @cvs-id edit-3.tcl,v 3.3.2.4 2000/09/22 01:38:54 kevin Exp
+    @param neighbor_to_neighbor_id the entry to edit or delete
+    @param edit_or_delete "Delete" if the entry should be deleted, anything else if it should be edited
+} {
+    neighbor_to_neighbor_id:integer,notnull
+    edit_or_delete:optional
+}
 
-set user_id [ad_get_user_id]
+set user_id [ad_maybe_redirect_for_registration]
 
-set selection [ns_db 0or1row $db "select * from neighbor_to_neighbor where neighbor_to_neighbor_id = $neighbor_to_neighbor_id"]
-if { $selection == "" } {
-    ns_return 200 text/html [neighbor_error_page 1 "<li>Could not find a posting with an id of $neighbor_to_neighbor_id"]
+set sql_query "
+select * 
+from   neighbor_to_neighbor 
+where  neighbor_to_neighbor_id = :neighbor_to_neighbor_id"
+
+if {![db_0or1row select_entry $sql_query]} {
+    doc_return  200 text/html [neighbor_error_page 1 "<li>Could not find a posting with an id of $neighbor_to_neighbor_id"]
     return
 }
 
 # found the row
-set_variables_after_query
-
 
 if { $user_id != $poster_user_id } {
     # not the author
-    ns_return 200 text/html "[neighbor_header "Permission denied"]
+    db_release_unused_handles
+    doc_return 200 text/html "[neighbor_header "Permission denied"]
 
 <h2>Permission denied</h2>
 
@@ -27,7 +40,7 @@ to change posting $neighbor_to_neighbor_id ($about : $one_line)
 
 <P>
 
-in <a href=index.tcl>[neighbor_system_name]</a>
+in <a href=index>[neighbor_system_name]</a>
 
 <hr>
 
@@ -42,19 +55,27 @@ if { [info exists edit_or_delete] && $edit_or_delete == "Delete" } {
     # user explicitly requested a deletion
     # let's put the row into an audit table and delete it from
     # the live stuff
-    ns_db dml $db "begin transaction"
-    ns_db dml $db "insert into neighbor_to_neighbor_audit (neighbor_to_neighbor_id, audit_entry_time, domain, poster_user_id,  posted, primary_category, subcategory_1, about,	one_line, full_description_text)
-select neighbor_to_neighbor_id, sysdate, domain, poster_user_id, posted, primary_category, subcategory_1, about,	one_line, full_description_text
-from neighbor_to_neighbor
-where neighbor_to_neighbor_id = $neighbor_to_neighbor_id"
-    ns_db dml $db "delete from neighbor_to_neighbor where neighbor_to_neighbor_id = $neighbor_to_neighbor_id"
-    ns_db dml $db "end transaction"
-    ns_return 200 text/html "[neighbor_header "Posting Deleted"]
+    db_transaction {
+	db_dml add_audit "
+          insert into neighbor_to_neighbor_audit 
+                      (neighbor_to_neighbor_id, audit_entry_time, domain, 
+                       poster_user_id,  posted, primary_category, 
+                       subcategory_1, about, one_line, full_description_text)
+               select neighbor_to_neighbor_id, sysdate, domain, poster_user_id,
+                      posted, primary_category, subcategory_1, about, one_line,
+                      full_description_text
+                 from neighbor_to_neighbor
+                where neighbor_to_neighbor_id = :neighbor_to_neighbor_id"
+	db_dml delete_entry "
+          delete from neighbor_to_neighbor
+                where neighbor_to_neighbor_id = :neighbor_to_neighbor_id"
+    }
+    db_release_unused_handles
+    doc_return 200 text/html "[neighbor_header "Posting Deleted"]
 
 <h2>Posting Deleted</h2>
 
-from <a href=index.tcl>[neighbor_system_name]</a>
-
+from <a href=index>[neighbor_system_name]</a>
 
 <hr>
 
@@ -65,13 +86,14 @@ There is not much more to say.
 
 } else {
     # we're doing an edit
-    ns_return 200 text/html "[neighbor_header "Edit Posting $neighbor_to_neighbor_id"]
+    db_release_unused_handles
+    doc_return 200 text/html "[neighbor_header "Edit Posting $neighbor_to_neighbor_id"]
 
 <h2>Edit Posting $neighbor_to_neighbor_id</h2>
 
 <hr>
 
-<form action=edit-4.tcl method=GET>
+<form action=edit-4 method=GET>
 <input type=hidden name=neighbor_to_neighbor_id value=\"$neighbor_to_neighbor_id\">
 
 <h3>Summary</h3>
@@ -84,8 +106,6 @@ $about : <input type=text name=one_line_from_form size=60 value=\"[philg_quote_d
 $full_description_text
 </textarea>
 
-
-
 <center>
 <input type=submit value=\"Edit\">
 </center>
@@ -94,4 +114,3 @@ $full_description_text
 [neighbor_footer]
 "
 }
-

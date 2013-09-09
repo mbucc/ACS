@@ -1,29 +1,32 @@
-# $Id: place-ad-2.tcl,v 3.1.2.1 2000/04/28 15:10:32 carsten Exp $
+# /www/gc/place-ad-2.tcl
+
+ad_page_contract {
+    @cvs-id place-ad-2.tcl,v 3.4.2.5 2000/09/22 01:37:54 kevin Exp
+} {
+    domain_id:integer
+    primary_category
+}
+
 if {[ad_read_only_p]} {
     ad_return_read_only_maintenance_message
     return
 }
 
-set_the_usual_form_variables
-
-# domain_id, primary_category
-
 #check for the user cookie
 set user_id [ad_verify_and_get_user_id]
+ad_maybe_redirect_for_registration
 
-if { $user_id == 0 } {
-    ad_returnredirect "/register/index.tcl?return_url=[ns_urlencode "/gc/place-ad-2.tcl?[export_url_vars domain_id primary_category]"]"
-}
+# This selects domain, full_noun, domain_type, auction_p, geocentric_p,
+# wtb_common_p, primary_maintainer_id, maintainer_email
 
-set db [gc_db_gethandle]
+db_1row domain_info_get [gc_query_for_domain_info $domain_id "insert_form_fragments, to_char(sysdate + default_expiration_days,'YYYY-MM-DD') as default_expiration_date,"]
 
-set selection [ns_db 1row $db [gc_query_for_domain_info $domain_id "insert_form_fragments, to_char(sysdate + default_expiration_days,'YYYY-MM-DD') as default_expiration_date,"]]
-set_variables_after_query
+db_1row ad_info_get "
+select ad_placement_blurb 
+from   ad_categories 
+where  domain_id = :domain_id
+and    primary_category = :primary_category"
 
-set selection [ns_db 1row $db "select ad_placement_blurb from ad_categories 
-where domain_id = $domain_id
-and primary_category = '$QQprimary_category'"]
-set_variables_after_query
 
 append html "[gc_header "Place $primary_category Ad"]
 
@@ -41,7 +44,7 @@ if {[string length $ad_placement_blurb] > 0} {
 
 append html "
 
-<form method=post action=place-ad-3.tcl>
+<form method=post action=place-ad-3>
 [export_form_vars domain_id primary_category]
 <table>
 "
@@ -71,17 +74,15 @@ append html "$insert_form_fragments
 
 <tr>
 <th align=left>Expires</th>
-<td align=left>[philg_dateentrywidget expires $default_expiration_date]
+<td align=left>[ad_dateentrywidget expires $default_expiration_date]
 "
- 
+
 if {$geocentric_p == "t"} {
     append html "<tr><th align=left  valign=top>State</th>
-<td align=left>[state_widget $db "" "state"]</td></tr>
+<td align=left>[state_widget "" "state"]</td></tr>
 <tr><th align=left>Country</th>
-<td align=left>[country_widget $db "" "country"]</td></tr>"
+<td align=left>[country_widget "" "country"]</td></tr>"
 }
-
-
 
 if {$wtb_common_p == "t" && [string first "wanted_p" $insert_form_fragments] == -1 } {
     append html "<tr><th align=left>Do you want to buy or sell?</th>
@@ -91,12 +92,11 @@ if {$wtb_common_p == "t" && [string first "wanted_p" $insert_form_fragments] == 
 </td></tr>"
 }
 
-
 if {$auction_p == "t"} {
     append html "<tr><th align=left>Auction?</th>
 <td align=left>
-<input name=auction_p type=radio value=t CHECKED> Yes
-<input name=auction_p type=radio value=f> No
+<input name=ad_auction_p type=radio value=t CHECKED> Yes
+<input name=ad_auction_p type=radio value=f> No
  (this allows members to place bids) </td></tr>"
 }
 
@@ -114,4 +114,4 @@ append html "
 [gc_footer $maintainer_email]
 "
 
-ns_return 200 text/html $html
+doc_return  200 text/html $html

@@ -1,11 +1,10 @@
-# $Id: all-from-local.tcl,v 3.0 2000/02/06 03:14:40 ron Exp $
-set_the_usual_form_variables
+ad_page_contract {
+    @cvs-id all-from-local.tcl,v 3.3.2.3 2000/09/22 01:34:29 kevin Exp
+} {
+    local_url
+}
 
-#  local_url
-
-ReturnHeaders
-
-ns_write "[ad_admin_header "Clickthroughs from $local_url"]
+set html "[ad_admin_header "Clickthroughs from $local_url"]
 
 <h3>from 
 
@@ -14,8 +13,7 @@ $local_url
 </a>
 </h3>
 
-[ad_admin_context_bar [list "report.tcl" "Clickthroughs"] "All from Local URL"]
-
+[ad_admin_context_bar [list "report" "Clickthroughs"] "All from Local URL"]
 
 <hr>
 
@@ -23,25 +21,26 @@ $local_url
 
 "
 
-set db [ns_db gethandle]
 
-set selection [ns_db select $db "select entry_date, sum(click_count) as n_clicks
+
+set sql "select entry_date, sum(click_count) as n_clicks
 from clickthrough_log
-where local_url = '[DoubleApos $local_url]'
+where local_url = :local_url
 group by entry_date
-order by entry_date desc"]
+order by entry_date desc"
 
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
-    ns_write "<li>$entry_date : 
-<a href=\"one-local-one-day.tcl?local_url=[ns_urlencode $local_url]&query_date=[ns_urlencode $entry_date]\">
+db_foreach click_list $sql -bind [ad_tcl_vars_to_ns_set local_url] {
+    append html "<li>$entry_date : 
+<a href=\"one-local-one-day?local_url=[ns_urlencode $local_url]&query_date=[ns_urlencode $entry_date]\">
 $n_clicks</a>
 "
 }
 
-ns_write "
+append html "
 </ul>
 [ad_admin_footer]
 "
 
+db_release_unused_handles
+doc_return 200 text/html $html
 

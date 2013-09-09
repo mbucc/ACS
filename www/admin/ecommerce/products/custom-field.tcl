@@ -1,19 +1,24 @@
-# $Id: custom-field.tcl,v 3.0 2000/02/06 03:19:58 ron Exp $
-set_the_usual_form_variables
+# /www/admin/ecommerce/products/custom-field.tcl
+ad_page_contract {
 
-# field_identifier
+  @author Eve Andersson (eveander@arsdigita.com)
+  @creation-date Summer 1999
+  @cvs-id custom-field.tcl,v 3.1.6.3 2000/08/20 11:00:38 seb Exp
+} {
+  field_identifier:sql_identifier
+}
 
-set db [ns_db gethandle]
-set selection [ns_db 1row $db "select field_name, default_value, column_type, active_p from ec_custom_product_fields where field_identifier='$QQfield_identifier'"]
-set_variables_after_query
+db_1row custom_field_select "
+select field_name, default_value, column_type, active_p
+from ec_custom_product_fields
+where field_identifier=:field_identifier
+"
 
-ReturnHeaders
-
-ns_write "[ad_admin_header "$field_name"]
+doc_body_append "[ad_admin_header "$field_name"]
 
 <h2>$field_name</h2>
 
-[ad_admin_context_bar [list "../" "Ecommerce"] [list "index.tcl" "Products"] [list "custom-fields.tcl" "Custom Fields"] "One Custom Field"]
+[ad_admin_context_bar [list "../" "Ecommerce"] [list "index" "Products"] [list "custom-fields" "Custom Fields"] "One Custom Field"]
 
 <hr>
 
@@ -47,25 +52,25 @@ ns_write "[ad_admin_header "$field_name"]
 <p>
 
 <ul>
-<li><a href=\"custom-field-edit.tcl?field_identifier=$field_identifier\">Edit</a>
+<li><a href=\"custom-field-edit?field_identifier=$field_identifier\">Edit</a>
 "
 
 if { $active_p == "t" } {
-    ns_write "<li><a href=\"custom-field-status-change.tcl?field_identifier=$field_identifier&active_p=f\">Make Inactive</a>"
+    doc_body_append "<li><a href=\"custom-field-status-change?field_identifier=$field_identifier&active_p=f\">Make Inactive</a>"
 } else {
-    ns_write "<li><a href=\"custom-field-status-change.tcl?field_identifier=$field_identifier&active_p=t\">Reactivate</a>"
+    doc_body_append "<li><a href=\"custom-field-status-change?field_identifier=$field_identifier&active_p=t\">Reactivate</a>"
 }
 
 # Set audit variables
-# audit_name, id, id_column, return_url, audit_tables, main_tables
+# audit_name, audit_id, audit_id_column, return_url, audit_tables, main_tables
 set audit_name "$field_name"
-set id $field_identifier
-set id_column "field_identifier"
-set return_url "custom-field.tcl?[export_url_vars field_identifier]"
+set audit_id $field_identifier
+set audit_id_column "field_identifier"
+set return_url "custom-field?[export_url_vars field_identifier]"
 set audit_tables [list ec_custom_product_fields_audit]
 set main_tables [list ec_custom_product_fields]
 
-ns_write "<li><a href=\"/admin/ecommerce/audit.tcl?[export_url_vars audit_name id id_column return_url audit_tables main_tables]\">Audit Trail</a>
+doc_body_append "<li><a href=\"/admin/ecommerce/audit?[export_url_vars audit_name audit_id audit_id_column return_url audit_tables main_tables]\">Audit Trail</a>
 </ul>
 
 [ad_admin_footer]

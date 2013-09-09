@@ -1,37 +1,37 @@
-# $Id: posting-edit.tcl,v 3.0 2000/02/06 03:26:11 ron Exp $
+#admin/neighbor/posting-edit.tcl
+ad_page_contract {
+    I can't find anywhere that links here
+    @cvs_id posting-edit.tcl,v 3.2.2.4 2000/09/22 01:35:42 kevin Exp
+    @author unknown
+
+} {
+    comment_id
+}
+
+
+# posting-edit.tcl,v 3.2.2.4 2000/09/22 01:35:42 kevin Exp
 if {[ad_read_only_p]} {
     ad_return_read_only_maintenance_message
     return
 }
 
-set_form_variables
 
-# comment_id
 
-set db [ns_db gethandle]
-
-set selection [ns_db 0or1row $db "select comment_id, content, general_comments.html_p as comment_html_p, approved_p
+if {![db_0or1row "neighbor_comments_select" "select comment_id, content, general_comments.html_p as comment_html_p, approved_p
 from general_comments
-where comment_id = $comment_id"]
-
-
-if { $selection == "" } {
-   ad_return_error "Can't find comment" "Can't find comment $comment_id"
-   return
+where comment_id = :comment_id"]} {
+    ad_return_error "Can't find comment" "Can't find comment $comment_id"
+    return
 }
 
-set_variables_after_query
-
-ReturnHeaders
-
-ns_write "[ad_admin_header "Edit comment" ]
+set doc_body "[ad_admin_header "Edit comment" ]
 
 <h2>Edit comment </h2>
 
 <hr>
 
 <blockquote>
-<form action=edit-2.tcl method=post>
+<form action=edit-2 method=post>
 <textarea name=content cols=50 rows=5 wrap=soft>[philg_quote_double_quotes $content]</textarea><br>
 Text above is
 <select name=html_p>
@@ -50,3 +50,11 @@ Approval status
 </blockquote>
 [ad_admin_footer]
 "
+
+
+
+doc_return  200 text/html doc_body
+
+
+
+

@@ -3,7 +3,7 @@
 
 <blockquote>
 <ul>
-<li><a href="/pvt/home.tcl">Your workspace at <%= [ad_system_name] %></a>
+<li><a href="/pvt/home">Your workspace at <%= [ad_system_name] %></a>
 <%= $gift_certificate_sentence_if_nonzero_balance %>
 
 <%= $user_classes %>

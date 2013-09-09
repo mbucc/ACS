@@ -1,13 +1,20 @@
-# 1pixel.tcl,v 1.1.2.2 2000/02/03 10:00:24 ron Exp
-# File:        index.tcl
-# Date:        28 Nov 1999
-# Author:      Jon Salz <jsalz@mit.edu>
-# Description: Generates a 1-pixel GIF image with a certain color.
-# Inputs:      r g b
+# /shared/1pixel.tcl
+
+ad_page_contract {
+    Generates a 1-pixel GIF image with a certain color.
+
+    @author Jon Salz <jsalz@mit.edu>
+    @date 28 Nov 1999
+    @cvs-id 1pixel.tcl,v 3.2.8.3 2000/07/25 09:25:22 kevin Exp
+    @param file
+} {
+    r:naturalnum,notnull
+    g:naturalnum,notnull
+    b:naturalnum,notnull
+}
 
 ReturnHeaders "image/gif"
-
-set_the_usual_form_variables
+#ReturnHeaders "text/html"
 
 set file [open "[ns_info pageroot]/graphics/1pixel.header"]
 ns_writefp $file

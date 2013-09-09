@@ -1,13 +1,16 @@
-# $Id: upload-1.tcl,v 3.0.4.1 2000/04/28 15:11:04 carsten Exp $
 # File:     /homepage/upload-1.tcl
-# Date:     Tue Jan 18 22:58:22 EST 2000
-# Location: 42Å∞21'N 71Å∞04'W
-# Location: 80 PROSPECT ST CAMBRIDGE MA 02139 USA
-# Author:   mobin@mit.edu (Usman Y. Mobin)
-# Purpose:  Upload File form
 
-set_form_variables
-# filesystem_node
+ad_page_contract {
+    Upload File form
+
+    @param filesystem_node System variable to help get back where you started
+
+    @author Usman Y. Mobin (mobin@mit.edu)
+    @creation-date Tue Jan 18 22:58:22 EST 2000
+    @cvs-id upload-1.tcl,v 3.3.2.8 2001/01/10 21:59:02 khy Exp
+} {
+    filesystem_node:notnull,naturalnum
+}
 
 # First, we need to get the user_id
 set user_id [ad_verify_and_get_user_id]
@@ -19,35 +22,32 @@ if { $user_id == 0 } {
     return
 }
 
-set db [ns_db gethandle]
 
-set next_node [database_to_tcl_string $db "
+set new_node [db_string select_next_file_id "
 select users_file_id_seq.nextval from dual"]
 
-ns_db releasehandle $db
+db_release_unused_handles
 
-set dialog_body "Please select a local file to upload: <form enctype=multipart/form-data method=post action=upload-2.tcl> <input type=hidden name=filesystem_node value=$filesystem_node> <input type=file name=upload_file size=20> <input type=hidden name=new_node value=$next_node><table border=0 cellpadding=0 cellspacing=0><tr><td> <input type=submit value=Okay></form></td>  <td><form method=get action=index.tcl><input type=hidden name=filesystem_node value=$filesystem_node><input type=submit value=Cancel></form></td></tr></table>"
+set dialog_body "Please select a local file to upload: <form enctype=multipart/form-data method=post action=upload-2> [export_form_vars -sign new_node]<input type=hidden name=filesystem_node value=$filesystem_node> <input type=file name=upload_file size=20><table border=0 cellpadding=0 cellspacing=0><tr><td> <input type=submit value=Okay></form></td>  <td><form method=get action=index><input type=hidden name=filesystem_node value=$filesystem_node><input type=submit value=Cancel></form></td></tr></table>"
 
-set dialog_file "dialog-class.tcl?title=Filesystem Management&text=$dialog_body"
+set dialog_file "dialog-class?title=Filesystem Management&text=[ns_urlencode $dialog_body]"
 
 ad_returnredirect "$dialog_file"
 return
 
-ReturnHeaders 
-
 set title "Upload File"
 
-ns_write "
+set page_content "
 [ad_header $title]
 <h2>$title</h2>
-[ad_context_bar_ws [list "index.tcl?filesystem_node=$filesystem_node" "Homepage Maintenance"] $title]
+[ad_context_bar_ws [list "index?filesystem_node=$filesystem_node" "Homepage Maintenance"] $title]
 <hr>
-"
 
-append html "
-<form enctype=multipart/form-data method=post action=upload-2.tcl>
+<blockquote>
+
+<form enctype=multipart/form-data method=post action=upload-2>
 [export_form_vars filesystem_node]
-
+[export_form_vars -sign new_node]
 <table cellpadding=3>
 
 <tr><th align=left>Upload File 
@@ -55,25 +55,17 @@ append html "
 <input type=file name=upload_file size=20>
 </tr>
 
-
 </table>
 
-<input type=hidden name=new_node value=$next_node>
+
 <p>
 <input type=submit value=\"Upload\">
 </form>
 <p>
-"
-
-ns_write "
-<blockquote>
-$html
 </blockquote>
 [ad_footer]
 "
 
-
-
-
-
+# Return the page for viewing
+doc_return  200 text/html $page_content
 

@@ -1,27 +1,37 @@
-# $Id: partner-url-delete.tcl,v 3.0 2000/02/06 03:26:47 ron Exp $
-set_the_usual_form_variables
-# url_id 
+# /www/admin/partner/partner-url-delete.tcl
 
-set db [ns_db gethandle]
+ad_page_contract {
+    Confirms delete of url
 
-set selection [ns_db 1row $db "select url_stub, partner_id
-  		               from ad_partner_url
-                               where url_id='$QQurl_id'"]
-set_variables_after_query
+    @param url_id 
+
+    @author mbryzek@arsdigita.com
+    @creation-date 10/1999
+
+    @cvs-id partner-url-delete.tcl,v 3.2.2.3 2000/09/22 01:35:45 kevin Exp
+} {
+    url_id:integer,notnull
+}
+
+
+db_1row partner_url_id_from_url \
+	"select url_stub, partner_id
+  	   from ad_partner_url
+          where url_id=:url_id"
 
 set page_title "Delete URL"
-set context_bar [ad_context_bar_ws [list "index.tcl" "Partner manager"] [list "partner-view.tcl?[export_url_vars partner_id]" "One partner"] "$title"]
+set context_bar [ad_context_bar_ws [list "index" "Partner manager"] [list "partner-view?[export_url_vars partner_id]" "One partner"] "$page_title"]
 
 set page_body "
 Are you sure you want to unassociate the url \"$url_stub\" for this partner?
 
 <table>
 <tr>
-  <td><form method=post action=\"partner-url-delete-2.tcl\">
+  <td><form method=post action=\"partner-url-delete-2\">
       [export_form_vars url_id]
       <input type=submit name=operation value=\"Yes\"></FORM>
   </td>
-  <td><form method=post action=\"partner-url-delete-2.tcl\">
+  <td><form method=post action=\"partner-url-delete-2\">
       [export_form_vars url_id]
       <input type=submit name=operation value=\"No\"></FORM>
   </td>
@@ -29,5 +39,6 @@ Are you sure you want to unassociate the url \"$url_stub\" for this partner?
 </table>
 "
 
+# ad_partner_return_template releases the db handles
 
-ns_return 200 text/html [ad_partner_return_template]
+doc_return  200 text/html [ad_partner_return_template]

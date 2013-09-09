@@ -7,7 +7,7 @@
 <body bgcolor=#ffffff text=#000000>
 <h2>Content Sections</h2>
 
-part of the <a href="index.html">ArsDigita Community System</a>
+part of the <a href="index">ArsDigita Community System</a>
 by <a href="mailto:tarik@arsdigita.com">Tarik Alatovic </a> and  <a href="mailto:ahmeds@mit.edu/">Sarah Ahmed</a> 
 
 <hr>
@@ -15,8 +15,8 @@ by <a href="mailto:tarik@arsdigita.com">Tarik Alatovic </a> and  <a href="mailto
 <ul>
 <li>Site Wide Administrator directory:  <a href="/admin/content-sections/">/admin/content-sections/</a>
 <li>Group Administrator directory:  <a href="/groups/admin/$group_name/content-sections">/groups/admin/$group_name/content-sections</a>
-<li>data model:  <a href="/doc/sql/display-sql.tcl?url=/doc/sql/community-core.sql">/doc/sql/community-core.sql</a>
-<li>procedures:  in tcl/user-groups-defs.tcl
+<li>data model:  <a href="/doc/sql/display-sql?url=/community-core.sql&package_key=acs-core">/packages/acs-core/community-core.sql</a>
+<li>procedures:  in tcl/user-groups-defs
 
 </ul>
 
@@ -31,12 +31,12 @@ bboard etc. Custom sections serve like url directories. So if group
 administrator of group travel at photo.net defines custom section sweden
 (e.g. photo.net/travel/sweden), he will be able to upload files for this
 section (see content_files table) in order to display the file
-photo.net/groups/travel/sweeden/stockholm.html. Details on custom
+photo.net/groups/travel/sweeden/stockholm. Details on custom
 sections can be found at <a
-href="/doc/custom-sections.html">/doc/custom-sections.html</a>. Static
+href="/doc/custom-sections">/doc/custom-sections</a>. Static
 sections serve as html pages and address of html page is specified in
-section_url_stub. If you have file arsdigita.html in your careers
-directory then section_url_stub should be /careers/arsdigita.html. Admin
+section_url_stub. If you have file arsdigita in your careers
+directory then section_url_stub should be /careers/arsdigita. Admin
 sections are system sections that do not have associated public
 pages. They only have administration pages.
 
@@ -66,11 +66,11 @@ create table content_sections (
 	-- custom sections serve like url directories. so if group administrator of group travel 
 	-- at photo.net defines custom section sweeden (e.g. photo.net/travel/sweeden), he will be 
 	-- able to then to upload files for this section (see content_files table) in order to display
-	-- the file photo.net/groups/travel/sweeden/stockholm.html
+	-- the file photo.net/groups/travel/sweeden/stockholm
 	-- if section_type=static, this section is static section
 	-- static sections serve as html pages and address of html page is specified in section_url_stub
-	-- if you have file arsdigita.html in your carrers directory then section_url_stub should be
-	-- /carrers/arsdigita.html  
+	-- if you have file arsdigita in your carrers directory then section_url_stub should be
+	-- /carrers/arsdigita  
 	-- if section_type=admin, this section is system section but does not have associated public pages
 	-- it only has administration pages.
 	section_type                    varchar(20) not null,

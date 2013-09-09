@@ -1,25 +1,23 @@
 # /file-storage/create-folder.tcl
-#
-# created by aure@arsdigita.com, July, 1999
-#
-# this file allows a user to select a title and location for
-# a new folder
-#
-# modified by randyg@arsdigita.com, January, 2000 to use the general
-# permissions module
-#
-# $Id: create-folder.tcl,v 3.2.2.1 2000/03/31 15:18:08 carsten Exp $
 
-ad_page_variables {
+ad_page_contract {
+    this file allows a user to select a title and location for
+    a new folder
+
+    @author aure@arsdigita.com
+    @creation-date July, 1999
+    @cvs-id create-folder.tcl,v 3.7.2.5 2001/01/10 18:49:02 khy Exp
+
+    modified by randyg@arsdigita.com, January, 2000 to use the general
+    permissions module
+} {
     {return_url}
     {group_id ""}
     {public_p ""}
-    {current_folder ""}
+    {this_folder ""}
 }
 
-set user_id [ad_verify_and_get_user_id]
-
-ad_maybe_redirect_for_registration
+set user_id [ad_maybe_redirect_for_registration]
 
 set title "Create New Folder"
 
@@ -30,25 +28,24 @@ set title "Create New Folder"
 set exception_text ""
 set exception_count 0
 
-
 if { $public_p == "t" && ![ad_parameter PublicDocumentTreeP fs] } {
     append exception_text "
         <li>[ad_system_name] does not support a public directory tree."
     incr exception_count
 }
 
-set db [ns_db gethandle]
+
 
 if { ![empty_string_p $group_id] } {
 
-    set group_name [database_to_tcl_string $db "
+    set group_name [db_string unused "
 	select group_name 
-	from   user_groups 
-	where  group_id = $group_id"]
+	from   user_groups
+	where  group_id = :group_id"]
 
     # we are in the group tree
 
-    if { ![ad_user_group_member $db $group_id $user_id] } {
+    if { ![ad_user_group_member $group_id $user_id] } {
 
 	append exception_text "
 	    <li>You are not a member of group <cite>$group_name</cite>\n"
@@ -78,7 +75,7 @@ if { ![empty_string_p $group_id] } {
     # we are in the personal document tree
 
     set navbar [ad_context_bar_ws [list "" [ad_parameter SystemName fs]]\
-	                          [list "personal" "Personal document tree"]\
+	                          [list "private-one-person" "Personal document tree"]\
 				  $title]
     set group_id ""
     set public_p "f"
@@ -90,8 +87,8 @@ if { $exception_count> 0 } {
     return 0
 }
 
-set file_id [database_to_tcl_string $db "select fs_file_id_seq.nextval from dual"]
-set version_id [database_to_tcl_string $db "select fs_version_id_seq.nextval from dual"]
+set file_id [db_string unused "select fs_file_id_seq.nextval from dual"]
+set version_id [db_string unused "select fs_version_id_seq.nextval from dual"]
 
 set page_content "[ad_header $title]
 
@@ -99,11 +96,10 @@ set page_content "[ad_header $title]
 
 $navbar
 
-
-<hr>
+<hr align=left>
 <form  method=POST action=create-folder-2>
-[export_form_vars file_id version_id return_url group_id public_p]
-
+[export_form_vars -sign file_id version_id]
+[export_form_vars return_url group_id public_p]
 
 <table>
 <tr>
@@ -113,7 +109,7 @@ $navbar
 
 <tr>
 <td align=right>Location:</td>
-<td>[fs_folder_def_selection $db $user_id $group_id $public_p "" $current_folder]</td>
+<td>[fs_folder_def_selection $user_id $group_id $public_p "" $this_folder]</td>
 </tr>
 
 <tr>
@@ -128,10 +124,6 @@ $navbar
 
 [ad_footer [fs_system_owner]]"
 
-# release the database handle
-
-ns_db releasehandle $db
-
 # serve the page
 
-ns_return 200 text/html $page_content
+doc_return  200 text/html $page_content

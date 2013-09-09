@@ -1,85 +1,83 @@
-# $Id: audit-table.tcl,v 3.0 2000/02/06 03:16:47 ron Exp $
-# Jesse 7/18
-# Returns the audit trails of a table and its audit table for entry that
-# exists between the start date and end date.
+#  www/admin/ecommerce/audit-table.tcl
+ad_page_contract {
 
-set_form_variables
-# expects table_names_and_id_column start_date end_date
-# start_date can be blank
+  Returns the audit trails of a table and its audit table for entry that
+  exists between the start date and end date.
 
-set main_table_name [lindex $table_names_and_id_column 0]
+  @param table_names_and_id_column
+  @param start_date
+  @param start_time
+  @param end_date
+  @param end_time
+
+  @author Jesse (jkoontz@mit.edu)
+  @creation-date 7/18
+  @cvs-id audit-table.tcl,v 3.2.2.5 2000/08/18 20:23:41 stevenp Exp
+} {
+
+  table_names_and_id_column:notnull
+  start_date:array,date
+  start_time:array,time
+  end_date:array,date
+  end_time:array,time
+
+} -validate {
+
+  start_timestamp_valid {
+      if { [exists_and_not_null start_time(time)]  &&
+	  ![exists_and_not_null start_date(date)]  ||
+	   [exists_and_not_null end_time(time)]  &&
+	  ![exists_and_not_null end_date(date)] } {
+
+	ad_complain "You cannot leave date field empty if you're entered
+	             something in the time field.  Reverse is, however,
+		     acceptable."
+      }
+  }
+}
+
+
+set main_table_name  [lindex $table_names_and_id_column 0]
 set audit_table_name [lindex $table_names_and_id_column 1]
 set id_column [lindex $table_names_and_id_column 2]
 
-set form [ns_getform]
-
-# ns_dbformvalue $form start_date date start_date will give an error
-# message if the day of the month is 08 or 09 (this octal number problem
-# we've had in other places).  So I'll have to trim the leading zeros
-# from ColValue.start%5fdate.day and stick the new value into the $form
-# ns_set.
-    
-set "ColValue.start%5fdate.day" [string trimleft [set ColValue.start%5fdate.day] "0"]
-ns_set update $form "ColValue.start%5fdate.day" [set ColValue.start%5fdate.day]
-
-
-set "ColValue.end%5fdate.day" [string trimleft [set ColValue.end%5fdate.day] "0"]
-ns_set update $form "ColValue.end%5fdate.day" [set ColValue.end%5fdate.day]
-
-set exception_count 0
-set exception_text ""
-
-# check that either all elements are blank 
-# date and time value is formated correctly for ns_dbformvalue
-if { [empty_string_p [set ColValue.start%5fdate.day]] && 
-     [empty_string_p [set ColValue.start%5fdate.year]] && 
-     [empty_string_p [set ColValue.start%5fdate.month]] && 
-     [empty_string_p [set ColValue.start%5fdate.time]] } {
-    # Blank date means that all the table history should be displayed
-    set start_date ""
-} elseif { [catch  { ns_dbformvalue $form start_date datetime start_date} errmsg ] } {
-    incr exception_count
-    append exception_text "<li>The date or time was specified in the wrong format.  The date should be in the format Month DD YYYY.  The time should be in the format HH:MI:SS (seconds are optional), where HH is 01-12, MI is 00-59 and SS is 00-59.\n"
-} elseif { ![empty_string_p [set ColValue.start%5fdate.year]] && [string length [set ColValue.start%5fdate.year]] != 4 } {
-    incr exception_count
-    append exception_text "<li>The year needs to contain 4 digits.\n"
+if { ![empty_string_p $start_date(date)]  &&
+      [empty_string_p $start_time(time)] } {
+    set start_time(time) "00:00:00"
 }
 
-if [catch  { ns_dbformvalue $form end_date datetime end_date} errmsg ] {
-    incr exception_count
-    append exception_text "<li>The date or time was specified in the wrong format.  The date should be in the format Month DD YYYY.  The time should be in the format HH:MI:SS (seconds are optional), where HH is 01-12, MI is 00-59 and SS is 00-59.\n"
-} elseif { ![empty_string_p [set ColValue.end%5fdate.year]] && [string length [set ColValue.end%5fdate.year]] != 4 } {
-    incr exception_count
-    append exception_text "<li>The year needs to contain 4 digits.\n"
+if { ![empty_string_p $end_date(date)]  &&
+      [empty_string_p $end_time(time)] } {
+    set end_time(time) "00:00:00"
+}
+# Not compare the time (assuming usually the time boxes are left blank)
+
+if {![empty_string_p $start_date(date)] && ![empty_string_p $end_date(date)]} {
+    if {[db_0or1row select_one "select 1 from dual where to_date('$start_date(date)','YYYY-MM-DD HH24:MI:SS')  >to_date('$end_date(date)', 'YYYY-MM-DD HH24:MI:SS')"] ==1} {
+
+	ad_return_complaint 1 "Please enter a start date before end date."
+    }
 }
 
-if { $exception_count > 0 } {
-    ad_return_complaint $exception_count $exception_text
-    return
-}
-
-set db [ns_db gethandle]
-
-ReturnHeaders
-ns_write "
+doc_body_append "
 [ad_admin_header "[ec_system_name] Audit Table"]
 
 <h2>[ec_system_name] Audit for $main_table_name</h2>
 
-[ad_admin_context_bar [list "index.tcl" Ecommerce] [list "audit-tables.tcl" "Audit Table"] "Audit $main_table_name"]
+[ad_admin_context_bar [list "index.tcl" Ecommerce] [list "audit-tables" "Audit Table"] "Audit $main_table_name"]
 
 <hr>
 
-<form method=post action=\"audit-table.tcl\">
+<form method=post action=\"audit-table\">
 [export_form_vars table_names_and_id_column]
 <table>
 <tr>
   <td>From:</td>
-  <td>[ad_dateentrywidget start_date [lindex [split $start_date " "] 0]][ec_timeentrywidget start_date $start_date]</td>
+  <td>[ad_dateentrywidget start_date $start_date(date)]&nbsp;[ec_timeentrywidget start_time $start_time(time)]</td>
 </tr>
 <tr>
   <td>To:</td>
-  <td>[ad_dateentrywidget end_date [lindex [split $end_date " "] 0]][ec_timeentrywidget end_date $end_date]</td>
+  <td>[ad_dateentrywidget end_date $end_date(date)]&nbsp;[ec_timeentrywidget end_time $end_time(time)]</td>
 </tr>
 <tr>
 <td></td>
@@ -91,9 +89,17 @@ ns_write "
 <h3>$main_table_name</h3>
 "
 
-ns_write "
+if { ![empty_string_p $start_date(date)] } {
+    append start_date(date) " $start_time(time)"
+}
+
+if { ![empty_string_p $end_date(date)] } {
+    append end_date(date) " $end_time(time)"
+}
+
+doc_body_append "
     <blockquote>
-[ad_audit_trail_for_table $db $main_table_name $audit_table_name $id_column $start_date $end_date "audit-one-id.tcl" ""]
+[ad_audit_trail_for_table $main_table_name $audit_table_name $id_column $start_date(date) $end_date(date) "audit-one-id" ""]
     </blockquote>
 
 [ad_admin_footer]

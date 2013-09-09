@@ -1,22 +1,65 @@
-# $Id: fulfill-2.tcl,v 3.1.2.1 2000/04/28 15:08:43 carsten Exp $
-set_the_usual_form_variables
-# order_id, shipment_date (in pieces), expected_arrival_date (in pieces),
-# carrier, carrier_other, tracking_number,
+# /www/admin/ecommerce/orders/fulfill-2.tcl
+ad_page_contract {
+  This script shows confirmation page & shipping address.
+
+  @author Eve Andersson (eveander@arsdigita.com)
+  @creation-date Summer 1999
+  @cvs-id fulfill-2.tcl,v 3.5.2.6 2000/09/22 01:34:57 kevin Exp
+} {
+  order_id:integer,notnull
+  all_items_p:optional
+  item_id:multiple,optional,integer
+  shipment_date:array,date
+  shipment_time:array,time
+  expected_arrival_date:optional,array,date
+  expected_arrival_time:optional,array,time
+  carrier
+  carrier_other
+  tracking_number
+}
+
+# order_id, shipment_date (in pieces),
 # either all_items_p or a series of item_ids
 
-# This script shows confirmation page & shipping address
+# if it's a shippable order: expected_arrival_date (in pieces),
+# carrier, carrier_other, tracking_number,
 
 # the customer service rep must be logged on
-set customer_service_rep [ad_get_user_id]
 
-if {$customer_service_rep == 0} {
-    set return_url "[ns_conn url]?[export_entire_form_as_url_vars]"
-    ad_returnredirect "/register.tcl?[export_url_vars return_url]"
-    return
-}
+ad_maybe_redirect_for_registration
+set customer_service_rep [ad_get_user_id]
 
 if { ![empty_string_p $carrier_other] } {
     set carrier $carrier_other
+}
+
+set temp_shipment_date $shipment_date(date)
+if { [exists_and_not_null shipment_time(time)] } {
+    append temp_shipment_date " $shipment_time(time)$shipment_time(ampm)"
+} else {
+    append temp_shipment_date " 12:00:00AM"
+}
+
+set temp_expected_arrival_date ""
+if { [exists_and_not_null expected_arrival_date(date)] } {
+    append temp_expected_arrival_date $expected_arrival_date(date)
+    if { [exists_and_not_null expected_arrival_time(time)] } {
+	append temp_expected_arrival_date " $expected_arrival_time(time)$expected_arrival_time(ampm)"
+    } else {
+	append temp_expected_arrival_date " 12:00:00AM"
+    }
+}
+
+
+set shippable_p [ec_decode [db_string shipping_method_select "select shipping_method from ec_orders where order_id=:order_id"] "no shipping" 0 1]
+
+if { $shippable_p } {
+
+    
+
+    if { ![empty_string_p $carrier_other] } {
+        set carrier $carrier_other
+    }
 }
 
 set exception_count 0
@@ -35,91 +78,34 @@ if { ![info exists all_items_p] && ![info exists item_id] } {
     append exception_text "<li>Please either check off \"All items\" or check off some of the items."
 }
 
-# the annoying date stuff
-set form [ns_getform]
-    
-# ns_dbformvalue $form shipment_date date shipment_date will give an error
-# message if the day of the month is 08 or 09 (this octal number problem
-# we've had in other places).  So I'll have to trim the leading zeros
-# from ColValue.shipment%5fdate.day and ColValue.expected%5farrival%5fdate.day
-# and stick the new value into the $form ns_set.
-    
-set "ColValue.shipment%5fdate.day" [string trimleft [set ColValue.shipment%5fdate.day] "0"]
-ns_set update $form "ColValue.shipment%5fdate.day" [set ColValue.shipment%5fdate.day]
-
-set "ColValue.expected%5farrival%5fdate.day" [string trimleft [set ColValue.shipment%5fdate.day] "0"]
-ns_set update $form "ColValue.expected%5farrival%5fdate.day" [set ColValue.expected%5farrival%5fdate.day]
-
-if [catch  { ns_dbformvalue $form shipment_date datetime shipment_date} errmsg ] {
-    # maybe they left off time, which is ok; we'll just try to set the date & not the time
-    if [catch { ns_dbformvalue $form shipment_date date shipment_date} errmsg] {
-	incr exception_count
-	append exception_text "<li>The shipment date was specified in the wrong format.  The date should be in the format Month DD YYYY.  The time should be in the format HH:MI:SS (seconds are optional), where HH is 01-12, MI is 00-59 and SS is 00-59.\n"
-    } else {
-	set shipment_date "$shipment_date 00:00:00"
-    }
-} elseif { [empty_string_p $shipment_date] } {
-    incr exception_count
-    append exception_text "<li>Please enter a shipment date.\n"
-} elseif { [string length [set ColValue.shipment%5fdate.year]] != 4 } {
-    incr exception_count
-    append exception_text "<li>The shipment year needs to contain 4 digits.\n"
-}
-
-if [catch  { ns_dbformvalue $form expected_arrival_date datetime expected_arrival_date} errmsg ] {
-    # maybe they left off time, which is ok; we'll just try to set the date & not the time
-    if [catch { ns_dbformvalue $form expected_arrival_date date expected_arrival_date} errmsg] {
-	set expected_arrival_date ""
-    } else {
-	set expected_arrival_date "$expected_arrival_date 00:00:00"
-    }
-} elseif { [string length [set ColValue.expected%5farrival%5fdate.year]] != 4 && [string length [set ColValue.expected%5farrival%5fdate.year]] != 0 } {
-    # if the expected arrival year is non-null, then it needs to contain 4 digits
-    incr exception_count
-    append exception_text "<li>The expected arrival year needs to contain 4 digits.\n"
-}
-
 if { $exception_count > 0 } {
     ad_return_complaint 1 $exception_text
     return
 }
 
-ReturnHeaders
-ns_write "[ad_admin_header "Confirm that these item(s) have been shipped"]
 
-<h2>Confirm that these item(s) have been shipped</h2>
+append page_html "[ad_admin_header "Confirm that these item(s) have been [ec_decode $shippable_p 1 "shipped" "fulfilled"]"]
 
-[ad_admin_context_bar [list "../" "Ecommerce"] [list "index.tcl" "Orders"] [list "fulfillment.tcl" "Fulfillment"] "One Order"]
+<h2>Confirm that these item(s) have been [ec_decode $shippable_p 1 "shipped" "fulfilled"]</h2>
+
+[ad_admin_context_bar [list "../" "Ecommerce"] [list "index" "Orders"] [list "fulfillment" "Fulfillment"] "One Order"]
 
 <hr>
 "
 
-set db [ns_db gethandle]
-set shipment_id [database_to_tcl_string $db "select ec_shipment_id_sequence.nextval from dual"]
+set shipment_id [db_string get_new_ship_seq "select ec_shipment_id_sequence.nextval from dual"]
 
-if { ![info exists all_items_p] } {
-    set form [ns_getform]
-    set form_size [ns_set size $form]
-    set form_counter 0
-    
-    set item_id_list [list]
-    while { $form_counter < $form_size} {
-	if { [ns_set key $form $form_counter] == "item_id" } {
-	    lappend item_id_list [ns_set value $form $form_counter]
-	}
-	incr form_counter
-    }
-
-    set selection [ns_db select $db "select i.item_id, p.product_name, p.one_line_description, p.product_id, i.price_charged, i.price_name, i.color_choice, i.size_choice, i.style_choice
+if { [info exists item_id] && ![empty_string_p item_id] } {
+    set sql  "select i.item_id, p.product_name, p.one_line_description, p.product_id, i.price_charged, i.price_name, i.color_choice, i.size_choice, i.style_choice
     from ec_items i, ec_products p
     where i.product_id=p.product_id
-    and i.item_id in ([join $item_id_list ", "])"]
+    and i.item_id in ([join $item_id ", "])"
 } else {
-    set selection [ns_db select $db "select i.item_id, p.product_name, p.one_line_description, p.product_id, i.price_charged, i.price_name, i.color_choice, i.size_choice, i.style_choice
+    set sql "select i.item_id, p.product_name, p.one_line_description, p.product_id, i.price_charged, i.price_name, i.color_choice, i.size_choice, i.style_choice
     from ec_items i, ec_products p
     where i.product_id=p.product_id
-    and i.order_id=$order_id
-    and i.item_state='to_be_shipped'"]
+    and i.order_id=:order_id
+    and i.item_state='to_be_shipped'"
 }
 
 # If they select "All items", I want to generate a list of the items because, regardless
@@ -131,8 +117,8 @@ if { [info exists all_items_p] } {
 }
 
 set items_to_print ""
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+db_foreach get_items_to_ship $sql {
+
     if { [info exists all_items_p] } {
 	lappend item_id_list $item_id
     }
@@ -149,12 +135,14 @@ while { [ns_db getrow $db $selection] } {
     }
     set options [join $option_list ", "]
 
-
    append items_to_print "<li> $product_name; [ec_decode $options "" "" "$options; "]$price_name: [ec_pretty_price $price_charged]"
 }
 
-ns_write "<form method=post action=fulfill-3.tcl>
-[export_form_vars shipment_id order_id item_id_list shipment_date expected_arrival_date carrier tracking_number]
+append page_html "<form method=post action=fulfill-3>
+[export_form_vars shipment_id order_id item_id carrier tracking_number]
+<input type=hidden name=shipment_date value=\"$temp_shipment_date\">
+<input type=hidden name=expected_arrival_date value=\"$temp_expected_arrival_date\">
+
 <center>
 <input type=submit value=\"Confirm\">
 </center>
@@ -163,14 +151,18 @@ Item(s):
 <ul>
 $items_to_print
 </ul>
+"
 
-Shipment information:
+if { !$shippable_p } {
+    append page_html "Pickup date: [ec_formatted_date $temp_shipment_date]"
+} else {
+    append page_html "Shipment information:
 
 <ul>
 
-<li>Shipment date: [ec_formatted_date $shipment_date]
+<li>Shipment date: [ec_formatted_date $temp_shipment_date]
 
-[ec_decode $expected_arrival_date "" "" "<li>Expected arrival date: [ec_formatted_date $expected_arrival_date]"]
+[ec_decode $temp_expected_arrival_date "" "" "<li>Expected arrival date: [ec_formatted_date $temp_expected_arrival_date]"]
 
 [ec_decode $carrier "" "" "<li>Carrier: $carrier"]
 
@@ -183,10 +175,13 @@ Ship to:
 
 <blockquote>
 
-[ec_display_as_html [ec_pretty_mailing_address_from_ec_addresses $db [database_to_tcl_string $db "select shipping_address from ec_orders where order_id=$order_id"]]]
+[ec_display_as_html [ec_pretty_mailing_address_from_ec_addresses [db_string get_pretty_mailing_address "select shipping_address from ec_orders where order_id=:order_id"]]]
 
 </blockquote>
+"
+}
 
+append page_html "
 </blockquote>
 
 <center>
@@ -196,3 +191,8 @@ Ship to:
 
 [ad_admin_footer]
 "
+db_release_unused_handles
+
+doc_return 200 text/html $page_html
+
+

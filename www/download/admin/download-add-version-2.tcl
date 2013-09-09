@@ -1,96 +1,100 @@
 # /www/download/admin/download-add-version-2.tcl
-#
-# Date:     01/04/2000
-# Author :  ahmeds@mit.edu
-# Purpose:  target page to add new downloadable file version
-#
-# $Id: download-add-version-2.tcl,v 3.2.4.3 2000/05/18 00:05:15 ron Exp $
-# -----------------------------------------------------------------------------
+ad_page_contract {
+    Uploads and inserts a new version
 
-set_the_usual_form_variables
-# maybe scope, maybe scope related variables (group_id)
-# version_id, download_id, release_date, pseudo_filename, version,
-# status, upload_file, version_description, version_html_p
+    @param scope
+    @param group_id
+    @param user_id
+    @param version_id the ID for the new version
+    @param download_id the ID for the file
+    @param pseudo_filename the filename the user sees
+    @param version the version name
+    @param status current status of the file
+    @param upload_file the file being uploaded (the new version)
+    @param version_description description of the new version
+
+    @author ahmeds@mit.edu
+    @creation-date 4 Jan 2000
+    @cvs-id download-add-version-2.tcl,v 3.10.2.6 2000/09/24 22:37:14 kevin Exp
+} {
+    scope:optional
+    {group_id:integer ""}
+    {user_id:integer ""}
+    version_id:integer,notnull
+    download_id:integer,notnull
+    pseudo_filename:trim,notnull
+    version:trim
+    status
+    upload_file
+    upload_file.tmpfile:tmpfile
+    version_description:html
+    version_html_p
+}
+
+# -----------------------------------------------------------------------------
 
 ad_scope_error_check
 
-set db [ns_db gethandle]
-set user_id [download_admin_authorize $db $download_id]
+set user_id [download_admin_authorize $download_id]
 
 set creation_ip_address [ns_conn peeraddr]
 
 # Now check to see if the input is good as directed by the page designer
 
-set exception_count 0
-set exception_text ""
-
-if {[string length $version_description] > 4000} {
-    incr exception_count
-    append exception_text "<li>\"description\" is too long\n"
-}
-
-if { ![info exists upload_file] || [empty_string_p $upload_file] } {
-    append exception_text "<li>Please specify a file to upload\n"
-    incr exception_count
-}
-
-# we were directed to return an error for pseudo_filename
-
-if {![info exists pseudo_filename] || [empty_string_p $pseudo_filename]} {
-    incr exception_count
-    append exception_text "<li>You did not enter a value for pseudo filename.<br>"
-} 
-
-set form [ns_getform]
-
-set result_list  [download_date_form_check $form release_date]
+set result_list  [download_date_form_check [ns_getform] release_date]
 set release_date [lindex $result_list 0]
-set exception_count [expr $exception_count + [lindex $result_list 1]]
-append exception_text [lindex $result_list 2]
 
-if {$exception_count > 0} {
-    ad_scope_return_complaint $exception_count $exception_text $db
-    return
+page_validation {
+
+    if {[string length $version_description] > 4000} {
+        error "\"description\" is too long\n"
+    }
+
+    if {[lindex $result_list 1] != 0 } {
+	error [lindex $result_list 2]
+    }
+
 }
 
 # -----------------------------------------------------------------------------
 
-set double_click_p [database_to_tcl_string $db \
-	"select count(*) from download_versions where version_id = $version_id"]
+set bind_vars [ad_tcl_vars_to_ns_set version_id download_id version \
+	pseudo_filename version_description version_html_p status \
+	user_id creation_ip_address release_date]
+
+set double_click_p [db_string existing_versions "
+select count(*) from download_versions 
+where version_id = :version_id" -bind $bind_vars]
 
 if {$double_click_p} {
-    ad_returnredirect index.tcl?[export_url_scope_vars]
+    ad_returnredirect index?[export_url_scope_vars]
     return
 }
 
 # Get the filenames for copying
 
-set selection [ns_db 1row $db "
+db_1row download_info "
 select directory_name, 
        download_name, 
        description, 
        scope as file_scope, 
        group_id as gid  
 from   downloads 
-where  download_id = $download_id"]
+where  download_id = :download_id"
 
-set_variables_after_query
 
 # check if there exists a rule for all versions of this download_id
 
-set selection [ns_db 0or1row $db "
+if { ! [db_0or1row download_rules "
 select visibility,
        availability
 from   download_rules
-where  download_id = $download_id
-and    version_id is null"]
+where  download_id = :download_id
+and    version_id is null"] } { 
 
-if { [empty_string_p $selection ] } {
     # no rules exists for all versions, so make the default visibility to be registered users
     set visibility    "registered_users"
     set availability  "registered_users"
-} else {
-    set_variables_after_query
 }
     
 if {$file_scope == "public"} {
@@ -102,61 +106,61 @@ if {$file_scope == "public"} {
     set notes_filename "[ad_parameter DownloadRoot download]groups/$gid/$directory_name/$version_id.notes"
 }
 
-set tmp_filename [ns_queryget upload_file.tmpfile]
+set tmp_filename ${upload_file.tmpfile}
 
 if [catch {ns_cp -preserve $tmp_filename $full_filename} errmsg ] {
     # file could not be copied	
     ad_scope_return_complaint 1 "
     <li>File could not be copied to $full_filename becase of the following error:
-    <blockquote>$errmsg</blockquote>
-    " $db
+    <blockquote>$errmsg</blockquote>"
     return
 } else {
 
-    ns_db dml $db "begin transaction"
+    db_transaction {
     
-    ns_db dml $db "
-    update download_versions
-    set    status  = 'removed'
-    where  version = '$version' 
-    and    download_id = $download_id"
-    
-    ns_db dml $db "
-    insert into download_versions
-     (version_id, 
-      download_id, 
-      release_date, 
-      pseudo_filename, 
-      version,
-      version_description, 
-      version_html_p, 
-      status, 
-      creation_date, 
-      creation_user, 
-      creation_ip_address) 
-    values 
-     ($version_id, 
-      $download_id, 
-     '$release_date', 
-     '$QQpseudo_filename', 
-     '$QQversion', 
-     '$QQversion_description', 
-     '$version_html_p', 
-     '$QQstatus',  
-      sysdate, 
-      $user_id, 
-     '$creation_ip_address')"
+	db_dml version_update "
+	update download_versions
+	set    status  = 'removed'
+	where  version = :version 
+	and    download_id = :download_id"
+	
+	db_dml unused "
+	insert into download_versions
+	(version_id, 
+	download_id, 
+	release_date, 
+	pseudo_filename, 
+	version,
+	version_description, 
+	version_html_p, 
+	status, 
+	creation_date, 
+	creation_user, 
+	creation_ip_address) 
+	values 
+	(:version_id, 
+	 :download_id, 
+	 :release_date, 
+	 :pseudo_filename, 
+	 :version, 
+	 :version_description, 
+	 :version_html_p, 
+	 :status,  
+	 sysdate, 
+	 :user_id, 
+	 :creation_ip_address)"
 
-    set new_rule_id [database_to_tcl_string $db \
-	    "select download_rule_id_sequence.nextval from dual"]
+	set new_rule_id [db_string next_rule_id "
+	select download_rule_id_sequence.nextval from dual"]
     
-    ns_db dml $db "
-    insert into download_rules
-    (rule_id, version_id, download_id, visibility, availability) 
-    values 
-    ($new_rule_id, '$version_id', $download_id, '$visibility', '$availability')"
+	db_dml rule_insert "
+	insert into download_rules
+	(rule_id, version_id, download_id, visibility, availability) 
+	values 
+	(:new_rule_id, :version_id, :download_id, :visibility, :availability)
+	"
 
-    ns_db dml $db "end transaction"
+    }
     
     # now store the detail oracle information in the .notes file for the administrator to read
     
@@ -172,9 +176,9 @@ if [catch {ns_cp -preserve $tmp_filename $full_filename} errmsg ] {
     Version Description: $version_description
     Pseudo Filename: $pseudo_filename
     Version: $version
-    Status: $QQstatus
+    Status: $status
     Release Date: $release_date
-    Creation Date: [database_to_tcl_string $db "select sysdate from dual"]
+    Creation Date: [db_string sysdate "select sysdate from dual"]
     Creation User id: $user_id
     Creation IP Address: $creation_ip_address
     "
@@ -182,5 +186,5 @@ if [catch {ns_cp -preserve $tmp_filename $full_filename} errmsg ] {
     close $stream
 }
 
-ad_returnredirect index.tcl?[export_url_scope_vars]
+ad_returnredirect index?[export_url_scope_vars]
 

@@ -1,21 +1,26 @@
-# $Id: presentation-freeze-2.tcl,v 3.0.4.1 2000/04/28 15:11:40 carsten Exp $
-# File:        presentation-freeze-2.tcl
-# Date:        28 Nov 1999
-# Author:      Jon Salz <jsalz@mit.edu>
-# Description: Freezes the current slide set.
-# Inputs:      presentation_id, description
+# /wp/presentation-freeze-2.tcl
+ad_page_contract {
+    Freezes the current slide set.
 
-set_the_usual_form_variables
+    @param presentation_id id of the presentation to freeze
+    @param description description of the presentation to freeze
 
-set db [ns_db gethandle]
+    @creation-date  28 Nov 1999
+    @author Jon Salz <jsalz@mit.edu>
+    @cvs_id presentation-freeze-2.tcl,v 3.1.6.7 2000/08/16 21:49:41 mbryzek Exp
+} {
+    presentation_id:naturalnum,notnull
+    description:notnull
+}
 
 set user_id [ad_maybe_redirect_for_registration]
-wp_check_authorization $db $presentation_id $user_id "admin"
+wp_check_authorization $presentation_id $user_id "admin"
 
-set selection [ns_db 1row $db "select * from wp_presentations where presentation_id = $presentation_id"]
-set_variables_after_query
+db_1row wp_sel_presentation_info "select presentation_id from wp_presentations where presentation_id = :presentation_id" 
 
 # Do it all in PL/SQL.
-ns_db dml $db "begin wp_set_checkpoint($presentation_id, '$QQdescription'); end;"
+db_dml wp_set_ck_pt "begin wp_set_checkpoint(:presentation_id, :description); end;" 
 
-ad_returnredirect "presentation-top.tcl?presentation_id=$presentation_id"
+db_release_unused_handles
+
+ad_returnredirect "presentation-top?presentation_id=$presentation_id"

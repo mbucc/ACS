@@ -1,17 +1,24 @@
-# $Id: delete-ads-from-one-user-2.tcl,v 3.1.2.2 2000/04/28 15:10:34 carsten Exp $
-set admin_id [ad_verify_and_get_user_id]
-if { $admin_id == 0 } {
-    ad_returnredirect "/register/"
-    return
+# delete-ads-from-one-user-2.tcl
+
+ad_page_contract {
+    @author
+    @creation-date
+    @cvs-id delete-ads-from-one-user-2.tcl,v 3.5.2.10 2000/09/22 01:37:59 kevin Exp
+
+    @param user_id
+    @param user_charge
+    @param charge_comment
+
+} {
+    user_id:integer
+    domain_id:integer
+    {user_charge ""}
+    {charge_comment ""}
 }
 
-set_the_usual_form_variables
+set admin_id [ad_maybe_redirect_for_registration]
 
-# classified_ad_id, user_id, domain_id
-# maybe user_charge (and if so, then perhaps charge_comment)
-
-set db [ns_db gethandle]
-
+set peeraddr [ns_conn peeraddr]
 set audit_sql "insert into classified_ads_audit 
  (classified_ad_id,
   user_id,
@@ -50,52 +57,45 @@ select
   full_ad,
   html_p,
   last_modified,
-  '[DoubleApos [ns_conn peeraddr]]',
+  :peeraddr,
   't'
 from classified_ads 
-where user_id = $user_id
-and domain_id = $domain_id"
+where user_id = :user_id
+and domain_id = :domain_id"
 
 set delete_bids_sql "delete from classified_auction_bids
 where classified_ad_id in
    (select classified_ad_id 
     from classified_ads
-    where user_id = $user_id
-    and domain_id = $domain_id)"
+    where user_id = :user_id
+    and domain_id = :domain_id)"
 
 set delete_ads_sql "delete from classified_ads 
-where user_id = $user_id
-and domain_id = $domain_id"
+where user_id = :user_id
+and domain_id = :domain_id"
 
-if [catch { ns_db dml $db "begin transaction"
-            ns_db dml $db $audit_sql
-            ns_db dml $db $delete_bids_sql
-            ns_db dml $db $delete_ads_sql 
-            ns_db dml $db "end transaction" } errmsg] {
-	# we shouldn't be able to get here except because of 
-	# violating integrity constraints
-	ad_return_error "Could not delete Ads from user $user_id" "I think my code must have a serious bug.
-The error message from the database was
-
-<blockquote><code>
-$errmsg
-</blockquote></code>"
-        return
+db_transaction {
+    db_dml gc_admin_del_one_user_audit $audit_sql
+    db_dml gc_admin_del_one_user_bids_delete $delete_bids_sql
+    db_dml gc_admin_del_one_user_ads_delete $delete_ads_sql 
+} on_error {
+    # we shouldn't be able to get here except because of 
+    # violating integrity constraints
+    ad_return_error "Could not delete ads from user $user_id" "I think my code must have a serious bug.
+    The error message from the database was
+    <blockquote><code>
+    $errmsg
+    </blockquote></code>"
+    return
 }
 
-set domain [database_to_tcl_string $db "select domain from ad_domains
-where domain_id = $domain_id"]
 
-append html "[gc_header "Ads from User $user_id Deleted"]
+append doc_body "[gc_header "Ads from User $user_id Deleted"]
 
 <h2>Ads from User $user_id Deleted</h2>
-
-in the <a href=\"domain-top.tcl?domain_id=$domain_id\"> $domain domain of [gc_system_name]</a>
-
+in the <a href=\"domain-top.tcl?domain=[ns_urlencode $domain_id]\"> $domain_id domain of [gc_system_name]</a>
 <hr>
-
 Deletion of ads confirmed.\n\n
-
 "
 
 if { [info exists user_charge] && ![empty_string_p $user_charge] } {
@@ -103,12 +103,12 @@ if { [info exists user_charge] && ![empty_string_p $user_charge] } {
 	# insert separately typed comment
 	set user_charge [mv_user_charge_replace_comment $user_charge $charge_comment]
     }
-    append html "<p> ... adding a user charge:
+    append doc_body "<p> ... adding a user charge:
 <blockquote>
 [mv_describe_user_charge $user_charge]
 </blockquote>
 ... "
-    mv_charge_user $db $user_charge "Deleted your ads from [ad_system_name]" "We had to delete your ads from [ad_system_name].
+    mv_charge_user $user_charge "Deleted your ads from [ad_system_name]" "We had to delete your ads from [ad_system_name].
 
 Comment:  $charge_comment
 
@@ -121,13 +121,25 @@ possible way for a free site like this to stay afloat.  We can't
 afford to pick through every ad so the easiest thing to do is just
 click once and delete all the ads.
 "
-    append html "Done."
+    append doc_body "Done."
 }
 
-append html "
+append doc_body "
 
 [ad_admin_footer]
 "
 
-ns_db releasehandle $db
-ns_return 200 text/html $html
+doc_return  200 text/html $doc_body
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -7,7 +7,7 @@
 <body bgcolor=#ffffff text=#000000>
 <h2>Setup</h2>
 
-of the <a href="ecommerce.html">Ecommerce Module</a> by <a href="mailto:eveander@arsdigita.com">Eve Andersson</a> of <a href="http://arsdigita.com">ArsDigita</a>
+of the <a href="ecommerce">Ecommerce Module</a> by <a href="mailto:eveander@arsdigita.com">Eve Andersson</a> of <a href="http://arsdigita.com">ArsDigita</a>
 
 <hr>
 This is intended to be a guide for the content administrators of the site.
@@ -20,7 +20,7 @@ ecommerce administration pages in
 <a href="/admin/ecommerce/">/admin/ecommerce/</a> (must be accessed using HTTPS).
 
 <ol>
-<li>First make sure that the <a href="ecommerce-technical.html">technical setup</a>
+<li>First make sure that the <a href="ecommerce-technical">technical setup</a>
 has been taken care of.  Although most of it can be done quickly, the 
 process of setting up a merchant account to accept credit cards can take weeks,
 so don't procrastinate!
@@ -92,7 +92,7 @@ can find it in both places.
 
 <li>Set up your shipping cost rules (<a href="/admin/ecommerce/shipping-costs/">/admin/ecommerce/shipping-costs/</a>).  The ecommerce module is flexible
 regarding how you charge your customers for shipping.  The <a href="/admin/ecommerce/shipping-costs/">Shipping Costs page</a> in the admin section will lead you
-through it.  Make sure you read the <a href="/admin/ecommerce/shipping-costs/examples.tcl">Shipping Cost Examples page</a>
+through it.  Make sure you read the <a href="/admin/ecommerce/shipping-costs/examples">Shipping Cost Examples page</a>
 if you don't already know how you want to set it up.
 
 <p>
@@ -111,11 +111,11 @@ to have some programming done to handle the tax for the regions in your country.
 
 
 <li>Decide if you want to add any custom product fields.  First look at the
-current fields available (<a href="/admin/ecommerce/products/add.tcl">/admin/ecommerce/products/add.tcl</a>) to see if they meet your needs.  The current
+current fields available (<a href="/admin/ecommerce/products/add">/admin/ecommerce/products/add</a>) to see if they meet your needs.  The current
 fields are probably sufficient for many types of products.  However, a 
 bookseller may wish to add a custom field to store the ISBN, or someone
 who sells clothing from many manufacturers may wish to add a manufacturers field.
-Custom fields are added at <a href="/admin/ecommerce/products/custom-fields.tcl">/admin/ecommerce/products/custom-fields.tcl</a>.
+Custom fields are added at <a href="/admin/ecommerce/products/custom-fields">/admin/ecommerce/products/custom-fields</a>.
 
 <p>
 
@@ -168,14 +168,14 @@ whichever price is lowest.
 <p>
 
 <li>Enter your products into the database.  This can be done using
-the simple form at <a href="/admin/ecommerce/products/add.tcl">/admin/ecommerce/products/add.tcl</a>.
+the simple form at <a href="/admin/ecommerce/products/add">/admin/ecommerce/products/add</a>.
 
 <p>
 
 However, if you have many products already stored in another database,
 you will not want to enter them one by one.  Instead, export them into
 a CSV file (or a series of CSV files), and manipulate them into the
-formats documented at <a href="/admin/ecommerce/products/upload-utilities.tcl">/admin/ecommerce/products/upload-utilities.tcl</a> so that they can be uploaded
+formats documented at <a href="/admin/ecommerce/products/upload-utilities">/admin/ecommerce/products/upload-utilities</a> so that they can be uploaded
 in bulk.
 
 <p>
@@ -191,7 +191,7 @@ do to it, such as:
 
 <p>
 
-<li>Add product recommendations (<a href="/admin/ecommerce/products/recommendations.tcl">/admin/ecommerce/products/recommendations.tcl</a>).  If you have many products subdivided into a number of categories/subcategories/subsubcategories, it's good to include product recommendations in order to make the site more browsable and interesting.
+<li>Add product recommendations (<a href="/admin/ecommerce/products/recommendations">/admin/ecommerce/products/recommendations</a>).  If you have many products subdivided into a number of categories/subcategories/subsubcategories, it's good to include product recommendations in order to make the site more browsable and interesting.
 
 <p>
 
@@ -221,7 +221,7 @@ your company better.
 
 <li>The layout for all the pages in your site is created using ADP templates
 which are stored in the directory /web/yourservername/templates/ecommerce/
-(with the exception of product.tcl which, as discussed above, uses a different
+(with the exception of product which, as discussed above, uses a different
 ADP templating system to allow for different templates for different products).
 If you are unhappy with the look of any of the pages in your site, there's
 a good chance that it can be changed simply by editing the corresponding ADP
@@ -233,7 +233,7 @@ template.
 
 That's it for setup!   Of course, your customers won't be very happy
 until you can do things like order fulfillment, so it's time to read about
-<a href="ecommerce-operation.html">operation of your ecommerce site</a>.
+<a href="ecommerce-operation">operation of your ecommerce site</a>.
 
 <hr>
 <a href="mailto:eveander@arsdigita.com"><address>eveander@arsdigita.com</address></a>

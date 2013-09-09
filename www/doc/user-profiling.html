@@ -7,19 +7,19 @@
 <body bgcolor=#ffffff text=#000000>
 <h2>User Profiling</h2>
 
-part of the <a href="index.html">ArsDigita Community System</a>
+part of the <a href="index">ArsDigita Community System</a>
 by <a href="http://photo.net/philg/">Philip Greenspun</a>, <a href="http://teadams.com/">Tracy Adams</a>, and <a href="http://michael.yoon.org/">Michael Yoon</a>
 
 <hr>
 
 <ul>
-<li>User directory:  <a href="/mailing-list/">/mailing-list/</a>
+<li>User pages:  "Your Interests" section at <a href="/pvt/home">/pvt/home</a>
 <li>Admin directory:  <a href="/admin/categories/">/admin/categories/</a> 
 <li>data model:  subsection within 
-<a href="/doc/sql/display-sql.tcl?url=/doc/sql/community-core.sql">/doc/sql/community-core.sql</a>
+<a href="/doc/sql/display-sql?url=/community-core.sql&package_key=acs-core">/packages/acs-core/community-core.sql</a>
 
-<li>procedures:  within /tcl/ad-user-profiling.tcl and /tcl/ad-categories.tcl
-<li>Related modules: <a href="site-wide-search.html">site-wide search</a>
+<li>procedures:  within /tcl/ad-categories
+<li>Related modules: <a href="site-wide-search">site-wide search</a>
 
 </ul>
 
@@ -61,11 +61,12 @@ important than other preferences.
 
 <p>
 
-The <code>mailing_list_info</code> column is used by the software
-underneath /mailing-list/.  It can contain information such as "We
-expect to send you email once every month if you sign up."  The
-<code>category_description</code> can be used in other places where a
-user simply wants clarification about a category.
+The <code>mailing_list_info</code> is legacy column from time where the
+predominant function of categorization system was to track down who was
+spammed about what.  It survived only to support some legacy code that
+may still lurk around (note that current ACS no longer uses this column).
+The <code>category_description</code> can be used in other places where
+a user simply wants clarification about a category.
 
 <h4>Optional Hierarchy</h4>
 
@@ -157,8 +158,8 @@ Here is an example entry for the <code>bboard</code> table:
 <ul>
 <li><code>table_name</code> - bboard
 <li><code>section_name</code> - Discussion Forums
-<li><code>user_url_stub</code> - /bboard/q-and-a-fetch-msg.tcl?msg_id=
-<li><code>admin_url</code> - /bboard/admin-q-and-a-fetch-msg.tcl?msg_id=
+<li><code>user_url_stub</code> - /bboard/q-and-a-fetch-msg?msg_id=
+<li><code>admin_url</code> - /bboard/admin-q-and-a-fetch-msg?msg_id=
 </ul>
 
 You're probably thinking that it would be nice to have
@@ -216,7 +217,6 @@ would look something like this:
 <code>ad_categorization_widget</code> takes the following parameters:
 
 <ul>
-<li><code>db</code>: a database handle
 
 <li><code>which_table</code> and <code>what_id</code>: together,
 these two parameters identify the specific row in the database
@@ -236,7 +236,7 @@ omitted, then the size of the widget will be the number of categories
 
 <blockquote>
 <code>
-ad_categorization_widget -db $db -which_table "restaurants" -what_id 123
+ad_categorization_widget -which_table "restaurants" -what_id 123
 </code>
 </blockquote>
 
@@ -260,7 +260,6 @@ In addition to <code>which_table</code>, <code>what_id</code>, and
 takes the following parameters:
 
 <ul>
-<li><code>db</code>: a database handle
 
 <li><code>one_line_item_desc</code>: see the description of the
 corresponding column in <code>site_wide_category_map</code> above
@@ -279,9 +278,9 @@ Like <code>ad_categorization_widget</code>, you must call
 
 <blockquote>
 <pre>
-set category_id_list [<a href="/doc/proc-one.tcl?proc_name=util_GetCheckboxValues">util_GetCheckboxValues</a> [ns_conn form] "category_id_list"]
+set category_id_list [<a href="/doc/proc-one?proc_name=util_GetCheckboxValues">util_GetCheckboxValues</a> [ns_conn form] "category_id_list"]
 if { $category_id_list != 0 } {
-     ad_categorize_row -db $db -which_table "restaurants" -what_id 123 \
+     ad_categorize_row -which_table "restaurants" -what_id 123 \
           -category_id_list $category_id_list -one_line_item_desc "Nobu"
 }
 </pre>
@@ -307,11 +306,11 @@ mention the fact that it's only <strong>near</strong> Santa Cruz, not
 
 <blockquote>
 <pre>
-ad_categorize_row -db $db -which_table "travel_articles" -what_id 456 \
+ad_categorize_row -which_table "travel_articles" -what_id 456 \
      -category_id_list <em>surfing_category_id</em> -mapping_weight 10 \
      -one_line_item_desc "Surfin' Near Santa Cruz"
 
-ad_categorize_row -db $db -which_table "travel_articles" -what_id 456 \
+ad_categorize_row -which_table "travel_articles" -what_id 456 \
      -category_id_list <em>Santa_Cruz_CA_category_id</em> -mapping_weight 2 \
      -one_line_item_desc "Surfin' Near Santa Cruz"
 </pre>

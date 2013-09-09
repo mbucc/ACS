@@ -7,15 +7,20 @@
 <body bgcolor=#ffffff text=#000000>
 <h2>User Groups</h2>
 
-part of the <a href="index.html">ArsDigita Community System</a>
+part of the <a href="index">ArsDigita Community System</a>
 by <a href="http://photo.net/philg/">Philip Greenspun</a>
+and <a href="mailto:michael@arsdigita.com">Michael Yoon</a>
 
 <hr>
 
 <ul>
-<li>User-accessible directory:  <a href="/ug/">/ug/</a>
-<li>Site administrator directory:  <a href="/admin/ug/">/admin/ug/</a>
-<li>data model :  <a href="/doc/sql/display-sql.tcl?url=/doc/sql/user-groups.sql">/doc/sql/user-groups.sql</a>
+
+<li>Data model:
+<a href="/doc/sql/display-sql?url=/user-groups.sql&package_key=acs-core">/packages/acs-core/user-groups.sql</a>
+
+<li>User-accessible directory: <a href="/groups/">/groups/</a>
+
+<li>Site administrator directory: <a href="/admin/ug/">/admin/ug/</a>
 
 </ul>
 
@@ -31,17 +36,17 @@ don't have to be separately debugged for each installation.
 These are the tables that hold user group information:
 
 <ul>
-<li><code>user_group_types</code>; one row for each different
+<li><code>user_group_types</code>: one row for each different
 <em>type</em> of user group, e.g., at a university you'd have a row for
 the "committee" group type and a row for the "course" group type
 
-<li><code>user_group_type_fields</code>; one row for each field that we must
+<li><code>user_group_type_fields</code>: one row for each field that we must
 keep for a user group type, e.g., for a university "course" group type
 there would probably be rows in this table for
 <code>semester</code>, <code>meeting_times</code>,
 <code>room_number</code>, <code>final_exam_p</code>
 
-<li><code>user_groups</code>; one row for each user group in a
+<li><code>user_groups</code>: one row for each user group in a
 community.  At a university with 1000 courses per semester, 1000 rows
 would be added to this table every semester.  Note that these rows don't
 store too much info about the groups, beyond their names (e.g., "CS 101,
@@ -49,7 +54,7 @@ Introduction to computer languages not used in industry"), whether the
 group has been approved by the site administrator, and whether new
 members must be approved.  
 
-<li><code>*_info</code>; one table for each user group type in a
+<li><code>*_info</code>: one table for each user group type in a
 community, each table named "${group_type}_info" (e.g., "course_info" or
 "committee_info").  Each table will contain one row for each user group
 of that type.  So the <code>course_info</code> table would pick up 1000
@@ -81,11 +86,41 @@ in <code>user_group_map</code> for that person, one with a value of
 
 <p>
 
-<li><code>user_group_map_queue</code>; one row for each user who has
+<li><code>user_group_map_queue</code>: one row for each user who has
 applied for membership in a group but whose membership has yet to be
 approved
 
 </ul>
+
+<a name="creation"><h3>Creating User Groups</h3></a>
+
+For each type of user group (i.e., row in the
+<code>user_group_types</code> table), you must choose an <em>approval
+policy</em> (stored, naturally, in the <code>approval_policy</code>
+column) to govern how groups of that type may be created, which must
+be one of:
+
+<ul>
+
+<li><strong><code>closed</code></strong>: Only site-wide
+administrators can create subcommunities (by using the admin pages in
+<code>/admin/ug/</code>)
+
+<li><strong><code>wait</code></strong>: Allow any user to request the
+creation of a subcommunity (by using the <code>group-new</code> pages
+in <code>/groups/</code>), requiring admin approval before fulfilling
+the request
+
+<li><strong><code>open</code></strong>: Allow any user to create a
+subcommunity without administrator intervention (also by using the
+<code>group-new</code> pages)
+
+</ul>
+
+(If you find that you need to customize the <code>group-new</code>
+pages, <a href="http://clubs.yahoo.com/">Yahoo! Clubs</a> and <a
+href="http://www.egroups.com/">eGroups</a> provide good examples of
+simple user interfaces for user group creation.)
 
 <h3>System-defined Groups</h3>
 
@@ -95,13 +130,11 @@ predate the users group module and use their own mapping tables.
 
 <p>
 
-An example of something done consistently, however, is the recording of
-whether or not a user is a system administrator of this site (tested
-with the Tcl procedure <code>ad_administrator_p</code>).  There is a
-user group type of "system".  One group of this type is pre-defined:
-"administrators".
-
-
+An example of something done consistently, however, is the recording
+of whether or not a user is a system administrator of this site
+(tested with the Tcl procedure <code>ad_administrator_p</code>).
+There is a user group type of "administration".  One group of this
+type is pre-defined: "Site-Wide Administration."
 
 <h3>Example Applications</h3>
 
@@ -122,19 +155,18 @@ be in a user group of type "committeee".  All the students and teachers
 in a particular course would be lumped together in a user group and
 could have a private discussion group.  The teachers would have a
 different role within the user group and hence would have more access privileges.
+
 <h3>Group login</h3>
 
 <p>
 <h3>More Information</h3>
 
 <ul>
-<li><a href="permissions.html">Permission Package</a> documentation on
+<li><a href="permissions">Permission Package</a> documentation on
 how to use multi-role permissions feature of user groups.
-<li><a href="writing-a-module.html">Module Administration</a> documentation on
+<li><a href="writing-a-module">Module Administration</a> documentation on
 how to administer system and admin modules of user groups.
 </ul>
-
-<p>
 
 <hr>
 <a href="http://photo.net/philg/"><address>philg@mit.edu</address></a>

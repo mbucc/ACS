@@ -1,18 +1,20 @@
-# $Id: index.tcl,v 3.0 2000/02/06 03:54:12 ron Exp $
+# www/registry/index.tcl
+
+ad_page_contract {
+    @cvs-id index.tcl,v 3.1.6.4 2000/09/22 01:39:16 kevin Exp
+} {
+}
+
 proc philg_capitalize { in_string } {
     append out_string [string toupper [string range $in_string 0 0]] [string tolower [string range $in_string 1 [string length $in_string]]]
 }
 
-set db [ns_db gethandle]
+set sql "select initcap(upper(manufacturer)) as manufacturer,count(*) as count
+         from stolen_registry
+         group by upper(manufacturer)
+         order by upper(manufacturer)"
 
-set selection [ns_db select $db "select initcap(upper(manufacturer)) as manufacturer,count(*) as count
-from stolen_registry
-group by upper(manufacturer)
-order by upper(manufacturer)"]
-
-ReturnHeaders
-
-ns_write "[ad_header "Stolen Equipment Registry Home"]
+set html "[ad_header "Stolen Equipment Registry Home"]
 
 <table>
 <tr>
@@ -32,31 +34,29 @@ ns_write "[ad_header "Stolen Equipment Registry Home"]
 
 <ul>
 
-<li><a href=\"add.html\">Add</a>
+<li><a href=\"add\">Add</a>
 
 <p>
-
 "
 
 set items ""
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
+db_foreach manufacturer_list $sql {
     set pretty_manufacturer $manufacturer
     if { $manufacturer == "" } {
 	set pretty_manufacturer "(none specified)"
     }
 
-    append items "<li><a href=\"search-one-manufacturer.tcl?manufacturer=[ns_urlencode $manufacturer]\">$pretty_manufacturer</a> ($count)\n"
+    append items "<li><a href=\"search-one-manufacturer?manufacturer=[ns_urlencode $manufacturer]\">$pretty_manufacturer</a> ($count)\n"
 
 }
 
-ns_write "
+append html "
 $items
 </ul>
 
 or 
 
-<form method=post action=search-pls.tcl>
+<form method=post action=search-pls>
 Search by full text query:  <input type=text name=query_string size=40>
 </form>
 <p>
@@ -65,3 +65,6 @@ serial numbers.
 
 [ad_footer]
 "
+
+
+doc_return  200 text/html $html

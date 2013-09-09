@@ -1,16 +1,14 @@
-# $Id: ad-member-value.tcl,v 3.0 2000/02/06 03:12:31 ron Exp $
-#
 # /tcl/ad-member-value.tcl
-#
-# by philg@mit.edu in July 1998 
-# modified November 7, 1999 to include interface
-# to the ad-user-contributions-summary.tcl system
 
-# anything having to do with billing members
-# or tallying up their charges (pseudo or otherwise)
+ad_library {
 
+    anything having to do with billing members or tallying up their
+    charges (pseudo or otherwise) 
 
-util_report_library_entry
+    @author philg@mit.edu
+    @creation-date Wed Jul 12 14:04:59 2000
+    @cvs-id ad-member-value.tcl,v 3.2.2.5 2000/09/14 07:36:28 ron Exp
+}
 
 proc_doc mv_parameter {name {default ""}} "The correct way to get a parameter for the member value module.  We want to make sure that we are abstracting away whether this is stored in the database or in the /parameters/ad.ini file." {
     set server_name [ns_info server]
@@ -41,35 +39,33 @@ proc_doc mv_user_charge_replace_comment {user_charge new_comment} "Takes a user 
 # note that it doesn't contain the entry_date, which we'll 
 # add implicitly
 
-proc_doc mv_charge_user {db spec_list {notify_subject ""} {notify_body ""}} "Takes a spec in the form of \[list user_id admin_id charge_type charge_key amount charge_comment\] and adds a row to the users_charges table" {
-    # we double the apostrophes right here to avoid any trouble with SQL
-    set QQspec_list [DoubleApos $spec_list]
-    set user_id [lindex $QQspec_list 0]
-    set admin_id [lindex $QQspec_list 1]
-    set charge_type [lindex $QQspec_list 2]
-    set charge_key [lindex $QQspec_list 3]
-    set amount [lindex $QQspec_list 4]
+proc_doc mv_charge_user {spec_list {notify_subject ""} {notify_body ""}} "Takes a spec in the form of \[list user_id admin_id charge_type charge_key amount charge_comment\] and adds a row to the users_charges table" {   
+    set user_id [lindex $spec_list 0]
+    set admin_id [lindex $spec_list 1]
+    set charge_type [lindex $spec_list 2]
+    set charge_key [lindex $spec_list 3]
+    set amount [lindex $spec_list 4]
     set unquoted_charge_comment [lindex $spec_list 5]
-    ns_db dml $db "insert into users_charges 
+    db_dml add_new_user_charges "insert into users_charges 
 (user_id, admin_id, charge_type, charge_key, amount, charge_comment, entry_date)
 values
-($user_id, $admin_id, '$charge_type', '$charge_key', $amount, [ns_dbquotevalue $unquoted_charge_comment text], sysdate)"
+(:user_id, :admin_id, :charge_type, :charge_key, :amount, :unquoted_charge_comment, sysdate)"
     if ![empty_string_p $notify_subject] {
 	# we're going to email this user and tell him that we charged him
 	# but we don't want an error in notification to cause this to fail
-	catch { mv_notify_user_of_new_charge $db $spec_list $notify_subject $notify_body }
+	catch { mv_notify_user_of_new_charge $spec_list $notify_subject $notify_body }
     }
 }
 
-proc_doc mv_notify_user_of_new_charge {db spec_list notify_subject notify_body} "Helper proc for mv_charge_user; actually sends email." {
+proc_doc mv_notify_user_of_new_charge {spec_list notify_subject notify_body} "Helper proc for mv_charge_user; actually sends email." {
     set user_id [lindex $spec_list 0]
     set admin_id [lindex $spec_list 1]
     set charge_type [lindex $spec_list 2]
     set charge_key [lindex $spec_list 3]
     set amount [lindex $spec_list 4]
     set charge_comment [lindex $spec_list 5]
-    set user_email [database_to_tcl_string_or_null $db "select email from users_alertable where user_id = $user_id"]
-    set admin_email [database_to_tcl_string_or_null $db "select email from users where user_id = $admin_id"]
+    set user_email [db_string get_user_email "select email from users_alertable where user_id = :user_id" -default ""]
+    set admin_email [db_string get_admin_email "select email from users where user_id = :admin_id" -default ""]
     if { ![empty_string_p $user_email] && ![empty_string_p $admin_id] } {
 	set full_body "You've been assessed a charge by the [ad_system_name] community."
 	if [ad_parameter UseRealMoneyP "member-value"] {
@@ -141,7 +137,6 @@ proc_doc mv_rate {which_rate} "A shortcut for getting a rate from the member-val
     return [ad_parameter $which_rate "member-value"]
 }
 
-
 ##################################################################
 #
 # interface to the ad-user-contributions-summary.tcl system
@@ -152,12 +147,12 @@ if { ![info exists ad_user_contributions_summary_proc_list] || [util_search_list
     lappend ad_user_contributions_summary_proc_list [list "Member Value" mv_user_contributions 0]
 }
 
-proc_doc mv_user_contributions {db user_id purpose} {Returns empty list unless it is the site admin asking.  Returns list items, one for each user charge} {
+proc_doc mv_user_contributions {user_id purpose} {Returns empty list unless it is the site admin asking.  Returns list items, one for each user charge} {
     if { $purpose != "site_admin" } {
 	return [list]
     } 
     set items ""
-    set selection [ns_db select $db "select 
+    set sql "select 
   uc.entry_date, 
   uc.charge_type, 
   uc.currency, 
@@ -166,13 +161,12 @@ proc_doc mv_user_contributions {db user_id purpose} {Returns empty list unless i
   uc.admin_id,
   u.first_names || ' ' || u.last_name as admin_name
 from users_charges uc, users u
-where uc.user_id = $user_id
+where uc.user_id = :user_id
 and uc.admin_id = u.user_id
-order by uc.entry_date desc"]
-    while { [ns_db getrow $db $selection] } {
-	set_variables_after_query
+order by uc.entry_date desc"
+    db_foreach mv_user_contribution_query $sql {
 	append items "<li>$entry_date: $charge_type $currency $amount, 
-by <a href=\"/admin/member-value/charges-by-one-admin.tcl?admin_id=$admin_id\">$admin_name</a>"
+by <a href=\"/admin/member-value/charges-by-one-admin?admin_id=$admin_id\">$admin_name</a>"
         if ![empty_string_p $charge_comment] {
 	    append items " ($charge_comment)"
 	}
@@ -184,7 +178,3 @@ by <a href=\"/admin/member-value/charges-by-one-admin.tcl?admin_id=$admin_id\">$
 	return [list 0 "Member Value" "<ul>\n\n$items\n\n</ul>"]
     }
 }
-
-
-
-util_report_successful_library_load

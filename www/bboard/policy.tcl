@@ -1,28 +1,30 @@
-# $Id: policy.tcl,v 3.0 2000/02/06 03:34:03 ron Exp $
-set_form_variables_string_trim_DoubleAposQQ
-set_form_variables
+# /www/bboard/policy.tcl
+ad_page_contract {
+    Page to display the policies for a bboard topic
 
-# topic required
+    @param topic the name of the bboard
 
-set db [bboard_db_gethandle]
-if { $db == "" } {
-    bboard_return_error_page
-    return
+    @author ?
+    @creation-date ?
+    @cvs-id policy.tcl,v 3.1.2.3 2000/09/22 01:36:51 kevin Exp
+} {
+    topic
 }
+
+# -----------------------------------------------------------------------------
  
 if  {[bboard_get_topic_info] == -1} {
-    return}
+    return
+}
 
-
-
-
-
-ns_return 200 text/html "[bboard_header "About the $topic Forum"]
+doc_return  200 text/html "
+[bboard_header "About the $topic Forum"]
 
 <h2>About the $topic Forum</h2>
 
-[ad_context_bar_ws_or_index [list "index.tcl" [bboard_system_name]] [list [bboard_raw_backlink $topic_id $topic $presentation_type 0] $topic] "Policy"]
-
+[ad_context_bar_ws_or_index [list "index.tcl" [bboard_system_name]] \
+	[list [bboard_raw_backlink $topic_id $topic $presentation_type 0] \
+	$topic] "Policy"]
 
 <hr>
 
@@ -46,3 +48,8 @@ to be notified</a> if you'd like to follow the forum via email).
 
 [bboard_footer]
 "
+
+
+
+
+

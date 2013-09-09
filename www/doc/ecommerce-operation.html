@@ -7,11 +7,11 @@
 <body bgcolor=#ffffff text=#000000>
 <h2>Operation</h2>
 
-of the <a href="ecommerce.html">Ecommerce Module</a> by <a href="mailto:eveander@arsdigita.com">Eve Andersson</a> of <a href="http://arsdigita.com">ArsDigita</a>
+of the <a href="ecommerce">Ecommerce Module</a> by <a href="mailto:eveander@arsdigita.com">Eve Andersson</a> of <a href="http://arsdigita.com">ArsDigita</a>
 
 <hr>
-Before reading this, make sure that you have read about <a href="ecommerce-setup.html">setting up your ecommerce module</a>.  This document takes up where that one leaves off and covers all the components of operating your on-line shop with the exception of
-<a href="ecommerce-customer-service.html">customer service</a>, which is a submodule
+Before reading this, make sure that you have read about <a href="ecommerce-setup">setting up your ecommerce module</a>.  This document takes up where that one leaves off and covers all the components of operating your on-line shop with the exception of
+<a href="ecommerce-customer-service">customer service</a>, which is a submodule
 in itself.
 <p>
 <h3>Orders</h3>
@@ -48,7 +48,7 @@ submits their order, the state becomes CONFIRMED.  Only then do we try
 to authorize their credit card.  If the authorization succeeds, the order
 state will be updated to AUTHORIZED_PLUS_AVS or AUTHORIZED_MINUS_AVS.
 AVS stands for Address Verification System (for more information on AVS,
-read the <a href="http://photo.net/wtr/thebook/ecommerce.html">ecommerce
+read the <a href="http://photo.net/wtr/thebook/ecommerce">ecommerce
 chapter</a> of Philip &amp; Alex's Guide to Web Publishing.  Because AVS
 is flaky and unreliable, we treat AUTHORIZED_PLUS_AVS orders the same as
 AUTHORIZED_MINUS_AVS orders.  If an order fails, it goes back into the
@@ -101,8 +101,8 @@ put into the RECEIVED_BACK state.  Like orders, individual items can also be put
 
 OK, so what can you actually do with orders?  You can:
 <ul>
-<li><a href="/admin/ecommerce/orders/by-order-state-and-time.tcl">view them</a>
-<li><a href="/admin/ecommerce/orders/fulfillment.tcl">fulfill them</a>
+<li><a href="/admin/ecommerce/orders/by-order-state-and-time">view them</a>
+<li><a href="/admin/ecommerce/orders/fulfillment">fulfill them</a>
 <li><a href="/admin/ecommerce/orders/">search for individual orders</a>
 </ul>
 On an individual order, you can:
@@ -118,7 +118,7 @@ On an individual order, you can:
 
 <h3>Gift Certificates</h3>
 
-As you know from <a href="ecommerce-setup.html">setting up your ecommerce module</a>,
+As you know from <a href="ecommerce-setup">setting up your ecommerce module</a>,
 you can configure whether to allow customers to purchase gift certificates for others.
 These are the states that a purchased gift certificate goes through:
 
@@ -158,11 +158,11 @@ to be applied.
 <p>
 Things you can do with gift certificates:
 <ul>
-<li>view <a href="/admin/ecommerce/orders/gift-certificates.tcl">purchased
+<li>view <a href="/admin/ecommerce/orders/gift-certificates">purchased
 gift certificates</a>
-<li>view <a href="/admin/ecommerce/orders/gift-certificates-issued.tcl">issued
+<li>view <a href="/admin/ecommerce/orders/gift-certificates-issued">issued
 gift certificates</a>
-<li>see your <a href="/admin/ecommerce/orders/revenue.tcl">gift certificate
+<li>see your <a href="/admin/ecommerce/orders/revenue">gift certificate
 liability</a>
 <li>see a customer's gift certificates (find the customer using the customer
 service submodule or <a href="/admin/users/">/admin/users</a>) and void their
@@ -175,7 +175,7 @@ Besides the most important task of filling orders, there are some other things
 that need to be done once in a while.
 <p>
 
-Naturally, you'll want to rotate your <a href="/admin/ecommerce/products/recommendations.tcl">product recommendations</a> every so often to keep your site looking fresh, even
+Naturally, you'll want to rotate your <a href="/admin/ecommerce/products/recommendations">product recommendations</a> every so often to keep your site looking fresh, even
 if your product database doesn't change.  You will also need to periodically 
 <a href="/admin/ecommerce/customer-reviews/">approve/disapprove customer reviews</a>
 (if you've set reviews to require approval) and perhaps view
@@ -189,7 +189,7 @@ by the system when it comes across issues that it is unable to resolve.  These
 problems (hopefully infrequent) will need to be resolved by hand.
 
 <p>
-Continue on to the <a href="ecommerce-customer-service.html">Customer Service Submodule</a>.
+Continue on to the <a href="ecommerce-customer-service">Customer Service Submodule</a>.
 <hr>
 <a href="mailto:eveander@arsdigita.com"><address>eveander@arsdigita.com</address></a>
 </body>

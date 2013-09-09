@@ -1,13 +1,18 @@
-# $Id: edit.tcl,v 3.0.4.1 2000/03/15 05:08:22 curtisg Exp $
-set db [ns_db gethandle]
+ad_page_contract {
+    Lets you pick a domain to edit from all the domains.
 
-set selection [ns_db select $db "select * from ad_domains"]
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
-    append bullet_list "<li><a href=\"domain-top.tcl?domain_id=$domain_id\">$backlink_title</a>\n"
+    @author xxx
+    @date unknown
+    @cvs-id edit.tcl,v 3.3.2.6 2000/09/22 01:35:23 kevin Exp
+} {
+
 }
 
-ns_return 200 text/html "<html>
+db_foreach get_all_ad_domains "select * from ad_domains" {
+    append bullet_list "<li><a href=\"domain-top?domain_id=$domain_id\">$backlink_title</a>\n"
+}
+
+set page_content "<html>
 <head>
 <title>Pick a Domain</title>
 </head>
@@ -22,9 +27,11 @@ $bullet_list
 
 </ul>
 
-
 <hr>
 <a href=\"http://www-swiss.ai.mit.edu/philg/\"><address>philg@mit.edu</address></a>
 
 </body>
 </html>"
+
+
+doc_return  200 text/html $page_content

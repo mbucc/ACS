@@ -1,48 +1,34 @@
-# $Id: one-user-constraints.tcl,v 3.0 2000/02/06 03:25:37 ron Exp $
-# called from ???
+# /admin/monitoring/cassandracle/users/one-user-constraints.tcl
 
-set_form_variables
+ad_page_contract {
+    Display constraints that have been defined by one user
 
-set show_sql_p "t"
-
-# check arguments -----------------------------------------------------
-
-# $object_type   REQUIRED ARGUMENT
-if { ![info exists owner] } {
-    ns_returnerror 500 "Missing \$owner (format: OWBER)"
-    return
+    @author Dave Abercrombie (abe@arsdigita.com)
+    @creation-date 29 January 2000
+    @cvs-id one-user-constraints.tcl,v 3.2.2.4 2000/09/22 01:35:38 kevin Exp
+} {
+    owner
+    { order_by "constraint_name" }
 }
-
-# $order   OPTIONAL ARGUMENT, BUT NEED TO SET DEFAULT
-if { ![info exists order] } {
-    set order "constraint_name" 
-}
-
-
-# arguments OK, start building page ----------------------------------------
 
 set page_name "Constraints owned by $owner"
-ReturnHeaders
-set db [cassandracle_gethandle]
 
-ns_write "
+set page_content "
 
-[ad_admin_header "$page_name"]
+[ad_admin_header $page_name]
 
 <h2>$page_name</h2>
 
 [ad_admin_context_bar  [list "/admin/monitoring" "Monitoring"] [list "/admin/monitoring/cassandracle" "Cassandracle"] [list "/admin/monitoring/cassandracle/users/" "Users"] [list "/admin/monitoring/cassandracle/users/user-owned-constraints.tcl" "Constraints" ] "One User Constraints"]
 
-<!-- version 1.2, 2000-01-29, Dave Abercrombie -->
 <hr>
 "
 
 # build the SQL and write out as comment
+# I include all dba_constraint columns, but comment out those which I do not need
+
 set constraint_query "
 -- cassandracle/users/one-user-constraints.tcl
--- get constraints
--- http://oradoc.photo.net/ora81/DOC/server.815/a67790/ch2.htm#1175
--- I include all dba_constraint columns, but comment out those which I do not need
 select 
      dc.constraint_name,
      dc.table_name,
@@ -77,31 +63,29 @@ from
      -- is probably just fine)
      (select table_name, constraint_name 
       from dba_constraints 
-      where owner = '$owner') dc2
+      where owner = :owner) dc2
 where
      -- user (Tcl) specifies table and owner
-     dc.owner = '$owner'
+     dc.owner = :owner
      -- obviously need outer join here since most 
      -- constraints are NOT foreign keys
      -- note that inline view dc2 already limited to current owner
      -- so we will not get table names if they are owned by others
 and  dc.r_constraint_name = dc2.constraint_name (+)
 order by
-     $order
+     :order_by
 "
-if { [string compare $show_sql_p "t" ]==0 } {
-    ns_write "<!-- $constraint_query -->\n"
-}
+
+append page_content  "<!-- $constraint_query -->\n"
 
 # I do not want to show an empty table,
 # so I initialize a flag to a value of "f"
 # then I flip it to 't' on the first row (after doing table header)
 set at_least_one_row_already_retrieved "f"
 
-# run query (already have db handle)
-set selection [ns_db select $db $constraint_query]
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+# run query
+
+db_foreach mon_user_constraints $constraint_query {
 
     if { [string compare $at_least_one_row_already_retrieved "f"]==0 } {
 
@@ -111,33 +95,32 @@ while { [ns_db getrow $db $selection] } {
         set at_least_one_row_already_retrieved "t"
 
         # table title
-        ns_write "<p>This user has the following constraints</p>"
-
+        append page_content "<p>This user has the following constraints</p>"
 
         # specify output columns
         # 1
-        set description_columns [list "<a href=\"./one-user-constraints.tcl?owner=$owner&order=constraint_name\">Constraint<a/>" ] 
-        lappend description_columns   "<a href=\"./one-user-constraints.tcl?owner=$owner&order=table_name\">Table</a>" 
-        lappend description_columns   "<a href=\"./one-user-constraints.tcl?owner=$owner&order=constraint_type\">Type</a>" 
+        set description_columns [list "<a href=\"./one-user-constraints?owner=$owner&order_by=constraint_name\">Constraint<a/>" ] 
+        lappend description_columns   "<a href=\"./one-user-constraints?owner=$owner&order_by=table_name\">Table</a>" 
+        lappend description_columns   "<a href=\"./one-user-constraints?owner=$owner&order_by=constraint_type\">Type</a>" 
 	# can not sort on LONG
         lappend description_columns   "Condition" 
-        lappend description_columns   "<a href=\"./one-user-constraints.tcl?owner=$owner&order=r_table_name\">Parent</a>" 
-        lappend description_columns   "<a href=\"./one-user-constraints.tcl?owner=$owner&order=delete_rule\">Delete Rule</a>" 
-        lappend description_columns   "<a href=\"./one-user-constraints.tcl?owner=$owner&order=Status\">Status</a>" 
-        lappend description_columns   "<a href=\"./one-user-constraints.tcl?owner=$owner&order=validated\">Validity</a>" 
-        lappend description_columns   "<a href=\"./one-user-constraints.tcl?owner=$owner&order=last_change\">Changed</a>" 
+        lappend description_columns   "<a href=\"./one-user-constraints?owner=$owner&order_by=r_table_name\">Parent</a>" 
+        lappend description_columns   "<a href=\"./one-user-constraints?owner=$owner&order_by=delete_rule\">Delete Rule</a>" 
+        lappend description_columns   "<a href=\"./one-user-constraints?owner=$owner&order_by=Status\">Status</a>" 
+        lappend description_columns   "<a href=\"./one-user-constraints?owner=$owner&order_by=validated\">Validity</a>" 
+        lappend description_columns   "<a href=\"./one-user-constraints?owner=$owner&order_by=last_change\">Changed</a>" 
         set column_html ""
         foreach column_heading $description_columns {
             append column_html "<th>$column_heading</th>"
         }
 
         # begin main table
-        ns_write "
+        append page_content "
         <table border=1>
         <tr>$column_html</tr>
         "
 
-    # end of first row tricks
+	# end of first row tricks
     }
 
     # start row
@@ -147,7 +130,7 @@ while { [ns_db getrow $db $selection] } {
     append row_html "   <td>$constraint_name</td>\n"
 
     # 2) table_name - set lower case LINK since not in cut-and-paste
-    set table_name "<a href=\"../objects/describe-table.tcl?object_name=$owner.$table_name\#constraints\">[string tolower $table_name]</a>"
+    set table_name "<a href=\"../objects/describe-table?object_name=$owner.$table_name\#constraints\">[string tolower $table_name]</a>"
     append row_html "   <td>$table_name</td>\n"
 
     # 3) decoded_constraint_type - set lower case since not on cut-paste-paste
@@ -165,7 +148,7 @@ while { [ns_db getrow $db $selection] } {
     if { [empty_string_p $r_table_name] } {
 	set r_table_name "&nbsp;"
     } else {
-	set r_table_name "<a href=\"../objects/describe-table.tcl?object_name=$r_owner.$r_table_name\">[string tolower $r_table_name]</a>"
+	set r_table_name "<a href=\"../objects/describe-table?object_name=$r_owner.$r_table_name\">[string tolower $r_table_name]</a>"
     }
     append row_html "   <td>$r_table_name</td>\n"
 
@@ -195,21 +178,22 @@ while { [ns_db getrow $db $selection] } {
     append row_html "</tr>\n"
 
     # write row
-    ns_write "$row_html"
+    append page_content $row_html
 }
-
 
 # close up table if present, otherwise indicate that there were none
 if { [string compare $at_least_one_row_already_retrieved "t"]==0 } {
-    ns_write "</table><p></p>\n"
+    append page_content "</table><p></p>\n"
 } else {
-    ns_write "<p>This user has no constraints! Why?.</p>"
+    append page_content "<p>This user has no constraints! Why?.</p>"
 }
 
-
-ns_write "
+append page_content "
 <hr>
 <H4>More information:</h4>
 <p>See Oracle documentation about view <a target=second href=\"http://oradoc.photo.net/ora81/DOC/server.815/a67790/ch2.htm#1175\">dba_constraints</a> on which this page is based.</p>
 [ad_admin_footer]
 "
+
+
+doc_return  200 text/html $page_content

@@ -1,20 +1,26 @@
-# $Id: entry-form.tcl,v 3.5.2.1 2000/04/28 15:09:54 carsten Exp $
+# /www/contest/entry-form.tcl
+ad_page_contract {
+    The contest entry form.
+
+    @param domain_id which contest this is
+    @param domain which contest this is (for backwards compatibility)
+
+    @author mbryzek@arsdigita.com
+    @cvs_id entry-form.tcl,v 3.7.6.6 2000/09/22 01:37:18 kevin Exp
+} {
+    {domain_id:integer ""}
+    {domain ""}
+}
+
+
 if {[ad_read_only_p]} {
     ad_return_read_only_maintenance_message
     return
 }
 
-set_the_usual_form_variables
-
-# either domain_id or domain (for backwards compatibitility)
-
-set db [ns_db gethandle]
-
-if { ![info exists domain_id] && [info exists domain] } {
-    set domain_id [database_to_tcl_string_or_null $db "select domain_id from contest_domains where domain='$QQdomain'"]
-    set QQdomain_id [DoubleApos $domain_id]
+if { [empty_string_p domain_id] && ![empty_string_p domain] } {
+    set domain_id [db_string -default "" domain_id_from_domain "select domain_id from contest_domains where domain=:domain"]
 }
-
 
 # test for integrity
 
@@ -35,18 +41,16 @@ if {$user_id == 0} {
 
 # get out variables to create entry form
 
-set selection [ns_db 0or1row $db "select cd.*, users.email as maintainer_email
+if {![db_0or1row contest_info "select cd.*, users.email as maintainer_email
 from contest_domains cd, users
-where domain_id = '$QQdomain_id'
-and cd.maintainer = users.user_id"]
-
-if { $selection == "" } {
+where domain_id = :domain_id
+and cd.maintainer = users.user_id"]} {
     ad_return_error "Failed to find contest" "We couldn't find a contest with a domain_id of \"$domain_id\"."
     return
 }
-set_variables_after_query
 
-set the_page "[ad_header $pretty_name]
+
+set page_content "[ad_header $pretty_name]
 
 <h2>$pretty_name</h2>
 
@@ -61,18 +65,15 @@ $blather
 <center>
 <h2>Enter Contest</h2>
 
-<form method=POST action=\"process-entry.tcl\">
+<form method=get action=\"process-entry\">
 [export_form_vars domain_id]
 
 "
 
-set selection [ns_db select $db "select * from contest_extra_columns where domain_id = '$QQdomain_id'"]
 set n_rows_found 0
-
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+set custom_vars [list]
+db_foreach extra_columns "select * from contest_extra_columns where domain_id = :domain_id" {
     incr n_rows_found
- 
     if { $column_type == "boolean" } {
  	append table_rows "<tr><th>$column_pretty_name<td>
 	<select name=$column_actual_name>
@@ -80,7 +81,8 @@ while { [ns_db getrow $db $selection] } {
 	<option value=\"f\">No
 	</select>"
     } else {
- 	append table_rows "<tr><th>$column_pretty_name<td><input type=text name=$column_actual_name size=30>"
+ 	append table_rows "<tr><th>$column_pretty_name<td><input type=text name=custom.$column_actual_name size=30>"
+	lappend custom_vars $column_actual_name
     }
     
     if [regexp -nocase {not null} $column_extra_sql] {
@@ -90,16 +92,17 @@ while { [ns_db getrow $db $selection] } {
 }
 
 if { $n_rows_found != 0 } {
-    append the_page "<table>\n$table_rows\n</table>\n"
+    append page_content "<table>\n$table_rows\n</table>\n"
 }
 
-append the_page "
+append page_content "
 
 <p>
 
 <center>
 <input type=submit value=\"Submit Entry\">
 </center>
+[export_form_vars custom_vars]
 </form>
 
 </center>
@@ -107,7 +110,7 @@ append the_page "
 [ad_footer $maintainer_email]
 "
 
-ns_db releasehandle $db
 
-ns_return 200 text/html $the_page
+
+doc_return  200 text/html $page_content
 

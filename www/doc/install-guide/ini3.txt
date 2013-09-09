@@ -1,0 +1,153 @@
+From - Thu Jun  1 10:29:42 2000
+Return-Path: <web@localhost.localdomain>
+Received: from localhost.localdomain ([216.34.106.252]) by www.w3health.com
+          (Post.Office MTA v3.1.2 release (PO203-101c)
+          ID# 0-33392U500L100S10000) with ESMTP id AAA8728
+          for <bquinn@arsdigita.com>; Thu, 1 Jun 2000 02:46:20 -0400
+Received: (from web@localhost)
+	by localhost.localdomain (8.9.3/8.9.3) id CAA00977
+	for bquinn@arsdigita.com; Thu, 1 Jun 2000 02:42:38 -0400
+Date: Thu, 1 Jun 2000 02:42:38 -0400
+From: web@localhost.localdomain
+Message-Id: <200006010642.CAA00977@localhost.localdomain>
+To: bquinn@arsdigita.com
+X-Mozilla-Status: 8001
+X-Mozilla-Status2: 00000000
+X-UIDL: 20000601064619.AAA8728@localhost.localdomain
+
+# replace these with the correct values...
+# ${service_database_username}
+# ${service_database_password}
+# ${AOL_HOME}
+# ${service_short_name}
+# ${ACS_HOME}
+# ${service_ip_address}
+# ${service_ip_name}
+# ${service_port}
+# ${service_ip_address_ssl}
+# ${service_ip_name_ssl}
+# ${service_port_ssl}
+# ${service_short_description}
+
+[ns/db/drivers]
+ora8=ora8.so
+
+[ns/db/pool/main]
+Driver=ora8
+Connections=4
+DataSource=
+User=${service_database_username}
+Password=${service_database_password}
+Verbose=On
+ExtendedTableInfo=On
+
+[ns/db/pool/subquery]
+Driver=ora8
+Connections=4
+DataSource=
+User=${service_database_username}
+Password=${service_database_password}
+Verbose=On
+ExtendedTableInfo=On
+
+[ns/db/pool/log]
+Driver=ora8
+Connections=3
+DataSource=
+User=${service_database_username}
+Password=${service_database_password}
+Verbose=On
+ExtendedTableInfo=On
+
+[ns/db/pools]
+main=main
+subquery=subquery
+log=log
+
+[ns/parameters]
+User=nsadmin
+ServerLog=${AOL_HOME}/log/${service_short_name}-error.log
+Home=${AOL_HOME}
+StackSize=500000
+auxconfigdir=${ACS_HOME}/parameters
+
+[ns/threads]
+; use more than 1 processor (Solaris)
+SystemScope=on
+
+[ns/server/${service_short_name}/module/nscache]
+CacheADP=on
+
+[ns/server/${service_short_name}]
+PageRoot=${ACS_HOME}/www
+DirectoryFile=index.tcl, index.adp, index.html, index.htm 
+Webmaster=service_email
+NoticeBgColor=#ffffff
+EnableTclPages=On
+NotFoundResponse=/global/file-not-found.html
+ServerBusyResponse=/global/busy.html
+ServerInternalErrorResponse=/global/error.html
+MaxThreads=50
+MaxBusyThreads=20
+MaxWait=2
+
+[ns/server/${service_short_name}/db]
+Pools=*
+DefaultPool=main
+
+[ns/server/${service_short_name}/adp]
+Map=/*.adp
+
+[ns/server/${service_short_name}/module/nslog]
+EnableHostnameLookup=Off
+File=${AOL_HOME}/log/${service_short_name}.log
+LogCombined=On
+LogRefer=Off
+LogUserAgent=Off
+MaxBackup=5
+RollDay=*
+RollFmt=%Y-%m-%d-%H:%M
+RollHour=0
+RollOnSignal=On
+RollLog=On
+
+[ns/server/${service_short_name}/module/nsperm]
+model=Small
+enablehostnamelookup=Off
+
+[ns/server/${service_short_name}/module/nssock]
+timeout=120
+Address=${service_ip_address}
+Hostname=${service_ip_name}
+Port=:${service_port}
+
+[ns/server/${service_short_name}/module/nsssl]
+Address=${service_ip_address_ssl}
+Hostname=${service_ip_name_ssl}
+CertFile=${AOL_HOME}/servers/${service_short_name}/cert.pem
+KeyFile=${AOL_HOME}/servers/${service_short_name}/key.pem
+Port=${service_port_ssl}
+
+[ns/server/${service_short_name}/modules]
+nsperm=nsperm.so
+nssock=nssock.so
+nslog=nslog.so
+nsssl=nsssle.so
+
+[ns/server/${service_short_name}/MimeTypes]
+Default=text/plain
+NoExtension=text/plain
+.pcd=image/x-photo-cd
+.prc=application/x-pilot
+
+[ns/server/${service_short_name}/tcl]
+Library=${ACS_HOME}/tcl
+
+[ns/servers]
+${service_short_name}=${service_short_description}
+
+
+[ns/setup]
+ContinueOnError=On
+Enabled=Off
+Port=9879

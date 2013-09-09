@@ -1,58 +1,40 @@
-#
-# /press/admin/index.tcl
-#
-# Author: ron@arsdigita.com, December 1999
-#
-# This offers the options to create, edit, and delete existing press
-# coverage for authorized users.
-#
-# $Id: index.tcl,v 3.1.2.1 2000/03/15 20:29:59 aure Exp $
-#
+# /www/press/admin/index.tcl
+
+ad_page_contract {
+    This page offers the options to create, edit, and delete existing press
+    coverage for authorized users.
+
+    @author Ron Henderson (ron@arsdigita.com)
+    @created December 1999
+    @cvs-id index.tcl,v 3.3.8.8 2000/09/22 01:39:07 kevin Exp
+} {
+    {orderby "publication_date"}
+}
 
 set user_id [ad_maybe_redirect_for_registration]
-
-set db [ns_db gethandle]
 
 # Verify that this user is a valid (site-wide or group)
 # administrator.  If so, then set up the where clause that will pull
 # out all press coverage they can maintain.
 
-if {[press_admin_any_group_p $db $user_id]} {
+if {[press_admin_any_group_p $user_id]} {
     # user is an administrator for at least some group
     # site-wide or group specific?
-    if {[ad_administrator_p $db $user_id]} {
+    if {[ad_administrator_p $user_id]} {
 	set where_clause ""
     } else {
 	set where_clause "
-	where (scope = 'public' and creation_user = $user_id)
-        or 't' = ad_group_member_admin_role_p($user_id, press.group_id)"
+	where (scope = 'public' and creation_user = :user_id)
+        or 't' = ad_group_member_admin_role_p(:user_id, press.group_id)"
     }
 } else {
     ad_return_complaint 1 "<li>You are not authorized to access this page"
     return
 }
 
-# Get those press items
+# Helper proc to turn (days_remaining,important_p) into a status message
 
-set selection [ns_db select $db "
-select press_id, 
-       scope,
-       article_title,
-       publication_name,
-       publication_date,
-       trunc(creation_date+[press_active_days]-sysdate) as days_remaining,
-       important_p
-from   press
-$where_clause
-order  by publication_date desc"]
-
-set avail_press_count 0
-set avail_press_items ""
-
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
-    incr avail_press_count
-
+proc press_status {days_remaining important_p} {
     if {$days_remaining < 0 && $important_p == "f"} {
 	set status "<font color=red>Expired</font>"
     } elseif {$important_p == "f"} {
@@ -60,59 +42,72 @@ while {[ns_db getrow $db $selection]} {
     } else {
 	set status "Permanent"
     }
-
-    append avail_press_items "
-    <tr valign=top>
-    <td><nobr>[util_AnsiDatetoPrettyDate $publication_date]</nobr></td>
-    <td>$publication_name</td>
-    <td>$article_title</td>
-    <td align=center>$status</td>
-    <td align-center><nobr>
-      <a href=edit?press_id=$press_id>edit</a> | 
-      <a href=delete?press_id=$press_id>delete</a></nobr>
-    </td>
-    </tr>"
+    return $status
 }
 
-# Done with the database
-ns_db releasehandle $db
+# Get those press items
 
-if {$avail_press_count == 0} {
-    set avail_press_list "
-    <p>There is no press coverage currently in the database that you are 
-    authorized to maintain."
-} else {
-    set avail_press_list "
-    <table bgcolor=black cellpadding=0 cellspacing=1 border=0><tr><td>
-    <table bgcolor=white cellpadding=3 cellspacing=1 border=0>
-    <tr bgcolor=#dddddd>
-    <td align=center><b>Date</b></td>
-    <td align=center><b>Publication</b></td>
-    <td align=center><b>Article</b></td>
-    <td align=center><b>Status</b></td>
-    <td align=center><b>Actions</b></td>
-    </tr>
-    $avail_press_items
-    </table></td></tr></table>"
-}
+set active_days [press_active_days]
+
+set table_def [list \
+	{none             "Select"      no_sort "<td align=center bgcolor=white><input type=checkbox name=press_items value=$press_id></td>"} \
+	{press_id         "ID#"         {}      "<td align=left><a href=edit?press_id=$press_id>$press_id</a></td>"} \
+	{publication_date "Date"        {}      "<td align=left>$publication_date</td>"} \
+	{publication_name "Publication" {}      ""} \
+	{article_title    "Article"     {}      ""} \
+	{days_remaining   "Status"      no_sort "<td align=center>[press_status $days_remaining $important_p]"}]
+
+set bind_vars [ad_tcl_vars_to_ns_set user_id active_days]
+
+set sql "
+select press_id, 
+       scope,
+       article_title,
+       publication_name,
+       publication_date,
+       trunc(publication_date+:active_days-sysdate) as days_remaining,
+       important_p
+from   press
+$where_clause
+[ad_order_by_from_sort_spec $orderby $table_def]"
 
 # -----------------------------------------------------------------------------
 # Ship it out
 
-ns_return 200 text/html "
-[ad_header "Admin"]
+doc_return  200 text/html "
+[ad_header "Press Admin"]
 
-<h2>Admin: Press</h2>
+<h2>Press Admin</h2>
 
 [ad_context_bar_ws [list "../" "Press"] "Admin"]
 
 <hr>
+
+<p>The system is currently configured to display a maximum of
+[ad_parameter DisplayMax press] press items for up to [ad_parameter ActiveDays press]
+days from the date of publication.
+
 <ul>
 <li><a href=add>Add a new press item</a></li>
 </ul>
-</p>
 
-<p>$avail_press_list</p>
+<p>
+
+<form method=post action=process>
+
+[ad_table -Torderby $orderby -Ttable_extra_html {width=100%} -Tband_colors [list {} lightgrey] \
+	-bind $bind_vars press_items $sql $table_def]
+
+
+<p>Do the following to the selected items:
+<select name=action>
+<option value=delete selected>Delete
+<option value=importance_high>Make permanent
+<option value=importance_low>Allow to expire
+</select>
+<input type=submit value=Go>
+</p>
+</form>
 
 [ad_footer]"
 

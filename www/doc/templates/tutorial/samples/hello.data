@@ -1,0 +1,23 @@
+<template>
+
+ 
+  <name>lesson1</name>
+  <title>Template One</title>
+  <author>karlg@arsdigita.com</author>
+  <comment>This is a sample template specification.</comment>
+
+  <process>
+
+  <datasource>
+
+    <name>hello</name>
+    <type>query</type>
+    <structure>onevalue</structure>
+    <condition>select 'Hello World' as hello from dual</condition>
+    <comment>Query database for a literal string.</comment>
+
+  </datasource>
+
+  </process>
+
+</template>

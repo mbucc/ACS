@@ -1,0 +1,37 @@
+<template>
+
+  <name>lesson</name>
+  <title>Optional Params</title>
+  <author>karlg@arsdigita.com</author>
+  <comment>
+    This template specification demonstrates the optional keyword for
+    parameter data sources.
+  </comment>
+
+  <process>
+
+  <datasource status=optional>
+
+    <name>state</name>
+    <type>param</type>
+    <comment>The state for which a list of users is required.</comment>
+
+  </datasource>
+
+  </process>
+
+</template>
+
+
+
+
+
+
+
+
+
+
+
+
+
+

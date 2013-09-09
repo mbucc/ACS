@@ -1,26 +1,38 @@
-# Insert a new template
-#
-# Author: ron@arsdigita.com, December 1999
-#
-# $Id: template-add-2.tcl,v 3.0.4.3 2000/04/28 15:09:17 carsten Exp $
-# -----------------------------------------------------------------------------
+# /www/admin/press/template-add-2.tcl
 
-ad_page_variables {
-    {template_name}
-    {template_adp}
+ad_page_contract {
+
+    Insert a new template
+
+    @author  Ron Henderson (ron@arsdigita.com)
+    @created December 1999
+    @cvs-id  template-add-2.tcl,v 3.2.6.6 2001/01/11 23:17:16 khy Exp
+} {
+    {template_id:integer,verify}
+    {template_name:trim}
+    {template_adp:trim,allhtml}
 }
 
-set db [ns_db gethandle]
+#double-click check
+set dbl_clk [db_string press_tmplt_dbl_clk "select
+count(*) from press_templates
+where template_id = :template_id"]
 
-ns_db dml $db "
+if {$dbl_clk > 0} {
+    ad_return_warning "Template Exists" "A template with this ID already
+    exists.  Perhaps you double-clicked?"
+    return
+}
+
+db_dml press_template_add "
 insert into press_templates
  (template_id,
   template_name,
   template_adp)
 values
- (press_template_id_sequence.nextval,
-  '[DoubleApos $template_name]',
-  '[DoubleApos $template_adp]')"
+ (:template_id,
+  :template_name,
+  :template_adp)"
 
 # Redirect back to the templates page
 

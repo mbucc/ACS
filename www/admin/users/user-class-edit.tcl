@@ -1,26 +1,26 @@
-# $Id: user-class-edit.tcl,v 3.0 2000/02/06 03:31:49 ron Exp $
-set_the_usual_form_variables
+ad_page_contract {
+    @cvs-id user-class-edit.tcl,v 3.2.2.3.2.3 2000/09/22 01:36:25 kevin Exp
+} {
+    user_class_id:integer,notnull
+}
 
-# user_class_id
 
-set db [ns_db gethandle]
-set selection [ns_db 1row $db "select name,
+db_1row admin_users_user_class_info_select "select name,
 sql_description, sql_post_select, description
 from user_classes
-where user_class_id = $user_class_id"]
-set_variables_after_query
+where user_class_id = :user_class_id"
 
-ns_return 200 text/html "
+
+set page_content "
 [ad_admin_header "Edit $name"]
 
 <h3>Edit $name</h3>
-
 
 [ad_admin_context_bar [list "index.tcl" "Users"] [list "action-choose.tcl?[export_url_vars user_class_id]" "$name" ] "Edit"]
 
 <hr>
 
-<form action=user-class-edit-2.tcl method=post>
+<form action=user-class-edit-2 method=post>
 [export_form_vars user_class_id]
 <table>
 <tr><th align=right>Name:</th><td><input type=text name=name maxlength=100 [export_form_value name]></td></tr>
@@ -39,3 +39,7 @@ select users(*) <br>
 </center>
 </form>
 [ad_admin_footer]"
+
+
+
+doc_return  200 text/html $page_content

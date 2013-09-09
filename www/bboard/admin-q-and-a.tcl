@@ -1,59 +1,53 @@
-# $Id: admin-q-and-a.tcl,v 3.0 2000/02/06 03:33:11 ron Exp $
-set_form_variables_string_trim_DoubleAposQQ
-set_form_variables
+# /www/bboard/admin-q-and-a.tcl
+ad_page_contract {
+    actually shows the questions so that an admin can choose 
+    some to view/moderate; Q&A style presentation
 
-# topic_id required
+    @param topic_id the ID of the bboard topic
 
-set db [bboard_db_gethandle]
-if { $db == "" } {
-    bboard_return_error_page
-    return
+    @author philg@mit.edu
+    @creation-date 1995
+    @cvs-id admin-q-and-a.tcl,v 3.3.2.3 2000/09/22 01:36:46 kevin Exp
+} {
+    topic_id:integer,notnull
 }
+
+# -----------------------------------------------------------------------------
  
 if  {[bboard_get_topic_info] == -1} {
-    return}
+    return
+}
 
 if {[bboard_admin_authorization] == -1} {
-	return}
+    return
+}
 
 # the administrator can always post a new question
 
-set ask_a_question "<a href=\"q-and-a-post-new.tcl?[export_url_vars topic topic_id]\">Post a New Question</a> |"
+set ask_a_question "<a href=\"q-and-a-post-new?[export_url_vars topic topic_id]\">Post a New Question</a> |"
 
 if { $policy_statement != "" } {
-    set about_link "| <a href=\"policy.tcl?[export_url_vars topic topic_id]\">About</a>"
+    set about_link "| <a href=\"policy?[export_url_vars topic topic_id]\">About</a>"
 } else {
     set about_link ""
 }
 
 if { [bboard_pls_blade_installed_p] } {
     set top_menubar "\[ $ask_a_question
-<a href=\"admin-q-and-a-search-form.tcl?[export_url_vars topic topic_id]\">Search</a> |
-<a href=\"admin-q-and-a-unanswered.tcl?[export_url_vars topic topic_id]\">Unanswered Questions</a> |
-<a href=\"admin-q-and-a-new-answers.tcl?[export_url_vars topic topic_id]\">New Answers</a> 
+<a href=\"admin-q-and-a-search-form?[export_url_vars topic topic_id]\">Search</a> |
+<a href=\"admin-q-and-a-unanswered?[export_url_vars topic topic_id]\">Unanswered Questions</a> |
+<a href=\"admin-q-and-a-new-answers?[export_url_vars topic topic_id]\">New Answers</a> 
 $about_link
 \]"
 } else {
     set top_menubar "\[ $ask_a_question
-<a href=\"admin-q-and-a-unanswered.tcl?[export_url_vars topic topic_id]\">Unanswered Questions</a> |
-<a href=\"q-and-a-new-answers.tcl?[export_url_vars topic topic_id]\">New Answers</a>
+<a href=\"admin-q-and-a-unanswered?[export_url_vars topic topic_id]\">Unanswered Questions</a> |
+<a href=\"q-and-a-new-answers?[export_url_vars topic topic_id]\">New Answers</a>
 $about_link
  \]"
 }
 
-set sql "select msg_id, one_line, sort_key, email,first_names || ' ' || last_name as name, interest_level
-from bboard, users
-where users.user_id = bboard.user_id 
-and topic_id = $topic_id
-and refers_to is null
-and posting_time > (sysdate - $q_and_a_new_days)
-order by sort_key $q_and_a_sort_order"
-
-set selection [ns_db select $db $sql]
-
-ReturnHeaders
-
-ns_write "<html>
+append page_content "<html>
 <head>
 <title>Administer $topic by Question</title>
 </head>
@@ -61,7 +55,7 @@ ns_write "<html>
 
 <h2>Administer $topic</h2>
 
-by question (one of the options from <a href=\"admin-home.tcl?[export_url_vars topic topic_id]\">the admin home page for this topic</a>)
+[ad_context_bar_ws_or_index [list "index.tcl" [bboard_system_name]] [list [bboard_raw_backlink $topic_id $topic $presentation_type 0] $topic] [list "admin-home?[export_url_vars topic topic_id]" "Administer"] "By Question"]
 
 <hr>
 
@@ -69,38 +63,53 @@ $top_menubar
 
 <h3>New Questions</h3>
 
-
 <ul>
 
 "
 
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
-    ns_write "<li><a target=admin_bboard_window href=\"admin-q-and-a-fetch-msg.tcl?msg_id=$msg_id\">$one_line</a>
+
+db_foreach messages "
+select msg_id, 
+       one_line, 
+       sort_key, 
+       email,
+       first_names || ' ' || last_name as name, 
+       interest_level
+from   bboard, 
+       users
+where  users.user_id = bboard.user_id 
+and    topic_id = :topic_id
+and    refers_to is null
+and    posting_time > (sysdate - :q_and_a_new_days)
+order by sort_key $q_and_a_sort_order" {
+
+    append page_content "<li><a target=admin_bboard_window href=\"admin-q-and-a-fetch-msg?msg_id=$msg_id\">$one_line</a>
 <br>
 from  (<a href=\"mailto:$email\">$name</a>)\n"
     if { $q_and_a_use_interest_level_p == "t" } {
 	if { $interest_level == "" } { set interest_level "NULL" }
-	ns_write " -- interest level $interest_level"
+	append page_content " -- interest level $interest_level"
     }
 
 }
 
-ns_write "
+append page_content "
 
 </ul>
 
 <h3>Other Groups of Questions</h3>
 
 <ul>
-<li><a href=\"admin-q-and-a-all.tcl?[export_url_vars topic topic_id]\">All the Questions</a>
-<li><a href=\"admin-q-and-a-category-list.tcl?[export_url_vars topic topic_id]\">Pick a Category</a>
-<li><a href=\"admin-q-and-a-new-messages.tcl?[export_url_vars topic topic_id]\">New messages</a> (organized chronologically)
+<li><a href=\"admin-q-and-a-all?[export_url_vars topic topic_id]\">All the Questions</a>
+<li><a href=\"admin-q-and-a-category-list?[export_url_vars topic topic_id]\">Pick a Category</a>
+<li><a href=\"admin-q-and-a-new-messages?[export_url_vars topic topic_id]\">New messages</a> (organized chronologically)
 
 </ul> 
 
-"
-ns_write "
 
 [bboard_footer]
 "
+
+doc_return  200 text/html $page_content
+
+

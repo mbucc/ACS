@@ -7,7 +7,7 @@
 <body bgcolor=#ffffff text=#000000>
 <h2>General Links</h2>
 
-part of the <a href="index.html">ArsDigita Community System</a>
+part of the <a href="index">ArsDigita Community System</a>
 by <a href=mailto:dh@arsdigita.com>dh@arsdigita.com</a> and <a href=mailto:tzumainn@arsdigita.com>tzumainn@arsdigita.com</a>
 
 <hr>
@@ -15,8 +15,8 @@ by <a href=mailto:dh@arsdigita.com>dh@arsdigita.com</a> and <a href=mailto:tzuma
 <ul>
 <li>User-accessible directory:  <a href="/general-links/">/general-links/</a>
 <li>Site administrator directory:  <a href="/admin/general-links/">/admin/general-links/</a>
-<li>data model: <a href="/doc/sql/display-sql.tcl?url=/doc/sql/general-links.sql">/doc/sql/general-links.sql</a>
-<li>TCL: /tcl/general-links.tcl
+<li>data model: <a href="/doc/sql/display-sql?url=/doc/sql/general-links.sql">/doc/sql/general-links.sql</a>
+<li>TCL: /tcl/general-links
 </ul>
 
 <h3>The Big Idea</h3>
@@ -50,7 +50,7 @@ A simple breakdown of the possible actions:
 
 General links are stored in one table <code>general_links</code>, with their properties (title, description, etc);  the associations between items in the database are stored in a mapping table <code>general_link_db_map</code>; and the user's rating are keep in the table <code>general_link_user_ratings</code>.
 <P>
-As in the <a href="/doc/general-comments.html">general-comments</a> module,
+As in the <a href="/doc/general-comments">general-comments</a> module,
 references to items in the database via id <code>on_what_id</code>
 in the table <code>on_which_table</code>.
 
@@ -121,7 +121,7 @@ create table general_link_user_ratings (
 </blockquote>
 
 <p>
-The module contains one core procedure, <a href="proc-one.tcl?proc_name=ad_general_links_list">ad_general_links_list</a> (based on ad_general_comments_list), that
+The module contains one core procedure, <a href="proc-one?proc_name=ad_general_links_list">ad_general_links_list</a> (based on ad_general_comments_list), that
 will show links associated with an item in the database and make appropriate 
 links to files in <code>/general-links</code> and  
 for recording and editing links.
@@ -176,14 +176,14 @@ create table table_acs_properties (
 </code></pre>
 </blockquote>
 
-As with <a href="site-wide-search.html">site-wide search</a> and the <a
-href="user-profiling.html">user profiling system</a>, this helper table
+As with <a href="site-wide-search">site-wide search</a> and the <a
+href="user-profiling">user profiling system</a>, this helper table
 enables us to make a single query and yet connect links over to the
 appropriate admin or user pages.  Another part of this system is the
 one-line item description column in the <code>general_links</code>
 table.
 <p>
-For the purpose of the "hot list" page, links are put in different categories (one link could be placed in more than one category) by means of the tables <code>categories</code> and <code>category_heirarchy</code> found discussed in the <a href="/doc/user-profiling.html">/doc/user-profiling.html</a>. 
+For the purpose of the "hot list" page, links are put in different categories (one link could be placed in more than one category) by means of the tables <code>categories</code> and <code>category_heirarchy</code> found discussed in the <a href="/doc/user-profiling">/doc/user-profiling</a>. 
 
 
 

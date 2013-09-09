@@ -1,0 +1,170 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>WAP/WML interfaces</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>WAP/WML interfaces</h2>
+
+part of the <a href="index">ArsDigita Community System</a>
+by <a href="mailto:aegrumet@arsdigita.com">Andrew Grumet</a>
+
+<hr>
+
+<ul>
+<li>Administration page: <a href="/admin/wap/">/admin/wap/</a>
+<li>Top-level user page: <a href="/wap/">/wap/</a>
+<li>Data model file: <a href="/doc/sql/display-sql?url=/doc/sql/wap.sql">/doc/sql/wap.sql</a>
+<li>Tcl procs: /tcl/wap-defs
+</ul>
+
+<h3>The Big Picture</h3>
+
+We want to make site content available to wireless devices like cell
+phones.  The prototypical application is a WAP-accessible phone
+directory which lets you look up a phone number by keying in the first
+few letters of the person's name or email address, and then serves up
+the number providing a link to call that number.
+
+<h3>The Medium-Sized Picture</h3>
+
+A WAP device connects to a gateway which issues HTTP requests on
+behalf of the device.  No modifications of the web server itself are
+needed---content is served over HTTP---but new headers and markup are
+needed.  Pages are built according to the Wireless Markup
+Language DTD, proposed and maintained by the <a
+href="http://www.wapforum.com">WAP Forum</a>.
+
+<p>
+
+Besides learning new syntax, the major considerations when building
+WAP pages are:
+
+<ul>
+
+<li><strong>Page flow:</strong> WAP devices typically have small
+screens without much room for information. Rather than requiring that
+a slow request be made for each page, WML provides a mechanism for
+transmitting several discrete page views, or <em>cards</em>, in a single
+document, or <em>deck</em>.  There are also provisions for passing
+state information (i.e. variables) between cards in deck (and possibly
+between different decks).
+
+<li><strong>Verbosity:</strong> Small displays mean you don't have
+room for lengthy explanations.
+
+<li><strong>Applications:</strong> You can help the phone do nifty stuff like dial phone numbers thanks to the <a href="http://www1.wapforum.org/tech/terms.asp?doc=SPEC-WTAI-19991108.pdf">WTAI Specification</a>.
+
+<li><strong>Code reuse:</strong> There's no absolute way to get around
+the pain of managing parallel sets of pages.  If nothing else, you'll
+want to serve up <em>less</em> content to smaller screens and perhaps
+<em>more</em> to larger screens.  But there are ways to minimize the
+pain by separating content from presentation (insert favorite X*
+acronym here).
+
+</ul>
+
+<h3>The Gory Details</h3>
+
+<ul>
+
+<li>User login is handled by cookies in the usual way.
+
+<li>To save the user a bit of typing at login time we provide
+autocompletion of the email address using a default domain if the
+user's input lacks an @ (see <a
+href="proc-one?proc_name=wap%5fdefault%5femail%5fdomain">wap_default_email_domain</a>)
+
+<li>We build a top level index for wap services in /wap/i.wap, which
+should ultimately integrate with the module registry to
+dynamically build a page of available services.
+
+<li>All wap services will live under the /wap directory (subject to
+change).
+
+<li>The /admin directory contains tools for managing a list of known
+WAP user agents, which can help you determine what type of device is
+knocking at your door.
+
+<p>
+
+<li>Documented procedures: see wap-defs section of <a
+href="/doc/procs">ACS API documentation</a>
+
+</ul>
+
+<font color=red><b>Note for programmers who have worked with the
+ACS-3.3 version:</b>As of ACS-3.4, <code>wap_begin_output</code>
+and <code>wap_begin_output_no_cache</code> return a string to the
+caller, rather than writing directly to the connection.</font>
+This change was made so that we can return the WML document with
+a single call to <code>ns_return</code>, in keeping with 3.4 standards.
+
+<h3>The Steps</h3>
+
+To add wap services to your module:
+<ol>
+
+<li>Add a link to your service in the top level page at /wap/i.wap
+     (this needs to be integrated with the module registry).
+
+<li>Learn to code WML.  You might want to read <a
+     href="http://www1.wapforum.org/tech/documents/SPEC-WML-19991104.pdf">the
+     WML specification</a>.
+
+<li>For logic, make use of the API functions in wap-defs.  Useful
+     procs: <a
+     href="http://acs-staging.arsdigita.com/doc/proc-one?proc_name=util%5fguess%5fdoctype">util_guess_doctype</a>,
+     <a
+     href="http://acs-staging.arsdigita.com/doc/proc-one?proc_name=wap%5fmaybe%5fredirect%5ffor%5fregistration">wap_maybe_redirect_for_registration</a>,
+     <a
+     href="http://acs-staging.arsdigita.com/doc/proc-one?proc_name=wap%5freturnredirect">wap_returnredirect</a>,
+     <a href="proc-one?proc_name=wml%5freturn">wml_return</a>
+
+<li>For debugging, you may want to run a WAP-enabled browser on your PC.
+    These can be downloaded from
+    <ul>
+    <li><a href="http://updev.phone.com">Unwired Planet Developer Website</a> (requires free registration)
+    <li><a href="http://www.forum.nokia.com/main">Nokia</a>, in the WAP Developer Forum area (requires free registration)
+    <li><a href="http://www.ericsson.com/developerszone">Ericcson Developer's Zone</a> (requires free registration)
+    <li><a href="http://www.opera.com/download">Opera 4.0 browser</a>
+    </ul>
+    Alternatively, the telnet method works quite well too.
+
+</ol>
+
+<h3>Parameters</h3>
+<code><pre>
+[ns/server/yourservername/acs/wap]
+; do we serve the generated /wap/index page or something 
+; else from the file system?  This should be the FULL PATH relative
+; to page root.
+SpecialIndexPage=/wap/i.wap
+; how long between lookups of the known user agent list?
+WapUserAgentDbRefresh=300
+; where to import user-agents strings from
+WapImportSiteURL=http://wap.colorline.no/wap-faq/useragents.php3
+; what tcl procedure to use to parse the data returned
+; from the page listed above
+WapImportParseProc=wap_import_parse
+; how long between http GET's?
+WapImportRefreshTimeout=120
+; how many characters in the User-Agent string
+; should we compare against?
+WapUAStringCompareLength=4
+; are we doing HTML browser-based debugging?
+WapHTMLDebugMode=0
+; to save typing when logging in
+WapDefaultEmailDomain=arsdigita.com
+</pre></code>
+
+<h3>More</h3>
+<ul>
+  <li><a href="http://wap.colorline.no/wap-faq/">The Independent WAP/WML FAQ</a>
+</ul>
+<p>
+<hr>
+<address><a href="mailto:aegrumet@arsdigita.com">aegrumet@arsdigita.com</a>
+</address>
+

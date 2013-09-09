@@ -1,0 +1,251 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>ACS 3.2 Developers' Guide to ACS 3.3 and Beyond</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>ACS 3.2 Developers' Guide to ACS 3.3 and Beyond</h2>
+
+by <a href="mailto:jsalz@mit.edu">Jon Salz</a>
+<hr>
+
+This document tries to answer the question, "What the heck have you done to my beloved
+ACS?" It briefly describes the changes made to ACS between versions 3.2.3 and version 3.3,
+from a developer's standpoint.
+It is intended to contain the minimal set of new information with which
+<i>everyone</i> needs to be familiar to develop for ACS 3.3.
+
+<h3>Big Picture</h3>
+
+In the past, ACS has been a toolkit held together by loose conventions.
+While this has worked well up to the present, ACS has matured to the point where it needs
+to be more heavily structured.
+
+One of our main goals for versions 3.3 and 4.0 is to add this structure - to develop
+valuable conventions and clean abstractions that will help preserve ACS's
+status as the best open-source toolkit around for developing
+purposeful online communities.
+
+<h3>In a Nutshell</h3>
+
+<ul>
+<li>The filesystem is reorganized, and the bootstrapping process changed, due to
+<a href="#packages">package management</a> features.
+<li><a href="#startup">ACS startup</a> isn't as simple as it used to be.
+<li>A single <a href="#request-processor">request processor</a> (not an <i>ad hoc</i> series of filters and registered
+procedures) now handles every single request to the site. <b>You must use
+<code>ad_register_filter</code> and <code>ad_register_proc</code> rather than
+<code>ns_register_filter</code> and <code>ns_register_proc</code>!</b>
+<li>The <a href="#database">Database Access API</a> has been improved.
+<li>A new <a href="#documents">document API</a> will be taking over
+<code>ReturnHeaders</code>/<code>ns_write</code>/<code>ns_return</code> shortly.
+</ul>
+
+Note that aside from the <code>ad_register_*</code> changes, you are merely encouraged,
+not required, to use the new APIs. As of 4.0 (and all code integrated into
+ACS as packages) you <i>will</i> need to use the new APIs. The next few months
+will be a transitional period.
+
+<h3><a name=packages>Package Management and the Filesystem</a></h3>
+
+One of the most fundamental changes to ACS starting with version 3.3
+is the introduction of package management,
+and the reorganization of the filesystem
+(see the <a href="core-arch-guide/apm">ACS Package Manager documentation</a> to learn why this is
+a good idea). Looking at the ACS 3.3 directory, you'll
+notice a new <code>/packages</code> directory (at the very top of the directory tree, right
+alongside <code>/tcl</code> and <code>/www</code>. The idea is to divide ACS into a series of
+functional components, "packages," with each package mapped to its own
+directory inside the <code>/packages</code> directory. The ACS core package
+(<code>/packages/acs-core</code>) provides the very basic functionality expected
+of an ACS system.
+
+<p>It is outside the scope of this document to describe how to develop a package
+
+(but if you're interested, see the <a href="core-arch-guide/apm">APM
+documentation</a> or the <a href="packaging">5-Minute Guide to
+Packaging Your Module</a>)
+
+We're not asking anyone to build packages yet - just keep developing as you always have
+been for now, in the same directories, but know that a lot of files you might expect to see
+in <code>/tcl</code>, <code>/www/doc/sql</code>, etc. have been moved inside the ACS core
+package (<code>/packages/acs-core</code>).
+
+<p>The package manager UI can be accessed at
+<a href="/admin/apm/">http://<i>yourservername.com</i>/admin/apm/</a>
+(site-wide administrators only).
+
+<h3><a name=startup>ACS Startup (Bootstrapping)</a></h3>
+
+When AOLserver starts up, the first thing it does is to source every <code>.tcl</code>
+file in the <code>/tcl</code> directory. This still occurs, but very importantly, the
+<code>0-acs-init.tcl</code> script is sourced first. The entire startup process
+(discussed in detail in the <i><a href="core-arch-guide/bootstrap">Bootstrapping</a></i>) is:
+
+<ul>
+<li>AOLserver sources <code>/tcl/0-acs-init.tcl</code>.
+<li><code>0-acs-init.tcl</code> sources <code>/packages/acs-core/bootstrap.tcl</code>.
+<li><code>bootstrap.tcl</code> sources all <code>*-procs.tcl</code> files in the <code>acs-core</code>
+package.
+<li><code>bootstrap.tcl</code> scan all directories inside the <code>/packages</code> directory,
+looking for package specification files (<code>*.info</code> files) which describe packages.
+If it finds any new ones, it loads them into the database.
+<li><code>bootstrap.tcl</code> sources the <code>*-procs.tcl</code> files for all enabled packages.
+<li><code>bootstrap.tcl</code> sources the <code>*-init.tcl</code> files for all enabled packages.
+<li>AOLserver continues to source files in the <code>/tcl</code> directory (i.e., every file
+after <code>0-acs-init.tcl</code> in lexicographical order).
+</ul>
+
+This more complicated process is necessary to support packages. The distinction between
+<code>*-procs.tcl</code> and <code>*-init.tcl</code> files is necessary to
+
+<ul>
+<li>prevent ordering
+conflicts between packages, where the initialization code for package A requires a procedure
+in package B which hasn't been defined yet (since B succeeds A in lexicographical order).
+<li>make it possible to implement a package manager feature similar to AOLserver 2's
+<i>Reload Client Tcl</i>.
+This requires a distinction between procedures to reload (<code>*-procs.tcl</code>) and
+initialization code that should truly be called only once (<code>*-init.tcl</code>).
+</ul>
+
+<h3><a name="request-processor">Request Processor</a></h3>
+
+<h4>Pre-3.3</h4>
+
+In versions of ACS before 3.2, it's very difficult to determine exactly which
+code is running when a particular request is executed. In general, all kinds of filters
+are executed, and then some registered procedure (maybe the abstract URL handler)
+is invoked (or, if abstract URLs are disabled, a file is served directly). There
+are several problems with this approach, most notably that:
+
+<ol>
+<li>It's difficult to deliver files which don't physically live underneath the page
+root (in the <code>/www</code> directory), as in the case of pages associated with
+packages.
+<li>It's very difficult to control the order in which filters are executed.
+<li>It's difficult to determine which code is executed for requests to which URLs.
+<li>If something breaks, it's very difficult to determine which filter is causing the problem.
+<li>Scoped requests need to be handled specially, with <code>ns_register_proc</code>s for each
+possible URL prefix (<code>/groups</code>, <code>/<i>some-group-type</i></code>,
+<code>/<i>some-group-name</i></code>, etc.).
+<li>Filters and registered procedures are strictly URL-based, so they break under
+scoping (e.g., a procedure registered for <code>/download/files/</code> won't work for requests
+under <code>/groups/<i>some-group-name</i>/download/files/62/smug.jpg</code>).
+</ol>
+
+<h4>In 3.3 and Beyond</h4>
+
+In ACS version 3.3, absolutely every request is served through a unified
+request processor
+(<code>rpp_handler</code> in <code>/packages/acs-core/request-processor-procs.tcl</code>), described
+in detail in the <a href="core-arch-guide/request-processor">request processor documentation</a>.
+
+We have replacement routines for <code>ns_register_filter</code> and
+<code>ns_register_proc</code>, called <code>ad_register_filter</code> and
+<code>ad_register_proc</code> respectively, which solve the first four problems:
+
+<ol>
+<li>The request processor is smart enough to look inside packages to deliver files in their
+<code>www</code> and <code>admin-www</code> directories.
+<li><code>ad_register_filter</code> has a <code>-priority</code> flag. Filters with numerically lower
+priorities run before filters with numerically higher priorities.
+<li>There are nifty monitoring tools under
+<a href="/admin/monitoring/">http://<i>yourservername.com</i>/admin/monitoring/</a>
+which let you determine which filters and procs are executed when a particular
+URL is requested.
+<li>Procedures registered with the new API provide full stack traces in the log when something
+goes wrong.
+</ol>
+
+<p>We'll solve the latter two problems as soon as subcommunities are implemented for 4.0.
+
+<blockquote>
+<b>Important: You <i>must</i> use <code>ad_register_filter</code> and <code>ad_register_proc</code>
+rather than the corresponding <code>ns_</code> calls.</b> <code>ns_register_filter</code>
+and <code>ns_register_proc</code> are disabled in the release version of ACS 3.3.
+</blockquote>
+
+<h3><a name=database>Database Access API</a></h3>
+
+Usage of <code>ns_db</code> is being phased out (although we're not deprecating <code>ns_db</code> yet
+- you can continue to use it).
+That's right, we're providing a new Database Access API
+which totally frees you from the responsibility of allocating database handles and passing
+them around to subroutines. For instance, instead of
+
+<blockquote><pre>
+set selection [ns_db select $db "select foo, bar from greeble"]
+while { [ns_db getrow $db $selection] } {
+    set_variables_after_query
+    append output "&lt;li>foo=$foo; bar=$bar\n"
+}
+ns_db releasehandle</pre></blockquote>
+
+you can now just write
+
+<blockquote><pre>db_foreach "select foo, bar from greeble" {
+    append output "&lt;li>foo=$foo; bar=$bar\n"
+}
+db_release_unused_handles</pre></blockquote>
+
+Not a database handle (<code>$db</code>) in sight; the database handles are managed and
+recycled for you. Don't worry, <i>this actually does work</i> (despite the many incredulous
+emails we've received): the entire package manager was written with it and works without
+a hitch.
+
+<p>See the <a href="core-arch-guide/database-access-api">Database Access API
+documentation</a> for more information, including a discussion of why
+this is A Good Idea<font size=1><sup>TM</sup></font>.
+
+<h3><a name=documents>Document API</a></h3>
+
+Fare thee well, <code>ReturnHeaders</code>, <code>ns_write</code>, <code>ns_return</code>, and friends!
+From <a href="documents"><i>Building Documents in ACS</i></a> (philg, jsalz):
+
+<blockquote>
+Standard AOLserver programming, like CGI scripting before it, had the
+programmer directly writing bytes to a client browser connection.  Thus
+from 1995 through 2000 an AOLserver programmer would build up a complete
+HTML page in a script and write the bytes of that page to the client
+either all at once with <code>ns_return</code> or incrementally with
+<code>ns_write</code>.
+
+<p>
+
+Problems with this standard old approach:
+
+<ul>
+<li>difficult to control style on a site-global basis via a master
+template 
+
+<li>difficult to write a script that returns an XML document that is
+then rendered by a higher-level request processor (i.e., each individual
+script has to be aware of all possible document types that might be
+required by client, e.g., HTML, WML, XML, etc.)
+
+<li>easy for novice programmer to create server performance problems by
+calling API procedures that block in the TCP stack while holding a
+database handle from the pool (i.e., a script could be waiting for a
+client on a slow modem to accept some packets while holding a database
+connection from a limited pool)
+
+</ul>
+</blockquote>
+
+The basic idea is that, in Tcl scripts, you now use <code>doc_set_property</code> to set the
+title and navigational context for a document, and <code>doc_body_append</code>
+(rather than <code>ns_write</code>) to build up the body for the page (leaving out the
+headers and footers) master template later builds a page for you, tacking on header,
+title, navbar, footer, etc. as appropriate in a customizable way.
+
+<p>Don't worry, you don't need to start using this right away.
+But for more details, see <a href="documents"><i>Building Documents in ACS</i></a>.
+
+<hr>
+
+<a href="mailto:jsalz@mit.edu"><address>jsalz@mit.edu</address></a>
+</body>
+</html>
+

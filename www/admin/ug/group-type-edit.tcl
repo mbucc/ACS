@@ -1,30 +1,31 @@
-# $Id: group-type-edit.tcl,v 3.0 2000/02/06 03:29:11 ron Exp $
-# File:     /admin/ug/group-type-edit.tcl
-# Date:     22/12/99
-# Contact:  tarik@arsdigita.com
-# Purpose:  editing user group type properties
+#/admin/ug/group-type-edit.tcl
 
-set_the_usual_form_variables
+ad_page_contract {
+    @param group_type the type of group
+    
+    @cvs-id group-type-edit.tcl,v 3.1.6.6 2000/09/22 01:36:14 kevin Exp
+    @author tarik@arsdigita.com
+    @creation-date 22 December 1999
+} {
+    group_type:notnull
+}
 
-# group_type
 
-set db [ns_db gethandle]
-
-set selection [ns_db 1row $db "select * from user_group_types where group_type = '$QQgroup_type'"]
-set group_type_module_id [database_to_tcl_string $db "
+db_1row get_ugt "select pretty_name, pretty_plural, approval_policy, default_new_member_policy, group_module_administration from user_group_types where group_type = :group_type"
+set group_type_module_id [db_string get_gtmidseq "
 select group_type_modules_id_sequence.nextval from dual"]
 
-set_variables_after_query
 
-ns_return 200 text/html "
+
+doc_return  200 text/html "
 [ad_admin_header "Edit $pretty_name"]
 <h2>Edit $pretty_name</h2>
-one of <a href=\"index.tcl\">the group types</a> in 
+one of <a href=\"index\">the group types</a> in 
 <a href=\"/admin\">[ad_system_name] administration</a> 
 <hr>
 
 <blockquote>
-<form method=POST action=\"group-type-edit-2.tcl\">
+<form method=POST action=\"group-type-edit-2\">
 [export_form_vars group_type group_type_module_id]
 
 <table>
@@ -69,3 +70,4 @@ one of <a href=\"index.tcl\">the group types</a> in
 </blockquote>
 [ad_admin_footer]
 "
+

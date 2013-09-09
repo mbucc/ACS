@@ -1,48 +1,56 @@
-# $Id: js-chat.tcl,v 3.1.4.1 2000/04/28 15:09:51 carsten Exp $
-# File:     /chat/js-chat.tcl
-# Date:     1998-11-18
-# Contact:  aure@arsdigita.com,philg@mit.edu, ahmeds@arsdigita.com
+# /www/chat/js-chat.tcl
 
-# this page isn't particularly efficient but we think it is okay because 
-# it isn't called every two seconds; only the chat rows subframe is
+ad_page_contract {
 
-# Note: if page is accessed through /groups pages then group_id and group_vars_set 
-#       are already set up in the environment by the ug_serve_section. group_vars_set 
-#       contains group related variables (group_id, group_name, group_short_name, 
-#       group_admin_email, group_public_url, group_admin_url, group_public_root_url,
-#       group_admin_root_url, group_type_url_p, group_context_bar_list and group_navbar_list)
+    Chat using JavaScript
+    If page is accessed through /groups pages then group_id and group_vars_set 
+    are already set up in the environment by the ug_serve_section. group_vars_set 
+    contains group related variables (group_id, group_name, group_short_name, 
+    group_admin_email, group_public_url, group_admin_url, group_public_root_url,
+    group_admin_root_url, group_type_url_p, group_context_bar_list and group_navbar_list)
 
-set_the_usual_form_variables
-
-# chat_room_id
-# maybe scope, maybe scope related variables (owner_id, group_id, on_which_group, on_what_id)
-# note that owner_id is the user_id of the user who owns this module (when scope=user)
-
+    @author Aure (aure@arsdigita.com)
+    @author Philip Greenspun (philg@mit.edu)
+    @author Sarah Ahmeds (ahmeds@arsdigita.com)
+    @param chat_room_id
+    @param scope
+    @param owner_id
+    @param group_id
+    @param on_what_id
+    @creation-date 1998-11-18
+    @cvs-id js-chat.tcl,v 3.2.6.7 2000/09/22 01:37:10 kevin Exp
+} {
+    {chat_room_id:naturalnum,notnull}
+    {scope "public"}
+    {owner_id:naturalnum,optional}
+    {group_id:naturalnum,optional}
+    {on_what_id:naturalnum,optional}
+    
+}
 ad_scope_error_check
 
-set db [ns_db gethandle]
-ad_scope_authorize $db $scope registered group_member none
+ad_scope_authorize $scope registered group_member none
 
 set user_id [ad_verify_and_get_user_id]
 
 ad_maybe_redirect_for_registration
 
-set selection [ns_db 0or1row $db "select pretty_name, group_id as private_group_id, moderated_p 
-from chat_rooms 
-where chat_room_id=$chat_room_id"]
+set selection [db_0or1row chat_js_chat_get_pretty_name {select pretty_name, 
+                                  group_id as private_group_id, 
+                                  moderated_p 
+                           from   chat_rooms 
+                           where  chat_room_id=:chat_room_id}]
 
-if { $selection == "" } {
-    ad_scope_return_error "Room deleted" "We couldn't find chat room $chat_room_id.  It was probably deleted by the site administrator." $db
+if { $selection == 0} {
+    ad_scope_return_error "Room deleted" "We couldn't find chat room $chat_room_id.  
+                                          It was probably deleted by the site administrator."
     return -code return
 }
 
-set_variables_after_query
 
-if {[empty_string_p $private_group_id] || [ad_user_group_member $db $private_group_id $user_id]} {
-    ReturnHeaders
+if {[empty_string_p $private_group_id] || [ad_user_group_member $private_group_id $user_id]} {
 
-
-    ns_write "
+    doc_return  200 text/html "
 	<html>
 	<head>
 	<title>[chat_system_name]: $pretty_name</title>
@@ -59,6 +67,15 @@ if {[empty_string_p $private_group_id] || [ad_user_group_member $db $private_gro
 	</body>
 	</html>"
 } else {
+    db_release_unused_handles
     ad_returnredirect index.tcl?[export_url_scope_vars]
 }
+
+
+
+
+
+
+
+
 

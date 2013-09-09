@@ -1,57 +1,62 @@
-# $Id: q-and-a-uninteresting.tcl,v 3.0 2000/02/06 03:34:23 ron Exp $
-set_form_variables_string_trim_DoubleAposQQ
-set_form_variables
+# /www/bboard/q-and-a-uninteresting.tcl
 
-# topic required
-
-# we're just looking at the uninteresting postings now
-
-set db [bboard_db_gethandle]
-if { $db == "" } {
-    bboard_return_error_page
-    return
+ad_page_contract {
+    returns a listing of the threads that haven't been answered,
+    sorted by descending date
+    q-and-a-unanswered
+    @author Philip Greenspun (philg@mit.edu)
+    @creation-date 1995
+    @cvs-id q-and-a-uninteresting.tcl,v 3.1.6.4 2000/09/22 01:36:53 kevin Exp
+} {
+    topic:trim
+    topic_id:integer
+    q_and_a_sort_order
+    q_and_a_categorized_p
 }
 
+# we're just looking at the uninteresting postings now
 
 if {[bboard_get_topic_info] == -1} {
     return
 }
 
-
-ReturnHeaders
-
-ns_write "[bboard_header "Uninteresting $topic Threads"]
+set page_content "[bboard_header "Uninteresting $topic Threads"]
 
 <h2>Uninteresting Threads</h2>
 
-in the <a href=\"q-and-a.tcl?[export_url_vars topic topic_id]\">$topic question and answer forum</a>
+in the <a href=\"q-and-a?[export_url_vars topic topic_id]\">$topic question and answer forum</a>
 
 <hr>
-
 
 "
 
 if { $q_and_a_categorized_p == "t" } {
-    # we present "interest_level == NULL" on the top page
-    set sql "select msg_id, one_line, sort_key, email, users.first_names || ' ' || users.last_name as name, category, decode(category,'','t','f') as uncategorized_p 
-from bboard, users 
-where bboard.user_id = users.user_id
-and topic_id = $topic_id
-and refers_to is null
-and interest_level < [bboard_interest_level_threshold]
-order by uncategorized_p, category, sort_key $q_and_a_sort_order"
-    set selection [ns_db select $db $sql]
 
     set last_category "there ain't no stinkin' category with this name"
     set first_category_flag 1
 
-    while {[ns_db getrow $db $selection]} {
-	set_variables_after_query
+    # we present "interest_level == NULL" on the top page
+    db_foreach messege "
+    select msg_id, 
+           one_line, 
+           sort_key, 
+           email, 
+           users.first_names || ' ' || users.last_name as name, 
+           category,
+           decode(category,'','t','f') as uncategorized_p 
+    from   bboard,
+           users 
+    where  bboard.user_id = users.user_id
+    and    topic_id = :topic_id
+    and    refers_to is null
+    and interest_level < [bboard_interest_level_threshold]
+    order by uncategorized_p, category, sort_key $q_and_a_sort_order" {
+	
 	if { $category != $last_category } {
 	    set last_category $category
 	    if { $first_category_flag != 1 } {
 		# we have to close out a <ul>
-		ns_write "\n</ul>\n"
+		append page_content "\n</ul>\n"
 	    } else {
 		set first_category_flag 0
 	    }
@@ -60,51 +65,60 @@ order by uncategorized_p, category, sort_key $q_and_a_sort_order"
 	    } else {
 		set pretty_category $category
 	    }
-	    ns_write "<h3>$pretty_category</h3>
+	    append page_content "<h3>$pretty_category</h3>
 
 <ul>
 "
        }
+
        set display_string "$one_line"
        if { $subject_line_suffix == "name" } {
 	   append display_string "  ($name)"
        } elseif { $subject_line_suffix == "email" } {
 	   append display_string "  ($email)"
        }
-       ns_write "<li><a href=\"[bboard_msg_url $presentation_type $msg_id $topic]\">$display_string</a>\n"
-}
+
+       append page_content "<li><a href=\"[bboard_msg_url $presentation_type $msg_id $topic]\">$display_string</a>\n"
+   }
 } else {
     # not categorized
-    set sql "select msg_id, one_line, sort_key, email,  users.first_names || ' ' || users.last_name as name
-from bboard, users 
-where bboard.user_id = users.user_id
-and topic_id = $topic_id
-and refers_to is null
-and interest_level < [bboard_interest_level_threshold]
-order by sort_key $q_and_a_sort_order"
-    set selection [ns_db select $db $sql]
 
-ns_write "<ul>\n"
+    append page_content "<ul>\n"
 
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
-    set display_string "$one_line"
-    if { $subject_line_suffix == "name" && $name != "" } {
-	append display_string "  ($name)"
-    } elseif { $subject_line_suffix == "email" && $email != "" } {
-	append display_string "  ($email)"
+    db_foreach noncategorized "
+    select msg_id, 
+           one_line, 
+           sort_key, 
+           email,
+           users.first_names || ' ' || users.last_name as name
+    from   bboard, 
+           users 
+    where  bboard.user_id = users.user_id
+    and    topic_id = :topic_id
+    and    refers_to is null
+    and    interest_level < [bboard_interest_level_threshold]
+    order by sort_key $q_and_a_sort_order" {
+
+	set display_string "$one_line"
+	if { $subject_line_suffix == "name" && $name != "" } {
+	    append display_string "  ($name)"
+	} elseif { $subject_line_suffix == "email" && $email != "" } {
+	    append display_string "  ($email)"
+	}
+    
+	append page_content "<li><a href=\"[bboard_msg_url $presentation_type $msg_id $topic]\">$display_string</a>\n"
     }
-    ns_write "<li><a href=\"[bboard_msg_url $presentation_type $msg_id $topic]\">$display_string</a>\n"
-
-}
 }
 
 # let's assume there was at least one section
 
-ns_write "
+append page_content "
 
 </ul>
 
-
 [bboard_footer]
 "
+
+
+
+doc_return  200 text/html $page_content

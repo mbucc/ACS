@@ -1,159 +1,124 @@
-set_the_usual_form_variables 0
+# events/activity.tcl
+# Owner: bryanche@arsdigita.com
+# Purpose:  Takes in an activity_id, displays the related activity
+#           to the user and shows all upcoming events for this activity.
+#####
 
-# activity_id
+ad_page_contract {
+    Takes in an activity_id, displays the related activity
+    to the user and shows all upcoming events for this activity.
+    
+    @param activity_id the activity in which we're interested
 
-if { ![info exists activity_id] || $activity_id == "" } {
-    ns_return 200 text/html "[ad_header "No activity id"]
+    @author Bryan Che (bryanche@arsdigita.com)
+    @cvs_id activity.tcl,v 3.10.6.5 2000/09/22 01:37:32 kevin Exp
+} {
+    {activity_id:integer,notnull}
+}
 
-<h2>No activity id</h2>
+set activity_check [db_0or1row sel_activity_info "select 
+	a.short_name, a.description, a.detail_url, a.available_p
+   from events_activities a
+  where  activity_id = :activity_id"]
 
-specified for [ad_system_name]
-
-<hr>
-
-We can't tell you what this activity is going to be like because this
-request came in with no activity id.  Please notify the maintainer of
-the preceding page.
-
-[ad_footer]
-"
+if {!$activity_check} {
+    db_release_unused_handles
+    ad_return_warning "Could not find activity" "We can't tell you 
+    what this activity is going to be like because we
+    can't find activity $activity_id in the database."
     return
 }
 
-
-set db [ns_db gethandle]
-
-set selection [ns_db 0or1row $db "select 
-a.short_name, a.description, a.detail_url, a.available_p
-from events_activities a
-where activity_id = $activity_id"]
-
-if { $selection == "" } {
-    ns_db releasehandle $db
-    ns_return 200 text/html "[ad_header "Could not find activity"]
-
-<h2>Could not find activity</h2>
-
-in [ad_system_name]
-
-<hr>
-
-We can't tell you what this activity is going to be like because we
-can't find activity $activity_id in the database.  Please notify the
-maintainer of the preceding page.
-
-[ad_footer]
-"
-    return
-}
-
-# we have a valid activity id
-
-set_variables_after_query
-
-# we have all the description info from the RDBMS
+# else we have a valid activity id
 
 if { $available_p == "f" } {
-    ns_db releasehandle $db
+    db_release_unused_handles
     # activity has been discontinued
-     ns_return 200 text/html "[ad_header "Activity Discontinued"]
-
-<h2>Activity Discontinued</h2>
-
-in [ad_system_name]
-
-<hr>
-
-$short_name is no longer available.  You're
-probably using an old bookmarked page.
-
-[ad_footer]
-"
+    ad_return_warning "Activity Discontinued" "$short_name 
+    is no longer available.  You're
+    probably using an old bookmarked page."
     return
 }
 
-# we're here and we've got all the relevant stuff
+# else we're here and we've got all the relevant stuff
 
-if [regexp -nocase {^http://.*} $detail_url] {
-    ns_log Notice "event.tcl trying to fetch $detail_url"
+#if [regexp -nocase {^http://.*} $detail_url] {
+#    ns_log Notice "event.tcl trying to fetch $detail_url"
     # we have to go to a foreign server to get the stuff
-    if [catch { set raw_foreign_page [ns_httpget $detail_url] } errmsg] {
+#    if [catch { set raw_foreign_page [ns_httpget $detail_url] } errmsg] {
 	# we got an error fetching the page
-	ns_log Notice "event.tcl failed to get $detail_url for event $event_id"
-    } else {
-	regexp -nocase {<body>(.*)</body>} $raw_foreign_page match fancy_promo_text
-    }
-} 
+#	ns_log Notice "activity.tcl failed to get $detail_url for activity $activity_id"
+#    } else {
+#	regexp -nocase {<body>(.*)</body>} $raw_foreign_page match fancy_promo_text
+#    }
+#} 
 
-if { ![info exists fancy_promo_text] && ![regexp -nocase {^http://.*} $detail_url] } {
-    ns_log Notice "event.tcl trying to pull $detail_url from the local file system"
+#if { ![info exists fancy_promo_text] && ![regexp -nocase {^http://.*} $detail_url] } {
+#    ns_log Notice "event.tcl trying to pull $detail_url from the local file system"
     # let's try to pull it from our file system
-    if [catch { append full_file_name [ns_info pageroot] $detail_url
-                set stream [open $full_file_name r]
-                set raw_local_page [read $stream]
-                close $stream
-              } errmsg] {
+#    if [catch { append full_file_name [ns_info pageroot] $detail_url
+#                set stream [open $full_file_name r]
+#                set raw_local_page [read $stream]
+#                close $stream
+#              } errmsg] {
 	# we got an error fetching the page
-	ns_log Notice "event.tcl failed to read $full_file_name for event $event_id"
-    } else {
-	regexp -nocase {<body[^>]*>(.*)</body>} $raw_local_page match fancy_promo_text
-    }
-}
+#	ns_log Notice "activity.tcl failed to read $full_file_name for activity $activity_id"
+#    } else {
+#	regexp -nocase {<body[^>]*>(.*)</body>} $raw_local_page match fancy_promo_text
+#    }
+#}
 
 if { ![info exists fancy_promo_text] } {
+    # nothing fancy passed in.
     # let's construct a generic page from what was in the database
-    set fancy_promo_text "<h2>$short_name</h2>
+    set fancy_promo_text "
+<h2>$short_name</h2>
+[ad_context_bar_ws [list "index.tcl" "Events"] "Activity"]
 <hr>
+
 $description
 "
 
-ns_db releasehandle $db
-
-set db_pools [ns_db gethandle subquery 2]
-set db [lindex $db_pools 0]
-set db_sub [lindex $db_pools 1]
+set table_rows ""
 
 # let's display the upcoming events for this activity
-set selection [ns_db select $db "select 
-e.event_id, 
-v.city, 
-v.usps_abbrev, 
-v.iso,
-e.start_time, 
-to_char(e.start_time,'fmDay') as pretty_day,
-to_char(e.start_time,'HH12:MI AM') as pretty_start_hour_minute
-from events_events e, events_activities a, events_venues v
-where a.activity_id = e.activity_id
-and a.activity_id = $activity_id
-and e.start_time > sysdate
-and e.available_p <> 'f'
-and v.venue_id = e.venue_id
-order by e.start_time"]
-    set table_rows ""
-    while { [ns_db getrow $db $selection] } {
-	set_variables_after_query
+db_foreach evnt_upcoming_evnts "select 
+	e.event_id, 
+	v.city, 
+        decode(v.iso, 'us', v.usps_abbrev, cc.country_name) as big_location,
+	e.start_time, 
+	to_char(e.start_time,'fmDay') as pretty_day,
+	to_char(e.start_time,'HH12:MI AM') as pretty_start_hour_minute
+   from events_events e, events_activities a, events_venues v, country_codes cc
+  where a.activity_id = e.activity_id
+    and a.activity_id = :activity_id
+    and e.start_time > sysdate
+    and e.available_p <> 'f'
+    and v.venue_id = e.venue_id
+    and cc.iso = v.iso
+  order by e.start_time" {
 	append table_rows "
 	<tr>
-	 <td><a href=\"order-one.tcl?event_id=$event_id\">
- 	 [events_pretty_location $db_sub $city $usps_abbrev $iso]</a>
-         <td>$pretty_day, [util_AnsiDatetoPrettyDate $start_time]\n"
+	 <td><a href=\"order-one?event_id=$event_id\">$city, $big_location
+         <td>$pretty_day, [util_AnsiDatetoPrettyDate $start_time]\n
+	"
     }
-    if ![empty_string_p $table_rows] {
-    append fancy_promo_text "
-<h3>Upcoming Events</h3>
+
+if ![empty_string_p $table_rows] {
+    append fancy_promo_text " <h3>Upcoming Events</h3>
 <table cellspacing=15>
-$table_rows
+ $table_rows
 </table>\n"
-    }
+   } else {
+    append fancy_promo_text " <br><blockquote> 
+       No upcoming events. </blockquote>"
+   }
 }
 
-ns_db releasehandle $db
-ns_db releasehandle $db_sub
+## Release everything; clean up
 
-ReturnHeaders
 
-ns_write "[ad_header "$short_name"]
 
-$fancy_promo_text
-[ad_footer]
-"
+doc_return  200 text/html "[ad_header "$short_name"] \n $fancy_promo_text \n [ad_footer]"
+
+##### File Over.

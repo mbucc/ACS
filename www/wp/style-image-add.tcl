@@ -1,13 +1,19 @@
-# $Id: style-image-add.tcl,v 3.0.4.1 2000/04/28 15:11:42 carsten Exp $
-# File:        style-image-add.tcl
-# Date:        28 Nov 1999
-# Author:      Jon Salz <jsalz@mit.edu>
-# Description: Add an image.
-# Inputs:      style_id, image
+# /wp/style-image-add.tcl
+ad_page_contract {
+    Add an image to a style.
+
+    @param style_id id of the style to which to add
+    @param image the image to add
+
+    @creation-date  28 Nov 1999
+    @author Jon Salz <jsalz@mit.edu>
+    @cvs-id style-image-add.tcl,v 3.2.2.9 2000/09/05 18:53:47 tina Exp
+} {
+    style_id:naturalnum,notnull
+    image:notnull
+}
 
 set user_id [ad_maybe_redirect_for_registration]
-
-set_the_usual_form_variables
 
 set exception_count 0
 set exception_text ""
@@ -42,17 +48,23 @@ if { $exception_count > 0 } {
 # We're OK to insert. We'll always do a delete, then an insert, in case we're overwriting
 # an existing image with the same name.
 
-set db [ns_db gethandle]
 
-wp_check_style_authorization $db $style_id $user_id
 
-ns_db dml $db "begin transaction"
-ns_db dml $db "delete from wp_style_images where style_id = $style_id and file_name = '[DoubleApos $client_filename]'"
-ns_ora blob_dml_file $db "
-    insert into wp_style_images(style_id, image, file_size, file_name, mime_type)
-    values($style_id, empty_blob(), $n_bytes, '[DoubleApos $client_filename]', '$guessed_file_type')
+wp_check_style_authorization $style_id $user_id
+
+db_transaction {
+    db_dml wp_img_delete "delete from wp_style_images 
+    where style_id = :style_id 
+    and file_name = :client_filename"
+    
+    db_dml wp_style_img_insert "
+    insert into wp_style_images(style_id, image, file_size, file_name, mime_type, wp_style_images_id)
+    values(:style_id, empty_blob(), :n_bytes, 
+    :client_filename, :guessed_file_type, wp_style_images_seq.nextval)
     returning image into :1
-" $tmp_filename
-ns_db dml $db "end transaction"
+    " -blob_files [list $tmp_filename]
+}
 
-ad_returnredirect "style-view.tcl?style_id=$style_id"
+db_release_unused_handles
+
+ad_returnredirect "style-view?style_id=$style_id"

@@ -1,80 +1,65 @@
-#
-# /tcl/data-pipeline.tcl
-#
-# Data Pipeline - abstraction layer to dynamically generate
-#  sql queries based on properly named html form elements.
-#
-# created by dvr 9/1/1999, to handle data processing for huge 
-#  forms on guidestar.org
-# rewritten by oumi 2/1/2000 as a module with added capabilities
-#  including clob support
-#
-# $Id: data-pipeline-defs.tcl,v 3.1 2000/03/11 03:45:20 michael Exp $
-#
+# /tcl/data-pipeline-defs.tcl
 
-util_report_library_entry
+ad_library {
 
-ad_proc dp_process {{-db "" -db_op "update_or_insert" -form_index "" -where_clause ""}} {Does database updates/inserts of all the fields passed from the previous form that start with dp$form_index.} {
+    Data Pipeline - abstraction layer to dynamically generate sql queries
+    based on properly named html form elements - 
+    dp.<table_name>.<column_name>
+    
+    @author David Rodriguez (dvr@arsdigita.com)
+    @author Oumung Mehrotra (oumi@arsdigita.com)
+    @author Michael Bryzek (mbryzek@arsdigita.com)
 
-    set release_db 0
-    if { [empty_string_p $db] } {
-	set release_db 1
-	set db [ns_db gethandle subquery]
-    }
+    @creation-date 9/1/1999
+    @cvs-id data-pipeline-defs.tcl,v 3.5.2.13 2000/09/14 15:53:54 lars Exp
 
-    dp_read_form_variables
+}
+
+ad_proc dp_process {{-set_id "" -db_op "update_or_insert" -form_index "" -where_bind "" -where_clause ""}} {Does database updates/inserts of all the fields passed from the previous form that start with dp$form_index.} {
+
+    set dp_form [dp_read_form_variables -set_id $set_id]
     # Like set_the_usual_for_variables, will return an error
     # if there is no input unless called with an argument of 0.
     #
     # Reads the form data in an ns_set called dp_form
- 
+    
     dp_read_checkboxes "_cv" "f"
     # Fills in unchecked boxes to update the data in the tables
-
+    
     set error_list [dp_check_var_input $form_index]
     set num_errors [lindex $error_list 0]
     # iterates through all form variables and checks if the 
     # value matches the datatype (which is determined by looking
     # at the fourth part of the variable name)
-
+    
     if { $num_errors > 0 } {
 	ad_return_complaint $num_errors [lindex $error_list 1]
-	return -code return
+	ad_script_abort
     }
-
-    # ns_log Notice "\n\nform_index $form_index"
-
+    
     set dp_sql_structs [dp_build_sql_structs $form_index]
     # create an ns_set where the key is the name of the table
     # and the value is a dp_sql_struct
-
+    
     # Used to store results for each table
     set ora_results [ns_set create]
-
+    
     # At this point, see what tables you have information for,
     # add any other variables that need to go into the table,
     # and do the updates
-
-     if {![empty_string_p $dp_sql_structs]} {
-	ns_db dml $db "begin transaction"
     
+    if {![empty_string_p $dp_sql_structs]} {
 	set size [ns_set size $dp_sql_structs]
 	for { set i 0 } { $i < $size } { incr i } {
 	    set table_name [ns_set key $dp_sql_structs $i]
 	    set sql_struct [ns_set value $dp_sql_structs $i]
 	    set result [dp_sql_struct_execute \
-		    $db $sql_struct $table_name $db_op $where_clause]
+		    $sql_struct $table_name $db_op $where_clause $where_bind]
 	    
 	    ns_set put $ora_results $table_name $result
 	}
-    
-	ns_db dml $db "end transaction"
     }
-
-    if { $release_db } {
-	ns_db releasehandle $db
-    }
-
+	
     return $ora_results
 }
 
@@ -102,22 +87,58 @@ proc_doc dp_set_form_variables_after_query {{form_index ""} {table_name ""}} {Co
     return $dp_form
 }
 
-proc_doc dp_read_form_variables {{error_if_not_found_p 1}} {Reads the set from ns_getform info dp_form} {
-    if { [ns_getform] == "" } {
-        if $error_if_not_found_p {
-            uplevel { 
-    	        ns_returnerror 500 "Missing form data"
-    	        return
-            }
+ad_proc dp_read_form_variables { { -set_id "" } {error_if_not_found_p 1}} {
+    Reads the set from ns_getform info dp_form. Returns the set_id. If
+    no set_id is specified, we use the variables specified in
+    ad_page_contract (by looking in ns_getform). This means that if you want to bypass the ad_page_contract
+    variable checks, you can pass in a set_id.
+} {
+    
+    if { ![empty_string_p $set_id] } {
+	# Don't do anything. This is a programmer-created ns_set... let them put anything in it!
+	return $set_id
+    }
+    set dp_original_form [ns_getform]
+
+    if { [empty_string_p $dp_original_form] } {
+        if { $error_if_not_found_p } {
+	    ns_returnerror 500 "Missing form data"
+	    ad_script_abort
         } else {
-            return
+	    # Return an empty ns_set so we can add to it if we like
+            return [ns_set create]
         }
     }
-    uplevel {
-        set dp_form [ns_getform]
-    }	
-}
 
+    # Iterate through all the variables specified the form and make sure
+    #  there are no additional variables. If there are, raise an error
+    # Every element that is defined in the form and in
+    # ad_page_contract_variables can stay. All others are ignored. This
+    # solves the major security hole of user's hacking the form to add
+    # things like:
+    #   dp.users.user_id = 1
+    #   dp.users.password = stupid
+    #   dp.users.user_state = authorized
+    # and then logging in as the system user
+
+    set dp_acceptable_variables [ad_page_contract_get_variables]
+    
+    set missing_vars [list]
+
+    set max [ns_set size $dp_original_form]
+    for { set i 0 } { $i < $max } { incr i } {
+	set key [ns_set key $dp_original_form $i]
+	if { [regexp {^dp} $key] && [lsearch $dp_acceptable_variables $key] == -1 } {
+	    lappend missing_vars $key
+	}
+    }
+    if { [llength $missing_vars] > 0 } {
+	# Variables were not specified in ad_page_contract
+	ad_return_error "Variable not specified" "The following variable(s) were not specified in the page contract:<ul><li>[join $missing_vars "<li>"]</ul>This is either a bug in our software or someone is playing with the html code. This form is thus not secure and cannot be processed"
+	ad_script_abort
+    }
+    return $dp_original_form
+}
 
 proc_doc dp_var_value {varname} { get the value of $varname one way or another: 1) if dp_form exists, it uses those values to fill the form fields. 2) if dp_form is missing, it looks for dp_select, which should be an ns_set from a [ns_db select] } {
     upvar dp_form dp_form
@@ -171,7 +192,6 @@ proc_doc dp_export_form_name_value {varname} {Looks in dp_form and dp_select for
     }
 }
 
-
 proc_doc dp_select_yn {varname} {Create a pulldown menu with the options Yes and No for $varname. Will use dp_select to set the default value} {
     upvar dp_select dp_select
     return "<SELECT NAME=$varname>
@@ -186,8 +206,6 @@ proc_doc dp_optionlist {varname items values} {Similar to ad_generic_optionlist,
 
     ad_generic_optionlist $items $values $default_value
 }
-
-
 
 proc_doc dp_list_all_vars {} {Lists all the variables in dp_form} {
     upvar dp_form dp_form
@@ -236,7 +254,6 @@ proc_doc dp_formvalue {name} {Returns the value that goes with key $name in dp_f
     }
 }
 
-
 proc_doc dp_variable_type {varname} {Returns the datatype for $varname (really only reads the fourth part of th variable name)} {
     return [lindex [split $varname .] 3]
 }
@@ -248,9 +265,14 @@ proc_doc dp_check_var {name value} {Checks the value of $name against the type o
 	phone {
 	    ## It's hard to catch all the cases for phone numbers. We just make sure there 
 	    ## are at least 10 characters
-	    if { ![empty_string_p $value] && [string length $value] < 10 } {
-		return "$value doesn't look like a valid phone number - please make sure that you entered in an area code"
-	    }} 
+
+	    ## lars, Sep 14, 2000: No you don't. USA is not the only country in the world.
+	    ## Not all countries use 10-digit phone numbers.
+	    
+	    #if { ![empty_string_p $value] && [string length $value] < 10 } {
+	    #	return "$value doesn't look like a valid phone number - please make sure that you entered in an area code"
+	    #}
+	} 
 	email {
 	    ## Email address must be of the form yyy@xxx.zzz
 	    if { ![empty_string_p $value] && ![philg_email_valid_p $value] } {
@@ -297,7 +319,6 @@ proc_doc dp_check_var {name value} {Checks the value of $name against the type o
 	}
 }
 
-
 proc_doc dp_format_var_for_display {name value} {Formats the value of $name for the type of data that we are expecting. If there is no formatting to do, returns $value. Otherwise, returns a formatted $value.} {
 
     set type [dp_variable_type $name]
@@ -308,7 +329,6 @@ proc_doc dp_format_var_for_display {name value} {Formats the value of $name for 
     }
     return $value
 }
-
 
 proc_doc dp_check_var_input { {form_index ""} } {Takes the list of variables from dp_list_all_form_vars and runs each through dp_check_var. Returns a list of [error_count, error_message]. error_message is null if there are no errors.} {
 
@@ -332,14 +352,15 @@ proc_doc dp_check_var_input { {form_index ""} } {Takes the list of variables fro
 
 }
 
-
 proc_doc dp_add_one_col_to_sql_struct {sql_struct col_name col_value {data_type text}} {Returns a little sql bit useful for update (e.g., last_name='O''Grady'), where the value is escaped based on the data type.} {
-
+    
+    # The column name for the sql query
     dp_sql_struct_add_col_name $sql_struct $col_name
 
     switch -exact $data_type {
         year { 
-	    dp_sql_struct_add_col_val $sql_struct "to_date('$col_value','YYYY')" 
+	    dp_sql_struct_add_col_val $sql_struct "to_date(:col_value,'YYYY')" 
+	    dp_sql_struct_add_col_binding $sql_struct $col_name $col_value
 	}
         money { 
             if [empty_string_p $col_value] {
@@ -347,35 +368,39 @@ proc_doc dp_add_one_col_to_sql_struct {sql_struct col_name col_value {data_type 
             } else {
 		# take out any commas
 		regsub -all {,} $col_value {} col_value
-                dp_sql_struct_add_col_val $sql_struct "$col_value" 
+                dp_sql_struct_add_col_val $sql_struct ":$col_name"
+		dp_sql_struct_add_col_binding $sql_struct $col_name $col_value
 	    }}
         int {
             if [empty_string_p $col_value] {
                 dp_sql_struct_add_col_val $sql_struct "null"
             } else {
-                dp_sql_struct_add_col_val $sql_struct "$col_value"
+                dp_sql_struct_add_col_val $sql_struct ":$col_name"
+		dp_sql_struct_add_col_binding $sql_struct $col_name $col_value
             }}
         expr {
             if [empty_string_p $col_value] {
                 dp_sql_struct_add_col_val $sql_struct "null"
             } else {
+		# Expressions can't be bound! Just add the value directly
                 dp_sql_struct_add_col_val $sql_struct "$col_value"
             }}
 	clob {
 	    if {[empty_string_p $col_value]} {
 		dp_sql_struct_add_col_val $sql_struct "null"
 	    } elseif {[string length $col_value]<4000} {
-		dp_sql_struct_add_col_val $sql_struct "'[DoubleApos $col_value]'"
+                dp_sql_struct_add_col_val $sql_struct ":$col_name"
+		dp_sql_struct_add_col_binding $sql_struct $col_name $col_value
 	    } else {
 		dp_sql_struct_add_col_val $sql_struct "empty_clob()"
-		dp_sql_struct_set_tcl_proc $sql_struct "ns_ora clob_dml"
 		dp_sql_struct_add_returning_col $sql_struct $col_name
 		dp_sql_struct_add_tcl_extra_arg $sql_struct \{$col_value\}
 	    }
 	    
 	}
 	default { 
-	    dp_sql_struct_add_col_val $sql_struct "'[DoubleApos $col_value]'" 
+	    dp_sql_struct_add_col_val $sql_struct ":$col_name"
+	    dp_sql_struct_add_col_binding $sql_struct $col_name $col_value
 	}
      
     }
@@ -421,22 +446,22 @@ proc_doc dp_build_sql_structs {{form_index ""}} {
     }
 }
 
-proc_doc dp_sql_struct_execute {db sql_struct table_name db_op {where_clause ""}} {
+proc_doc dp_sql_struct_execute {sql_struct table_name db_op {where_clause ""} { where_bind "" }} {
     Given a dp_sql_struct and a database operation (db_opp), performs the
     SQL.  Currently, db_op is one of [ update | insert | update_or_insert ]
 } {
     switch -exact $db_op {
 	update {
 	    return [dp_sql_struct_do_update \
-		    $db $sql_struct $table_name $where_clause]
+		    $sql_struct $table_name $where_clause $where_bind]
 	}
 	insert {
 	    return [dp_sql_struct_do_insert \
-		    $db $sql_struct $table_name]
+		    $sql_struct $table_name]
 	}
 	update_or_insert {
 	    return [dp_sql_struct_do_update_or_insert \
-		    $db $sql_struct $table_name $where_clause]	    
+		    $sql_struct $table_name $where_clause $where_bind]	    
 	}
     }
 }
@@ -446,85 +471,105 @@ proc_doc dp_sql_struct_execute {db sql_struct table_name db_op {where_clause ""}
 # statement represented by it.
 
 # Given a dp_sql_struct, generate and perform the sql update
-proc dp_sql_struct_do_update {db sql_struct table_name {where_clause ""}} {
+proc dp_sql_struct_do_update {sql_struct table_name {where_clause ""} {where_bind ""}} {
 
-    set full_where_clause ""
-    if {![empty_string_p $where_clause]} {
-	set full_where_clause "where $where_clause"
-    }
+    set sql [dp_sql_struct_make_sql_update_statement $sql_struct $table_name $where_clause $where_bind]
 
+    dp_eval_sql_statement $sql_struct $sql $where_bind
 
-    set col_names [dp_sql_struct_get_col_names $sql_struct]
-    set col_vals [dp_sql_struct_get_col_vals $sql_struct]
-    set name_equals_value_string ""
-    set i 0
-    foreach col $col_names {
-	if {$i>0} {
-	    append name_equals_value_string ",\n\t"
-	}
-	append name_equals_value_string "$col=[lindex $col_vals $i]"
-	incr i
-    }
+    # Oumi (Jan. 11, 2000) . . .
+    # THERE SEEMS TO BE A BUG IN THE ORACLE DRIVER.  ns_ora resultrows WON'T
+    # WORK IF THE LAST DML STATEMENT WAS VIA ns_ora clob_dml (or blob_dml).
+    # I think the problem is in line 2875 of ora8.c version 1.0.3 -- there is
+    # a flush_handle( dbh ) that always executes for clob_dml/blob_dml, 
+    # clearing out dbh->connection->statement
     
-    # WORKAROUND for oracle driver bug (see below). Because 
-    # [ns_ora resultrows ...] won't work after [ns_ora clob_dml ...],
-    # we pre-count how many rows match the where clause.  Then,
-    # if the [ns_ora resultrows ...] call fails, we'll use the 
-    # pre-counted $n_rows instead.  This may not be accurate if the
-    # state of the database changes between the pre-count and update.
-    set n_rows [database_to_tcl_string $db "
-        select count(1) from $table_name $full_where_clause
-    "]
-
-    set sql [dp_sql_struct_make_sql_update_statement $sql_struct $table_name $where_clause]
-    set tcl_proc [dp_sql_struct_get_tcl_proc $sql_struct]
-    set extra_args [join [dp_sql_struct_get_tcl_extra_args $sql_struct] " "]
-
-    eval "$tcl_proc \$db \$sql $extra_args"
-
-# Oumi (Jan. 11, 2000) . . .
-# THERE SEEMS TO BE A BUG IN THE ORACLE DRIVER.  ns_ora resultrows WON'T
-# WORK IF THE LAST DML STATEMENT WAS VIA ns_ora clob_dml (or blob_dml).
-# I think the problem is in line 2875 of ora8.c version 1.0.3 -- there is
-# a flush_handle( dbh ) that always executes for clob_dml/blob_dml, 
-# clearing out dbh->connection->statement
-
     if {[catch {
-	set this_ora_result [ns_ora resultrows $db]
+	set this_ora_result [db_resultrows]
     } error_message]} {
 	# error_message will say 'no active statement' after executing
 	# a clob_dml.  We won't check the error_message though.  If
-	# the [ns_ora resultrows $db] call failed, then just use the
-	# pre-counted $n_rows.
-	set this_ora_result $n_rows
+	# the [db_resultrows] call failed, then count
+
+	# WORKAROUND for oracle driver bug. Because 
+	# [ns_ora resultrows ...] won't work after [ns_ora clob_dml ...],
+	# we pre-count how many rows match the where clause.  Then,
+	# if the [ns_ora resultrows ...] call fails, we use the 
+	# explicit count instead.  This may not be accurate if the
+	# state of the database changes between the pre-count and update.
+
+	if {[empty_string_p $where_clause]} {
+	    set full_where_clause ""
+	} else {
+	    set full_where_clause "where $where_clause"
+	}
+
+	set this_ora_result [db_string data_pipeline_count "
+        select count(*) from $table_name $full_where_clause
+	" -bind $where_bind]
     }
 
     return $this_ora_result
+
+}
+
+ad_proc dp_eval_sql_statement { sql_struct sql { where_bind "" } } {
+    Evaluates the sql statement as defined by the sql_struct. Catches
+    and logs/throws errors if appropriate.  
+} {
+
+    set tcl_proc [dp_sql_struct_get_tcl_proc $sql_struct]
+    set bind [dp_sql_struct_make_bind_list $sql_struct $where_bind]
+
+    set extra_args [join [dp_sql_struct_get_tcl_extra_args $sql_struct] " "]
+    if { ![empty_string_p $extra_args] } {
+	if { ![empty_string_p $bind] } {
+	    # We have to bind these variables to avoid passing both
+	    # -clobs and -bind to db_dml
+	    for { set i 0 } { $i < [ns_set size $bind] } { incr i } {
+		set [ns_set key $bind $i] [ns_set value $bind $i]
+	    }
+	    set bind ""
+	}
+    }
+
+    if { [catch {eval "$tcl_proc \$sql [util_decode $extra_args "" "" "-clobs [list $extra_args]"] [util_decode $bind "" "" "-bind $bind"]"} err_msg] } {
+	# Log the error message and the sql query so we can see it
+	ns_log error "Data-pipeline: Error while processing sql query: $err_msg\n$tcl_proc $sql $extra_args $bind"
+	if { [empty_string_p $bind] } {
+	    set bind_string ""
+	} else {
+	    set bind_string [NsSettoTclString $bind]
+	}
+	ns_log error "Data-pipeline Bind Variables: $bind_string"
+	error "\n$tcl_proc $sql $extra_args $bind\n\n\n$bind_string\n\n\n\n\n$err_msg\n\n"
+    }
+
 }
 
 # Given a dp_sql_struct, try a SQL update.  If no rows are updated, then
 # try an insert.
-proc_doc dp_sql_struct_do_update_or_insert {db sql_struct table_name {where_clause ""}} {} {
+proc_doc dp_sql_struct_do_update_or_insert {sql_struct table_name {where_clause ""} {where_bind ""}} {} {
 
     set ora_result [dp_sql_struct_do_update \
-	    $db $sql_struct $table_name $where_clause]
+	    $sql_struct $table_name $where_clause $where_bind]
 
     if {$ora_result == 0} {
-	return [dp_sql_struct_do_insert $db $sql_struct $table_name]
+	return [dp_sql_struct_do_insert $sql_struct $table_name]
     }
 }
 
-# Given a dp_sql_struct, perform a SQL insert
-proc_doc dp_sql_struct_do_insert {db sql_struct table_name} {} {
+
+proc_doc dp_sql_struct_do_insert {sql_struct table_name} {
+    Given a dp_sql_struct, perform a SQL insert
+} {
 
     set sql [dp_sql_struct_make_sql_insert_statement $sql_struct $table_name]
-    set tcl_proc [dp_sql_struct_get_tcl_proc $sql_struct]
-    set extra_args [join [dp_sql_struct_get_tcl_extra_args $sql_struct] " "]
 
-    eval "$tcl_proc \$db \$sql $extra_args"
+    return [dp_eval_sql_statement $sql_struct $sql]
 
-    return
 }
+
 
 proc_doc dp_insert_checkbox {name values {on_value t} {hidden_field_name _cv} } "Inserts a checkbox and marks it if necessary (the value is on or Y). Also inserts a hidden field to record an uncheck in the box if necessary. Note that the name _cv stands for _check_vars, but is abbreviated so as to not hit the limit in the size of a get too easily." {
     if { ![empty_string_p $values] } {
@@ -574,7 +619,6 @@ proc_doc dp_read_checkboxes {{hidden_field_name _cv} {off_value N}} "Reads all c
     return
 }
 
-
 ##### All the "dp_sql_struct_*" procs define an abstract data type
 ##### This data structure is used for representing a Tcl statement that
 ##### executes a sql/dml statement.  The structure stores column names, 
@@ -586,18 +630,30 @@ proc_doc dp_read_checkboxes {{hidden_field_name _cv} {off_value N}} "Reads all c
 #####     col_vals       - a list of column values.  Each val in col_vals
 #####                      belongs to each column in col_names respectively
 #####     returning_cols - list of column names for the returning clause
-#####     tcl_proc       - tcl code to process sql; default is "ns_db dml"
+#####     tcl_proc       - tcl code to process sql; default is "db_dml <some statement name>"
 #####     tcl_extra_args - list of extra args to tcl statement (used for clobs)
 ##### 
 ##### col_names, col_vals, and returning_cols are used informing the actual
 ##### sql statement.  The Tcl used to execute the sql is of the form:
-#####     <tcl_proc> $db <sql statement> <tcl_extra_args>
+#####     <tcl_proc> <sql statement> <tcl_extra_args>
 
 # Create a dp_sql_struct
 proc dp_sql_struct_new {} {
     set sql_struct [ns_set new]
-    dp_sql_struct_set_tcl_proc $sql_struct "ns_db dml"
+    dp_sql_struct_set_tcl_proc $sql_struct "db_dml random_data_pipeline_query"
     return $sql_struct
+}
+
+# Retreive "col_bindings" element of the dp_sql_struct
+proc dp_sql_struct_get_col_bindings {sql_struct} {
+    return [ns_set get $sql_struct col_bindings]
+}
+
+# Add a column binding to the "col_bindings" element of the dp_sql_struct
+proc dp_sql_struct_add_col_binding {sql_struct col val} {
+    set l [dp_sql_struct_get_col_bindings $sql_struct]
+    lappend l [list $col $val]
+    ns_set update $sql_struct col_bindings $l
 }
 
 # Retreive "col_vals" element of the dp_sql_struct
@@ -648,14 +704,14 @@ proc dp_sql_struct_set_tcl_proc {sql_struct tcl_proc} {
 
 # Retreive "tcl_extra_args" element of the dp_sql_struct
 proc dp_sql_struct_get_tcl_extra_args {sql_struct} {
-    return [ns_set get $sql_struct tcl_extra_args]
+    return [ns_set get $sql_struct "tcl_extra_args"]
 }
 
 # Add an argument to the "tcl_extra_args" element of the dp_sql_struct
 proc dp_sql_struct_add_tcl_extra_arg {sql_struct tcl_extra_args} {
     set l [dp_sql_struct_get_tcl_extra_args $sql_struct]
     lappend l $tcl_extra_args
-    ns_set update $sql_struct tcl_extra_args $l
+    ns_set update $sql_struct "tcl_extra_args" $l
 }
 
 # Given a dp_sql_struct, form a SQL "returning" clause (e.g.,
@@ -677,13 +733,14 @@ proc dp_sql_struct_make_returning_clause {sql_struct} {
 }
 
 # Given a dp_sql_struct, form a SQL update statement
-proc dp_sql_struct_make_sql_update_statement {sql_struct table_name where_clause} {
+proc dp_sql_struct_make_sql_update_statement {sql_struct table_name where_clause { where_bind "" }} {
     if {![empty_string_p $where_clause]} {
 	set where_clause "where $where_clause"
     }
     set col_names [dp_sql_struct_get_col_names $sql_struct]
     set col_vals [dp_sql_struct_get_col_vals $sql_struct]
     set name_equals_value_string ""
+
     set i 0
     foreach col $col_names {
 	if {$i>0} {
@@ -692,12 +749,36 @@ proc dp_sql_struct_make_sql_update_statement {sql_struct table_name where_clause
 	append name_equals_value_string "$col=[lindex $col_vals $i]"
 	incr i
     }
-
-
+    
     return "
     update $table_name set
         $name_equals_value_string
     $where_clause [dp_sql_struct_make_returning_clause $sql_struct]"
+}
+
+proc_doc dp_sql_struct_make_bind_list {sql_struct { where_bind "" } } {
+    Returns a bind list if it's necessary
+} {
+    set col_bindings [dp_sql_struct_get_col_bindings $sql_struct]
+    if { [empty_string_p $col_bindings] } {
+	# Just return the ns_set, if anyway, of the bind variables for the where clause
+	return $where_bind
+    }
+
+    set bind_vars [ns_set create]
+    foreach pair $col_bindings {
+	# Bind each of the columns
+	ns_set put $bind_vars [lindex $pair 0] [lindex $pair 1]
+    }
+
+    if { ![empty_string_p $where_bind] } { 
+	# Add all the where clause bind variables to our ns_set of bind variables
+	for {set i 0} {$i<[ns_set size $where_bind]} {incr i} {
+	    ns_set put $bind_vars [ns_set key $where_bind $i] [ns_set value $where_bind $i]
+	}
+    }
+
+    return $bind_vars
 }
 
 # Given a dp_sql_struct, form a SQL insert statement
@@ -710,7 +791,3 @@ proc dp_sql_struct_make_sql_insert_statement {sql_struct table_name} {
     ) [dp_sql_struct_make_returning_clause $sql_struct]
     "
 }
-
-####### END OF PROCS THAT DEFINE THE dp_sql_struct ABSTRACT DATA TYPE ########
-
-util_report_successful_library_load

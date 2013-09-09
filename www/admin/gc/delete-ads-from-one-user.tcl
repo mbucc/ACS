@@ -1,20 +1,29 @@
-# $Id: delete-ads-from-one-user.tcl,v 3.1.2.1 2000/04/28 15:09:02 carsten Exp $
+# /www/admin/gc/delete-ads-from-one-user.tcl
+ad_page_contract {
+    Allows administrator to delete all the ads for one user_id.
+
+    @param domain_id which domain
+    @param user_id the user_id of the person who placed the ad
+
+    @author philg@mit.edu
+    @cvs_id delete-ads-from-one-user.tcl,v 3.4.2.5 2000/09/22 01:35:21 kevin Exp
+} {
+    domain_id:integer
+    user_id:integer
+}
+
 set admin_id [ad_verify_and_get_user_id]
+
 if { $admin_id == 0 } {
     ad_returnredirect "/register/"
     return
 }
 
-set_the_usual_form_variables
 
-# domain_id, user_id
 
-set db [ns_db gethandle]
+set domain [db_string domain "select domain from ad_domains where domain_id = :domain_id"]
 
-set domain [database_to_tcl_string $db "select domain
-from ad_domains where domain_id = $domain_id"]
-
-set classified_ad_id [database_to_tcl_string $db "select max(classified_ad_id) from classified_ads where user_id = $user_id"]
+set classified_ad_id [db_string classified_ad_id "select max(classified_ad_id) from classified_ads where user_id = :user_id"]
 
 if [ad_parameter EnabledP "member-value"] {
     set mistake_wad [mv_create_user_charge $user_id  $admin_id "classified_ad_mistake" $classified_ad_id [mv_rate ClassifiedAdMistakeRate]]
@@ -38,19 +47,19 @@ Charge Comment:  <input type=text name=charge_comment size=50>
     set member_value_section ""
 }
 
-ns_return 200 text/html "[gc_header "Confirm Deletion"]
+set page_content "[gc_header "Confirm Deletion"]
 
 <h2>Confirm Deletion</h2>
 
 of ads from 
-<a href=\"/admin/users/one.tcl?user_id=$user_id\">[database_to_tcl_string $db "select first_names || ' ' || last_name from users where user_id = $user_id"]</a>
+<a href=\"/admin/users/one?user_id=$user_id\">[db_string user_name "select first_names || ' ' || last_name from users where user_id = :user_id"]</a>
 in the
- <a href=\"domain-top.tcl?domain_id=$domain\"> $domain domain of [gc_system_name]</a>
+ <a href=\"domain-top?domain_id=$domain\"> $domain domain of [gc_system_name]</a>
 
 <hr>
 
-<form method=POST action=delete-ads-from-one-user-2.tcl>
-[export_form_vars domain user_id]
+<form method=POST action=delete-ads-from-one-user-2>
+[export_form_vars domain_id user_id classified_ad_id]
 $member_value_section
 <P>
 <center>
@@ -59,3 +68,6 @@ $member_value_section
 </form>
 
 [ad_admin_footer]"
+
+
+doc_return  200 text/html $page_content

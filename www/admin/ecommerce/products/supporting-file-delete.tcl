@@ -1,9 +1,18 @@
-# $Id: supporting-file-delete.tcl,v 3.0 2000/02/06 03:21:05 ron Exp $
-set_the_usual_form_variables
-# dirname file product_id product_name
+#  www/admin/ecommerce/products/supporting-file-delete.tcl
+ad_page_contract {
+  Confirm delete of a file.
 
-ReturnHeaders
-ns_write "[ad_admin_header "Delete Supporting File for $product_name"]
+  @author Eve Andersson (eveander@arsdigita.com)
+  @creation-date Summer 1999
+  @cvs-id supporting-file-delete.tcl,v 3.2.2.1 2000/07/22 07:57:46 ron Exp
+} {
+  product_id:integer,notnull
+  file
+}
+
+set product_name [ec_product_name $product_id]
+
+doc_body_append "[ad_admin_header "Delete Supporting File for $product_name"]
 
 <h2>Delete Supporting File for $product_name</h2>
 
@@ -15,11 +24,11 @@ Please confirm that you wish to delete this file.
 "
 
 if { $file == "product-thumbnail.jpg" } {
-    ns_write "Note: this file is the thumbnail picture of the product.  If you delete it, the customer will not be able to see what the product looks like."
+    doc_body_append "Note: this file is the thumbnail picture of the product.  If you delete it, the customer will not be able to see what the product looks like."
 }
 
-ns_write "<form method=post action=supporting-file-delete-2.tcl>
-[export_form_vars dirname file product_id]
+doc_body_append "<form method=post action=supporting-file-delete-2>
+[export_form_vars file product_id]
 <center>
 <input type=submit value=\"Confirm\">
 </center>

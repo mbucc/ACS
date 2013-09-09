@@ -1,31 +1,42 @@
-# $Id: user-summary.tcl,v 3.3 2000/02/21 11:55:24 davis Exp $
-# user-summary.tcl
-#
-# hqm@arsdigita.com
-#
-# Summarize by submitting user tickets in state blah
-#
+# /www/ticket/user-summary.tcl
+ad_page_contract {
+    Summarize by submitting user tickets in state blah
 
-ad_page_variables {{orderby {user}} {return_url {/ticket/index.tcl?}} {project_id {}} {domain_id {}}}
+    @param orderby the sort order for the display
+    @param return_url where to go when we are done
+    @param project_id a project to restrict to
+    @param domain_id a domain to restrict to
 
-set db [ns_db gethandle]
+    @author hqm@arsdigita.com
+    @author Kevin Scaldeferri (kevin@caltech.edu)
+    @cvs-id user-summary.tcl,v 3.4.2.5 2000/09/22 01:39:24 kevin Exp
+} {
+    {orderby "user"}
+    {return_url "/ticket/index.tcl?"} 
+    {project_id:integer ""} 
+    {domain_id:integer ""}
+}
 
-ReturnHeaders
+# -----------------------------------------------------------------------------
 
 set sql_restrict {}
 
 if {![empty_string_p $project_id]} {
-    append sql_restrict " and ti.project_id = $project_id"
+    append sql_restrict " and ti.project_id = :project_id"
 } 
 if {![empty_string_p $project_id]} {
-    append sql_restrict " and ti.domain_id = $domain_id"
+    append sql_restrict " and ti.domain_id = :domain_id"
 } 
 
-ns_write "[ad_header "User Submission Summaries"]
- <h3>User Ticket Submission Summaries</h3>
- [ad_context_bar_ws_or_index [list $return_url "Ticket Tracker"]  "User Summaries"]
- <hr>"
+append page_content "
+[ad_header "User Submission Summaries"]
 
+<h2>User Ticket Submission Summaries</h2>
+
+[ad_context_bar_ws_or_index [list $return_url "Ticket Tracker"]  "User Summaries"]
+
+<hr>
+"
 
 set dimensional {
     {projectstate "Project State" open {
@@ -68,8 +79,14 @@ set sql "select
  group by u.email, u.first_names, u.last_name, u.user_id
  [ad_order_by_from_sort_spec $orderby $table_def]\n"
 
-ns_write "[ad_dimensional $dimensional]<br> <blockquote>"
-set selection [ns_db select $db $sql]
-ns_write "[ad_table -Torderby $orderby $db $selection $table_def]
+set bind_vars [ad_tcl_vars_to_ns_set project_id domain_id]
+
+append page_content "
+[ad_dimensional $dimensional]<br> <blockquote>
+
+[ad_table -Torderby $orderby -bind $bind_vars \
+	ticket_info_for_one_user $sql $table_def]
  </blockquote>
  [ad_footer]"
+
+doc_return  200 text/html $page_content

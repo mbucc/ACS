@@ -1,0 +1,279 @@
+<html>
+<head>
+    <title>Using the form-variable filter</title>
+<head>
+
+<body bgcolor=white>
+
+<h2>Using the form-variable filter</h2>
+
+By David Rodriguez (dvr@arsdigita.com)
+
+<hr>
+
+<h3>What it does:</h3>
+
+<blockquote>
+
+<p>The form-variable filter allows you to specify datatypes
+for url variables. For example, you could specify that user_id
+is always an integer, and if anyone passes in anything else,
+the page will throw an error. 
+
+<p>It's possible to restrict filters to certain url patterns,
+which is necessary if you use the same variable name in different 
+modules. For example, you could restrict $my_key to 
+be an integer under /module_one/* and a character 
+string when used under /module_two/*.
+
+<p>The filters allows you to specify wild-card patterns, so you 
+can specify rules like 'bboard_id is a character string, but all 
+other *_id variables are integers.' 
+
+</blockquote>
+
+<h3>Usage</h3>
+
+<blockquote>
+
+<p><tt>ad_set_typed_form_variable_filter <em>url_pattern</em> <em>list_of_variables_to_filter</em></tt>
+
+<p><em>list_of_variables_to_filter</em> is a list of lists that
+specifies (1) the variable to check, and (2) the datatype that we
+expect.
+
+<p><b>Examples:</b>
+
+<p>Under /bboard/*, topic_id must an integer, and msg_id must be a 'word' 
+(a string that contains only letters, numbers, dashes, and underscores.)
+
+<blockquote>
+<pre>ad_set_typed_form_variable_filter /bboard/* {msg_id word} {topic_id integer}</pre>
+</blockquote>
+
+<p>The default datatype is 'integer', which would allow you to 
+write the spec above as</em><br>
+
+<blockquote>
+<pre>ad_set_typed_form_variable_filter /bboard/* {msg_id word} topic_id</pre>
+</blockquote>
+</blockquote>
+
+<h3>Datatypes</h3>
+
+<blockquote>
+
+<table width=90% border=1 cellpadding=10 cellspacing=0>
+<tr valign=top>
+    <td><b>integer</b></td>
+    <td><br></td>
+</tr>
+<tr valign=top>
+    <td><b>number</b></td>
+    <td>Any real number. We check its validity by asking Tcl to do math with it.
+    </td>
+</tr>
+<tr valign=top>
+    <td><b>word</b></td>
+    <td>A string that contains only letters, numbers, dashes, and underscores.</td>
+</tr>
+<tr valign=top>
+    <td><b>noquote</b></td>
+    <td>A string that contains no single quotes. Use this when a string is allowed
+    to have spaces, but not quotes. (Dates fit into this category.)</td>
+</tr>
+<tr valign=top>
+    <td><b>integerlist</b></td>
+    <td>A string that contains only numbers, spaces, and commas (but no negative
+    numbers, because this would allow people to sneak in math.)
+    </td>
+</tr>
+<tr valign=top>
+    <td><b>safefilename</b></td>
+    <td>A filename that doesn't contain '..' in it.
+    </td>
+</tr>
+<tr valign=top>
+    <td><b>dirname</b></td>
+    <td>A string that doesn't have / or \ in it.
+    </td>
+</tr>
+<tr valign=top>
+    <td><b>fail</b></td>
+    <td>The check should fail regardless of value.</td>
+</tr>
+<tr valign=top>
+    <td><b>nocheck</b></td>
+    <td>The check should pass regardless of value</td>
+</tr>
+</table>
+
+<p>The <b>nocheck</b> operator is useful if you want to specify blanket rules,
+then create a few exceptions. For example, if all the variables on the
+site that end with _key were integers, except for $long_key, which
+is a string that could contain any letter (including quotes),
+you could write the spec
+<p>
+<blockquote>
+<pre>ad_set_typed_form_variable_filter /* {long_key nocheck} *_key</pre>
+</blockquote>
+
+<p>The <b>fail</b> operator is used when you want to turn off access to 
+a page by not allowing any url variables to be set.
+
+<blockquote>
+<pre>ad_set_typed_form_variable_filter /* {user_id_to_delete fail}</pre>
+</blockquote>
+
+</blockquote>
+
+<h3>What this filter protects against</h3>
+
+<ul>
+<p><li>Letting users sneak in queries where we expect integers.
+
+    <blockquote>
+    <p>Normal case:
+    
+        <blockquote>
+        select .. from users where user_id = 5
+        </blockquote>
+    
+    <p>Nasty case:
+    
+        <blockquote>
+        select .. from users where user_id = <b>(select user_id where email = 'dvr@arsdigita.com')</b>
+        </blockquote>
+
+    <p>This bug can be patched using the <b>integer</b> data type.
+
+    </blockquote>
+
+<p><li>Not using QQ variables:
+
+    <blockquote>
+    <p>Normal case:
+
+        <blockquote>
+        select .. from bboard where msg_id = '000001'
+        </blockquote>
+
+    <p>Nasty case:
+
+        <blockquote>
+        select .. from bboard where msg_id = '<b>' || (select 'other' from dual) || '</b>'
+        </blockquote>
+
+    <p>This bug can be patched using the <b>noquote</b> data type (because
+    any variable that can be used without QQing it should never have
+    quotes in it).
+    </blockquote>
+
+<p><li>Letting users sneak in variables. For example, if you have
+       code like:
+
+        <pre>
+        set user_id [ad_get_user_id]        
+        set_form_variables
+        </pre>
+
+    then a user can masquerade as another user by passing user_id as a form
+    variable.
+    
+    <p>This type of bug can be fixed using <b>fail</b>, e.g., make the page
+    throw an error if someone passes in $user_id.
+        
+<p><li>... and other random errors. For example, the ACS contains
+a registered proc over <tt>/general-comments/attachment/<em>some_number</em></tt>,
+which uses <em>some_number</em> in a query. You can make this case secure using 
+a filter with the type <b>third_urlv_integer</b>, which will throw an error if 
+the third element in the url isn't an integer.
+
+<p>(Read the documentation for <tt>ad_set_typed_form_variable_filter</tt>
+to learn how to add special-case functions like this.)
+
+</blockquote>
+
+<h3>Using the filter to secure your client site</h3>
+
+<blockquote>
+<P>There's one file, <b><a href=z-security-patch.txt>z-security-patch.tcl</a></b>, which contains patches to 
+most of the known security bugs in a standard ACS installation
+(as of midnight, July 3).  Put this in your /tcl directory.  It includes
+
+<ul>
+<li>a revised <tt>ad_page_variables</tt>
+<li>a revised <tt>set_form_variables</tt>
+<li>a revised <tt>set_the_usual_form_variables</tt>
+<li>The new function <tt>check_for_form_variable_naughtiness</tt>,
+which gets called from within the three functions above, 
+and checks whether the variables being created are
+of the right type, as well as running a few other
+sanity checks (e.g., not allowing users to pass in QQ variables).
+<li>The new function <tt>ad_set_typed_form_variable_filter</tt>
+<li>The calls to <tt>ad_set_typed_form_variable_filter</tt> that 
+will protect you against most of the 140 bugs that were found as of midnight
+of July 3.
+</ul>
+
+<p>To secure custom code, you'll need to figure out which variables
+in your code might be dangerous. Here are a few queries that might help.
+
+<p>All your system's primary keys:
+
+<pre>
+    select 
+        c1.table_name, 
+        c1.column_name
+    from all_cons_columns c1,  all_constraints c2
+    where c1.constraint_name = c2.constraint_name
+    and constraint_type='P'
+    order by table_name, column_name
+</pre>
+
+<p>All the columns that end with _id.
+
+<pre>
+    select
+        table_name,
+        column_name,
+        data_type
+    from user_tab_columns
+    where column_name like '%/_ID' escape '/'
+    order by table_name, column_name
+</pre>
+
+<p>All the columns that end with _id that aren't numbers.
+    
+<pre>
+    select
+        table_name,
+        column_name,
+        data_type
+    from user_tab_columns
+    where data_type != 'NUMBER' 
+    and column_name like '%/_ID' escape '/'
+    order by table_name, column_name
+</pre>
+
+<p>All the columns that are numbers
+
+<pre>
+    select
+        table_name,
+        column_name,
+        data_type
+    from user_tab_columns
+    where data_type = 'NUMBER' 
+    order by table_name, column_name
+</pre>
+
+(The query that you really want is "show me all primary keys which
+aren't integers," but the three-table join on system tables never 
+returns.)
+
+</blockquote>
+
+<hr>
+<em>dvr@arsdigita.com</em>
+    

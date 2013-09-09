@@ -1,12 +1,18 @@
-# $Id: override-style.tcl,v 3.0 2000/02/06 03:55:06 ron Exp $
-# File:        index.tcl
-# Date:        28 Nov 1999
-# Author:      Jon Salz <jsalz@mit.edu>
-# Description: Allows the user to select a style to use to view presentations.
-# Inputs:      override_style_id
-#              override_style_temp (is the switch temporary?)
+# /wp/override-style.tcl
+ad_page_contract {
+    Allows the user to select a style to use to view presentations.
+    @creation-date  28 Nov 1999
 
-set_the_usual_form_variables 0
+    @param override_style_id integer- might be -1
+    @param overrid_style_temp (is the switch temporary?)
+
+    @author Jon Salz <jsalz@mit.edu>
+    @cvs-id override-style.tcl,v 3.1.2.7 2000/08/16 21:49:39 mbryzek Exp
+} {
+    override_style_id:integer,optional
+    override_style_temp:integer,optional
+}
+# modified 14 Jul 2000 for ACS 3.4 upgrade
 
 if { [info exists override_style_id] && [regexp {^-?[0-9]*$} $override_style_id] } {
     set override_style_temp [expr { [info exists override_style_temp] && $override_style_temp == 1 }]
@@ -27,11 +33,12 @@ if { [info exists override_style_id] && [regexp {^-?[0-9]*$} $override_style_id]
 
 set user_id [ad_verify_and_get_user_id]
 
-
-ns_write "HTTP/1.0 200 OK
+set whole_page "HTTP/1.0 200 OK
 Content-type: text/html
 $cookie
-<html>
+"
+ns_startcontent -type text/html
+append whole_page "<html>
 <head><title>Select a Style</title></head>
 <body bgcolor=white $on_load>
 <form>
@@ -39,19 +46,17 @@ $cookie
 
 "
 
-set db [ns_db gethandle]
-
 set out "<p><center>When displaying presentations, use the style<br>
 <select name=override_style_id>
 <option value=\"\"[wp_only_if { $override_style_id == "" } " selected"]>suggested by the author
 "
 
-wp_select $db "
+db_foreach wp_sel_style "
     select style_id, name
     from wp_styles
     where public_p = 't'
     or owner is null
-    or owner = $user_id
+    or owner = :user_id
     order by lower(name)
 " {
     append out "<option value=$style_id"
@@ -61,7 +66,9 @@ wp_select $db "
     append out ">$name\n"
 }
 
-ns_write "$out
+db_release_unused_handles
+
+append whole_page "$out
 </select><input type=submit value=\"Save Preference\">
 
 <p>
@@ -74,3 +81,5 @@ ns_write "$out
 </center></p>
 [wp_footer]
 "
+
+ns_write $whole_page

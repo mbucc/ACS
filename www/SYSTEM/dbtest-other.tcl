@@ -1,21 +1,24 @@
-# this is called by server monitoring scripts, such as 
-# keepalive (see http://arsdigita.com/free-tools/keepalive.html)
-# if it doesn't return "success" then they are supposed
-# to kill the AOLserver
+ad_page_contract {
+    
+    This is called by server monitoring scripts, such as 
+    keepalive (see http://arsdigita.com/free-tools/keepalive.html)
+    if it doesn't return "success" then they are supposed
+    to kill the AOLserver.
 
-# you can also use this with our Uptime monitoring system,
-# described in Chapter 15 of http://photo.net/wtr/thebook/
+    You can also use this with our Uptime monitoring system,
+    described in Chapter 15 of http://photo.net/wtr/thebook/
 
-# this tests total db connectivity
+    This tests total db connectivity.
 
-set db [ns_db gethandle]
+    @cvs-id dbtest-other.tcl,v 3.2.10.7 2000/09/22 01:34:09 kevin Exp
+} { }
 
-set selection [ns_db 0or1row $db "select sysdate from dual"]
-
-if { $selection == "" } {
-     ns_return 500 text/plain "failed"	
+if { ![db_0or1row date_check {
+    select sysdate from dual
+}] } {
+    doc_return  500 text/plain "failed"	
 } else {
-     ns_return 200 text/plain "success"
+    doc_return 200 text/plain "success"
 }
 
 

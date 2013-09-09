@@ -1,17 +1,23 @@
-# $Id: search-engine-one-one-month.tcl,v 3.0 2000/02/06 03:27:53 ron Exp $
-# one search engine, one month
+# /www/admin/referer/search-engine-one-one-month.tcl
+#
 
-set_the_usual_form_variables
+ad_page_contract {
+    one search engine, one month
+    @cvs-id search-engine-one-one-month.tcl,v 3.2.2.6 2000/09/22 01:36:00 kevin Exp
+    @param query_year
+    @param query_month
+} {
+    search_engine_name:notnull
+    query_year:notnull
+    query_month:notnull
+}
 
-# search_engine_name, query_year, query_month
 
-ReturnHeaders
-
-ns_write "[ad_admin_header "$search_engine_name: $query_month/$query_year"]
+set page_content "[ad_admin_header "$search_engine_name: $query_month/$query_year"]
 
 <h2>$search_engine_name referrals in $query_month/$query_year</h2>
 
-[ad_admin_context_bar [list "index.tcl" "Referrals"] [list "search-engines.tcl" "Search Engine Statistics"] "One Month"]
+[ad_admin_context_bar [list "" "Referrals"] [list "search-engines" "Search Engine Statistics"] "One Month"]
 
 <hr>
 
@@ -19,27 +25,26 @@ ns_write "[ad_admin_header "$search_engine_name: $query_month/$query_year"]
 
 "
 
-set db [ns_db gethandle]
+
 
 set first_of_month "$query_year-$query_month-01"
 
-set selection [ns_db select $db "
+set sql "
 select query_string
 from query_strings
-where search_engine_name = '$QQsearch_engine_name'
-and query_date between '$first_of_month' and add_months('$first_of_month',1)
-order by upper(query_string)"]
+where search_engine_name = :search_engine_name
+and query_date between :first_of_month and add_months(:first_of_month,1)
+order by upper(query_string)"
 
 set items ""
 
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+db_foreach referer_search_engine_one_month $sql {
     append items "<li>$query_string\n"
 }
 
-ns_write $items
+append page_content $items
 
-ns_write "
+append page_content "
 
 </ul>
 
@@ -47,7 +52,7 @@ ns_write "
 
 Note: Referrals from public search engines are identified by patterns recorded in the
 <code>referer_log_glob_patterns</code> table, maintained at 
-<a href=\"/admin/referer/mapping.tcl\">/admin/referer/mapping.tcl</a>.  The statistics 
+<a href=\"/admin/referer/mapping\">/admin/referer/mapping</a>.  The statistics 
 on these pages do not include searches done by users locally (i.e., with tools running
 on this server).
 
@@ -55,3 +60,6 @@ on this server).
 
 [ad_admin_footer]
 "
+
+
+doc_return  200 text/html $page_content

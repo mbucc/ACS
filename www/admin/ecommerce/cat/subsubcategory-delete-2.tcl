@@ -1,15 +1,33 @@
-# $Id: subsubcategory-delete-2.tcl,v 3.0.4.1 2000/04/28 15:08:36 carsten Exp $
-set_the_usual_form_variables
-# subsubcategory_id, subcategory_id, subcategory_name, category_id, category_name
+# /www/admin/ecommerce/cat/subsubcategory-delete-2.tcl
+
+ad_page_contract { 
+
+    Deletes ecommerce product subsubcategory.
+
+    @param subsubcategory_id
+    @param subcategory_id
+    @param subcategory_name
+    @param category_id
+    @param category_name
+
+    @cvs-id subsubcategory-delete-2.tcl,v 3.1.6.5 2000/08/18 21:46:54 stevenp Exp
+} {
+    subsubcategory_id:integer,notnull
+    subcategory_id:integer,notnull
+    subcategory_name:notnull
+    category_id:integer,notnull
+    category_name:notnull
+}
+
 
 # we need them to be logged in
 set user_id [ad_verify_and_get_user_id]
 
 if {$user_id == 0} {
     
-    set return_url "[ns_conn url]?[export_url_vars category_name category_id subcategory_id subcategory_name subsubcategory_id]"
+    set return_url "[ad_conn url]?[export_url_vars category_name category_id subcategory_id subcategory_name subsubcategory_id]"
 
-    ad_returnredirect "/register.tcl?[export_url_vars return_url]"
+    ad_returnredirect "/register?[export_url_vars return_url]"
     return
 }
 
@@ -20,24 +38,25 @@ if {$user_id == 0} {
 
 # So, here goes:
 
-set db [ns_db gethandle]
-ns_db dml $db "begin transaction"
+
+db_transaction {
 
 # 1. remove the rows in ec_subsubcategory_product_map where subsubcategory_id
 # is $subsubcategory_id
 
-ns_db dml $db "delete from ec_subsubcategory_product_map where subsubcategory_id=$subsubcategory_id"
+db_dml delete_subsub_map "delete from ec_subsubcategory_product_map where subsubcategory_id=:subsubcategory_id"
 
 # audit table
-ad_audit_delete_row $db [list $subsubcategory_id] [list subsubcategory_id] ec_subsubcat_prod_map_audit
+ad_audit_delete_row [list $subsubcategory_id] [list subsubcategory_id] ec_subsubcat_prod_map_audit
 
 # 2. remove the row in ec_subsubcategories where subsubcategory_id = $subsubcategory_id
 
-ns_db dml $db "delete from ec_subsubcategories where subsubcategory_id = $subsubcategory_id"
+db_dml delete_subsubcats "delete from ec_subsubcategories where subsubcategory_id = :subsubcategory_id"
 
 # audit table
-ad_audit_delete_row $db [list $subsubcategory_id] [list subsubcategory_id] ec_subsubcategories_audit
+ad_audit_delete_row [list $subsubcategory_id] [list subsubcategory_id] ec_subsubcategories_audit
 
-ns_db dml $db "end transaction"
+}
+db_release_unused_handles
 
-ad_returnredirect "subcategory.tcl?[export_url_vars subcategory_id subcategory_name category_id category_name]"
+ad_returnredirect "subcategory?[export_url_vars subcategory_id subcategory_name category_id category_name]"

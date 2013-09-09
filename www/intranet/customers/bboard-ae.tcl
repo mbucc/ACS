@@ -1,43 +1,44 @@
-# $Id: bboard-ae.tcl,v 3.1.4.2 2000/03/17 08:56:32 mbryzek Exp $
-#
-# File: /www/intranet/customers/bboard-ae.tcl
-#
-# Author: mbryzek@arsdigita.com, Jan 2000
-#
-# Once bboard is scoped, this page will allow us to easily link 
-# customers with their own bboards
+# /www/intranet/customers/bboard-ae.tcl
 
+ad_page_contract {
+    Once bboard is scoped, this page will allow us to easily link
+    customers with their own bboards
 
-set_form_variables 0
+    @param group_id the group of this customer
+    @param topic_id the bboard topic we're editing. If not specified, we will create a new topic
 
-# group_id
-# topic_id if we're editing
+    @author mbryzek@arsdigita.com
+    @creation-date Jan 2000
+    @cvs-id bboard-ae.tcl,v 3.8.2.8 2000/09/22 01:38:28 kevin Exp
 
+} {
+    group_id:integer,notnull
+    { topic_id:integer "" }
+}
+
+# Can use ad_get_user_id because security filters already validate the user_id
 set user_id [ad_get_user_id]
 
-set db [ns_db gethandle]
 
 if { [exists_and_not_null topic_id] } {
-    set selection [ns_db 1row $db \
-	    "select * from bboard_topics where topic_id=$topic_id"]
-    set_variables_after_query
+    db_1row star_from_bboard_topics \
+	    "select topic from bboard_topics where topic_id=:topic_id" 
     set page_title "Edit BBoard Topic"
 } else {
-    set selection [ns_db 1row $db \
-	    "select * from user_groups where group_id=$group_id"]
-    set_variables_after_query
+    db_1row star_from_user_groups \
+	    "select group_name from user_groups where group_id=:group_id" 
     set topic $group_name
     set page_title "Add BBoard Topic"
 }
 
-set context_bar [ad_context_bar [list "/" Home] [list ../index.tcl "Intranet"] [list index.tcl "Customers"] [list "view.tcl?[export_url_vars group_id]" "One customer"] [list "staff-server.tcl?[export_url_vars group_id]" "Staff server"] $page_title]
+set context_bar [ad_context_bar_ws [list ./ "Customers"] [list "view?[export_url_vars group_id]" "One customer"] $page_title]
 
 set page_body "
-[ad_partner_header]
-<form action=\"/user-search.tcl\" method=get>
+[im_header]
+<form action=\"/user-search\" method=get>
 [export_form_vars group_id]
-<input type=hidden name=target value=\"[im_url_stub]/customers/bboard-ae-2.tcl\">
-<input type=hidden name=passthrough value=\"topic group_id presentation_type moderation_policy iehelper_notify_of_new_postings_p\">
+<input type=hidden name=target value=\"[im_url_stub]/customers/bboard-ae-2\">
+<input type=hidden name=passthrough value=\"topic group_id presentation_type moderation_policy notify_of_new_postings_p\">
 <input type=hidden name=custom_title value=\"Choose a Member to Add as an Administrator\">
 
 <h3>The Most Important Things</h3>
@@ -125,6 +126,6 @@ Notify me of all new postings?
 [ad_admin_footer]
 "
 
-ns_db releasehandle $db
 
-ns_return 200 text/html $page_body
+
+doc_return  200 text/html $page_body

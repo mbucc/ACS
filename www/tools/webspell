@@ -1,9 +1,0 @@
-#!/bin/sh
-
-# Wrapper for ispell that sets the HOME environment variable.
-# Can't seem to do this from AOLserver Tcl.
-# Takes two arguments: file to spellcheck, dictionary file.
-
-HOME=/home/nsadmin
-export HOME
-exec /usr/local/bin/ispell -a -p $2 < $1

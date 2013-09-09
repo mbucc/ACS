@@ -1,16 +1,37 @@
-# $Id: ticket-watch.tcl,v 3.0.4.1 2000/04/28 15:11:36 carsten Exp $
-#
-#  add an entry to ticket_email_alerts.
-#
+# /www/ticket/ticket-watch.tcl
+ad_page_contract {
+    Adds an entry to the email alerts table (as long as one doesn't 
+    already exist).
 
-ad_page_variables {msg_id return_url} 
+    @param msg_id the ticket to add the alert on
+    @param return_url where to go when finished
 
-set db [ns_db gethandle] 
-set user_id [ad_get_user_id]
+    @author original author unknown
+    @author Kevin Scaldeferri (kevin@caltech.edu)
+    @cvs-id ticket-watch.tcl,v 3.1.6.5 2000/07/21 04:04:36 ron Exp
+} {
+    msg_id:integer,notnull 
+    {return_url ""}
+}
 
-if {[catch {ns_db dml $db "insert into ticket_email_alerts (
-   alert_id, user_id, msg_id, domain_id, project_id, established
-   ) select ticket_alert_id_sequence.nextval, $user_id, $msg_id, null, null, sysdate from dual where not exists (select 1 from ticket_email_alerts where user_id = $user_id and msg_id = $msg_id)"} errmsg]} {
+# -----------------------------------------------------------------------------
+ 
+set user_id [ad_verify_and_get_user_id]
+
+if {[catch {db_dml alert_insert "
+insert into ticket_email_alerts 
+(alert_id, user_id, msg_id, domain_id, project_id, established) 
+select ticket_alert_id_sequence.nextval, 
+       :user_id, 
+       :msg_id, 
+       NULL, 
+       NULL, 
+       sysdate 
+from   dual 
+where  not exists (select 1 from ticket_email_alerts 
+                   where  user_id = :user_id 
+                   and    msg_id = :msg_id)"} errmsg]} {
+
     ad_return_complaint 1 "<LI> Unable to complete your request. Database error: <pre>$errmsg</err>"
     return
 }

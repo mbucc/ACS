@@ -1,30 +1,30 @@
-# $Id: user-search.tcl,v 3.1.2.1 2000/03/17 08:22:41 mbryzek Exp $
-# 
-# File: /www/intranet/user-search.tcl
-#
-# Author: mbryzek@arsdigita.com, Mar 2000
-#
-# Purpose: Standard form to search for a user (through /user-search.tcl)
-#
+# /www/intranet/user-search.tcl
 
+ad_page_contract {
+    Purpose: Standard form to search for a user (through /user-search.tcl)
 
-set user_id [ad_verify_and_get_user_id]
-ad_maybe_redirect_for_registration
+    @param target Where to link to.
+    @param passthrough What to pass on.
 
-set_form_variables
-# target
-# passthrough
+    @author mbryzek@arsdigita.com
+    @creation-date Mar 2000
 
+    @cvs-id user-search.tcl,v 3.7.2.6 2000/09/22 01:38:22 kevin Exp
+} {
+    target
+    passthrough    
+}
 
+set user_id [ad_maybe_redirect_for_registration]
 
 set page_title "Search for a user"
-set context_bar [ad_context_bar [list "/" Home] [list "../" "Intranet"] [list index.tcl "Offices"] [list view.tcl?[export_url_vars group_id] "One office"] "Select contact"]
+set context_bar [ad_context_bar_ws [list ./ "Intranet"] "User search"]
 
 set page_body "
 
 Locate user by:
 
-<form method=get action=/user-search.tcl>
+<form method=get action=/user-search>
 [export_ns_set_vars form]
 
 <table border=0>
@@ -42,4 +42,4 @@ Locate user by:
 
 "
 
-ns_return 200 text/html [ad_partner_return_template]
+doc_return  200 text/html [im_return_template]

@@ -1,39 +1,43 @@
-# /webmail/message-refile.tcl
+# /webmail/message-send.tcl
 # by jsc@arsdigita.com (2000-02-23)
 
-# Present form to send message, populating certain fields if this is a response.
 
-ad_page_variables {{response_to_msg_id ""} {respond_to_all 0}}
+ad_page_contract {
+    Present form to send message, populating certain fields if this is a response.
 
-# If response_to_msg_id is supplied, this is a response to the given msg_id.
-# If respond_to_all is set to a true value, all recipients will be Cc'ed.
+    @param response_to_msg_id If response_to_msg_id is supplied, this is a response to the given msg_id.
+    @param respond_to_all If respond_to_all is 1, all recipients will be Cc'ed.
+    @author Jin Choi (jsc@arsdigita.com)
+    @creation-date 2000-02-23
+    @cvs-id message-send.tcl,v 1.6.2.7 2001/01/12 00:23:51 khy Exp
+} {
+    { response_to_msg_id:integer "" }
+    { respond_to_all:integer 0 }
+}
 
 set msg_body ""
 set subject ""
 set page_title "Send Mail"
 
 set user_id [ad_verify_and_get_user_id]
-set db [ns_db gethandle]
 
 set cc ""
 
 if { ![empty_string_p $response_to_msg_id] } {
 
-    validate_integer response_to_msg_id $response_to_msg_id
-
-    if { ![wm_check_permissions $db $response_to_msg_id $user_id] } {
+    if { ![wm_check_permissions $response_to_msg_id $user_id] } {
 	ad_return_error "Permission Denied" "You do not have permission to access this message to respond to it."
 	return
     }
 
-    set msg_body [database_to_tcl_string $db "select body
+    set msg_body [db_string msg_body "select body
 from wm_messages
 where msg_id = $response_to_msg_id"]
 
-    set subject [database_to_tcl_string_or_null $db "select value
+    set subject [db_string msg_subject "select value
 from wm_headers
 where msg_id = $response_to_msg_id
-  and lower_name = 'subject'"]
+  and lower_name = 'subject'" -default ""]
 
     if { ![empty_string_p $subject] } {
 	set page_title "Response to \"$subject\""
@@ -45,22 +49,22 @@ where msg_id = $response_to_msg_id
 	set page_title "Response"
     }
 
-    set to [database_to_tcl_string_or_null $db "select wm_response_address($response_to_msg_id) from dual"]
+    set to [db_string msg_to "select wm_response_address($response_to_msg_id) from dual" -default ""]
 
     if $respond_to_all {
-	set cc [join [database_to_tcl_list $db "select email from wm_recipients where msg_id = $response_to_msg_id"] ", "]
+	set cc [join [db_list msg_recipients "select email from wm_recipients where msg_id = $response_to_msg_id"] ", "]
     }
     set context_bar [ad_context_bar_ws \
-			 [list "index.tcl" "WebMail"] \
-			 [list "message.tcl?msg_id=$response_to_msg_id" "One Message"] \
+			 [list "index" "WebMail"] \
+			 [list "message?msg_id=$response_to_msg_id" "One Message"] \
 			 "Response"]
 } else {
-    set context_bar [ad_context_bar_ws [list "index.tcl" "WebMail"] "Send Mail"]
+    set context_bar [ad_context_bar_ws [list "index" "WebMail"] "Send Mail"]
     set to ""
 }
 
 
-set from_options [database_to_tcl_list $db "select email_user_name || '@' || full_domain_name as from_address
+set from_options [db_list from_options "select email_user_name || '@' || full_domain_name as from_address
 from wm_email_user_map eum, wm_domains d
 where user_id = $user_id
   and eum.domain = d.short_name
@@ -77,19 +81,20 @@ if { [llength $from_options] > 1 } {
     set from_field "$from\n[export_form_vars from]\n"
 }
 
-set outgoing_msg_id [database_to_tcl_string $db "select wm_outgoing_msg_id_sequence.nextval from dual"]
+set outgoing_msg_id [db_nextval wm_outgoing_msg_id_sequence]
 
-ns_db releasehandle $db
 
-ns_return 200 text/html "[ad_header $page_title]
+
+doc_return  200 text/html "[ad_header $page_title]
 <h2>$page_title</h2>
 
 $context_bar
 
 <hr>
 
-<form action=\"message-send-2.tcl\" action=POST>
- [export_form_vars response_to_msg_id outgoing_msg_id]
+<form action=\"message-send-2\" method=POST>
+ [export_form_vars response_to_msg_id]
+ [export_form_vars -sign outgoing_msg_id]
 
 <blockquote>
 

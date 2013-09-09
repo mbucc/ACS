@@ -1,26 +1,34 @@
-# $Id: category-edit.tcl,v 3.0.4.1 2000/04/28 15:08:35 carsten Exp $
-set_the_usual_form_variables
-# category_name, category_id
+# /www/admin/ecommerce/cat/category-edit.tcl
+ad_page_contract {
+
+    @param category_name the category name
+    @param category_id the ID of the category to edit
+
+    @cvs-id category-edit.tcl,v 3.2.2.7 2000/08/28 20:45:54 hbrock Exp
+} {
+    category_name:trim,notnull
+    category_id:integer,notnull
+}
 
 # we need them to be logged in
 set user_id [ad_verify_and_get_user_id]
 
 if {$user_id == 0} {
     
-    set return_url "[ns_conn url]?[export_url_vars category_name category_id]"
+    set return_url "[ad_conn url]?[export_url_vars category_name category_id]"
 
-    ad_returnredirect "/register.tcl?[export_url_vars return_url]"
+    ad_returnredirect "/register?[export_url_vars return_url]"
     return
 }
 
+set address [ns_conn peeraddr]
 
-set db [ns_db gethandle]
-
-ns_db dml $db "update ec_categories
-set category_name='$QQcategory_name',
+db_dml update_ec_categories "update ec_categories
+set category_name=:category_name,
 last_modified=sysdate,
-last_modifying_user=$user_id,
-modified_ip_address='[DoubleApos [ns_conn peeraddr]]'
-where category_id=$category_id"
+last_modifying_user=:user_id,
+modified_ip_address=:address
+where category_id=:category_id"
+db_release_unused_handles
 
-ad_returnredirect "category.tcl?[export_url_vars category_id category_name]"
+ad_returnredirect "category?[export_url_vars category_id category_name]"

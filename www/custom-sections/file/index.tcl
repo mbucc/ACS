@@ -1,36 +1,33 @@
-# $Id: index.tcl,v 3.0 2000/02/06 03:37:40 ron Exp $
-# File:     /custom-sections/index.tcl
-# Date:     12/28/99
-# Contact:  ahmeds@arsdigita.com
-# Purpose:  this serves the custom section index page 
-#
-# Note: if page is accessed through /groups pages then group_id and group_vars_set are already set up in 
-#       the environment by the ug_serve_section. group_vars_set contains group related variables (group_id, 
-#       group_name, group_short_name, group_admin_email, group_public_url, group_admin_url, group_public_root_url,
-#       group_admin_root_url, group_type_url_p, group_context_bar_list and group_navbar_list)
+# /www/custom-sections/file/index.tcl
+ad_page_contract {
+    Purpose:  Serves the custom section index page (for loading download a file) 
 
-set_the_usual_form_variables 0
-# maybe scope, maybe scope related variables (user_id, group_id, on_which_group, on_what_id)
-# content_file_id 
+    Scope aware. scope := (public|group). Scope related variables are passed implicitly in 
+    the local environment and checked with ad_scope_error_check.
+
+    @param content_file_id
+
+    @author Contact:  ahmeds@arsdigita.com
+    @creation-date    12/28/99
+
+    @cvs-id index.tcl,v 3.1.2.6 2000/09/22 01:37:19 kevin Exp
+} {
+    content_file_id:integer
+}
 
 ad_scope_error_check
+ad_scope_authorize $scope all all none
 
-set db [ns_db gethandle]
-ad_scope_authorize $db $scope all all none
+db_1row cs_select_page_info "
+select page_pretty_name, body, html_p 
+ from content_files 
+ where content_file_id = :content_file_id 
+" 
 
-set selection [ns_db 1row $db "
-select page_pretty_name, body, html_p
-from content_files
-where content_file_id=$content_file_id
-"]
-
-set_variables_after_query
-
-ReturnHeaders
 
 append html "
-[ad_scope_header $page_pretty_name $db]
-[ad_scope_page_title $page_pretty_name $db]
+[ad_scope_header $page_pretty_name]
+[ad_scope_page_title $page_pretty_name]
 [ad_scope_context_bar_ws "$page_pretty_name"]
 <hr>
 [ad_scope_navbar]
@@ -44,7 +41,9 @@ append html "
 <p>
 "
 
-ns_write "
+
+
+doc_return  200 text/html "
 $html
 [ad_scope_footer ]
 "

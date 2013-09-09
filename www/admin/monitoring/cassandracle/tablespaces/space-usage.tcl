@@ -1,9 +1,15 @@
-# $Id: space-usage.tcl,v 3.0 2000/02/06 03:25:31 ron Exp $
-set db [ns_db gethandle]
-set block_size [database_to_tcl_string $db {select value from v$parameter where name='db_block_size'}]
+# /admin/monitoring/cassandracle/tablespaces/space-usage.tcl
 
-ReturnHeaders
-ns_write "
+ad_page_contract {
+    Displays summary disk space usage information for all tablespaces.
+
+    @cvs-id space-usage.tcl,v 3.0.12.5 2000/09/22 01:35:37 kevin Exp
+} {
+}
+
+set block_size [db_string mon_block_size "select value from V\$PARAMETER where name='db_block_size'"]
+
+set page_content "
 
 [ad_admin_header "Space usage"]
 
@@ -31,10 +37,10 @@ group by
 order by 
   FS.tablespace_name, File_Name"
 
-set tablespace_usage_info [database_to_tcl_list_list $db $the_query]
+set tablespace_usage_info [db_list_of_lists mon_tablespace_info $the_query]
 
 if {[llength $tablespace_usage_info]==0} {
-    ns_write "<tr><td>No tablespaces found!</td></tr>"
+    append page_content "<tr><td>No tablespaces found!</td></tr>"
 } else {
     set current_tablespace ""
     set ts_total_sum 0
@@ -49,7 +55,7 @@ if {[llength $tablespace_usage_info]==0} {
 
     if {$current_tablespace==""} {
 	set include_summary 0
-	ns_write "<tr><td valign=top align=left>[lindex $row 0]</td><td valign=top align=left>[lindex $row 1]</td><td valign=top align=right>[lindex $row 4]<td valign=top align=right>[lindex $row 2]</td><td valign=top align=right>[lindex $row 3]</td>$last_columns</tr>\n"
+	append page_content "<tr><td valign=top align=left>[lindex $row 0]</td><td valign=top align=left>[lindex $row 1]</td><td valign=top align=right>[lindex $row 4]<td valign=top align=right>[lindex $row 2]</td><td valign=top align=right>[lindex $row 3]</td>$last_columns</tr>\n"
 	set current_tablespace [lindex $row 0]
 	incr ts_total_sum [lindex $row 3]
 	incr ts_remaining_sum [lindex $row 2]
@@ -58,16 +64,16 @@ if {[llength $tablespace_usage_info]==0} {
     if {[lindex $row 0]!=$current_tablespace} {
 	#finish the remaining tablespace
 	if {$include_summary} {
-	    ns_write "\n<tr><td colspan=4 align=right>Sum for $current_tablespace: $ts_remaining_sum out of $ts_total_sum blocks remain.</td></tr>\n"
+	    append page_content "\n<tr><td colspan=4 align=right>Sum for $current_tablespace: $ts_remaining_sum out of $ts_total_sum blocks remain.</td></tr>\n"
 	}
 	set ts_total_sum 0
 	set ts_remaining_sum 0
 	set include_summary 0
-	ns_write "<tr><td valign=top align=left>[lindex $row 0]</td><td valign=top align=left>[lindex $row 1]</td><td valign=top align=right>[lindex $row 4]<td valign=top align=right>[lindex $row 2]</td><td valign=top align=right>[lindex $row 3]</td>$last_columns</tr>\n"
+	append page_content "<tr><td valign=top align=left>[lindex $row 0]</td><td valign=top align=left>[lindex $row 1]</td><td valign=top align=right>[lindex $row 4]<td valign=top align=right>[lindex $row 2]</td><td valign=top align=right>[lindex $row 3]</td>$last_columns</tr>\n"
 	incr ts_total_sum [lindex $row 3]
 	incr ts_remaining_sum [lindex $row 2]
     } else {
-	ns_write "<tr><td>&nbsp;</td><td valign=top align=left>[lindex $row 1]</td><td valign=top align=right>[lindex $row 4]<td valign=top align=right>[lindex $row 2]</td><td valign=top align=right>[lindex $row 3]</td>$last_columns</tr>\n"
+	append page_content "<tr><td>&nbsp;</td><td valign=top align=left>[lindex $row 1]</td><td valign=top align=right>[lindex $row 4]<td valign=top align=right>[lindex $row 2]</td><td valign=top align=right>[lindex $row 3]</td>$last_columns</tr>\n"
 	set include_summary 1
 	incr ts_total_sum [lindex $row 3]
 	incr ts_remaining_sum [lindex $row 2]
@@ -75,7 +81,7 @@ if {[llength $tablespace_usage_info]==0} {
 }
 
 }
-ns_write "</table>\n
+append page_content "</table>\n
 <p>
 The SQL:
 <pre>
@@ -86,3 +92,6 @@ $the_query
 
 [ad_admin_footer]
 "
+
+
+doc_return  200 text/html $page_content

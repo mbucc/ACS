@@ -1,20 +1,35 @@
-# $Id: portals-defs.tcl,v 3.2.2.2 2000/04/28 15:08:18 carsten Exp $
-#
-# portals-defs.tcl
-#
-# by aure@arsdigita.com, September 1999
-# 
+ad_library {
 
-ns_register_proc GET /portals/*[ad_parameter PortalExtension portals .ptl] portal_display
+    Provides helper routines for portals-defs
 
-proc_doc portal_footer {db id group_name page_number type} {Generate footer for portal pages.} {
+    @author Aure (aure@arsdigita.com)
+    @cvs-id portals-defs.tcl,v 3.8.2.12 2000/10/18 14:01:57 kolja Exp
+}
 
+ad_register_proc GET /portals/*[ad_parameter PortalExtension portals .ptl] portal_display
+
+proc_doc portal_display_info {} { uplevels all the system specific display information  for the portals system} {
+    uplevel {
+	set system_name  [ad_parameter SystemName  portals]
+	set body_tag     [ad_parameter BodyTag     portals]
+	set begin_table  [ad_parameter BeginTable  portals]
+	set end_table    [ad_parameter EndTable    portals]
+	set font_tag     [ad_parameter FontTag     portals]
+	set header_td    [ad_parameter HeaderTD    portals]
+	set subheader_td [ad_parameter SubHeaderTD portals]
+	set normal_td    [ad_parameter NormalTD    portals]
+	set header_bg    [ad_parameter HeaderBGColor portals]
+    }
+}
+
+
+proc_doc portal_footer { id group_name url_name page_number type} {Generate footer for portal pages.} {
     # Get generic display information
-    portal_display_info
+    ns_log notice "footer"
 
-    # Find out the number of pages this portal has
-    set total_pages [database_to_tcl_string $db "
-    select count(*) from portal_pages where ${type}_id=$id"]
+    portal_display_info
+    
+    set total_pages [db_string portal_get_total_pages "select count(*) from portal_pages where ${type}_id = :id"]
 
     if { $type == "group" } {
 	# names and emails of the managers of this portal group;
@@ -24,27 +39,25 @@ proc_doc portal_footer {db id group_name page_number type} {Generate footer for 
 	set administrator_query "select distinct u.first_names||' '||u.last_name as admin_name, u.email as admin_email
 	from users u, user_group_map map
 	where u.user_id =  map.user_id
-	and map.group_id = $id"
-
-	set selection [ns_db select $db $administrator_query]
+	and map.group_id = :id"
 
 	set administrator_list [list]
-	while {[ns_db getrow $db $selection]} {
-	    set_variables_after_query
+	db_foreach select_administrators "$administrator_query" {
 	    lappend administrator_list "<a href=mailto:$admin_email>$admin_name</a>"
 	}
+
 	set extra_footer_text "The content of this portal page is managed by: [join $administrator_list ", "]"
-	regsub -all -- " " [string tolower $group_name] {-} link_name
+	set link_name [ad_urlencode [string tolower $url_name]]
     } else {
 	set link_name "user$id"
-	set extra_footer_text "<a href=\"manage-portal.tcl\">Personalize</a> this portal."
+	set extra_footer_text "<a href=\"manage-portal\">Personalize</a> this portal."
     }
 
-    set page_name [database_to_tcl_string_or_null $db "
-    select page_name from portal_pages 
-    where page_number = $page_number 
-    and ${type}_id = $id"]
 
+    set page_name [db_string get_page_name "
+    select page_name from portal_pages 
+    where page_number = :page_number 
+    and ${type}_id = :id" -default ""   ]
 
     # while the following may not seem very readable, it is important that there are no
     # extra spaces in this table
@@ -73,14 +86,10 @@ proc_doc portal_footer {db id group_name page_number type} {Generate footer for 
 	select distinct nvl(page_name,'Page #'||page_number) as page_name, page_number as new_page_number
 	from   portal_table_page_map p_tpm, portal_pages p_p
 	where  p_tpm.page_id = p_p.page_id
-	and    ${type}_id = $id
+	and    ${type}_id = :id
 	order by page_number"
 
-	set selection [ns_db select $db $page_select]
-	
-	while {[ns_db getrow $db $selection]} {
-	    set_variables_after_query
-
+	db_foreach portal_page_names $page_select {
 	    if {$new_page_number == $page_number} {
 		append footer_html "$header_td <center> $page_name</td>\n"
 	    } else {
@@ -105,19 +114,15 @@ proc_doc portal_footer {db id group_name page_number type} {Generate footer for 
     return $footer_html
 }
 
-
-proc_doc portal_header {db id group_name page_number type} {Generate header for portal pages.} {
-
+proc_doc portal_header {id group_name url_name page_number type} {Generate header for portal pages.} {
     # Get generic display information
     portal_display_info
     
+    ns_log notice "header"
     # Find out the number of pages this portal has
-    set total_pages [database_to_tcl_string $db "
-    select count(*) from portal_pages where ${type}_id=$id"]
 
-    set page_name [database_to_tcl_string_or_null $db "
-    select page_name from portal_pages 
-    where page_number=$page_number and ${type}_id=$id"]
+    set total_pages [db_string portals_defs_get_total_pages "
+	select count(*) from portal_pages where ${type}_id = :id"]
 
 
     # while the following may not seem very readable, it is important that there are no
@@ -135,7 +140,7 @@ proc_doc portal_header {db id group_name page_number type} {Generate header for 
 
 	if {$type == "group"} {
 	    # convert group_name to a URL friendly string
-	    regsub -all -- " " [string tolower $group_name] {-} link_name
+	    set link_name [ad_urlencode [string tolower $url_name]]
 	} else {
 	    set link_name "user$id"
 	}
@@ -150,14 +155,10 @@ proc_doc portal_header {db id group_name page_number type} {Generate header for 
 	select distinct nvl(page_name,'Page #'||page_number) as page_name, page_number as new_page_number
 	from   portal_table_page_map p_tpm, portal_pages p_p
 	where  p_tpm.page_id = p_p.page_id
-	and    ${type}_id = $id
+	and    ${type}_id = :id
 	order by page_number"
 
-	set selection [ns_db select $db $page_select]
-	
-	while {[ns_db getrow $db $selection]} {
-	    set_variables_after_query
-
+	db_foreach get_page_select $page_select {
 	    if {$new_page_number == $page_number} {
 		append header_html "$header_td <center> $page_name</td>\n"
 	    } else {
@@ -174,9 +175,7 @@ proc_doc portal_header {db id group_name page_number type} {Generate header for 
     return $header_html
 }
 
-
 proc portal_display_page {id page_number type} {
-
     # Get generic display information
     portal_display_info
 
@@ -192,21 +191,29 @@ proc portal_display_page {id page_number type} {
 
     set table_spacer "<table border=0 cellpadding=0 cellspacing=0><tr><td><img src=[ad_parameter SpacerImage portals] width=100% height=5></td></tr></table>"
 
-    set db [ns_db gethandle]
+
+    set type_id_pr ${type}_id
 
     if {$type == "group" } {    
-	set main_name  [database_to_tcl_string $db "
-	    select upper(group_name) from user_groups where group_id=$id"] 
+        ns_log notice "select upper(group_name) as main_name, short_name as url_name
+            from user_groups where group_id=$id"
+
+        db_1row portals_defs_get_group_info "
+            select upper(group_name) as main_name, short_name as url_name
+            from user_groups where group_id=:id"
+        ns_log notice "main_name: $main_name url_name: $url_name"
+
 	set nottype "user"
     } else {
-	set main_name [database_to_tcl_string $db "
-	    select upper(first_names||' '||last_name) from users where user_id=$id"]
+	set main_name [db_string get_main_name_by_user "
+	    select upper(first_names||' '||last_name) from users where user_id=:id"]
+        set url_name ""
 	set nottype "group"
     }
 
-    set page_name [database_to_tcl_string_or_null $db "
-    select page_name from portal_pages where page_number=$page_number and ${type}_id=$id"]
 
+    set page_name [db_string portal_page_name "
+    select page_name from portal_pages where page_number=:page_number and ${type}_id=:id" -default ""]
     
     set main_title "$main_name : $page_name"
 
@@ -217,21 +224,18 @@ proc portal_display_page {id page_number type} {
     from    portal_table_page_map map, portal_pages p_p, portal_tables p_t
     where   map.page_id = p_p.page_id
     and     p_t.table_id = map.table_id
-    and     ${type}_id = $id
+    and     ${type}_id = :id
     and     ${nottype}_id is null
-    and     page_number = $page_number
+    and     page_number = :page_number
     order by page_side, sort_key"
     
-    set table_list [database_to_tcl_list_list $db $table_select]
+    set table_list [db_list_of_lists portals_defs_get_portal_table_list $table_select]
 
     set l_side_html ""
     set r_side_html ""
-    
-    set header [portal_header $db $id $main_name $page_number $type]
-    set footer [portal_footer $db $id $main_name $page_number $type]
 
-    # we're done with $db, let's leave it around in case any of the 
-    # page elements need to use it
+    set header [portal_header $id $main_name $url_name $page_number $type]
+    set footer [portal_footer $id $main_name $url_name $page_number $type]
 
     foreach table_triplet $table_list {
 	set page_side [lindex $table_triplet 0]
@@ -278,11 +282,10 @@ proc portal_display_page {id page_number type} {
 	
 	append ${page_side}_side_html  "$html_table $table_spacer"
 
-
     }
 
     # we're done evaluating all the elements of a page 
-    ns_db releasehandle $db
+    db_release_unused_handles
    
     return "
 
@@ -316,25 +319,34 @@ proc_doc portal_display {} {Registered procedure that uses the URL to determine 
 	# anything naughty
 	validate_integer "user_id" $user_id
 	validate_integer "page_number" $page_number
-	ns_return 200 text/html [util_memoize "portal_display_page $user_id $page_number user" 10]
+	doc_return  200 text/html [util_memoize "portal_display_page $user_id $page_number user" 10]
     } elseif [regexp "/portals/(.*)-(\[0-9\]+)$portal_extension" $full_url match group_name page_number] {
-	regsub -all -- {-} $group_name { } group_name
+	set group_name [ns_urldecode $group_name]
 	set group_name [string toupper $group_name]
-	set db [ns_db gethandle]
+	
+        ns_log notice "portals: group name $group_name"
 
-	set group_id  [database_to_tcl_string_or_null $db "
+        ns_log notice "
 	    select group_id 
-            from user_groups where upper(group_name)='[DoubleApos $group_name]'"] 
+            from user_groups where upper(short_name)=$group_name"
+
+	set group_id  [db_string get_portal_group_id "
+	    select group_id 
+            from user_groups where upper(short_name)=:group_name" -default ""] 
+
+        ns_log notice "portals: group id $group_id"
+
 	if { [empty_string_p $group_id] } {
 	    # If the group does not exist, we redirect to the
 	    # portal list.
 
 	    ad_returnredirect [ad_parameter MainPublicURL portals]
 	} else {
-	    ns_db releasehandle $db
+	    db_release_unused_handles
 	    validate_integer "group_id" $group_id
 	    validate_integer "page_number" $page_number
-	    ns_return 200 text/html [util_memoize "portal_display_page $group_id $page_number group" [ad_parameter CacheTimeout portals 600]]
+            ns_log notice "return"
+	    doc_return  200 text/html [util_memoize "portal_display_page $group_id $page_number group" [ad_parameter CacheTimeout portals 600]]
 	}
     } else {
 	ad_returnredirect [ad_parameter MainPublicURL portals]
@@ -342,14 +354,13 @@ proc_doc portal_display {} {Registered procedure that uses the URL to determine 
 
 }
 
-
-proc_doc portal_check_administrator_maybe_redirect {db user_id {group_id ""} {redirect_location ""}} {} {
+proc_doc portal_check_administrator_maybe_redirect {user_id {group_id ""} {redirect_location ""}} {} {
     
     ad_maybe_redirect_for_registration
 
     # set up the where clause - a blank group_id results in a more restrictive group check
     if ![empty_string_p $group_id] {
-	set group_restriction "and (map.group_id = $group_id or group_name=  'Super Administrators')"
+	set group_restriction "and (map.group_id = :group_id or group_name=  'Super Administrators')"
     } else {
 	set group_restriction "and group_name=  'Super Administrators'"
     }
@@ -360,13 +371,13 @@ proc_doc portal_check_administrator_maybe_redirect {db user_id {group_id ""} {re
 	     set url_vars [export_entire_form_as_url_vars]
              append what_the_user_requested ?$url_vars
         }
-	set redirect_location "/register/index.tcl?return_url=[ns_urlencode $what_the_user_requested]"
+	set redirect_location "/register/index?return_url=[ns_urlencode $what_the_user_requested]"
     }
 
-    set count [database_to_tcl_string $db " 
+    set count [db_string portal_administrator_count " 
     select count(*) 
     from    user_group_map map, user_groups ug 
-    where   map.user_id = $user_id
+    where   map.user_id = :user_id
     and     map.group_id = ug.group_id
     and     ug.group_type = 'portal_group'
     and     role='administrator'
@@ -374,15 +385,18 @@ proc_doc portal_check_administrator_maybe_redirect {db user_id {group_id ""} {re
 
     if {$count == 0 } {
 	ad_returnredirect $redirect_location
-        return -code return
+        ad_script_abort
     }
     return
 }
 
-proc_doc portal_group_name {db group_id} {Quite simply gets the group_name for a group_id.} {
-    return [database_to_tcl_string_or_null $db "select group_name from user_groups where group_id = $group_id"]
+proc_doc portal_group_name {group_id} {Quite simply gets the group_name for a group_id.} {
+    return [db_string return_portal_group_name "select group_name from user_groups where group_id = :group_id" -default ""]
 }
 
+proc_doc portal_short_name {group_id} {Quite simply gets the group_name for a group_id.} {
+    return [db_string return_portal_group_name "select short_name from user_groups where group_id = :group_id" -default ""]
+}
 
 
 proc portal_system_owner {} {
@@ -410,22 +424,14 @@ proc portal_admin_header {title} {
 }
 
 
-proc_doc portal_display_info {} { uplevels all the system specific display information  for the portals system} {
-    uplevel {
-	set system_name  [ad_parameter SystemName  portals]
-	set body_tag     [ad_parameter BodyTag     portals]
-	set begin_table  [ad_parameter BeginTable  portals]
-	set end_table    [ad_parameter EndTable    portals]
-	set font_tag     [ad_parameter FontTag     portals]
-	set header_td    [ad_parameter HeaderTD    portals]
-	set subheader_td [ad_parameter SubHeaderTD portals]
-	set normal_td    [ad_parameter NormalTD    portals]
-	set header_bg    [ad_parameter HeaderBGColor portals]
-    }
-}
-
-
-proc_doc portal_adp_parse {adp db} { returns a parsed adp string - done here so variables in the adp don't conflict with variables in the main page (except for $db, which we make sure is always a valid connection from the main pool).  Also modifies any <td>s or <th>s in an embedded table (adp) to  have a standard  font tag after it so that this text also will conform to the portal standard font.} {
+proc_doc portal_adp_parse {adp } {
+    returns a parsed adp string - done here so variables in the adp
+    don't conflict with variables in the main page (except for $db, which
+    we make sure is always a valid connection from the main pool).  Also
+    modifies any &lt;td&gt;s or &lt;th&gt;s in an embedded table (adp) to have a
+    standard font tag after it so that this text also will conform to the
+    portal standard font.  
+} {
     
     portal_display_info
 
@@ -435,7 +441,6 @@ proc_doc portal_adp_parse {adp db} { returns a parsed adp string - done here so 
 
     return "$shown_adp"
 }
-
 
 
 

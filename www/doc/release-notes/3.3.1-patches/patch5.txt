@@ -1,0 +1,80 @@
+This patch is partly to address validation of user input, but mostly 
+to address a security and dead links issue where users see links to
+messages that they don't actually have access to during a search.
+Also patched in /search directory and in search-subject and 
+search-pls-subject.
+
+
+Load the following SQL:
+
+   -- pl/sql function that performs the tcl function
+   -- bboard_user_can_view_topic_p declared in /tcl/bboard-defs.tcl
+   -- returns 'f' if the person is not allowed to view, 't' if he is
+
+   create or replace function bboard_user_can_view_topic_p ( v_user_id IN
+   integer, v_topic_id IN integer)
+   return char
+   IS
+        v_read_access varchar(16);
+        v_group_id    integer;
+        v_count       integer;
+   BEGIN
+        select read_access, group_id into v_read_access, v_group_id
+        from bboard_topics
+        where topic_id = v_topic_id;
+
+        IF v_read_access = 'any' or v_read_access = 'public' THEN
+            RETURN 't';
+        END IF;
+
+        -- now, we know that it's in some group, let's make sure this person is in it
+        select count(*) into v_count
+        from user_group_map
+        where user_id = v_user_id
+        and group_id = v_group_id;      
+
+        IF v_count > 0 THEN
+             RETURN 't';
+        END IF;
+                                       
+         -- if we're up to here, then this person is not allowed to view this page
+         RETURN 'f';
+                                          
+   END;
+/
+show errors
+
+
+In the file: /www/bboard/contributions.tcl
+
+Replace
+   set_form_variables
+with
+   ad_page_variables {
+       user_id
+   }
+   page_validation {
+       set user_id [validate_integer "User ID" $user_id]
+   }  
+
+After
+   set_form_variables
+add
+   set current_user_id [ad_verify_and_get_user_id]
+
+After
+   bboard_topics.topic
+add
+   , bboard_topics.topic_id
+                                 
+After
+   and bboard.topic_id = bboard_topics.topic_id
+add 
+   and bboard_user_can_view_topic_p($current_user_id,bboard.topic_id)='t'
+
+Replace
+   [bboard_msg_url $presentation_type $thread_start_msg_id $topic]
+with
+   [bboard_msg_url $presentation_type $thread_start_msg_id $topic_id $topic]
+
+

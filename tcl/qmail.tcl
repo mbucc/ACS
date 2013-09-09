@@ -1,4 +1,4 @@
-# $Id: qmail.tcl,v 3.1 2000/03/01 10:19:32 jsc Exp $
+# qmail.tcl,v 3.2 2000/07/07 23:31:29 ron Exp
 # procedure for sending mail by directly injecting it into the qmail system.
 # -jsc 1999-01-15
 
@@ -25,7 +25,6 @@ proc qmail {to from subject body {extraheaders {}}} {
     puts -nonewline $qmail_pipe $msg
     close $qmail_pipe
 }
-
 
 # Inject a fully formed message into qmail.
 proc qmail_send_complete_message {from msg} {

@@ -1,43 +1,44 @@
-# /admin/pull-down-menus/item-move.tcl
-#
-# by aure@caltech.edu
-#
-# 2000-02-18
-#
-# $Id: item-move.tcl,v 1.1.2.1 2000/03/16 05:33:08 aure Exp $
+# /www//admin/pull-down-menus/item-move.tcl
+ad_page_contract {
 
-ad_page_variables {item_id}
+  Rearanges menu item within its menu group.
+
+  @param item_id Item we're about to move
+
+  @author aure@caltech.edu
+  @creation-date 2000-02-18
+  @cvs-id item-move.tcl,v 1.3.2.5 2000/09/22 01:35:55 kevin Exp
+
+} {
+
+  item_id:integer,notnull
+
+}
 
 set page_title "Move Item"
 
-set db [ns_db gethandle]
-
 # get the current item and pdm information
-set selection [ns_db 1row $db "
+db_1row one_item "
     select item_id  as root_id, 
            sort_key as root_key,
+	   label as item_label,
            pdm_menus.menu_id,
            pdm_menus.menu_key
     from   pdm_menu_items, pdm_menus 
-    where  item_id = $item_id
-    and    pdm_menu_items.menu_id=pdm_menus.menu_id"]
-set_variables_after_query
-
-set selection [ns_db select $db "
-select item_id,
-       label,
-       sort_key
-from   pdm_menu_items
-where  menu_id = $menu_id
-order by sort_key"]
+    where  item_id = :item_id
+    and    pdm_menu_items.menu_id=pdm_menus.menu_id" 
 
 set item_depth 0
 set item_list ""
 
-while {[ns_db getrow $db $selection]} {
+db_foreach all_menu_items "
+select item_id,
+       label,
+       sort_key
+from   pdm_menu_items
+where  menu_id = :menu_id
+order by sort_key" {
 
-    set_variables_after_query
-    
     # Note that we can only descend by a unit amount, but we can
     # acscend by an arbitrary amount.
 
@@ -71,11 +72,11 @@ while {$item_depth > 0} {
     incr   item_depth -2
 }
 
-ns_db releasehandle $db   
+db_release_unused_handles   
 
 # -----------------------------------------------------------------------------
 
-ns_return 200 text/html "
+doc_return  200 text/html "
 [ad_header_with_extra_stuff "$page_title" [ad_pdm $menu_key 5 5] [ad_pdm_spacer $menu_key]]
 
 <h2>$page_title</h2>
@@ -84,7 +85,7 @@ ns_return 200 text/html "
 
 <hr>
 
-<p>Click on the item that you would like to move \"$label\" 
+<p>Click on the item that you would like to move \"$item_label\" 
 under, or on \"Top\" to make it a top level item.
 
 <blockquote>
@@ -96,7 +97,4 @@ $item_list
 <p>
 
 [ad_admin_footer]"
-
-
-
 

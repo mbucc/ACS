@@ -1,6 +1,21 @@
-# $Id: interactions.tcl,v 3.0 2000/02/06 03:18:00 ron Exp $
-set_form_variables 0
-# possibly view_rep and/or view_interaction_originator and/or view_interaction_type and/or view_interaction_date
+# interactions.tcl
+
+ad_page_contract {   
+    @param view_rep:optional
+    @param view_interaction_originator:optional
+    @param view_interaction_type:optional
+    @param view_interaction_date:optional
+    @author
+    @creation-date
+    @cvs-id interactions.tcl,v 3.2.2.5 2000/09/22 01:34:53 kevin Exp
+} {
+    view_rep:optional
+    view_interaction_originator:optional
+    view_interaction_type:optional
+    view_interaction_date:optional
+}
+
+
 
 if { ![info exists view_rep] } {
     set view_rep "all"
@@ -18,8 +33,8 @@ if { ![info exists order_by] } {
     set order_by "interaction_id"
 }
 
-ReturnHeaders
-ns_write "[ad_admin_header "Customer Service Interactions"]
+
+append doc_body "[ad_admin_header "Customer Service Interactions"]
 
 <h2>Customer Service Interactions</h2>
 
@@ -27,7 +42,7 @@ ns_write "[ad_admin_header "Customer Service Interactions"]
 
 <hr>
 
-<form method=post action=interactions.tcl>
+<form method=post action=interactions>
 [export_form_vars view_interaction_originator view_interaction_type view_interaction_date order_by]
 
 <table border=0 cellspacing=0 cellpadding=0 width=100%>
@@ -42,29 +57,26 @@ ns_write "[ad_admin_header "Customer Service Interactions"]
 <option value=\"all\">All
 "
 
-set db [ns_db gethandle]
 
-set selection [ns_db select $db "select i.customer_service_rep as rep, u.first_names as rep_first_names, u.last_name as rep_last_name
-from ec_customer_serv_interactions i, users u
-where i.customer_service_rep=u.user_id
-group by i.customer_service_rep, u.first_names, u.last_name
-order by u.last_name, u.first_names"]
 
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+set sql "select i.customer_service_rep as rep, u.first_names as rep_first_names, u.last_name as rep_last_name from ec_customer_serv_interactions i, users u where i.customer_service_rep=u.user_id
+group by i.customer_service_rep, u.first_names, u.last_name order by u.last_name, u.first_names"
+
+db_foreach get_rep_info_by_rep $sql {
+    
     if { $view_rep == $rep } {
-	ns_write "<option value=$rep selected>$rep_last_name, $rep_first_names\n"
+	append doc_body "<option value=$rep selected>$rep_last_name, $rep_first_names\n"
     } else {
-	ns_write "<option value=$rep>$rep_last_name, $rep_first_names\n"
+	append doc_body "<option value=$rep>$rep_last_name, $rep_first_names\n"
     }
 }
 
-ns_write "</select>
+append doc_body "</select>
 <input type=submit value=\"Change\">
 </td>
 <td align=center>"
 
-set interaction_originator_list [database_to_tcl_list $db "select unique interaction_originator from ec_customer_serv_interactions"]
+set interaction_originator_list [db_list get_interation_originator_list "select unique interaction_originator from ec_customer_serv_interactions"]
 
 lappend interaction_originator_list "all"
 
@@ -74,16 +86,16 @@ foreach interaction_originator $interaction_originator_list {
     if { $interaction_originator == $view_interaction_originator } {
 	lappend linked_interaction_originator_list "<b>$interaction_originator</b>"
     } else {
-	lappend linked_interaction_originator_list "<a href=\"interactions.tcl?[export_url_vars view_rep view_interaction_type view_interaction_date]&view_interaction_originator=[ns_urlencode $interaction_originator]\">$interaction_originator</a>"
+	lappend linked_interaction_originator_list "<a href=\"interactions?[export_url_vars view_rep view_interaction_type view_interaction_date]&view_interaction_originator=[ns_urlencode $interaction_originator]\">$interaction_originator</a>"
     }
 }
 
-ns_write "\[ [join $linked_interaction_originator_list " | "] \]
+append doc_body "\[ [join $linked_interaction_originator_list " | "] \]
 </td>
 <td align=center>
 "
 
-set interaction_type_list [database_to_tcl_list $db "select picklist_item from ec_picklist_items where picklist_name='interaction_type' order by sort_key"]
+set interaction_type_list [db_list get_interaction_type_list "select picklist_item from ec_picklist_items where picklist_name='interaction_type' order by sort_key"]
 
 lappend interaction_type_list "all"
 
@@ -91,11 +103,11 @@ foreach interaction_type $interaction_type_list {
     if { $interaction_type == $view_interaction_type } {
 	lappend linked_interaction_type_list "<b>$interaction_type</b>"
     } else {
-	lappend linked_interaction_type_list "<a href=\"interactions.tcl?[export_url_vars view_rep view_interaction_type view_interaction_date]&view_interaction_type=[ns_urlencode $interaction_type]\">$interaction_type</a>"
+	lappend linked_interaction_type_list "<a href=\"interactions?[export_url_vars view_rep view_interaction_originator view_interaction_date]&view_interaction_type=[ns_urlencode $interaction_type]\">$interaction_type</a>"
     }
 }
 
-ns_write "\[ [join $linked_interaction_type_list " | "] \]
+append doc_body "\[ [join $linked_interaction_type_list " | "] \]
 </td>
 <td align=center>
 "
@@ -108,12 +120,11 @@ foreach interaction_date $interaction_date_list {
     if {$view_interaction_date == [lindex $interaction_date 0]} {
 	lappend linked_interaction_date_list "<b>[lindex $interaction_date 1]</b>"
     } else {
-	lappend linked_interaction_date_list "<a href=\"interactions.tcl?[export_url_vars view_issue_type view_status order_by]&view_interaction_date=[lindex $interaction_date 0]\">[lindex $interaction_date 1]</a>"
+	lappend linked_interaction_date_list "<a href=\"interactions?[export_url_vars view_issue_type view_status order_by]&view_interaction_date=[lindex $interaction_date 0]\">[lindex $interaction_date 1]</a>"
     }
 }
 
-
-ns_write "\[ [join $linked_interaction_date_list " | "] \]
+append doc_body "\[ [join $linked_interaction_date_list " | "] \]
 
 </td></tr></table>
 
@@ -121,23 +132,22 @@ ns_write "\[ [join $linked_interaction_date_list " | "] \]
 <blockquote>
 "
 
-
 if { $view_rep == "all" } {
     set rep_query_bit ""
 } else {
-    set rep_query_bit "and i.customer_service_rep=[ns_dbquotevalue $view_rep]"
+    set rep_query_bit "and i.customer_service_rep=:view_rep"
 }
 
 if { $view_interaction_originator == "all" } {
     set interaction_originator_query_bit ""
 } else {
-    set interaction_originator_query_bit "and i.interaction_originator='[DoubleApos $view_interaction_originator]'"
+    set interaction_originator_query_bit "and i.interaction_originator=:view_interaction_originator"
 }
 
 if { $view_interaction_type == "all" } {
     set interaction_type_query_bit ""
 } else {
-    set interaction_type_query_bit "and i.interaction_type='[DoubleApos $view_interaction_type]'"
+    set interaction_type_query_bit "and i.interaction_type=:view_interaction_type"
 }
 
 if { $view_interaction_date == "last_24" } {
@@ -162,8 +172,7 @@ set table_header "<table>
 <td><b><a href=\"$link_beginning&order_by=[ns_urlencode "i.interaction_type"]\">Type</a></b></td>
 </tr>"
 
-
-set selection [ns_db select $db "select i.interaction_id, i.customer_service_rep, i.interaction_date,
+set sql "select i.interaction_id, i.customer_service_rep, i.interaction_date,
 to_char(i.interaction_date,'YYYY-MM-DD HH24:MI:SS') as full_interaction_date, i.interaction_originator,
 i.interaction_type, i.user_identification_id, reps.first_names as rep_first_names,
 reps.last_name as rep_last_name, customer_info.user_identification_id,
@@ -174,16 +183,16 @@ from ec_customer_serv_interactions i, users reps,
 where i.customer_service_rep=reps.user_id(+)
 and i.user_identification_id=customer_info.user_identification_id
 $rep_query_bit $interaction_originator_query_bit $interaction_type_query_bit $interaction_date_query_bit
-order by $order_by"]
+order by $order_by"
 
 set row_counter 0
 
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+db_foreach get_customer_interaction_detail $sql {
+    
     if { $row_counter == 0 } {
-	ns_write $table_header
+	append doc_body $table_header
     } elseif { $row_counter == 20 } {
-	ns_write "</table>
+	append doc_body "</table>
 	<p>
 	$table_header
 	"
@@ -196,20 +205,20 @@ while { [ns_db getrow $db $selection] } {
 	set bgcolor "ececec"
     }
 
-    ns_write "<tr bgcolor=\"$bgcolor\"><td><a href=\"interaction.tcl?interaction_id=$interaction_id\">$interaction_id</a></td>
+    append doc_body "<tr bgcolor=\"$bgcolor\"><td><a href=\"interaction?interaction_id=$interaction_id\">$interaction_id</a></td>
     <td>[ec_formatted_full_date $full_interaction_date]</td>
     "
     if { ![empty_string_p $customer_service_rep] } {
-	ns_write "<td><a href=\"/admin/users/one.tcl?user_id=$customer_service_rep\">$rep_last_name, $rep_first_names</a></td>"
+	append doc_body "<td><a href=\"/admin/users/one?user_id=$customer_service_rep\">$rep_last_name, $rep_first_names</a></td>"
     } else {
-	ns_write "<td>&nbsp;</td>"
+	append doc_body "<td>&nbsp;</td>"
     }
     if { ![empty_string_p $customer_user_id] } {
-	ns_write "<td><a href=\"/admin/users/one.tcl?user_id=$customer_user_id\">$customer_last_name, $customer_first_names</a></td>"
+	append doc_body "<td><a href=\"/admin/users/one?user_id=$customer_user_id\">$customer_last_name, $customer_first_names</a></td>"
     } else {
-	ns_write "<td>unregistered user: <a href=\"user-identification.tcl?[export_url_vars user_identification_id]\">$user_identification_id</a></td>"
+	append doc_body "<td>unregistered user: <a href=\"user-identification?[export_url_vars user_identification_id]\">$user_identification_id</a></td>"
     }
-    ns_write "<td>$interaction_originator</td>
+    append doc_body "<td>$interaction_originator</td>
     <td>$interaction_type</td>
     </tr>
     "
@@ -217,12 +226,16 @@ while { [ns_db getrow $db $selection] } {
 }
 
 if { $row_counter != 0 } {
-    ns_write "</table>"
+    append doc_body "</table>"
 } else {
-    ns_write "<center>None Found</center>"
+    append doc_body "<center>None Found</center>"
 }
 
-ns_write "
+append doc_body "
 </blockquote>
 [ad_admin_footer]
 "
+
+
+
+doc_return  200 text/html $doc_body

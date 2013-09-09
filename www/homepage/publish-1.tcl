@@ -1,33 +1,32 @@
-# $Id: publish-1.tcl,v 3.0.4.1 2000/04/28 15:11:02 carsten Exp $
-# File:     /homepage/mkdir-1.tcl
-# Date:     Fri Jan 14 18:48:26 EST 2000
-# Location: 42ÅÅ∞21'N 71ÅÅ∞04'W
-# Location: 80 PROSPECT ST CAMBRIDGE MA 02139 USA
-# Author:   mobin@mit.edu (Usman Y. Mobin)
-# Purpose:  Page to create a folder
+# /homepage/publish-1.tcl
 
-set_form_variables
-# filesystem_node
+ad_page_contract {
+    Allow the user to publish customized content types.
+
+    @param filesystem_node The top directory displayed.
+
+    @creation-date Jan 14 18:48:26 EST 2000
+    @author mobin@mit.edu
+    @cvs-id publish-1.tcl,v 3.3.2.4 2000/07/21 04:00:45 ron Exp
+
+} {
+    filesystem_node:notnull,naturalnum
+}
+
 
 # ------------------------------ initialization codeBlock ----
 
-# First, we need to get the user_id
-set user_id [ad_verify_and_get_user_id]
+set user_id [ad_maybe_redirect_for_registration]
 
-# If the user is not registered, we need to redirect him for
-# registration
-if { $user_id == 0 } {
-    ad_redirect_for_registration
-    return
-}
+set new_type_id [db_string new_type_id {
+    select users_type_id_seq.nextval from dual
+}]
 
-set db [ns_db gethandle]
-set new_type_id [database_to_tcl_string $db "
-select users_type_id_seq.nextval from dual"]
+db_release_unused_handles
 
 # ------------------------------ htmlGeneration codeBlock ----
 
-set dialog_body "Provide characteristics of the new content:<br><form method=post action=publish-2.tcl> \
+set dialog_body "Provide characteristics of the new content:<br><form method=post action=publish-2> \
   <input type=hidden name=filesystem_node value=$filesystem_node> \
   <input type=hidden name=new_type_id value=$new_type_id> \
   <table border=0 cellpadding=15> \
@@ -47,14 +46,12 @@ set dialog_body "Provide characteristics of the new content:<br><form method=pos
   <table border=0 cellpadding=0> \
   <tr> \
   <td><input type=submit value=Okay></form></td> \
-  <td><form method=get action=index.tcl> \
+  <td><form method=get action=index> \
   <input type=hidden name=filesystem_node value=$filesystem_node> \
   <input type=submit value=Cancel></form></td> \
   </tr> \
   </table>"
 
-ad_returnredirect "dialog-class.tcl?title=Content Management&text=$dialog_body"
+ad_returnredirect "dialog-class?title=Content Management&text=$dialog_body"
 return
-
-
 

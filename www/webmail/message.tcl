@@ -1,39 +1,41 @@
 # /webmail/message.tcl
-# by jsc@arsdigita.com (2000-02-23)
 
-# Displays a single message.
+ad_page_contract {
+    Displays a single message.
 
-
-ad_page_variables {msg_id {header_display_style "short"} {body_display_style "parsed"}}
-# header_display_style can be "short" or "all"
-# body_display_style can be "parsed" or "unparsed"
+    @param msg_id ID of message to display
+    @param header_display_style can be "short" or "all"
+    @param body_display_style can be "parsed" or "unparsed"
+    @author Jin Choi (jsc@arsdigita.com)
+    @creation-date 2000-02-23
+    @cvs-id message.tcl,v 1.6.2.5 2000/09/22 01:39:28 kevin Exp
+} {
+    msg_id:integer
+    { header_display_style "short" }
+    { body_display_style "parsed" }
+}
 
 set user_id [ad_verify_and_get_user_id]
 
-set db [ns_db gethandle]
-
 # See if user has permission to read this message, and at the same time get
 # the mailbox_id of this message.
-set selection [ns_db 0or1row $db "select m.mailbox_id, m.name as mailbox_name, mum.deleted_p
-from wm_message_user_map mum, wm_mailboxes m
-where mum.msg_id = $msg_id
-  and mum.mailbox_id = m.mailbox_id
-  and m.creation_user = $user_id"]
+set message_exists_p [db_0or1row mailbox_info "select m.mailbox_id, m.name as mailbox_name, mmm.deleted_p
+from wm_message_mailbox_map mmm, wm_mailboxes m
+where mmm.msg_id = :msg_id
+  and mmm.mailbox_id = m.mailbox_id
+  and m.creation_user = :user_id"]
 
-if { [empty_string_p $selection] } {
+if { !$message_exists_p } {
     ad_return_error "No Such Message" "The specified message could not be found.
 Either you do not have permission to read this message, or it has been deleted."
     return
-} else {
-    set_variables_after_query
 }
-
 
 set mime_message_p 0
 
-set msg_body [database_to_tcl_string $db "select mime_text
+set msg_body [db_string mime_text "select mime_text
 from wm_messages
-where msg_id = $msg_id"]
+where msg_id = :msg_id"]
 
 if { $msg_body != "" } {
     set mime_message_p 1
@@ -48,12 +50,12 @@ if { $body_display_style == "parsed" } {
 }
 
 if { $body_display_style == "unparsed" || $msg_body == "" } {
-    set msg_body [database_to_tcl_string $db "select body
+    set msg_body [db_string body "select body
 from wm_messages
-where msg_id = $msg_id"]
-    if { [database_to_tcl_string $db "select count(*) 
+where msg_id = :msg_id"]
+    if { [db_string headercount "select count(*) 
 from wm_headers
-where msg_id = $msg_id
+where msg_id = :msg_id
   and lower_name = 'content-type'
   and value like 'text/html%'"] > 0 } {
 	set final_msg_body $msg_body
@@ -63,16 +65,16 @@ where msg_id = $msg_id
 }
 
 if { $header_display_style == "short" } {
-    set change_header_display_link "<font size=-1><a href=\"message.tcl?msg_id=$msg_id&header_display_style=all\">Show all headers</a></font>"
+    set change_header_display_link "<font size=-1><a href=\"message?msg_id=$msg_id&header_display_style=all\">Show all headers</a></font>"
 } else {
-    set change_header_display_link "<font size=-1><a href=\"message.tcl?msg_id=$msg_id&header_display_style=short\">Hide headers</a></font>"
+    set change_header_display_link "<font size=-1><a href=\"message?msg_id=$msg_id&header_display_style=short\">Hide headers</a></font>"
 }
 
 if $mime_message_p {
     if { $body_display_style == "parsed" } {
-	set change_body_display_link "<font size=-1><a href=\"message.tcl?[export_url_vars msg_id header_display_style]&body_display_style=unparsed\">Show unparsed message</a></font>"
+	set change_body_display_link "<font size=-1><a href=\"message?[export_url_vars msg_id header_display_style]&body_display_style=unparsed\">Show unparsed message</a></font>"
     } else {
-	set change_body_display_link "<font size=-1><a href=\"message.tcl?[export_url_vars msg_id header_display_style]&body_display_style=parsed\">Show decoded message</a></font>"
+	set change_body_display_link "<font size=-1><a href=\"message?[export_url_vars msg_id header_display_style]&body_display_style=parsed\">Show decoded message</a></font>"
     }
 } else {
     set change_body_display_link ""
@@ -81,21 +83,20 @@ if $mime_message_p {
 
 
 
-set msg_headers [wm_header_display $db $msg_id $header_display_style $user_id]
+set msg_headers [wm_header_display $msg_id $header_display_style $user_id]
 
 
 set current_messages [ad_get_client_property "webmail" "current_messages"]
-set mailbox_id [ad_get_client_property "webmail" "mailbox_id"]
 
-set folder_select_options [db_html_select_value_options $db "select mailbox_id, name
+set folder_select_options [db_html_select_value_options mailbox_selection "select mailbox_id, name
 from wm_mailboxes
-where creation_user = $user_id
-and mailbox_id <> $mailbox_id"]
+where creation_user = :user_id
+and mailbox_id <> :mailbox_id"]
 
 if { [empty_string_p $folder_select_options] } {
     set folder_refile_widget ""
 } else {
-    set folder_refile_widget "<form action=\"message-refile.tcl\" method=POST>
+    set folder_refile_widget "<form action=\"message-refile\" method=POST>
 [export_form_vars msg_id]
 <input type=submit value=\"Refile\">
 <select name=mailbox_id>
@@ -107,11 +108,11 @@ $folder_select_options
 }
 
 
-ns_db dml $db "update wm_message_user_map
+db_dml seen_p_update "update wm_message_mailbox_map
 set seen_p = 't'
-where msg_id = $msg_id"
+where msg_id = :msg_id"
 
-ns_db releasehandle $db
+db_release_unused_handles
 
 # Returns HTML to provide navigation links for previous unread, previous,
 # next, and next unread messages. If the next message is unread, only provides
@@ -175,25 +176,25 @@ proc wm_message_navigation_links { current_msg_id current_messages } {
     set nav_links [list]
 
     if { $prev_unread != "" } {
-	lappend nav_links "<a href=\"message.tcl?msg_id=$prev_unread\">Previous Unread</a>"
+	lappend nav_links "<a href=\"message?msg_id=$prev_unread\">Previous Unread</a>"
     } else {
 	lappend nav_links "<font color=\"lightgray\">Previous Unread</font>"
     }
 
     if { $prev != "" } {
-	lappend nav_links "<a href=\"message.tcl?msg_id=$prev\">Previous</a>"
+	lappend nav_links "<a href=\"message?msg_id=$prev\">Previous</a>"
     } else {
 	lappend nav_links "<font color=\"lightgray\">Previous</font>"
     }
 
     if { $next != "" } {
-	lappend nav_links "<a href=\"message.tcl?msg_id=$next\">Next</a>"
+	lappend nav_links "<a href=\"message?msg_id=$next\">Next</a>"
     } else {
 	lappend nav_links "<font color=\"lightgray\">Next</font>"
     }
 
     if { $next_unread != "" } {
-	lappend nav_links "<a href=\"message.tcl?msg_id=$next_unread\">Next Unread</a>"
+	lappend nav_links "<a href=\"message?msg_id=$next_unread\">Next Unread</a>"
     } else {
 	lappend nav_links "<font color=\"lightgray\">Next Unread</font>"
     }
@@ -202,25 +203,30 @@ proc wm_message_navigation_links { current_msg_id current_messages } {
 
 
 
-ns_return 200 text/html "[ad_header "One Message"]
+doc_return  200 text/html "[ad_header "One Message"]
 <h2>$mailbox_name</h2>
 
-[ad_context_bar_ws [list "index.tcl?[export_url_vars mailbox_id]" "WebMail ($mailbox_name)"] "One Message"]
+[ad_context_bar_ws [list "index?[export_url_vars mailbox_id]" "WebMail ($mailbox_name)"] "One Message"]
 
 <hr>
 
 [wm_message_navigation_links $msg_id $current_messages]
 <p>
-<a href=\"message-send.tcl?response_to_msg_id=$msg_id\">Reply</a> -
-<a href=\"message-send.tcl?response_to_msg_id=$msg_id&respond_to_all=1\">Reply All</a>
+<a href=\"message-send?response_to_msg_id=$msg_id\">Reply</a> -
+<a href=\"message-send?response_to_msg_id=$msg_id&respond_to_all=1\">Reply All</a>
 
 
 $folder_refile_widget
 
-[ad_decode $deleted_p "f" "<form action=\"message-delete.tcl\" method=POST>
+[ad_decode $deleted_p "f" "<form action=\"message-delete\" method=POST>
 [export_form_vars msg_id]
 <input type=submit value=\"Delete\">
-</form>" ""]
+</form>" "<form action=\"process-selected-messages\" method=POST>
+[export_form_vars mailbox_id]
+<input type=hidden name=msg_ids [export_form_value msg_id]>
+<input type=hidden name=return_url value=\"message?[export_ns_set_vars url]\">
+<input type=submit name=action value=\"Undelete\">
+</form>"]
 
 <blockquote>
 $msg_headers
@@ -234,7 +240,7 @@ $final_msg_body
 
 $folder_refile_widget
 
-[ad_decode $deleted_p "f" "<form action=\"message-delete.tcl\" method=POST>
+[ad_decode $deleted_p "f" "<form action=\"message-delete\" method=POST>
 [export_form_vars msg_id]
 <input type=submit value=\"Delete\">
 </form>" ""]

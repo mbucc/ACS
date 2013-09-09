@@ -1,29 +1,41 @@
-# $Id: partner-url-ae-2.tcl,v 3.0.4.1 2000/04/28 15:09:13 carsten Exp $
-set_the_usual_form_variables
-# partner_id, url_stub, url_id
+# /www/admin/partner/partner-url-ae-2.tcl
 
-# Check arguments
-set err ""
-set req_vars [list partner_id url_id url_stub]
-foreach var $req_vars {
-    if { ![exists_and_not_null $var] } {
-	append err "  <LI> Must specify $var\n"
-    }
+ad_page_contract {
+    Writes url stub to database
+
+    @param partner_id 
+    @param url_id 
+    @param url_stub 
+    @param return_url 
+
+    @author mbryzek@arsdigita.com
+    @creation-date 10/1999
+
+    @cvs-id partner-url-ae-2.tcl,v 3.2.2.4 2000/07/25 09:40:59 kevin Exp
+} {
+    partner_id:naturalnum,notnull
+    url_id:naturalnum,notnull,verify
+    url_stub:trim
+    { return_url "" }
 }
 
-if { [info exists url_stub] && ![regexp {^/} $url_stub] } {
+
+set err ""
+if { ![regexp {^/} $url_stub] } {
     append err "  <LI> URL Stub must start with a leading forward slash\n"
 }
 
-set db [ns_db gethandle]
+if { [string length $url_stub] > 50 } {
+    append err "  <LI> URL Stub cannot exceed 50 characters\n"
+}
 
 # Check for uniqueness
-set exists_p [database_to_tcl_string $db \
+set exists_p [db_string partner_url_stub_exists \
 	"select decode(count(*),0,0,1) 
            from ad_partner_url 
-          where partner_id=$partner_id 
-            and url_stub='$QQurl_stub' 
-            and url_id != $url_id"]
+          where partner_id=:partner_id 
+            and url_stub=:url_stub
+            and url_id <> :url_id"]
 
 if { $exists_p } {
     append err "  <li> Specified url \"$url_stub\" has already been registered for this partner\n"
@@ -34,20 +46,22 @@ if { ![empty_string_p $err] } {
     return
 }
 
-ns_db dml $db "begin transaction"
+db_dml partner_url_update \
+	"update ad_partner_url 
+            set url_stub=:url_stub
+          where url_id = :url_id"
 
-ns_db dml $db "update ad_partner_url set 
-               url_stub='$QQurl_stub'
-               where url_id = $url_id"
-
-if {[ns_ora resultrows $db] == 0} {
-    ns_db dml $db "insert into ad_partner_url
+if { [db_resultrows] == 0 } {
+    db_dml partner_url_insert "insert into ad_partner_url
 (partner_id, url_id, url_stub)
 values 
-($partner_id, $url_id, '$QQurl_stub')"
+(:partner_id, :url_id, :url_stub)"
 }
 
-ns_db dml $db "end transaction"
+if { [empty_string_p $return_url] } {
+    set return_url "partner-view?[export_url_vars partner_id]"
+}
 
-ad_returnredirect "partner-view.tcl?[export_url_vars partner_id]"
+db_release_unused_handles
 
+ad_returnredirect $return_url

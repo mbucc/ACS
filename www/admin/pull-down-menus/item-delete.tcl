@@ -1,26 +1,30 @@
-# admin/pdm/item-delete.tcl
-#
-# Author: aure@arsdigita.com, Feb 2000
-#
-# $Id: item-delete.tcl,v 1.1.2.1 2000/03/16 05:33:08 aure Exp $
+# /www/admin/pull-down-menus/item-delete.tcl
+ad_page_contract {
 
-ad_page_variables {
-    {item_id}
+  Delete menu item confirmation page.
+
+  @param item_id Id of menu item we are about to delete.
+
+  @author aure@arsdigita.com
+  @creation-date Feb 2000
+  @cvs-id item-delete.tcl,v 1.2.8.5 2000/09/22 01:35:54 kevin Exp
+
+} {
+
+    item_id:integer,notnull
+
 }
 
-set db [ns_db gethandle]
 
-set selection [ns_db 0or1row $db "
+db_0or1row one_item "
     select label, i.menu_id, menu_key
     from pdm_menu_items i, pdm_menus p 
-    where i.item_id = $item_id
-    and   p.menu_id = i.menu_id"]
+    where i.item_id = :item_id
+    and   p.menu_id = i.menu_id" 
 
-set_variables_after_query
 
-ns_db releasehandle $db
 
-ns_return 200 text/html "
+doc_return  200 text/html "
 [ad_header_with_extra_stuff "Delete Menu Item: $menu_key"]
 [ad_pdm $menu_key 5 5]
 <h2>Delete Menu Item: $label</h2>

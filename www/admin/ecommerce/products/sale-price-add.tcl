@@ -1,65 +1,66 @@
-# $Id: sale-price-add.tcl,v 3.0 2000/02/06 03:20:54 ron Exp $
-set_the_usual_form_variables
-# product_id, product_name, sale_price, sale_name, sale_begins (in parts),
-# sale_ends (in parts), offer_code_needed (no, yes_supplied, yes_generate) and maybe offer_code
+#  www/admin/ecommerce/products/sale-price-add.tcl
+ad_page_contract {
+  Add a sale price.
 
-set exception_count 0
-set exception_text ""
-
-if { ![info exists sale_price] || [empty_string_p $sale_price] } {
-    incr exception_count
-    append exception_text "<li>You forgot to enter the sale price\n"
-} elseif { [regexp {[^0-9\.]} $sale_price] } {
-    incr exception_count
-    append exception_text "<li>The sale price must be a number."
+  @author Eve Andersson (eveander@arsdigita.com)
+  @creation-date Summer 1999
+  @cvs-id sale-price-add.tcl,v 3.1.6.4 2001/01/12 18:47:38 khy Exp
+} {
+  product_id:integer,notnull
+    {price:optional ""}
+  sale_price:notnull
+  {sale_name "Sale Price"}
+  sale_begins:array,date
+  sale_ends:array,date
+  offer_code_needed
+  offer_code:optional
 }
 
-if { ![info exists sale_name] || [empty_string_p $sale_name] } {
-    # just set it to "Sale Price" -- don't bother giving them an error
-    set sale_name "Sale Price"
-}
-
-# deal w/dates
-set form [ns_getform]
-if [catch  { ns_dbformvalue $form sale_begins datetime sale_begins} errmsg ] {
-    incr exception_count
-    append exception_text "<li>The date that the sale begins was specified in the wrong format.  It should be in the format Month DD YYYY.\n"
-} elseif { [string length [set ColValue.sale%5fbegins.year]] < 4 } {
-    incr exception_count
-    append exception_text "<li>The year that the sale begins needs to contain 4 digits.\n"
-}
-
-if [catch  { ns_dbformvalue $form sale_ends datetime sale_ends} errmsg ] {
-    incr exception_count
-    append exception_text "<li>The date that the sale ends was specified in the wrong format.  It should be in the format Month DD YYYY.\n"
-} elseif { [string length [set ColValue.sale%5fends.year]] < 4 } {
-    incr exception_count
-    append exception_text "<li>The year that the sale ends needs to contain 4 digits.\n"
-}
-
-if { [info exists sale_begins] && [empty_string_p $sale_begins] } {
-    incr exception_count
-    append exception_text "<li>You forgot to enter the date that the sale begins.\n"
-}
-
-if { [info exists sale_ends] && [empty_string_p $sale_ends] } {
-    incr exception_count
-    append exception_text "<li>You forgot to enter the date that the sale ends.\n"
-}
-
-if { ![info exists offer_code_needed] || [empty_string_p $offer_code_needed] } {
-    incr exception_count
-    append exception_text "<li>You forgot to specify whether an offer code is needed.\n"
-}
-
-if { [info exists offer_code_needed] && $offer_code_needed == "yes_supplied" && (![info exists offer_code] || [empty_string_p $offer_code]) } {
-    incr exception_count
-    append exception_text "<li>You forgot to specify an offer code.\n"
-}
-
-if { $exception_count > 0 } {
-    ad_return_complaint $exception_count $exception_text
+if {![regexp {^[0-9|.]+$} $sale_price match ]} {
+    ad_return_complaint 1 "The price you entered is not a valid number."
     return
+} 
+
+if {[regexp {^[.]$}  $sale_price match ]} {
+    ad_return_complaint 1 "<li>Please enter a number for price."
+    return
+}
+# If a regular price exists, compare it with sale price
+
+if {![empty_string_p $price]} {
+    if {$price <= $sale_price} {
+	ad_return_complaint 1 "<li>Please enter a sale price less than the regular price."
+	return
+    }
+}
+
+page_validation {
+#  ec_date_widget_validate sale_begins
+} {
+  ec_time_widget_validate sale_begins
+} {
+#  ec_date_widget_validate sale_ends
+} {
+  ec_time_widget_validate sale_ends
+}
+
+if { [empty_string_p [ec_datetime_text sale_begins]] } {
+  ad_return_complaint 1 "You forgot to enter the time that the sale begins."
+  return
+}
+
+if { [empty_string_p [ec_datetime_text sale_ends]] } {
+  ad_return_complaint 1 "You forgot to enter the time that the sale begins."
+  return
+}
+
+# Not compare the time (assuming usually the time boxes are left blank)
+
+if {![empty_string_p $sale_begins(date)] && ![empty_string_p $sale_ends(date)]} {
+    if {[db_0or1row select_one "select 1 from dual where to_date('$sale_begins(date)','YYYY-MM-DD HH24:MI:SS')  >to_date('$sale_ends(date)', 'YYYY-MM-DD HH24:MI:SS')"] ==1} {
+
+	ad_return_complaint 1 "Please enter a start date before end date."
+    }
 }
 
 # error checking done
@@ -74,8 +75,9 @@ if { ![info exists offer_code] } {
     set offer_code ""
 }
 
-ReturnHeaders
-ns_write "[ad_admin_header "Confirm Sale Price for $product_name"]
+set product_name [ec_product_name $product_id]
+
+doc_body_append "[ad_admin_header "Confirm Sale Price for $product_name"]
 
 <h2>Confirm Sale Price for $product_name</h2>
 
@@ -86,11 +88,9 @@ ns_write "[ad_admin_header "Confirm Sale Price for $product_name"]
 
 set currency [ad_parameter Currency ecommerce]
 
-set db [ns_db gethandle]
+set sale_price_id [db_string sale_price_id_select "select ec_sale_price_id_sequence.nextval from dual"]
 
-set sale_price_id [database_to_tcl_string $db "select ec_sale_price_id_sequence.nextval from dual"]
-
-ns_write "<table>
+doc_body_append "<table>
 <tr>
 <td>Sale Price</td>
 <td>[ec_pretty_price $sale_price $currency]</td>
@@ -101,11 +101,11 @@ ns_write "<table>
 </tr>
 <tr>
 <td>Sale Begins</td>
-<td>[util_AnsiDatetoPrettyDate [lindex [split $sale_begins " "] 0]] [lindex [split $sale_begins " "] 1]</td>
+<td>[util_AnsiDatetoPrettyDate [ec_date_text sale_begins]] [ec_time_text sale_begins]</td>
 </tr>
 <tr>
 <td>Sale Ends</td>
-<td>[util_AnsiDatetoPrettyDate [lindex [split $sale_ends " "] 0]] [lindex [split $sale_ends " "] 1]</td>
+<td>[util_AnsiDatetoPrettyDate [ec_date_text sale_ends]] [ec_time_text sale_ends]</td>
 </tr>
 <tr>
 <td>Offer Code</td>
@@ -113,8 +113,11 @@ ns_write "<table>
 </tr>
 </table>
 
-<form method=post action=sale-price-add-2.tcl>
-[export_form_vars sale_price_id product_id product_name sale_price sale_name sale_begins sale_ends offer_code]
+<form method=post action=sale-price-add-2>
+[export_form_vars product_id product_name sale_price sale_name offer_code]
+[export_form_vars -sign sale_price_id]
+<input type=hidden name=sale_begins value=\"[ec_datetime_text sale_begins]\">
+<input type=hidden name=sale_ends value=\"[ec_datetime_text sale_ends]\">
 <center>
 <input type=submit value=\"Confirm\">
 </center>

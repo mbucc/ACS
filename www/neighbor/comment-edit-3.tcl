@@ -1,12 +1,24 @@
-# $Id: comment-edit-3.tcl,v 3.0.4.1 2000/04/28 15:11:13 carsten Exp $
+# comment-edit-3.tcl
+
+ad_page_contract {
+    Insert the new, edited comment into the DB.
+
+    @param content the user-entered comment, in plain-text or HTML format.
+    @param comment_id id of the new comment, generated on comment-add.tcl.
+    @param html_p is the comment HTML-formatted? (t or f)
+    @author Philip Greenspun (philg@mit.edu)
+    @creation-date ?
+    @cvs-id comment-edit-3.tcl,v 3.2.2.3 2000/07/21 04:03:00 ron Exp
+} {
+    comment_id:integer
+    content
+    html_p
+}
+
 if {[ad_read_only_p]} {
     ad_return_read_only_maintenance_message
     return
 }
-
-set_the_usual_form_variables
-
-# comment_id, content, html_p
 
 # check for bad input
 if  {![info exists content] || [empty_string_p $content] } { 
@@ -16,14 +28,21 @@ if  {![info exists content] || [empty_string_p $content] } {
 
 # user has input something, so continue on
 
-set db [ns_db gethandle]
+#check for bad html
+set naughty_html_text [ad_check_for_naughty_html $content]
+
+if {![empty_string_p $naughty_html_text]} {
+    ad_return_complaint 1 "<li>$naughty_html_text"
+    return
+}
+
 set user_id [ad_verify_and_get_user_id]
 
-set selection [ns_db 1row $db "select neighbor_to_neighbor_id, general_comments.user_id as comment_user_id
+db_1row n_to_n_comment_info "select neighbor_to_neighbor_id, general_comments.user_id as comment_user_id
 from neighbor_to_neighbor, general_comments
-where comment_id = $comment_id
-and neighbor_to_neighbor_id = on_what_id"]
-set_variables_after_query
+where comment_id = :comment_id
+and neighbor_to_neighbor_id = on_what_id"
+
 
 # check to see if ther user was the orginal poster
 if {$user_id != $comment_user_id} {
@@ -31,15 +50,17 @@ if {$user_id != $comment_user_id} {
     return
 }
 
-if [catch { ns_db dml $db "begin transaction" 
+set comment_ip_addr [ns_conn peeraddr]
+
+if [catch { db_transaction { 
             # insert into the audit table
-            ns_db dml $db "insert into general_comments_audit
+            db_dml n_to_n_gc_info_update "insert into general_comments_audit
 (comment_id, user_id, ip_address, audit_entry_time, modified_date, content)
-select comment_id, user_id, '[ns_conn peeraddr]', sysdate, modified_date, content from general_comments where comment_id = $comment_id"
-            ns_ora clob_dml $db "update general_comments
-set content = empty_clob(), html_p = '$html_p'
-where comment_id = $comment_id returning content into :1" "$content"
-            ns_db dml $db "end transaction" } errmsg] {
+select comment_id, user_id, :comment_ip_addr, sysdate, modified_date, content from general_comments where comment_id = :comment_id"
+            db_dml n_to_n_gc_clob_update "update general_comments
+set content = empty_clob(), html_p = :html_p
+where comment_id = :comment_id returning content into :1" -clobs [list $content]
+          }   } errmsg] {
 
 	# there was some other error with the comment update
 	ad_return_error "Error updating comment" "We couldn't update your comment. Here is what the database returned:
@@ -53,4 +74,6 @@ $errmsg
 return
 }
 
-ad_returnredirect "view-one.tcl?[export_url_vars neighbor_to_neighbor_id]"
+db_release_unused_handles
+
+ad_returnredirect "view-one?[export_url_vars neighbor_to_neighbor_id]"

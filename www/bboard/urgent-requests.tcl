@@ -1,30 +1,28 @@
-# $Id: urgent-requests.tcl,v 3.0 2000/02/06 03:34:53 ron Exp $
-set_form_variables 0
+# /www/bboard/urgent-requests.tcl
+ad_page_contract {
+    Lists urgent messages
 
-if {![info exists skip_first]} {
-  set skip_first 0
+    @param skip_first
+    @param archived_p included archived messages or not?
+
+    @cvs-id urgent-requests.tcl,v 3.0.12.4 2000/09/22 01:36:56 kevin Exp
+} {
+    {skip_first:integer 0}
+    {archived_p "f"}
 }
 
-# archived_p
+# -----------------------------------------------------------------------------
 
-set db [bboard_db_gethandle]
-if { $db == "" } {
-    bboard_return_error_page
-    return
-}
-
-if {[info exist archived_p] && $archived_p == "t"} {
+if {$archived_p == "t"} {
     set title "Archived Urgent Requests"
 } else {
     set title "Urgent Requests"
-    set archived_p "f"
 }
 
 set user_id [ad_verify_and_get_user_id]
 
-ReturnHeaders
-
-ns_write "[bboard_header $title]
+append page_content "
+[bboard_header $title]
 
 <h2>$title</h2>
 
@@ -37,14 +35,18 @@ ns_write "[bboard_header $title]
 
 # let's do the urgent messages first, if necessary 
 
-    set urgent_items [bboard_urgent_message_items $db $archived_p 3 50000 $skip_first]
-    if ![empty_string_p $urgent_items] {
-	ns_write "<ul>$urgent_items</ul>\n"
-    }
+set urgent_items [bboard_urgent_message_items $archived_p 3 50000 $skip_first]
+if ![empty_string_p $urgent_items] {
+    append page_content "<ul>$urgent_items</ul>\n"
+}
 
-ns_write "
+append page_content "
 
 <br clear=right>
 <p>
 [bboard_footer]
 "
+
+
+
+doc_return  200 text/html

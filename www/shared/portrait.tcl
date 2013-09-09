@@ -1,34 +1,35 @@
-# $Id: portrait.tcl,v 3.0 2000/02/06 03:54:36 ron Exp $
-# 
 # /shared/portrait.tcl
-#
-# by philg@mit.edu on September 26, 1999
-#
-# displays a user's portrait to other users
 
-set_the_usual_form_variables
+ad_page_contract {
+    displays a user's portrait to other users
 
-# user_id 
+    @author philg@mit.edu
+    @creation-date September 26, 1999
+    @cvs-id portrait.tcl,v 3.1.2.5 2000/09/22 01:39:18 kevin Exp
+} {
+    user_id:integer
+}
 
-set db [ns_db gethandle]
+set user_name [db_0or1row get_user_name "select first_names, last_name from users where user_id = :user_id"]
 
-set selection [ns_db 0or1row $db "select 
-  first_names, 
-  last_name, 
-  portrait_upload_date,
-  portrait_comment,
-  portrait_original_width,
-  portrait_original_height,
-  portrait_client_file_name
-from users 
-where user_id=$user_id"]
+set portrait_p [db_0or1row portrait_check {
+  select portrait_id, 
+         portrait_upload_date,
+         portrait_comment,
+         portrait_original_width,
+         portrait_original_height,
+         portrait_client_file_name
+    from general_portraits 
+   where on_what_id = :user_id
+     and on_which_table = 'USERS'
+     and approved_p = 't'
+     and portrait_primary_p = 't'
+}]
 
-if [empty_string_p $selection] {
+if { !$portrait_p } {
     ad_return_error "Portrait Unavailable" "We couldn't find a portrait (or this user)"
     return
 }
-
-set_variables_after_query
 
 if [empty_string_p $portrait_upload_date] {
     ad_return_complaint 1 "<li>You shouldn't have gotten here; we don't have a portrait on file for this person."
@@ -41,7 +42,8 @@ if { ![empty_string_p $portrait_original_width] && ![empty_string_p $portrait_or
     set widthheight ""
 }
 
-ns_return 200 text/html "[ad_header "Portrait of $first_names $last_name"]
+doc_return  200 text/html "
+[ad_header "Portrait of $first_names $last_name"]
 
 <h2>Portrait of $first_names $last_name</h2>
 
@@ -53,9 +55,8 @@ ns_return 200 text/html "[ad_header "Portrait of $first_names $last_name"]
 <br>
 
 <center>
-<img $widthheight src=\"/shared/portrait-bits.tcl?[export_url_vars user_id]\">
+<img $widthheight src=\"/shared/portrait-bits.tcl?[export_url_vars portrait_id]\">
 </center>
-
 
 <br>
 <br>

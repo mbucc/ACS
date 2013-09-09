@@ -3,7 +3,7 @@
 --
 -- Script to upgrade an ACS 3.1 database to ACS 3.2
 -- 
--- $Id: upgrade-3.1-3.2.sql,v 3.17.2.24 2000/03/28 09:41:10 carsten Exp $
+-- upgrade-3.1-3.2.sql,v 3.23 2000/07/07 23:34:46 ron Exp
 --
 
 -- BEGIN SECURITY --
@@ -286,6 +286,21 @@ begin
 end;
 /
 show errors;
+-- END INTRANET UPGRADE -----------------------------------------
+
+-------------- upgrade events module ----------------------
+drop view evreg_orders_not_canceled;
+drop view evreg_orders_canceled;
+drop table evreg_orders;
+drop sequence evreg_order_id_sequence;
+drop table evreg_organizers_map;
+drop table evreg_events_products_map;
+drop sequence evreg_event_id_sequence;
+drop table evreg_events;
+drop sequence evreg_venues_id_sequence;
+drop table evreg_venues;
+drop sequence evreg_activity_id_sequence;
+drop table evreg_activities;
 
 alter table im_employee_info add (
         featured_employee_approved_p char(1) 
@@ -424,6 +439,38 @@ create table events_activities (
         available_p	char(1) default 't' check (available_p in ('t', 'f')),
         deleted_p	char(1) default 'f' check (deleted_p in ('t', 'f')),
         detail_url 	varchar(256) -- URL for more details,
+        -- scope			varchar(20) not null,	
+	-- insure consistant state 
+--	constraint address_book_scope_check check ((scope='group' and group_id is not null) or
+--       (scope='user' and user_id is not null) or
+--       (scope='public'))
+);
+
+-- this is based on the calendar module
+create sequence events_calendar_seeds_seq;
+create table events_calendar_seeds (
+	seed_id		integer primary key,
+	activity_id	integer not null references events_activities,
+	title		varchar(100) not null,
+	body		varchar(4000) not null,
+	-- is the body in HTML or plain text (the default)
+	html_p			char(1) default 'f' check(html_p in ('t','f')),
+	-- We want to have relative times here. So we'll assume 
+	-- T=0 to be the event's start time.  We will then 
+	-- store a calendar item's start, end, and expire times as the 
+	-- number of seconds before or after T.  Times before T are
+	-- represented as negative numbers.
+	start_time	number not null,
+	end_time	number not null,
+	expire_time	number not null,  
+	url		varchar(200),  -- URL to the seed item
+	email		varchar(100),  -- email address for the seed item
+	creation_date	date not null,
+	creation_user		not null references users(user_id),
+	creation_ip_address	varchar(50) not null,
+	-- geographical location information is stored for each venue.
+        check (start_time < end_time),
+	check (start_time < expire_time)
 );
 
 create sequence events_venues_id_sequence;
@@ -1084,6 +1131,12 @@ end gp_on_which_table_tr;
 /
 show errors
 
+-- STILL NEED TO CREATE VIEWS AND PACKAGE!!! ASK RON ABOUT BEST WAY
+
+-------------- end upgrade general-permissions ----------------------
+
+commit;
+
 -- This trigger normalizes values in the permission_type column to
 -- be all lowercase. This makes it easier to implement a case-
 -- insensitive API (since function-based indexes do not seem to
@@ -1649,6 +1702,10 @@ create index bulkmail_user_bounce_idx on bulkmail_bounces(user_id, active_p);
 
 alter table ticket_domains add (message_template varchar2(4000));
 
+-- this was an HP thing that slipped through...
+update ticket_codes_i set code = 'open' where code_long = 'open' and
+  code = 'UnAssn' and code_type = 'status';
+
 -- END TICKET --
 
 
@@ -1695,8 +1752,9 @@ create index news_items_idx on news_items ( newsgroup_id );
 
 -- Create the default newsgroups
 
-insert into newsgroups (newsgroup_id, scope) values (1, 'registered_users');
-insert into newsgroups (newsgroup_id, scope) values (2, 'all_users');
+-- Create newsgroups
+insert into newsgroups (newsgroup_id, scope) values (1, 'all_users');
+insert into newsgroups (newsgroup_id, scope) values (2, 'registered_users');
 insert into newsgroups (newsgroup_id, scope) values (3, 'public');
 
 -- Create permissions for default newsgroups
@@ -2064,3 +2122,103 @@ values
 -------------------------------------------------------------
 
 @table-metadata
+
+
+---------------------------------------------------------------
+-- General Links
+---------------------------------------------------------------
+
+create sequence general_link_id_sequence start with 1;
+
+create table general_links (
+	link_id                 integer primary key,
+	url                     varchar(300) not null,
+	link_title              varchar(100) not null,
+	link_description        varchar(4000),
+	-- meta tags defined by HTML at the URL
+	meta_description        varchar(4000),
+	meta_keywords           varchar(4000),
+	n_ratings               integer,
+        avg_rating              number,
+	-- when was this submitted?
+	creation_time	    	    date default sysdate not null,
+	creation_user		    not null references users(user_id),
+	creation_ip_address	    varchar(20) not null,
+	last_modified		    date,
+	last_modifying_user	    references users(user_id),
+	-- last time this got checked
+	last_checked_date       date,
+	last_live_date          date,
+        last_approval_change               date,
+	-- has the link been approved? ( note that this is different from
+	-- the approved_p in the table wite_wide_link_map ) 
+	approved_p              char(1) check(approved_p in ('t','f')),
+	approval_change_by     references users
+);
+
+-- Index on searchable fields
+
+create index general_links_title_idx on general_links (link_title);
+
+create sequence general_link_map_id start with 1;
+
+-- This table associates urls with any item in the database
+
+create table site_wide_link_map (
+	map_id          integer primary key,
+	link_id                 not null references general_links,
+	-- the table is this url associated with 
+	on_which_table          varchar(30) not null,
+	-- the row in *on_which_table* the url is associated with
+	on_what_id              integer not null,
+	-- a description of what the url is associated with
+	one_line_item_desc      varchar(200) not null,
+	-- who made the association
+	creation_time	    	    date default sysdate not null,
+	creation_user		    not null references users(user_id),
+	creation_ip_address	    varchar(20) not null,
+	last_modified		    date,
+	last_modifying_user	    references users(user_id),
+	-- has the link association  been approved ?
+	approved_p              char(1) check(approved_p in ('t','f')),
+	approval_change_by     references users
+);
+
+create index swlm_which_table_what_id_idx on site_wide_link_map (on_which_table, on_what_id);
+
+-- We want users to be able to rate links
+-- These ratings could be used in the display of the links
+-- eg, ordering within category by rating, or displaying 
+-- fav. links for people in a given group..
+
+create table general_link_user_ratings (
+	user_id         not null references users,
+ 	link_id         not null references general_links,
+	-- a user may give a url a rating between 0 and 10
+	rating          integer not null check(rating between 0 and 10 ),
+	-- require that the user/url rating is unique
+	primary key(link_id, user_id) 
+);
+
+
+insert into table_acs_properties (table_name, section_name, user_url_stub, admin_url_stub)
+values ('general_links', 'General Links', '/general-links/view-one.tcl?link_id=', '/admin/general-links/edit-link.tcl?link_id=');
+
+-- trigger for user ratings
+create or replace trigger general_links_rating_update
+after insert or update on general_link_user_ratings
+declare
+ cursor c1 is select gl.link_id, count(*) as n_ratings, avg(rating) as avg_rating from general_links gl, general_link_user_ratings glr where gl.link_id = glr.link_id group by gl.link_id;
+begin
+  for c_ref in c1 loop
+   
+   update general_links
+   set n_ratings = c_ref.n_ratings,
+   avg_rating = c_ref.avg_rating
+   where link_id = c_ref.link_id;
+
+  end loop;
+end;
+/
+show errors
+

@@ -1,5 +1,13 @@
-# $Id: poll-new.tcl,v 3.0 2000/02/06 03:27:07 ron Exp $
-# poll-new.tcl -- prompt for information about a new poll.
+# /admin/poll/poll-new.tcl 
+
+ad_page_contract {
+    Prompt for information about a new poll.
+
+    @author Original Author Unknown
+    @creation-date Original Date Unknown
+    @cvs-id poll-new.tcl,v 3.2.2.5 2001/01/11 20:11:11 khy Exp
+} {
+}
 
 # random preliminaries
 
@@ -8,29 +16,25 @@ if {[ad_read_only_p]} {
     return
 }
 
-
 set user_id [ad_verify_and_get_user_id]
 ad_maybe_redirect_for_registration
 
 # get the poll_id
 
-set db [ns_db gethandle]
-
-set poll_id [database_to_tcl_string $db "select poll_id_sequence.nextval from dual"]
-
-ns_db releasehandle $db
+set poll_id [db_string select_new_poll_id "select poll_id_sequence.nextval from dual"]
 
 
-ns_return 200 text/html "
+
+doc_return  200 text/html "
 
 [ad_admin_header "New Poll"]
 <h2>New Poll</h2>
 [ad_admin_context_bar [list "/admin/poll" Polls] New]
 <hr>
 
-<form method=post action=poll-new-2.tcl>
+<form method=post action=poll-new-2>
 
-[export_form_vars poll_id]
+[export_form_vars -sign poll_id]
 
 <table border=0>
 
@@ -62,7 +66,6 @@ ns_return 200 text/html "
 <td> </td>
 <td> <input type=checkbox name=require_registration_p value=\"t\"> Require Registration </td>
 </tr>
-
 
 </table>
 

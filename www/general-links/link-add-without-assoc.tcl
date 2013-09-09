@@ -1,24 +1,26 @@
 # File: /general-links/link-add-without-assoc.tcl
-# Date: 2/01/2000
-# Author: tzumainn@arsdigita.com 
-#
-# Purpose: 
-#  Step 1 of 4 in adding link WITHOUT association
-#
-# $Id: link-add-without-assoc.tcl,v 3.0 2000/02/06 03:44:25 ron Exp $
-#--------------------------------------------------------
+
+ad_page_contract {
+    Step 1 of 4 in adding link WITHOUT association.
+
+    @param return_url the url to return to
+    
+    @author tzumainn@arsdigita.com
+    @creation-date 1 February 2000
+    @cvs-id link-add-without-assoc.tcl,v 3.2.2.4 2000/09/22 01:38:04 kevin Exp
+} {
+    {return_url "index"}
+}
 
 if {[ad_read_only_p]} {
     ad_return_read_only_maintenance_message
     return
 }
 
-ad_page_variables {{return_url "index.tcl"}}
-
 #check for the user cookie
 set user_id [ad_maybe_redirect_for_registration]
 
-ns_return 200 text/html "
+doc_return  200 text/html "
 [ad_header "Add a Link (Step 1 of 3)"]
 
 <h2>Add a Link (Step 1 of 3)</h2>
@@ -28,7 +30,7 @@ ns_return 200 text/html "
 <hr>
 
 <blockquote>
-<form action=link-add-without-assoc-2.tcl method=post>
+<form action=link-add-without-assoc-2 method=post>
 [export_form_vars return_url]
 
 <table>
@@ -53,7 +55,5 @@ ns_return 200 text/html "
 </form>
 [ad_footer]
 "
-
-
 
 

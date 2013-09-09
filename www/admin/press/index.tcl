@@ -1,28 +1,30 @@
-# Administration for the press module
-#
-# Author: ron@arsdigita.com, December 1999
-#
-# $Id: index.tcl,v 3.0.4.1 2000/03/15 20:38:22 aure Exp $
-# -----------------------------------------------------------------------------
+# /www/admin/press/index.tcl
 
-set db [ns_db gethandle]
+ad_page_contract {
+
+    Administration for the press module
+
+    @author  Ron Henderson (ron@arsdigita.com)
+    @created December 1999
+    @cvs-id  index.tcl,v 3.2.6.4 2000/09/22 01:35:50 kevin Exp
+} {
+}
 
 # Build the list of defined templates 
 
-set selection [ns_db select $db "
-select t.template_id,
-       t.template_name,
-       t.template_adp,
-       count(p.template_id) as template_usage
-from   press_templates t, press p
-where  t.template_id = p.template_id(+)
-group  by t.template_id, t.template_name, t.template_adp
-order  by t.template_name"]
-
 set avail_count 0
 set avail_list ""
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
+
+db_foreach template_items {
+    select t.template_id,
+           t.template_name,
+           t.template_adp,
+           count(p.template_id) as template_usage
+    from   press_templates t, press p
+    where  t.template_id = p.template_id(+)
+    group  by t.template_id, t.template_name, t.template_adp
+    order  by t.template_name
+} {
     incr avail_count
     append avail_list "
     <p>
@@ -41,7 +43,7 @@ while {[ns_db getrow $db $selection]} {
     [press_coverage_preview $template_adp]"
 }
 
-ns_db releasehandle $db
+db_release_unused_handles
 
 if {$avail_count == 0} {
     set avail_template_list "
@@ -57,7 +59,7 @@ if {$avail_count == 0} {
 # -----------------------------------------------------------------------------
 # Ship it out
 
-ns_return 200 text/html "
+doc_return  200 text/html "
 [ad_admin_header "Press Administration"]
 
 <h2>Press Administration</h2>
@@ -66,7 +68,7 @@ ns_return 200 text/html "
 
 <hr>
 
-Documentation: <a href=/doc/press.html>/doc/press.html</a><br>
+Documentation: <a href=/doc/press>/doc/press.html</a><br>
 User pages: <a href=/press/>/press/</a><br>
 Maintain press coverage: <a href=/press/admin>/press/admin/</a>
 

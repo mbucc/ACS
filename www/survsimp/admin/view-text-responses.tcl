@@ -1,27 +1,32 @@
-#
-# /survsimp/admin/view-text-responses.tcl
-#
-# by jsc@arsdigita.com, February 11, 2000
-#
-# View all the typed-in text responses for one question.
-# 
+# /www/survsimp/admin/view-text-responses.tcl
+ad_page_contract {
 
-ad_page_variables {question_id}
+  View all the typed-in text responses for one question.
 
-set db [ns_db gethandle]
+  @param  question_id  which question we want to list answers to
+ 
+  @author jsc@arsdigita.com
+  @date   February 11, 2000
+  @cvs-id view-text-responses.tcl,v 1.5.2.4 2000/09/22 01:39:22 kevin Exp
+
+} {
+
+  question_id:integer,notnull
+
+}
 
 set user_id [ad_get_user_id]
-set selection [ns_db 1row $db "select question_text, survey_id
-from survsimp_questions
-where question_id = $question_id"]
-set_variables_after_query
 
-survsimp_survey_admin_check $db $user_id $survey_id
+db_1row one_question "
+  select question_text, survey_id
+  from survsimp_questions
+  where question_id = :question_id"
 
+survsimp_survey_admin_check $user_id $survey_id
 
-set abstract_data_type [database_to_tcl_string $db "select abstract_data_type
+set abstract_data_type [db_string abstract_data_type "select abstract_data_type
 from survsimp_questions q
-where question_id = $question_id"]
+where question_id = :question_id"]
 
 if { $abstract_data_type == "text" } {
     set column_name "clob_answer"
@@ -31,20 +36,28 @@ if { $abstract_data_type == "text" } {
     set column_name "date_answer"
 }
 
-set selection [ns_db select $db "select $column_name as response, u.user_id, first_names || ' ' || last_name as respondent_name, submission_date, ip_address
-from survsimp_responses r, survsimp_question_responses qr, users u
-where qr.response_id = r.response_id
-and u.user_id = r.user_id
-and qr.question_id = $question_id
-order by r.submission_date"]
-
 set results ""
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+
+db_foreach all_responses_to_question "
+select
+  $column_name as response,
+  u.user_id,
+  first_names || ' ' || last_name as respondent_name,
+  submission_date,
+  ip_address
+from
+  survsimp_responses r,
+  survsimp_question_responses qr,
+  users u
+where
+  qr.response_id = r.response_id
+  and u.user_id = r.user_id
+  and qr.question_id = :question_id
+order by r.submission_date" {
 
     append results "<pre>$response</pre>
 <p>
--- <a href=\"/shared/community-member.tcl?user_id=$user_id\">$respondent_name</a> on $submission_date from $ip_address
+-- <a href=\"/shared/community-member?user_id=$user_id\">$respondent_name</a> on $submission_date from $ip_address
 
 <br>
 "
@@ -52,14 +65,12 @@ while { [ns_db getrow $db $selection] } {
 
 
 
-ns_db releasehandle $db
-
-ns_return 200 text/html "[ad_header "Responses to Question"]
+doc_return  200 text/html "[ad_header "Responses to Question"]
 <h2>$question_text</h2>
 
-[ad_context_bar_ws_or_index [list "index.tcl" "Simple Survey Admin"] \
-     [list "one.tcl?survey_id=$survey_id" "Administer Survey"] \
-     [list "responses.tcl?survey_id=$survey_id" "Responses to Survey"] \
+[ad_context_bar_ws_or_index [list "" "Simple Survey Admin"] \
+     [list "one?survey_id=$survey_id" "Administer Survey"] \
+     [list "responses?survey_id=$survey_id" "Responses to Survey"] \
      "Responses to Question"]
 
 <hr>

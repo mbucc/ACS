@@ -1,0 +1,646 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+
+<head>
+<title>Subcommunities</title>
+<link rel="stylesheet" type="text/css" href="core-arch-guide.css">
+</head>
+
+<body>
+
+<h2>Subcommunities</h2>
+
+by <a href="mailto:michael@arsdigita.com">Michael Yoon</a>,
+<a href="mailto:lars@pinds.com">Lars Pind</a>
+and <a href="mailto:jsalz@mit.edu">Jon Salz</a>
+
+<p>
+
+<a href="/doc/">ACS Documentation</a> :
+<a href="">ACS Core Architecture Guide</a> :
+Subcommunities
+
+<hr>
+
+<h2><font color=green face=courier>ACS4: Work In Progress</font></h2>
+
+<h3>The Big Picture</h3>
+
+Most online communites actually become collections of discrete
+subcommunities. For example, a corporate intranet/extranet serves both
+units within the company (e.g., offices, departments, teams, projects)
+and external parties (e.g., customers, partners, vendors). The ACS
+enables you to provide each subcommunity with its own "virtual
+website" or <em>subsite</em>, by assembling <a
+href="packages">modules</a> that together deliver a feature set
+tailored to the needs of the subcommunity.
+
+<p>
+
+A user can be a member of more than one subcommunity (an employee is
+located at an office, works on one or more projects, and is a member
+of a team, within a department), so subsites provide an intuitive
+partitioning of information (to find out when a project is scheduled
+to launch, go to the project subsite; to learn about benefits, go to
+the HR department subsite; etc), improving the usability of the site
+as a whole.
+
+<p>
+
+This does <em>not</em> imply that navigating subsites is the only way
+for users to get information from subcommunities. Rather, the ACS will
+also provide a <em>user-centric</em> portal (along the lines of <a
+href="http://my.yahoo.com/">My Yahoo!</a>) that integrates relevant
+content from all subcommunities to which the user belongs. The real
+challenge is figuring out what is actually relevant to the user; doing
+this is what's known, in industry terms, as
+<em>personalization</em>. (<a href="new-stuff">New Stuff</a> is a
+simple example of personalization, based on the assumption that most
+users will be interested in new content.) <a
+href="user-profiling">User profiling</a> provides the foundation for
+really effective personalization.
+
+<p>
+
+In practice, "subcommunity" is simply a fancy name for "user group."
+Accordingly, we use the <a href="/doc/user-groups">user groups</a>
+data model to represent subcommunities.
+
+<h3>Site Specifications</h3>
+
+A <strong>site specification</strong> is simply a collection of
+modules that together comprise <em>either</em> an initial template for
+subsites <em>or</em> the actual definition of a subsite.
+
+<p>
+
+For each type of subcommunity (i.e., <code>user_group_type</code>),
+you can define a site specification, to designate modules that you
+believe any subcommunity of that type will find useful. For example,
+to build a family collaboration service along the lines of <a
+href="http://www.myfamily.com/">MyFamily.com</a>, you (as the site
+administrator) would:
+
+<ol>
+
+<li>Define a "Family" <code>user_group_type</code>
+
+<li>Construct a site specification for families by choosing from the
+menu of available modules, perhaps selecting
+
+<a href="/doc/bboard">Discussion Forums</a>,
+<a href="/doc/chat">Chat</a>,
+<a href="/doc/calendar">Calendar</a>,
+<a href="/doc/address-book">Address Book</a>,
+<a href="/doc/file-storage">File Storage</a>,
+<a href="/doc/bookmarks">Bookmarks</a>,
+<a href="/doc/photodb">Photo DB</a>, and
+<a href="/doc/webmail">Webmail</a>
+
+</ol>
+
+To build an ecommerce ASP (application service provider) like <a
+href="http://store.yahoo.com/">Yahoo! Store</a> or <a
+href="http://zshops.amazon.com/">Amazon.com zShops</a>, you would:
+
+<ol>
+
+<li>Define a "Merchant" <code>user_group_type</code>
+
+<li>Construct a site specification for merchants, selecting
+<a href="/doc/ecommerce">Ecommerce</a> only
+
+</ol>
+
+<p>
+
+The data model for site specifications consists of two simple tables:
+
+<blockquote>
+<code><pre>
+create table ad_site_specifications (
+        site_spec_id    integer not null
+                        constraint ad_site_specs_pk
+                        primary key,
+        on_which_table  varchar(30) not null,
+        on_what_id      varchar(30)
+        constraint ad_site_specs_uk
+        unique (on_which_table, on_what_id)
+);
+
+-- on_what_id is not numeric because the primary key of the
+-- user_group_types table (the group_type column) is a varchar;
+-- should we add a numeric primary key to user_group_types? ugh.
+
+create table ad_site_spec_modules (
+        site_spec_id    not null
+                        constraint ad_site_spec_mods_spec_id_fk
+                        references ad_site_specifications (site_spec_id),
+        module_key      not null
+                        constraint ad_site_spec_mods_mod_key_fk
+                        references acs_modules (module_key),
+        constraint ad_site_spec_mods_pk
+        primary key (site_spec_id, module_key)
+);
+
+-- We may want to add audit trails for these tables
+
+-- Note: The above tables supersede the existing
+-- <code>user_group_type_module_map</code> table
+</pre></code>
+</blockquote>
+
+To define a site specification for a given
+<code>user_group_type</code> like "Family" or "Merchant", we insert a
+row into <code>ad_site_specifications</code> with "user_group_types"
+as the value of the <code>on_which_table</code> column and the
+appropriate <code>group_type</code> in the <code>on_what_id</code>
+column.
+
+<h3>Subsites</h3>
+
+When a subcommunity (<code>user_group</code>) is created, a
+corresponding subsite will be created automatically if a site
+specification exists for that type of subcommunity
+(<code>user_group_type</code>). The modules designated by the
+specification are installed in the subsite and made available for
+immediate use. This is what we mean by saying that a site
+specification can function as an initial template for subsites
+("initial" in the sense that subsite administrators can remove
+default modules and/or add new ones).
+
+<p>
+
+Subsites themselves are also represented as site specifications. For
+example, a "Merchant" subsite would be created by copying the site
+specification for the "Merchant" <code>user_group_type</code>,
+resulting in another row in the <code>ad_site_specifications</code>
+table (with "user_groups" as the value of <code>on_which_table</code>
+and the appropriate <code>group_id</code> as the value of
+<code>on_what_id</code>) and all the corresponding child rows in
+<code>ad_site_spec_modules</code>.
+
+<p>
+
+One important issue to consider is <em>change propagation</em>, i.e.,
+what, if anything, happens to a subsite (<code>user_group</code> site
+spec) when its template (<code>user_group_type</code> site spec) is
+modified, e.g., a module is added or removed. The simplest model is to
+have subsites branch irrevocably from their templates upon creation,
+so that <em>no changes</em> made to templates are ever propagated to
+subsites. This is what the ACS implements.
+
+<p>
+
+A more sophisticated and complex change propagation model, which the
+ACS does <em>not</em> implement, is presented below, in <a
+href="#change_propagation">Appendix B</a>.
+
+<h4>Special Cases</h4>
+
+We treat the site-wide community as a degenerate case of subcommunity,
+represented by the predefined "all_users" user group and corresponding
+subsite. In this way, modules can be installed for the site as a
+whole, just as they are for subsites.
+
+<p>
+
+On the opposite extreme, another degenerate case is the subcommunity
+of one, i.e., the individual user. By allowing for <em>personal
+subsites</em>, we can use standard modules to provide a <a
+href="http://www.yahoo.com/">Yahoo!</a>-like suite of integrated
+services:
+
+<blockquote>
+<table>
+
+<tr>
+<td><a href="/doc/calendar">Calendar</a></td>
+<td>&nbsp;-&nbsp;</td>
+<td><a href="http://calendar.yahoo.com/">Yahoo! Calendar</a></td>
+</tr>
+
+<tr>
+<td><a href="/doc/address-book">Address Book</a></td>
+<td>&nbsp;-&nbsp;</td>
+<td><a href="http://address.yahoo.com/">Yahoo! Address Book</a></td>
+</tr>
+
+<tr>
+<td><a href="/doc/webmail">Webmail</a></td>
+<td>&nbsp;-&nbsp;</td>
+<td><a href="http://mail.yahoo.com/">Yahoo! Mail</a></td>
+</tr>
+
+<tr>
+<td>Publishing</td>
+<td>&nbsp;-&nbsp;</td>
+<td><a href="http://geocities.yahoo.com/">Yahoo! GeoCities</a></td>
+</tr>
+
+</table>
+</blockquote>
+
+Personal subsites are represented by rows in the
+<code>ad_site_specifications</code> table, with "users" as the value
+of <code>on_which_table</code> and the appropriate
+<code>user_id</code> as the value of <code>on_what_id</code>.
+
+<p>
+
+A predefined site specification (with an <code>on_which_table</code>
+value of "users" and an <code>on_what_id</code> value of
+<code>null</code>) is used as the template for all personal
+subsites.
+
+<p>
+
+Finally, not all modules make sense in the context of a personal
+subsite (e.g., "information pushing" services like News and
+collaborative services like Chat or Discussion Forums), so the Package
+Management metadata for each module should explicitly state whether or
+not it can be used in a personal subsite.
+
+<!-- "members" instead of "users"; admin access is assumed -->
+
+<h4>Subsite Administration</h4>
+
+Overall responsibility for adminstration of each subsite belongs to
+<em>either</em> users in the "administrator" role for the
+corresponding user group <em>or</em>, in the case of personal
+subsites, the owning user. We represent this responsibility with a
+<code>general_permissions</code> row granting "administer" permission
+on the appropriate row in the <code>ad_site_specifications</code>
+table.
+
+<p>
+
+Responsibility can be delegated at either the subsite level (by
+granting the "administrator" role to other group members) or the
+module level (by inserting <code>general_permissions</code> rows
+granting "administer" permission on the appropriate row in the
+<code>ad_site_spec_modules</code> table).
+
+<p>
+
+(One implication of this model is that we could decide to replace the
+predefined Site-Wide Administration group with the "administrator"
+role of the <code>all_users</code> site spec. Practically speaking,
+this might prove challenging.)
+
+<p>
+
+(Also, this model does not make sense with personal subsites, where
+the user experience should be seamless, whether performing what are
+normally considered "administrative" actions or regular end-user
+actions.)
+
+<h4>Subsite URLs</h4>
+
+The URL of an ACS subsite consists of two parts:
+
+<ol>
+
+<li>the hostname
+
+<li>the subsite's "page root" (i.e., the path under which all pages in
+the subsite appear)
+
+</ol>
+
+By default, the latter part (the subsite page root) is:
+
+<blockquote>
+<code>/<i>&lt;group_type_plural&gt;</i>/<i>&lt;group_name&gt;</i>/</code>
+</blockquote>
+
+with subsite-wide administration pages at:
+
+<blockquote>
+<code>/<i>&lt;group_type_plural&gt;</i>/<i>&lt;group_name&gt;</i>/admin/</code>
+</blockquote>
+
+The path for a given subsite module is:
+
+<blockquote>
+<code>/<i>&lt;group_type_plural&gt;</i>/<i>&lt;group_name&gt;</i>/<i>&lt;module_url_stub&gt;</i>/</code>
+</blockquote>
+
+with module-level administration pages at:
+
+<blockquote>
+<code>/<i>&lt;group_type_plural&gt;</i>/<i>&lt;group_name&gt;</i>/<i>&lt;module_url_stub&gt;</i>/admin/</code>
+</blockquote>
+
+So, for instance, the URL for the Boston office's subsite on our
+hypothetical corporate website would be:
+
+<blockquote>
+<code>http://www.company.com/offices/boston/</code>
+</blockquote>
+
+and news specific to the Boston office would be found at:
+
+<blockquote>
+<code>http://www.company.com/offices/boston/news/</code>
+</blockquote>
+
+<p>
+
+Since the virtual directories that correspond to
+<code>user_group_types</code> appear directly under the actual page
+root, there is the possibility of name collision with directories in
+the filesystem. To address this, we log an error for each collision
+detected when the server starts (which <a
+href="http://www.arsdigita.com/free-tools/watchdog">Watchdog</a> will
+then report to the site administrators) and give precedence to the
+real directories.
+
+<!--
+
+Also, we make the virtual subcommunity directories always available
+under <code>/groups/</code>.
+
+Primary subcommunity type
+
+-->
+
+<p>
+
+The aforementioned special cases of the public site and personal
+subsites are handled differently:
+
+<p>
+
+The public site is served from directly under the page
+root. Continuing our example from above, company-wide news would
+appear at:
+
+<blockquote>
+<code>http://www.company.com/news/</code>
+</blockquote>
+
+<p>
+
+As for personal subsites, their URLs take the form:
+
+<blockquote>
+<code>/users/<i>&lt;user_id&gt;</i>/</code>
+</blockquote>
+
+or (if the user has chosen a screen name):
+
+<blockquote>
+<code>/users/<i>&lt;screen_name&gt;</i>/</code>
+</blockquote>
+
+(<font color=red>Should we also support
+<code>/users/<i>&lt;email_address&gt;</i>/</code>?</font>)
+
+<h3>Under the Hood</h3>
+
+Clearly, the Subcommunities architecture has both design and
+implementation implications for the rest of ACS. Now, every page must
+ask the question, "Where (i.e., in which subsite) is the user?" For
+each page request, the answer to this question is key to providing the
+appropriate response. For example, a visitor to <code>/news/</code>
+should be served only public news (i.e., news items for the
+<code>all_users</code> pseudo-subcommunity), while a visitor to
+<code>/offices/boston/news/</code> should be served only news items
+specific to the Boston office subcommunity.
+
+<p>
+
+In order to make this work, we need to be able to relate entities to
+their enclosing subcommunities, which should be a straightforward
+process:
+
+<ol>
+
+<li>Add a foreign key column that references
+<code>ad_site_specifications</code> in each "top-level" table (i.e.,
+tables that do not already have a parent table, such as
+<code>bboard_topics</code>).
+
+<li>On each page, use the <code>ad_conn</code> API (to be determined)
+to identify the enclosing subcommunity.
+
+<li>Include the corresponding <code>site_spec_id</code> as a criterion
+in any query against the top-level table(s).
+</ol>
+
+For example, by default, the <a href="ticket">Ticket Tracker</a> index
+page presents a full listing of tickets assigned to the logged-in
+user. This page will be enhanced to filter out any tickets that do not
+belong in the subcommunity identified by the "virtual page root"
+portion of the URL: "<code>/</code>" for the <code>all_users</code>
+subcommunity, "<code>/users/123</code>" for the personal subsite of
+user #123, etc.
+
+<p>
+
+<font color=red>More "how-to" info and examples coming soon</font>
+
+<h4>Sharing Data Between Subcommunities</h4>
+
+While there are some communities where data will rarely, if ever,
+cross subcommunity boundaries (e.g., our hypothetical ecommerce ASP,
+in which each subcommunity is an independent merchant), many others do
+need to share data between subcommunities.
+
+<p>
+
+For instance, an employee's contact information should be available
+both in the company directory (i.e., <a href="address-book">Address
+Book</a>) and (at least, in part) on the subsites of her project(s),
+for access by the customer. Another example is <a
+href="calendar">Calendar</a>: calendar events should "cascade" down,
+so that an employee's calendar is comprised of events from every level
+up the organizational hierarchy.
+
+<p>
+
+If we make the simplifying assumption that each entity has one and
+only one owner, what remains is to establish a many-to-one (instead of
+one-to-one) relationship between subsite and entity, so that, for
+instance, an address book entry "owned" by the company-wide directory
+(<code>all_users</code> subcommunity) would be viewable in the context
+of other subsites. We can do this generically with a table like:
+
+<blockquote>
+<code><pre>
+TBD...
+<!--
+create table ad_subsite_map (
+        ...
+        site_spec_id        constraint ad_site_specs_parent_spec_id_fk
+                            references ad_site_specifications (site_spec_id)
+);
+-->
+</pre></code>
+</blockquote>
+
+<h3>Appendix A: Hierarchical Subcommunities</h3>
+
+In reality, many communities contain not one but many levels of
+subcommunity that together comprise a hierarchy. For instance, at
+ArsDigita, the Operations department consists of teams, each of which
+is responsible for multiple projects. It makes sense to represent
+"department", "team", and "project" as <code>user_group_types</code>.
+
+<p>
+
+The current definition of the <code>user_groups</code> includes a
+<code>parent_group_id</code> that allows us to establish these
+hierarchical relationships between actual user groups, but does not
+address two separate but related needs:
+
+<ol>
+
+<li>Relationships other than a singular parent-child relationship,
+e.g., there are multiple parties involved in an ArsDigita project: the
+team, the customer, potentially one or more partners (graphic design
+firms, etc.). In the context of our intranet/extranet, each of these
+parties is a <code>user_group</code>, and the project itself is a
+<code>user_group</code>. The <code>parent_group_id</code> column alone
+is not enough to represent all of these relationships, so the current
+data model would force us to extend the automatically-generated
+<code>project_info</code> data model, e.g.:
+
+<blockquote>
+<code><pre>
+create table project_info (
+        ...
+        customer_id     not null
+                        constraint project_info_customer_id_fk
+                        references customer_info (group_id)
+);
+
+create table project_partner_map (
+        project_id      not null
+                        constraint proj_partner_map_project_id_fk
+                        references project_info (group_id),
+        partner_id      not null
+                        constraint proj_partner_map_partner_id_fk
+                        references partner_info (group_id),
+);
+</pre></code>
+</blockquote>
+
+There is no reason that these relationships cannot be stored
+generically, just as all manner of user-to-user-group relationships
+are stored in the <code>user_group_map</code> table. We accomplish by
+introducing a new table, <code>user_group_relationships</code> (<font
+color=red>better name?</font>):
+
+<blockquote>
+<code><pre>
+create table user_group_relationships (
+        <em>insert two group_id columns and a descriptor
+        for the relationship here</em>
+);
+</pre></code>
+</blockquote>
+
+<p>
+
+<li>Relationships exist not at only the <code>user_groups</code> but
+also at the <code>user_group_types</code> level. Our data model should
+be able to express business rules like "every project must be assigned
+to a team" and "every department must belong a company":
+
+<blockquote>
+<code><pre>
+create table user_group_type_relationships (
+        <em>insert two group_type columns and a descriptor
+        for the relationship here</em>
+);
+</pre></code>
+</blockquote>
+
+</ol>
+
+Extending our data model to address these two needs has a number of
+implications.
+
+<p>
+
+First, the <code>user_groups</code> uniqueness constraint would change
+from just <code>short_name</code> to <code>short_name</code>
+<em>and</em> <code>parent_group_id</code>. Thus, each node in the
+subcommunity hierarchy becomes its own namespace, like directories in
+a filesystem, instead of the single flat namespace for user groups
+that exists today.
+
+<p>
+
+Secondly, it would probably make sense for subsite URLs to reflect the
+subcommunity hierarchy. For example, consider an outsourced intranet
+service where <code>company</code> is the top-level subcommunity.
+Multiple companies might have offices in Boston, and the subsites for
+those offices should be located at unambiguous URL paths such as:
+
+<blockquote>
+<code>/arsdigita/boston/</code>
+</blockquote>
+
+and
+
+<blockquote>
+<code>/greylock/boston/</code>
+</blockquote>
+
+<a name="change_propagation"><h3>Appendix B: Change Propagation</h3></a>
+
+Maintaining a "live link" between the <code>user_group_type</code>
+site spec and its children makes it possible to do nice things like
+add a new module at the <code>user_group_type</code> level and have it
+become instantly available to all subcommunities of that type. The
+price is the extra complexity of handling situations like: a module is
+removed from the <code>user_group_type</code> site spec; what happens
+to all the dependent <code>user_group</code> site specs?
+
+<p>
+
+To support this model of change propagation, we would probably add
+more columns to <code>ad_site_specifications</code>, e.g.:
+
+<blockquote>
+<code><pre>
+create table ad_site_specifications (
+        ...
+        parent_spec_id      constraint ad_site_specs_parent_spec_id_fk
+                            references ad_site_specifications (site_spec_id),
+        sync_with_parent_p  char(1) not null
+                            constraint ad_site_spec_sync_w_parent_p_cc
+                            check (sync_with_parent_p in ('t', 'f'))
+);
+</pre></code>
+</blockquote>
+
+Of course, there would also need to be code and user interface to
+handle conflict cases like the module removal scenario above.
+
+<font color=green>
+<h3>API</h3>
+
+<ul>
+<li>user group definition (already exists, so probably just needs clean-up)
+<li><code>ad_site_spec_copy(source_spec_id, on_which_table, on_what_id)</code>
+<li><code>all_users_group_id()</code>
+<li><code>all_users_site_spec_id()</code>
+<li><code>personal_subsite_spec_id()</code>
+</ul>
+
+<p>
+
+</font>
+
+<hr>
+
+<a href="mailto:michael@arsdigita.com">
+<address>michael@arsdigita.com</address>
+</a>
+
+</body>
+</html>

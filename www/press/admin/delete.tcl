@@ -1,18 +1,21 @@
-# Delete an existing press item (confirmation page)
-# 
-# Author: ron@arsdigita.com, December 1999
-#
-# $Id: delete.tcl,v 3.0.4.2 2000/04/28 15:11:20 carsten Exp $
-# -----------------------------------------------------------------------------
+# /www/press/admin/delete.tcl
 
-ad_page_variables {press_id}
+ad_page_contract {
+
+    Delete an existing press item (confirmation page)
+ 
+    @author  Ron Henderson (ron@arsdigita.com)
+    @created December 1999
+    @cvs-id  delete.tcl,v 3.4.2.5 2000/09/22 01:39:06 kevin Exp
+} {
+    press_items:notnull
+}
 
 set user_id [ad_verify_and_get_user_id]
-set db      [ns_db gethandle]
 
-# initialize the data for this item
+# initialize the data for these items
 
-set selection [ns_db 1row $db "
+db_foreach press_items_info "
 select scope,
        group_id,
        important_p,
@@ -27,56 +30,46 @@ select scope,
        html_p,
        template_adp
 from   press p, press_templates t
-where  p.press_id = $press_id
-and    p.template_id = t.template_id"]
+where  p.press_id in ([join $press_items ","])
+and    p.template_id = t.template_id" {
 
-if {[empty_string_p $selection]} {
-    ad_return_error "An error occurred looking up press_id = $press_id"
-    return
-} else {
-    set_variables_after_query
-}
+    if {![press_admin_p $user_id $group_id]} {
+	ad_return_complaint "You are not authorized to delete these items"
+	return
+    }
 
-# Verify that this user is a valid administrator
+    if {![empty_string_p $publication_date_desc]} {
+	set display_date $publication_date_desc
+    }
 
-if {![press_admin_p $db $user_id $group_id]} {
-    ad_returnredirect "/press/"
-    return
-}
-
-if {![empty_string_p $publication_date_desc]} {
-    set display_date $publication_date_desc
+    append press_info "
+    <p>
+    [press_coverage \
+	    $publication_name $publication_link $display_date \
+	    $article_title $article_link $article_pages $abstract \
+	    $template_adp]</p>"
 }
 
 # -----------------------------------------------------------------------------
 
-ns_return 200 text/html "
-[ad_header Admin]
+doc_return  200 text/html "
+[ad_header "Delete Press Items"]
 
 <h2>Delete</h2>
 
-[ad_context_bar_ws [list "../" "Press"] [list "" "Admin"] "Delete"]
+[ad_context_bar_ws [list "/press/" "Press"] [list "" "Admin"] "Delete"]
 
 <hr>
 
 <p>Please confirm that you want to <b>permanently delete</b> the
-following press item:</p> 
-
-<blockquote>
-[press_coverage \
-	$publication_name $publication_link $display_date \
-	$article_title $article_link $article_pages $abstract \
-	$template_adp]
-</blockquote>
+following press items:</p> 
 
 <form method=post action=delete-2>
-[export_form_vars press_id]
-<center><input type=submit value=\"Yes, I want to delete it\"></center>
+[export_form_vars press_items]
+<center><input type=submit value=\"Yes, I want to delete them\"></center>
 </form>
 
+<blockquote>$press_info</blockquote>
+
 [ad_footer]"
-
-
-
-
 

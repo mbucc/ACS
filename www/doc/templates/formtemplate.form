@@ -1,0 +1,60 @@
+<formtemplate>
+
+  <name>form name</name>
+  <title>form title</title>
+  <type>multipart or nil
+  <dbaction>insert, update or delete</dbaction>
+  <help>help text for user</help>
+  <comment>documentation of this form</comment>
+
+  <elements>
+
+    <element>
+
+      <name>form name</name>
+      <label>form label</label>
+      <help>help text for user</help>
+      <comment>documentation of this element</comment>
+
+      <widget width="w" height="h">
+        text, textarea, password, radio, checkbox,
+        none, file, date, select or selectmultiple
+      </widget>
+
+      <options method="static, query, or eval">
+        Text, database query or Tcl code
+      </options>
+
+      <defaults method="static, query, or eval">
+        Text, database query or Tcl code
+      </defaults>
+
+      <datatype>text, number, email, creditcard...</datatype>
+
+      <datamap key="child or parent">
+        <table>table name</table>
+        <column>column name</column>
+      </datamap>
+
+    </element>
+
+  </elements>
+
+  <preprocess>
+    <code>
+      Tcl code to perform before database action
+    </code>
+    <comment></comment>
+  </preprocess>
+
+  <postprocess>
+    <code>
+      Tcl code to perform after database action
+    </code>
+    <comment></comment>
+  </postprocess>
+
+</formtemplate>
+
+
+

@@ -1,92 +1,17 @@
-# /press/index.tcl
-# 
-# Author: ron@arsdigita.com, December 1999
-#
-# Gateway for the press module
-# 
-# $Id: index.tcl,v 3.0 2000/02/06 03:53:13 ron Exp $
-# -----------------------------------------------------------------------------
+# /www/press/index.tcl
 
-set page_title "Press"
+ad_page_contract {
 
-# Check for a user_id but don't force registration.  People should be
-# able to view the press coverage without being registered.
+    Gateway for the press module
 
-set user_id [ad_verify_and_get_user_id]
-
-set db [ns_db gethandle]
-
-# Provide administrators with a link to the local admin pages
-
-if {[press_admin_any_group_p $db $user_id]} {
-    # user is an admin for at least one group and therefore 
-    # MIGHT want to administer some stuff
-    set press_admin_notice [list "admin" "Administer"]
-} else {
-    set press_admin_notice ""
+    @author  Ron Henderson (ron@arsdigita.com)
+    @created Dec 1999
+    @cvs-id  index.tcl,v 3.3.2.6 2000/09/22 01:39:05 kevin Exp
+} {
+    {start:integer "0"}
 }
 
-# Grab the press coverage viewable by this person
-
-set selection [ns_db select $db "
-select press_id,
-       publication_name,
-       publication_link,
-       publication_date,
-       publication_date_desc,
-       article_title,
-       article_link,
-       article_pages,
-       abstract,
-       important_p,
-       template_adp
-from   press p, press_templates t
-where  p.template_id = t.template_id
-and    (important_p = 't' or (sysdate-creation_date <= [press_active_days]))
-and    (scope = 'public' or
-        (scope = 'group' and 't' = ad_group_member_p($user_id,p.group_id)))
-order by publication_date desc"]
-
-set press_count 0
-set press_list  ""
-set display_max [press_display_max]
-
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
-    incr press_count
-
-    if { $press_count > $display_max } {
-	# throw away the rest of the cursor
-	ns_db flush $db
-	break
-    }
-
-    if {![empty_string_p $publication_date_desc]} {
-	set display_date $publication_date_desc
-    } else {
-	set display_date [util_AnsiDatetoPrettyDate $publication_date]
-    }
-
-    append press_list "
-    <p><blockquote>
-    [press_coverage \
-	    $publication_name $publication_link $display_date \
-	    $article_title $article_link $article_pages $abstract \
-	    $template_adp ]
-    </blockquote></p>"
-}
-
-ns_db releasehandle $db
-
-if {$press_count == 0} {
-    set press_list "<p>There is no press coverage currently available
-    for you to see.</p>"
-}
-
-# -----------------------------------------------------------------------------
-# Ship it out...
-
-ns_return 200 text/html "
+set page_content "
 [ad_header "Press"]
 
 <h2>Press</h2>
@@ -94,11 +19,111 @@ ns_return 200 text/html "
 [ad_context_bar_ws_or_index "Press"]
 
 <hr>
-[help_upper_right_menu $press_admin_notice]
+"
 
-$press_list
+# Check for a user_id but don't force registration.  People should be
+# able to view the press coverage without being registered.
 
-[ad_footer]"
+set user_id [ad_verify_and_get_user_id]
 
+# Provide administrators with a link to the local admin pages
 
+if {[press_admin_any_group_p $user_id]} {
+    # user is an admin for at least one group and therefore 
+    # MIGHT want to administer some stuff
+    append page_content "[help_upper_right_menu [list "admin" "Administer"]]"
+}
+
+# Grab the press coverage viewable by this person.  We use a pager
+# system for display the press items, showing no more than display_max
+# items on a page with links to "previous" and "next" if appropriate. 
+
+set count -1
+set display_max [press_display_max]
+set active_days [press_active_days]
+
+db_foreach press_items {
+    select press_id,
+           publication_name,
+           publication_link,
+           publication_date,
+           publication_date_desc,
+           article_title,
+           article_link,
+           article_pages,
+           abstract,
+           important_p,
+           template_adp
+    from   press p, press_templates t
+    where  p.template_id = t.template_id
+    and    (important_p = 't' or (sysdate-publication_date <= :active_days))
+    and    (scope = 'public' or
+           (scope = 'group' and 't' = ad_group_member_p(:user_id,p.group_id)))
+    order by publication_date desc
+} {
+    incr count
+
+    if { $count < $start } {
+	# skip over the initial items
+	continue
+    }
+
+    if { [expr $count - $start] == $display_max } {
+	# set the "more items" flag and throw away the rest of the cursor
+	set more_items_p 1
+	break
+    }
+    
+    if {![empty_string_p $publication_date_desc]} {
+	set display_date $publication_date_desc
+    } else {
+	set display_date [util_AnsiDatetoPrettyDate $publication_date]
+    }
+    
+    append page_content "
+    <p><blockquote>
+    [press_coverage \
+	    $publication_name [ns_urlencode $publication_link] $display_date \
+	    $article_title [ns_urlencode $article_link] $article_pages $abstract \
+	    $template_adp ]
+    </blockquote></p>"
+} if_no_rows {
+    append page_content "
+    <p>There is no press coverage currently available for you to see.</p>"
+}
+
+# Set the up optional navigation links 
+
+proc max {x y} {
+    return [expr $x > $y ? $x : $y]
+}
+
+set nav_links [list]
+
+if { $start > 0 } {
+    lappend nav_links "<a href=?start=[max 0 [expr $start-$display_max]]>prev</a>"
+}
+
+if [info exists more_items_p] {
+    lappend nav_links "<a href=?start=[expr $start + $display_max]>next</a>"
+}
+
+append page_content "<p align=center>[join $nav_links " | "]</p>"
+
+# Check to see if there are additional items in the archives
+
+set archived_p [db_string archive_count "
+select count(*) 
+from   press
+where  (important_p = 'f' and (sysdate-publication_date > :active_days))
+and    (scope = 'public' or
+       (scope = 'group' and 't' = ad_group_member_p(:user_id,group_id)))"]
+
+if $archived_p {
+    append page_content "<p>There are additional press items in the <a href=archives>archives</a>.</p>"
+}
+
+append page_content "[ad_footer]"
+
+doc_return  200 text/html $page_content
 

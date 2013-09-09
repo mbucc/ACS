@@ -1,0 +1,10 @@
+In this file: /packages/form-manager/form-procs.tcl
+
+Within this procedure: ad_form_set_variables
+
+Change this
+     set $var [ns_queryget $var]
+to this
+     set value [ns_queryget $var]
+     check_for_form_variable_naughtiness $var $value
+     set $var $value

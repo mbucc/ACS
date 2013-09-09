@@ -1,25 +1,28 @@
-# create-room.tcl,v 1.4.2.1 2000/02/03 09:20:14 ron Exp
-# File:     admin/chat/create-room.tcl
-# Date:     1998-11-18
-# Contact:  aure@arsdigita.com,philg@mit.edu, ahmeds@arsdigita.com
-# Purpose:  creates a new chat room
+# /www/chat/admin/create-room.tcl
 
-set_the_usual_form_variables 0
+ad_page_contract {
+    Creates a new chat room
+    
+    @author Aure (aure@arsdigita.com)
+    @author Philip Greenspun (philg@mit.edu)
+    @author ahmeds@arsdigita.com
+    @param scope is this room a "public", "group" or "user" room
+    @creation-date 1998-11-18
+    @cvs-id create-room.tcl,v 1.4.2.8 2000/09/22 01:37:13 kevin Exp
+} {
+    {scope "public"}
+}
 
-
-set db [ns_db gethandle]
-
-set user_id [ad_scope_authorize $db $scope admin group_admin none]
-ReturnHeaders
+set user_id [ad_scope_authorize $scope admin group_admin none]
 
 set title "Create a Room"
 
-ns_write "
-[ad_scope_admin_header "$title" $db]
-[ad_scope_admin_page_title $title $db]
+set page_content "
+[ad_scope_admin_header "$title"]
+[ad_scope_admin_page_title $title]
 [ad_scope_admin_context_bar [list "index.tcl" Chat] $title]
 <hr>
-<form action=\"create-room-2.tcl\" method=POST>
+<form action=\"create-room-2\" method=POST>
 [export_form_scope_vars]
 <table><tr><td align=right>
 Room Name:</td><td> <input name=pretty_name size=35></td>
@@ -52,6 +55,11 @@ Moderated?</td>
 
 [ad_scope_admin_footer]
 "
+
+
+doc_return  200 text/html $page_content
+
+
 
 
 

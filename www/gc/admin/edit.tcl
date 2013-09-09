@@ -1,13 +1,18 @@
-# $Id: edit.tcl,v 3.1 2000/03/10 23:58:50 curtisg Exp $
-set db [ns_db gethandle]
+# /www/gc/admin/edit.tcl
 
-set selection [ns_db select $db "select * from ad_domains"]
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
-    append bullet_list "<li><a href=\"domain-top.tcl?domain_id=$domain_id\">$backlink_title</a>\n"
+ad_page_contract {
+    @author
+    @creation-date
+    @cvs-id edit.tcl,v 3.3.2.7 2000/09/22 01:38:00 kevin Exp
+} {}
+
+set sql "select * from ad_domains"
+db_foreach gc_admin_edit_domain_list $sql {    
+    append bullet_list "<li><a href=\"domain-top?domain_id=$domain_id\">$domain</a>\n"
 }
 
-ns_return 200 text/html "<html>
+db_release_unused_handles
+doc_return  200 text/html "<html>
 <head>
 <title>Pick a Domain</title>
 </head>
@@ -21,7 +26,6 @@ ns_return 200 text/html "<html>
 $bullet_list
 
 </ul>
-
 
 <hr>
 <a href=\"http://www-swiss.ai.mit.edu/philg/\"><address>philg@mit.edu</address></a>

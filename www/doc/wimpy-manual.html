@@ -1,0 +1,226 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+  <head>
+    <title>Wimpy Point: The Manual</title>
+  </head>
+
+  <body bgcolor="white">
+    <h1>Wimpy Point: The Manual</h1>
+<h2><a name="top">Contents</a></h2>
+<ul>
+<li><a href="#big-picture">The Basic Idea</a></li>
+<li><a href="#main-page">Main Page</a></li>
+<li><a href="#creation">Creating a Presentation</a></li>
+<li><a href="#create-slides">Creating Slides</a></li>
+<li><a href="#attach">File Attachments to Slides</a></li>
+<li><a href="#style-edit">Editing a Style</a></li>
+<li><a href="#acl">Setting up Access Controls</a></li> 
+<li><a href="#version">Using Freeze and Restore for Creating and Recovering Versions</A></li>    
+</ul>
+<h3><a name="big-picture">WimpyPoint: The Basic Idea</a></h3>
+
+WimpyPoint is a replacement for desktop bloatware such
+as <a href="http://www.webho.com/WealthClock">Microsoft</a>
+PowerPoint.  You can build a slide presentation in
+WimpyPoint from any Web browser anywhere in the world.
+WimpyPoint will hold onto your presentation in a
+professional maintained and backed up relational database management
+system (Oracle 8).  You can forget your laptop.  You can drop your
+laptop.  You will still be able to give your presentation anywhere in
+the world that you can find a Web browser.
+
+<P>
+
+More interestingly, WimpyPoint lets you work with
+colleagues.  From your desk at MIT, you can authorize a friend at
+Stanford to edit your presentation, the two of you can work together
+until you're satisfied, and then you can both go into a conference
+room at Hewlett-Packard Laboratories and give your talk from our
+server.  For more information on setting up access you can go <a href="#acl">here</a>
+
+<P>
+
+(Naturally this assumes that our machine is up and running and the
+various Internet backbones are operating properly.  We strive for
+maximum reliability but nobody can achieve 100% uptime for any
+Internet service.  If your career absolutely positively depends on a
+presentation, we recommend using the Print button on your Web browser
+to make a hardcopy of your slides.
+<br><a href="#top"><i>Back to the top</i></a>
+
+<P>
+
+<h3>Some Basic WimpyPoint Concepts</h3>
+
+<h4><a name="collaboration">Collaboration</a></h4>
+
+We don't want to let people edit other people's presentations willy-nilly
+(lest you walk into an important meeting only to find your work replaced by a
+<a href="http://photo.net/photo/pcd4229/alex-rope-13.4.jpg">dirty picture</a>),
+but we certainly want to let users work with other collaboratively (that's the
+whole point, right?). WimpyPoint allows authors to specify exactly who is
+allowed to view and work on their presentations (for more info,
+check out the help screens later once you've started working on your own
+presentation). The details for setting up collaboration are in the <a href="#acl">Access controls section</a>.
+
+<h4><a name="styles">Styles</a></h4>
+
+Black on white with red/blue/purple links and a 12-point serif font looks OK, but
+it gets boring after a while (and may not suit some people's needs). For
+this reason, we let you select styles to use when viewing presentations.
+(You can change the style used to view a presentation by clicking the
+<i><a href="#style-edit">Change Style</a></i> link in the lower-right corner on a presentation's
+table of contents.)
+Styles can change pages' background and color scheme, and even more if
+you know how to write <a href="http://www.w3.org/Style/CSS/">CSS (Cascading Style Sheets)</a>
+code.
+<p>
+For more details on creating your own styles, you should see the <a name="#style-edit">style editing section</a>
+<br><a href="#top"><i>Back to the top</i></a>
+
+<P>
+<h3><a href="/wp">WimpyPoint Main Page</a></h3>
+<a name="main-page"></a>
+From the <a href="/wp">main screen</a>, WimpyPoint's index page, you
+can locate a presentation to view or edit. There
+may be quite a few presentations already in WimpyPoint.
+You probably don't want to see a list of all of them -
+the sliders at the top of the
+screen let you select
+
+<ul>
+  <li>whether you want to see presentations created in the past week,
+two weeks, or month, or all presentations since the beginning of time
+(i.e., early 1998).
+  <li>whether you want to see only your own presentations (presentations which you have created
+or are <a href="#collaboration">collaborating on</a>), or presentations created by anyone at all. This slider only
+shows up if have an account on the community system you are using and are logged in.
+</ul>
+
+To show a presentation, click its title. To edit a presentation (assuming
+that you created it or are a collaborator), click the <i>edit</i> link
+next to its listing.
+
+<p>You can follow the links under <i>Options</i> to
+<ul>
+  <li>create a new presentation (available only if you're logged in),
+  <li>list WimpyPoint users, so that you can see a list of all presentations
+created by a particular person,
+  <li>search for a string or concept in an existing presentation, or
+  <li>view/create/edit <a href="#styles">styles</a> which can be used to
+prettify presentations.
+</ul>
+<br><a href="#top"><i>Back to the top</i></a>
+<P>
+
+<h3><a name="creation">Creating a New Presentation</a></h3>
+From the <a href=#main-page>main page</a> in WimpyPoint, you can create your own presentation. To do this, follow the link for creating a new presentation, and follow the instructions which appear above each of the entry boxes. Once you choose to save the presentation, you will then go on to either creating a <a href=#styles>new style</a> for the presentation, or directly on to <a href="#create-slides">creating slide</a>
+<P>
+<br><a href="#top"><i>Back to the top</i></a>
+<h3><a name="create-slides">Creating Slides</a></h3>
+<P>The "Create a Slide" page is used both to create and edit slides. If a slide is being edited, the information from your slides will be filled into the various fields on this page. If you are creating a new slide, all of the fields will be blank.
+<P>There are four main portions of a Wimpy Point slide:
+<ul>
+	<li>Slide Title
+		<blockquote>
+		This appears in large letters at the top of the slide.
+		</blockquote>
+	</li>
+	<li>Preamble
+		<blockquote>
+		This will appear as block of text under your title, and above any bulleted list which you have created. The creation of a preamble is optional is optional.
+		</blockquote>
+	</li>
+	<li>Bullet Items
+		<blockquote>
+		A bulleted list will be created in the middle of the slide, based on the list created here. If there are not enough lines to finish your list, you will have the opportunity to create more lines once the slide has been saved. The arrows next to each of the lines allows you to swap that line with the one that the arrow is pointing at.
+		</blockquote>
+	</li>
+	<li>Postamble
+		<blockquote>
+		This will appear as a block of text at the bottom of your page, and right under your bulleted list. Like the preamble, it is optional.
+		</blockquote>
+</ul>	
+<P>If you would like to add an image or other file, you should follow the <i>Upload Attachment</i> link. Otherwise, follow the <i>Save Slide</i> link to either save the changes made to your  slide, or to add the new slide to your presentation.</P>
+<P>
+<h3><a name="attach">Attaching a file to a slide</a></h3>
+If the you choose to add an attachment from the <a href="#create-slides">create slide</a> page, you will end up on the slide attachment page. This page allows you to attach images to a slide in your presentation,
+or upload a file (an "attachment") to be linked from the slide.
+
+<p>The top of the box displays a list of all images and attachments
+(if any) currently associated with the slide, along with their
+respective sizes and an indication of where they are displayed (these
+options correspond to the options in the bottom half of the box).
+
+<p>To add an image or attachment, click the <i>Browse...</i> button
+and select the file containing the image or attachment. Choose how you
+want the file displayed (if it's not an image, you'll want to select
+<i>Display a link the viewer can use to download the file</i>),
+and click <i>Add the Attachment</i>. Once you do this, you can click
+<i>Preview the Slide</i> to see how the slide will look.
+<br><a href="#top"><i>Back to the top</i></a>
+<P>
+<h3><a name="style-edit">Editing a Style</a></h3>
+On the style editing page, Colors are specified using the usual red/green/blue scheme (familiar
+to anyone who's used Photoshop or written HTML code). Each component
+is a number from 0 to 255; the first component is red, the second is green, and the third is blue.
+If you prefer, you can just select a color from the pull-down menu which is
+close to the one that you envision, and then try mucking around with the
+resultant numbers.
+
+<p>You can select any of the images you've uploaded to use as the
+background for your slides.
+
+<h4>For Advanced Users</h4>
+
+<p>If you know <a href="http://www.w3.org/Style/CSS/">CSS (Cascading Style Sheets)</a>,
+you can key in (or cut and paste) some CSS code to be linked to your slides. (The
+colors and background image supplied on the top half of this page are incorporated
+only as attributes to the &lt;BODY&gt; tag, so any CSS settings you provide will
+override them for CSS-aware browsers.)
+<br><a href="#top"><i>Back to the top</i></a>
+<P>
+<h3><a name="acl">Setting up Presentaton Access Control Lists (ACL)</a></h3>
+From a presentation's main page, you can follow a link to choose who has different levels of access to apresentation.
+<P>
+From the access control page, users can be granted one of three levels of access to a presentation:
+
+<ul>
+  <li><b>View-only</b> - these users can view the presentation but
+can't make changes to it. If the presentation is public, all users
+can automatically view the presentaiton.
+  <li><b>Collaborator</b> - these users can view and make changes
+to the presentation (e.g., edit and delete slides, change the
+presentation's title, etc.). They can't delete the presentation or
+freeze the slide set, however.
+  <li><b>Owner</b> - these users can do whatever they want to the presentation
+(view or make changes to it, delete the entire presentation, freeze
+the slide set, etc.). Owners can also give other users permission
+to view the presentation, or to make other users collaborators or owners.
+</ul>
+
+This page also allows you to grant users permission to view, collaborate on,
+or own the presentation. It displays a box for each of these privileges
+(omitting the view-only box if the presentation is public).
+To invite a person to view, collaborate on, or own the presentation,
+click the <i>Add One</i> button in one of the boxes. (Note that you
+can even add a person who hasn't registered with this community system.)
+You'll have the option to send the person whom you invite an E-mail
+containing a link which he or she can use to go directly to the
+presentation.
+<br><a href="#top"><i>Back to the top</i></a>
+<P>
+<h3><a name="version">Version Tracking</a></h3>
+<h4>Freezing</h4>
+From the main page for a presentation, you can choose to "freeze a set of slides". Wimpy point allows you to have as many versions of a set of slides as you desire. Every time you "freeze" a presentation, you create a version of that presentation, and all of the slides with it, which can be "restored" at any point in time in the future. This can be used to keep a polished, presentation-ready version of a slide-show, while editing another version. It also works well for having a copy of the slide show which was used for a particular presentation, making it possible to look back and see what versions of the presentation might have been more or less successful. On the actual freeze page, you can enter a line of text to help you remember what the saved version of the presentation is. Pressing the Freeze Presentation button will allow you to return to the main page for the presentation.
+<h4>Restoring a "frozen" version</h4>
+Once a presentation has been frozen, a new section will appear on the main page for the presentation, allowing frozen versions of the given presentation to be viewed, viewed with any comments which have been added to the verstion, or to even replace the current version with one of the frozen versions. In any of the three cases, a version must be first be selected by using the presentation's "previous versions" drop-down menu. The version can then be viewed by pressing either of the view buttons; in this case, nothing will happen to the current version. It can also be restored by pushing the "restore previous version" button underneath the drop-down. If this is the case, you will be brought to a screen to confirm your choice. <b>Warning</b> if you restore a frozen version, without freezing your current version, your work may be lost forever. Once you have done this, the restored version of your presentation will take the place of whatever version was current at the time.
+<br><a href="#top"><i>Back to the top</i></a>
+    <hr>
+    <address><a href="mailto:apennin@arsdigita.com">Adam Pennington</a></address>
+<!-- Created: Tue May 30 22:19:23 EDT 2000 -->
+<!-- hhmts start -->
+Last modified: Tue May 30 23:18:56 EDT 2000
+<!-- hhmts end -->
+  </body>
+</html>

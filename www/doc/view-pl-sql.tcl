@@ -1,33 +1,30 @@
-#
 # /doc/view-pl-sql.tcl
-#
-# 
-#
-# Author: michael@arsdigita.com, 2000-03-05
-#
-# $Id: view-pl-sql.tcl,v 3.1 2000/03/06 05:37:21 michael Exp $
-#
+ad_page_contract {
+    Returns the specification for a given PL/SQL package, procedure, or
+    function.
 
-ad_page_variables {
-    name
-    type
+    @param name
+    @param type
+
+    @author Michael Yoon (michael@arsdigita.com)
+    @creation-date 2000-03-05
+    @cvs-id view-pl-sql.tcl,v 3.3.2.3 2000/08/01 02:02:22 chiao Exp
+} {
+    name:sql_identifier
+    type:sql_identifier
 }
 
-set db [ns_db gethandle]
+set source_text ""
 
-set selection [ns_db select $db "select text
+db_foreach source_text "select text
 from user_source
-where name = upper('$name')
-and type = upper('$type')
-order by line"]
-
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
-
+where name = upper(:name)
+and type = upper(:type)
+order by line" {
     append source_text $text
 }
 
-ad_return_top_of_page "[ad_header $name]
+doc_body_append "[ad_header $name]
 
 <h2>$name</h2>
 
@@ -43,3 +40,4 @@ $source_text
 
 [ad_footer]
 "
+db_release_unused_handles

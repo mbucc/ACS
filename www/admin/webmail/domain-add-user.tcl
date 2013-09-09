@@ -1,18 +1,22 @@
 # domain-add-user.tcl
-# Present form for adding a new user.
-# Written by jsc@arsdigita.com.
 
-ad_page_variables {short_name}
+ad_page_contract {
+    Present form for adding a new user.
+    
+    @author Jin Choi (jsc@arsdigita.com)
+    @creation-date 2000-02-23
+    @cvs-id domain-add-user.tcl,v 1.3.6.5 2000/09/22 01:36:38 kevin Exp
+} {
+    short_name:notnull
+}
 
-set db [ns_db gethandle]
-
-set full_domain_name [database_to_tcl_string $db "select full_domain_name
+set full_domain_name [db_string full_domain_name "select full_domain_name
 from wm_domains
-where short_name = '$QQshort_name'"]
+where short_name = :short_name"]
 
-ns_db releasehandle $db
 
-ns_return 200 text/html "[ad_admin_header "Add User"]
+
+doc_return  200 text/html "[ad_admin_header "Add User"]
 <h2>$full_domain_name</h2>
 
 [ad_admin_context_bar [list "index.tcl" "WebMail Admin"] [list "domain-one.tcl?[export_url_vars short_name]" "One Domain"] "Create Account"]
@@ -21,7 +25,7 @@ ns_return 200 text/html "[ad_admin_header "Add User"]
 
 Create a new account in this domain:
 
-<form action=\"domain-add-user-2.tcl\">
+<form action=\"domain-add-user-2\">
 [export_form_vars short_name]
 Email address: <input type=text name=username size=10>@$full_domain_name
 </form>

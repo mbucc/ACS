@@ -1,0 +1,59 @@
+<html>
+<head>
+<title>API-Doc (acs-core submodule)</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>API-Doc</h2>
+
+by <a href="mailto:tnight@arsdigita.com">Todd Nightingale</a>
+<hr>
+
+This document is designed to explain the ACS API documentation access tools.
+
+<h3>Big Picture</h3>
+
+The ACS has hundreds of procedures (1478) which define it's internal and external api.  Developers need a simple way to access all of the documentation available for the procedures available to them.
+
+<h3>The Implementation</h3>
+
+The new API-Doc submodule gives users the ability to reach the documentation of any procedure loaded into server memory which has been defined with proc_doc or ad_proc.
+<ul>
+<li><a href=/api-doc/>index.tcl</a> allows users to see all the apm packages which have been loaded as well as access to the api-documentation.
+<li>Access to these procedures is through <a href=/api-doc/proc-search?query_string="ad_page_contract">proc-search.tcl</a>.  This page takes the following parameters:
+  <ul>
+    <li>name_weight weighting for a match in parameter name.
+    <li>param_weight weighting for a match in a positional or switch.
+    <li>doc_weight weighting for a match in main documentation or in @param documentation.
+    <li>source_weight weighting for a match in procedure source code.
+    <li>query_string string to be searched for.
+    <li>search_type "Feeling Lucky" to be punted directly to best hit.
+  </ul>
+This page either returns the best hits ranked by score, then by name or if the Feeling Lucky option is entered sends the user to the docs for the best hit.
+<li>The documentation for API procedures is available at <a href=/api-doc/proc-view?proc=ad_page_contract>proc-view.tcl</a>.
+</ul>
+
+<h3>Data Model</h3>
+In order to implicitly synchronize the available procedures and the API documentation, the procedure documentation information is stored in the nsv_array <code>api-doc-procs</code>.  Data is inserted into the array by ad_proc when the procedure is loaded into server memory.  The <code>api_proc_doc</code> nsv_array contains elements for every defined procedure, so <code>[nsv get api_proc_doc <i>procedure_name</i>]</code> will return the documentation for procedure_name.  This information is it self an array with the following fields:
+<ul>
+  <li>main  A list containing with one element.  The documtation taken from the second argument to ad_proc. 
+  <li>public_p boolean
+  <li>private_p boolean
+  <li>default_values 
+  <li>deprecated_p boolean
+  <li>switches
+  <li>flags
+  <li>positionals list of args
+  <li>varargs_p boolean
+  <li>script file name
+  <li>warn_p boolean
+  <li>return
+</ul>
+These are not all available for all the procedures and procedures can have more defined fields in the array if procs define other @_field_name_ fields in the main documentation
+
+<hr>
+<a href=mailto:tnight@arsdigita.com>
+<address>tnight@mit.edu</address>
+</a>
+</body>
+</html>

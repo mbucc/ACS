@@ -1,0 +1,592 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+
+<head>
+<title>Publishing Tcl Procedures</title>
+<link rel="stylesheet" type="text/css" href="core-arch-guide.css">
+</head>
+
+<body>
+
+<h2>Publishing Tcl Procedures</h2>
+
+by <a href="mailto:jsalz@mit.edu">Jon Salz</a>
+and <a href="mailto:michael@arsdigita.com">Michael Yoon</a>
+on 6 July 2000
+
+<p>
+
+<a href="/doc/">ACS Documentation</a> :
+<a href="">ACS Core Architecture Guide</a> :
+<a href="api-publication">API Publication</a> :
+Publishing Tcl Procedures
+
+<hr>
+<!--
+<ul>
+<li>Tcl procedures: /packages/acs-core/tcl-documentation-procs.tcl</ul>
+</ul>
+-->
+<h3>The Big Picture</h3>
+
+Using the Tcl language's built-in <code>proc</code> command to define
+procedures poses two main problems:
+
+<ol>
+
+<li>There is no built-in facility for documenting procedures defined
+with <code>proc</code>.
+
+<li>In order to accept switches (e.g., the <code>regexp</code>
+command's <code>-nocase</code> switch), a procedure defined with
+<code>proc</code> must include logic to parse its own argument list.
+
+</ol>
+
+Therefore, Tcl procedure APIs in the ACS are published by using
+<code>ad_proc</code> instead of <code>proc</code> command to define
+procedures, which provides automatic switch parsing (based
+on an extended syntax for the argument list) and optionally accepts an
+argument containing documentation for the procedure.
+
+<h3>New in ACS 3.4</h3>
+
+ACS 3.4 includes an enhanced version of <code>ad_proc</code> that
+provides several new features:
+
+<ul>
+
+<li>true boolean switches that do not require the caller to specify a
+value (like the switches for built-in Tcl commands)
+
+<li>mandatory switches and optional switches without default values
+(previously each switch had to have a default value)
+
+<li>structured documentation (argument descriptions, potential errors,
+etc. <i>&agrave; la</i> <a
+href="http://java.sun.com/products/jdk/javadoc/writingdoccomments/index.html">Javadoc</a>)
+
+<li>defining procedures with no switches (previously, each proc had to
+have at least one switch)
+
+<li>explicit distinction between public and private procedures (by
+definition, APIs consist only of the former)
+
+<li>deprecation of obsolete procedures
+</ul>
+
+(The predecessor of <code>ad_proc</code>, <code>proc_doc</code>, only
+solved the first of the above problems and is deprecated as of ACS
+3.4.)
+
+<p>
+
+ACS 3.4 also introduces the <code>ad_library</code> proc that
+supersedes file header comments as the method of providing
+documentation for the set of Tcl procedures in one library file.
+
+<h3>How to Use <code>ad_proc</code></h3>
+
+The syntax for calling <code>ad_proc</code> is:
+
+<blockquote><pre>
+<strong>ad_proc</strong> [ -public | -private ] [ -deprecated [ -warn ] ] <em>proc_name</em> <em>arg-list</em> \
+    [ <em>doc-string</em> ] <em>code-block</em>
+</pre></blockquote>
+
+Here are descriptions of each switch that <code>ad_proc</code> itself
+accepts:
+
+<blockquote>
+<dl>
+
+<dt><strong><code>-public</code></strong>
+
+<dd><em>proc_name</em> is part of the enclosing package's public
+interface (a.k.a. API)
+
+<dt><strong><code>-private</code></strong>
+
+<dd><em>proc_name</em> is not part of the enclosing package's API
+
+<dt><strong><code>-deprecated</code></strong>
+
+<dd><em>proc_name</em> is obsolete and should not be called
+
+<dt><strong><code>-warn</code></strong>
+
+<dd>the first time <em>proc_name</em> is called, it will automatically
+log a warning, so that the site maintainer will be notified and can
+remove the call to the deprecated procedure (requires that
+<code>-deprecated</code> also be specified)
+
+</dl>
+</blockquote>
+
+The <em>arg-list</em> argument of <code>ad_proc</code> defines the
+syntax for the procedure <em>proc_name</em>, and consists of:
+
+<ol>
+
+<li>Zero or more <b>switch declarations</b>: the set of switches that
+can be provided when calling <em>proc_name</em>
+
+<p>
+
+<li>Zero or more <b>positional argument declarations</b>: the set of
+arguments that <em>proc_name</em> accepts
+
+</ol>
+
+<h4>Switch Declarations</h4>
+
+A <em>switch declaration</em> must take one of the following
+forms:
+
+<blockquote>
+<dl>
+
+<dt><strong><code>{ -<em>switch_name</em> <em>default</em> }</code></strong>
+
+<dd>An optional switch that takes a default value of
+<code><em>default</em></code> if no value is provided. The switch's
+value will be placed in <code>$<em>switch_name</em></code>
+
+<dt><strong><code>-<em>switch_name</em></code></strong>
+
+<dd>An optional switch that takes an argument with no default
+value. If the switch is provided, the argument will be placed in
+<code>$<em>switch_name</em></code>; if not, then
+<code>$<em>switch_name</em></code> will not be initialized (i.e.,
+<code>info exists <em>switch_name</em></code> will return 0).
+
+<dt><strong><code>-<em>switch_name</em>:required</code></strong>
+
+<dd>A required switch that takes an argument. The switch's value will
+be placed in <code>$<em>switch_name</em></code>.
+
+<dt><strong><code>-<em>switch_name</em>:boolean</code></strong>
+
+<dd>An optional boolean switch (see below). If the switch is provided,
+<code>$<em>switch_name</em>_p</code> will be set to 1; if not,
+<code>$<em>switch_name</em>_p</code> will be set to 0.
+
+</dl>
+</blockquote>
+
+When invoking a procedure defined with <code>ad_proc</code>, boolean
+switches can be specified in one of two ways, either:
+
+<ul>
+<li>with no value, i.e., as a hyphen followed by the switch name,
+e.g., "<code>-debug</code>" in
+
+<blockquote><pre>
+ad_register_filter -debug preauth GET /* my_filter
+</pre></blockquote>
+
+<li>with a value, i.e., as a hyphen followed by the switch name,
+followed by an equal sign, followed by an integer value, e.g.,
+"<code>-debug=<em>n</em></code>" in
+
+<blockquote><pre>
+ad_register_filter -debug=1 preauth GET /* my_filter
+</pre></blockquote>
+
+This is useful when program logic determines the value for the switch
+at runtime, e.g.:
+
+<blockquote><pre>
+ad_register_filter -debug=$debug_p preauth GET /* ad_my_filter
+</pre></blockquote>
+
+Without this feature, one would need to write
+
+<blockquote><pre>
+if { $debug_p } {
+    ad_register_filter -debug preauth GET /* ad_my_filter
+} else {
+    ad_register_filter preauth GET /* ad_my_filter
+}
+</pre></blockquote>    
+
+or build the command in a list and use <code>eval</code>.
+
+</ul>
+
+<h4>Positional Argument Declarations</h4>
+
+Declaring a <em>positional argument</em> with <code>ad_proc</code> is
+identical to declaring a positional argument with <code>proc</code>:
+either just a name (for required arguments) or a two-element list
+consisting of a name and default value (for optional arguments). As
+with <code>proc</code>, the last positional argument can be
+<code>args</code>, in which case the <code>$args</code> variable is
+set to a list of any extra arguments supplied in the procedure call.
+
+<h4>Examples: Argument List Declarations</h4>
+
+Consider <code>ad_register_filter</code>, the ACS analog of
+AOLserver's <code>ns_register_filter</code>:
+
+<blockquote><pre>
+ad_proc -public ad_register_filter {
+    -debug:boolean
+    -critical:boolean
+    { -priority 10000 }
+    -description
+    kind method path proc args
+} {
+    ... <em>documentation</em> ...
+} {
+    ... <em>code</em> ...
+}
+</pre></blockquote>
+
+The argument list is everything inside the braces immediately
+following the procedure name <code>ad_register_filter</code>. The
+switch declarations are the first four items
+(<code>-debug:boolean</code> through <code>-description</code>), and
+the positional arguments are the remaining items.
+
+<p>
+
+In the scope of the code block, <code>$priority</code> is always set
+(to the supplied value of the <code>-priority</code> switch, or 10000
+if omitted), whereas <code>$description</code> is only set if the
+<code>-description</code> switch is provided. This is an important
+distinction, since the semantics of omitting a switch are often
+different from those of setting the value of a switch to be the empty
+string.
+
+<p>
+
+The <code>db_string</code> proc (part of <a
+href="database-access-api">Database Access API</a>) illustrates this
+distinction clearly: If its optional <code>-default</code> switch is
+provided, then it is OK for the query to return zero rows; the
+supplied default value will be returned. However, if the switch is
+omitted, then the query must return one row, or an error will be
+raised.
+
+<p>
+
+Of course, the implementation of <code>db_string</code> (and of any
+procedure that accepts optional switches) must handle both these
+cases:
+
+<blockquote><pre>
+if { [info exists default] } {
+    # A default value was provided; zero rows are OK.
+    ... <em>code</em> ...
+} else {
+    # No default value; throw an error if the query
+    # returns zero rows.
+    ... <em>code</em> ...
+}
+</pre></blockquote>
+
+<h4><a name="doc-string">Procedure Documentation Strings</a></h4>
+
+<a
+href="http://java.sun.com/products/jdk/javadoc/writingdoccomments/index.html">Javadoc</a>
+serves as our model for structured documentation, not only for
+procedures but also for other type of API.
+
+<p>
+
+A <em>documentation string</em> consists of HTML-formatted text that
+informs the reader what the procedure does and how to use it
+correctly. The first sentence of the documentation string should be a
+standalone description of the procedure, as it will be presented in
+the summary view of the API Documentation Browser. Since the text of
+the documentation string will be interpreted as HTML, you must
+properly escape HTML characters that you don't want interpreted, such
+as &lt;, &gt; and &amp;.
+
+<p>
+
+The main text of the documentation string is followed by a series of
+blocks that look like:
+
+<blockquote><pre>@tag    Comment for the tag</pre></blockquote>
+
+A documentation string can contain:
+
+<ul>
+
+<li>multiple <strong><code>@author</code></strong> tags, each followed
+by the name (and e-mail address, in parentheses) of an author of the
+procedure
+
+<li>multiple <strong><code>@param</code></strong> tags, each followed
+by the name of a parameter and then a description
+
+<li>one <strong><code>@return</code></strong> tag, followed
+by a description of the return value
+
+<li>one <strong><code>@error</code></strong> tag, followed by a
+description of the conditions under which an error will be thrown
+
+<li>multiple <strong><code>@see</code></strong> tags, followed by the
+name of a related Tcl procedure.
+
+<li>one <strong><code>@arguments</code></strong> tag, followed by an
+HTML-formatted description of the command line syntax, which, for
+<code>ad_proc</code>, would look like:
+
+<blockquote><pre>
+[ -public | -private ] [ -deprecated [ -warn ] ] &gt;proc-name&lt;/em&gt; &lt;em&gt;arg-list&lt;/em&gt; \&lt;br>
+    [ &lt;em&gt;doc-string&lt;/em&gt; ] &lt;em&gt;code-block&lt;/em&gt;
+</pre></blockquote>
+
+(In general, the <code>@arguments</code> tag is <em>not</em> necessary,
+since the API Documentation Browser can generate these strings
+automatically, but it may be useful to specify procedures with complex
+syntax more precisely, e.g., mutually exclusive flags or flags that
+require other flags.)
+
+</ul>
+
+For example:
+
+<blockquote><pre>
+ad_proc ad_get_cookie {
+    -include_set_cookies:boolean
+    -default
+    name
+} {
+
+    Returns the value of a cookie.
+
+    @author Jon Salz (jsalz@mit.edu)
+
+    @param  include_set_cookies if provided, also examines
+                &lt;code>Set-Cookie&lt;/code> headers in
+                &lt;code>[ns_conn outputheaders]&lt;/code> for a cookie about
+                to be set.
+    @param  default the default value for the cookie (in case the cookie
+                is not set).
+    @param  name the name of the cookie.
+    @return the cookie's value.
+    @error  if the cookie is not set, and no default value is provided.
+
+    @see ad_set_cookie
+
+} {
+    # The code for the routine.
+}
+</pre></blockquote>
+
+The corresponding, automatically-generated documentation will look
+like this:
+
+<blockquote>
+<table bgcolor=#E0E0E0 border=0 cellpadding=10 cellspacing=0>
+<tr><td>
+<h3>ad_get_cookie</h3>
+
+<pre>
+ad_get_cookie [ -include_set_cookies ] [ -default <i>default</i> ] <i>name</i>
+</pre>
+
+<blockquote>
+Returns the value of a cookie.
+
+<dl>
+<dt><strong>Switches:</strong>
+<dd><strong>-include_set_cookies</strong> (Boolean) - if provided, also examines
+                       <code>Set-Cookie</code> headers in
+                       <code>[ns_conn outputheaders]</code> for a cookie about
+                       to be set.
+<br><strong>-default</strong> (optional) - the default value for the cookie (in case the cookie
+                is not set).
+<dt><strong>Parameters:</strong>
+<dd><strong>name</strong> - the name of the cookie.
+<dt><strong>Returns:</strong>
+<dd>the cookie's value.
+<dt><strong>Error:</strong>
+<dd>if the cookie is not set, and no default value is provided.
+<dt><strong>See Also:</strong>
+<dd><a href="javascript:alert('This would be linked to the ad_set_cookie documentation.')">ad_set_cookie</a>
+</dl>
+</td></tr></table>
+</blockquote>
+
+If a procedure is deprecated, this fact is so noted before the procedure's
+description:
+
+<blockquote>
+<table bgcolor=#E0E0E0 border=0 cellpadding=10 cellspacing=0>
+<tr><td>
+<h3>set_the_usual_form_variables</h3>
+
+<pre>
+set_the_usual_form_variables [ <em>error_if_not_found_p</em> ]
+</pre>
+
+<blockquote>
+<strong><em>Deprecated. Invoking this procedure generates a warning.</em></strong>
+<p>For each parameter
+specified in an HTTP GET or POST query, ...
+</blockquote>
+</td></tr></table>
+</blockquote>
+
+<h3>Documenting Library Files</h3>
+
+The syntax for calling <code>ad_library</code> is:
+
+<blockquote>
+<code><strong>ad_library</strong> <em>doc-string</em></code>
+</blockquote>
+
+<code>ad_library</code> replaces the file header comment found at the
+top of Tcl library files, i.e., files in the <code>/tcl/</code>
+directory under the server root and <code>*-procs.tcl</code> files
+under the <code>/packages/</code> directory.
+
+<p>
+
+Like <code>ad_proc</code>, the documentation string format for
+<code>ad_library</code> is based on Javadoc, i.e., a general
+description of the library's function, followed optionally by a series
+of named attributes tagged by <code>@</code> signs:
+
+<ul>
+
+<li>zero or more <code><strong>@author</strong></code> tags, one for
+each author; specify the author's name, followed by his or her email
+address in parentheses
+
+<li>one <code><strong>@creation-date</strong></code> tag, indicating
+when the page was first created
+
+<li>one <code><strong>@cvs-id</strong></code> tag containing the
+page's CVS identification string; just use <code>&#36;Id&#36;</code>
+when creating the file, and CVS will substitute an appropriate string
+when you check the file in.
+
+</ul>
+
+Instead of:
+
+<blockquote><pre>
+#
+# <em>path from server root</em>
+#
+# <em>description</em>
+#
+# <em>author-contact-info</em>, <em>creation-date</em>
+#
+# &#36;Id&#36;
+#
+</pre></blockquote>
+
+write:
+
+<blockquote><pre>
+# /packages/acs-core/00-proc-procs.tcl
+ad_library {
+
+    <em>description</em>
+
+    @creation-date <em>creation-date</em>
+    @author <em>author-contact-info</em>
+    @cvs-id &#36;Id&#36;
+
+}
+</pre></blockquote>
+
+Here's a real example from the ACS Core package:
+
+<blockquote><pre>
+# /packages/acs-core/00-proc-procs.tcl
+ad_library {
+
+    Routines for defining procedures and libraries of procedures (&lt;code>-procs.tcl&lt;/code>
+    files).
+
+    @creation-date 7 Jun 2000
+    @author Jon Salz (jsalz@mit.edu)
+    @cvs-id &#36;Id&#36;
+
+}
+</pre></blockquote>
+
+<h3>Future Improvements</h3>
+
+We plan to introduce a method for documenting API internals,
+specifically, NSV arrays and script-global variables, by defining a
+procedure tentatively named <code>ad_doc</code>:
+
+<blockquote><pre>
+ad_doc [ -public | -private ] [ -deprecated ] <em>type</em> <em>name</em> <em>documentation</em>
+</pre></blockquote>
+
+where <code><em>type</em></code> is the kind of structure being
+documented; <code><em>name</em></code> is its name, and
+<code><em>documentation</em></code> is the same sort of documentation
+described above. Allowable syntaxes will be:
+
+<blockquote>
+<table>
+
+<tr valign=baseline>
+<th align=left nowrap><code>
+ad_doc nsv <em>name</em> ...<br>
+ad_doc nsv <em>name</em>(<em>one_key</em>) ...<br>
+ad_doc nsv <em>name</em>(<em>\$key</em>) ...
+</code>
+</th>
+<td>Documents the usage of an NSV array.
+</td>
+</tr>
+
+<tr valign=baseline>
+<th align=left nowrap><code>
+ad_doc global <em>name</em> ...<br>
+ad_doc global <em>name</em>(<em>one_key</em>) ...<br>
+ad_doc global <em>name</em>(<em>\$key</em>) ...
+</code>
+</th>
+<td>Documents the usage of a script-global variable.
+</td>
+</tr>
+
+</table>
+</blockquote>
+
+Note that we define three syntaxes for describing NSV arrays and
+global variables. The first describes an array as a whole; the second
+describes one entry in an array, where the key is a pre-defined
+literal; the third describes what the value of the array entry will be
+for different keys, e.g.:
+
+<blockquote><pre>
+ad_doc nsv rp_registered_procs(\$method) {
+
+    A list of registered procs to be considered for HTTP requests
+    with method &lt;em&gt;method&lt;/em&gt;.
+
+    @see ad_register_filter
+    @see ad_register_proc
+
+}</pre></blockquote>
+
+(The backslash before the dollar sign is necessary to prevent the Tcl
+interpreter from attempting to perform variable interpolation at the
+time that <code>ad_doc</code> is invoked.)
+
+<hr>
+
+<a href="mailto:jsalz@mit.edu">
+<address>jsalz@mit.edu</address>
+</a>
+
+<a href="mailto:michael@arsdigita.com">
+<address>michael@arsdigita.com</address>
+</a>
+
+</body>
+</html>

@@ -1,40 +1,48 @@
-# $Id: user-edit-2.tcl,v 3.0.4.2 2000/04/28 15:11:10 carsten Exp $
-# File: /www/intranet/procedures/user-edit-2.tcl
-#
-# Author: mbryzek@arsdigita.com, Jan 2000
-#
-# Purpose: Edits/inserts note about a procedure
-#
+# /www/intranet/procedures/user-edit-2.tcl
 
-set_the_usual_form_variables
-# procedure_id, user_id, note
+ad_page_contract {
+    Purpose: Edits/inserts note about a procedure
 
-set certifying_user [ad_verify_and_get_user_id]
-ad_maybe_redirect_for_registration
+    @param procedure_id refers to procedure we are modifying
+    @param user_id user being added to certification list
+    @param note notes/restrictions about the procedure
 
-set db [ns_db gethandle]
+    @author mbryzek@arsdigita.com
+    @creation-date Jan 2000
 
-if {[database_to_tcl_string $db "select count(*) from im_procedure_users where user_id = $certifying_user and procedure_id = $procedure_id"] == 0} {
+    @cvs-id user-edit-2.tcl,v 3.2.6.7 2000/08/16 21:25:00 mbryzek Exp
+} {
+    procedure_id:integer,notnull
+    user_id:optional
+    note
+}
+
+set certifying_user [ad_maybe_redirect_for_registration]
+
+#Complain if there is no user_id passed
+
+if {[empty_string_p $user_id]} {
+    ad_return_complaint "Error" "You have to select a user to certify."
+}
+
+if {[db_string certify_user "select count(*) from im_procedure_users where user_id = :certifying_user and procedure_id = :procedure_id"] == 0} {
     ad_return_error "Error" "You're not allowed to certify new users"
     return
 }
 
-set exception_count 0
-set exception_text ""
 
-if [empty_string_p $user_id] {
-    incr exception_count
-    append exception_text "<LI>Missing name of user to certify\n"
-}
+db_dml update_procedure "update im_procedure_users set note = :note
+where procedure_id = :procedure_id
+and user_id = :user_id"
 
-ns_db dml $db "update im_procedure_users set note = '$QQnote'
-where procedure_id = $procedure_id
-and user_id = $user_id"
+# if the procedure doesn't already exist, create it
 
-if {[ns_ora resultrows $db] == 0} {
-    ns_db dml $db "insert into im_procedure_users
+if {[db_resultrows] == 0} {
+    db_dml create_procedure "insert into im_procedure_users
 (procedure_id, user_id, note, certifying_user, certifying_date) values
-($procedure_id, $user_id, '$QQnote', $certifying_user, sysdate)"
+(:procedure_id, :user_id, :note, :certifying_user, sysdate)"
 }
 
-ad_returnredirect info.tcl?[export_url_vars procedure_id]
+db_release_unused_handles
+
+ad_returnredirect info?[export_url_vars procedure_id]

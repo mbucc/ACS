@@ -1,6 +1,6 @@
 <html>
 <!--AD_DND-->
-<!-- $Id: acceptance-test.html,v 3.1.2.34 2000/03/29 09:54:12 carsten Exp $ -->
+<!-- acceptance-test.html,v 3.5 2000/06/17 18:49:00 ron Exp -->
 <head>
 <title>Acceptance Test</title>
 </head>
@@ -9,7 +9,7 @@
 
 <h2>Acceptance Test</h2>
 
-for the <a href=index.html>Arsdigita Community System</a> 
+for the <a href=index>Arsdigita Community System</a> 
 by <a href="http://teadams.com">Tracy Adams</a>
 <hr>
 
@@ -88,10 +88,10 @@ The <code>-f</code> option runs the server in the foreground, so you can easily 
 You should test basic registration and the login process. <br>
 Suggested method:
 <ul>
-<li> Go to /pvt/home.tcl
+<li> Go to /pvt/home
 <li> Walk through registering as a new user
-<li> Go back to /pvt/home.tcl and "Log out"
-<li> Go back to /pvt/home.tcl again and log in as the same user
+<li> Go back to /pvt/home and "Log out"
+<li> Go back to /pvt/home again and log in as the same user
 </ul>
 
 <h3>User Administration</h3>
@@ -218,14 +218,6 @@ Suggested method:<br>
 <li> Delete the comment and link from the admin pages.
 </ul>
 
-<h3>Referrals</h3>
-You should test that referral tracking is working.
-<br>
-Suggested method:<br>
-<ul>
-<li> Link to your server from another site.  
-<li> View the admin pages for referrals.  You should see the foreign referral, but no local ones.
-</ul>
 <h3>Clickthroughs</h3>
 You should test that clickthroughs are logging.<br>
 Suggested Method:
@@ -258,7 +250,7 @@ Suggested path:
 <li> Close the issue
 <li> Add and remove an assigned user (as the ticket administrator user)
 <li> Add a watch on a ticket (via the link at the bottom of the page)
-<li> Check that the watch shows up on /pvt/alerts.tcl
+<li> Check that the watch shows up on /pvt/alerts
 <li> Add a comment on a ticket
 </ul>
 
@@ -313,7 +305,7 @@ Suggested path:
     <li> Click on a folder and subfolder to open/close them
     <li> Delete (through edit) the folder, thereby deleting 
          the bookmarks as well
-    <li> Import bookmarks from a Netscape bookmarks.html file
+    <li> Import bookmarks from a Netscape bookmarks file
     <li> View the Javascript version
     <li> Check validity the links and delete some dead links
     </ul>
@@ -392,11 +384,23 @@ You should test poll entry, editing, voting, and reporting.
 <br>
 Suggested Method:<br>
 <ul>
-<li> Go to /admin/poll and add a new poll.
+<li> Go to /admin/poll and add a new poll and check Require Registration checkbox
 <li> Add some poll choices.  Move them around.
-<li> Go to /poll.  Make sure the poll is there and has the proper choices.
-<li> Vote.  Check the results.
 <li> Edit the poll.  Revisit the poll and make sure the changes appear.
+<li> Go to /poll.  Make sure the poll is there and has the proper choices.
+<li> Vote. Then try voting again. You should be displayed a message 
+     informing you that you can't vote since you already voted.
+<li> Go to /poll/poll-results and see whether your vote shows there.
+<li> Go back to admin page and uncheck Require Registration checkbox,
+     and then go to /pvt/home and log out.
+<li> Go back to /poll page and vote 4 times for the same choice.
+<li> Visit admin page for that poll and click the integrity statistics link
+<li> You should see a list of ip addresses that voted for the same choice more than once
+     (possible indication of ballot stuffers)
+<li> Set the nuke choice from ip address to 3 and press the nuke button
+<li> Check the voting results again. Number of votes of the choice for which
+     you nuked the ballot stuffer should now be decreased by the number of votes 
+     from the ip address of the ballot stuffer.
 <li> Delete the poll.
 </ul>
 
@@ -439,7 +443,7 @@ template to display it
  <li>Create a public FAQ
  <li>Create a private FAQ for Group X
  <ul>
-  <li>Visit /admin/ug/index.tcl and make sure that the group_type of which group X is a member is associated with the FAQ module.
+  <li>Visit /admin/ug/index and make sure that the group_type of which group X is a member is associated with the FAQ module.
  </ul>
  <li>Visit /faq/ and click on the public faq
  <li>Click on Maintain this FAQ 
@@ -476,20 +480,20 @@ Suggested method:
 
 <p>Go to a number of pages under <code>/ecommerce/</code> and make
 sure they get displayed with uniform style, e.g. <pre>
-  index.tcl
-   -> product-search.tcl
-  shopping-cart.tcl
-  gift-certificate-order.tcl
-  gift-certificate-order-2.tcl
-   -> gift-certificate-order-3.tcl
-       -> gift-certificate-order-4.tcl
+  index
+   -> product-search
+  shopping-cart
+  gift-certificate-order
+  gift-certificate-order-2
+   -> gift-certificate-order-3
+       -> gift-certificate-order-4
 </pre>
 (The style is defined in
-<code>/web/<em>yourservername</em>/tcl/ecommerce-styles.tcl</code>).
+<code>/web/<em>yourservername</em>/tcl/ecommerce-styles</code>).
 
 <p>Note: this is the old template system, documented in <a
-href="style.html">style.html</a>; the new one by <a href =
-"http://www.arsdigita.com/intranet/users/view.tcl?user_id=86" >Karl
+href="style">style</a>; the new one by <a href =
+"http://www.arsdigita.com/intranet/users/view?user_id=86" >Karl
 Goldstein</a> is not included in the ACS.
 
 <h3>Categorization and User Profiling</h3>
@@ -508,7 +512,7 @@ categories you're interested in.
     <li>See if the categories are placed properly in hierarchy tree view
 
     <p>
-    <li>In <a href="/pvt/home.tcl">/pvt/home.tcl</a> both categories should
+    <li>In <a href="/pvt/home">/pvt/home</a> both categories should
         show up, check 'scratch1', update interest,
 	then check 'scratch2' and update interests again
     <li>User interest changes should be reflected in user admin pages as
@@ -521,7 +525,7 @@ categories you're interested in.
 
 <h3>Graphing</h3>
 
-Stick this into a .tcl file and then access it with your browser:
+Stick this into a  file and then access it with your browser:
 
 <blockquote>
 <pre>
@@ -546,19 +550,19 @@ It should produce a lovely four-color bar chart!
 
 <h3>Ecommerce</h3>
 
-After you have completed the setup tasks in <a href="ecommerce-technical.html">Technical Details of the Ecommerce Module</a>, here are some good tests of the things most likely to be broken:
+After you have completed the setup tasks in <a href="ecommerce-technical">Technical Details of the Ecommerce Module</a>, here are some good tests of the things most likely to be broken:
 
 <ul>
 <li>Go to http://yourserver/ecommerce/ .  If the page is broken, it's because the data model wasn't automatically loaded with the rest of the ACS (the ecommerce data model is omitted intentionally to save publishers who aren't doing ecommerce from having a gigantic number of unused tables).  Solution: load the two files ecommerce.sql and ecommerce-plsql.sql with <code>sqlplus scott/tiger &lt; ecommerce.sql</code> (same for ecommerce-plsql.sql).  If you get an error while loading the data model, it may mean that you're not using Oracle 8i (required).
 
-<li>Go to https://yourservername/admin/ecommerce/products/add.tcl (or http:// instead of https:// if you don't have SSL) and try to add a product without a picture.  If you get an error on add-2.tcl, it's probably because the directory to hold auxiliary product info cannot be created.
+<li>Go to https://yourservername/admin/ecommerce/products/add (or http:// instead of https:// if you don't have SSL) and try to add a product without a picture.  If you get an error on add-2, it's probably because the directory to hold auxiliary product info cannot be created.
 Make sure the directory (specified by the parameters EcommerceDataDirectory and ProductDataDirectory) exists.  By default, this is /web/yourserver/data/ecommerce/product/ .  Also make sure the permissions are correctly set (AOLserver has to be able to create new directories inside of this directory).
 
 <li>Now try to add a product <i>with</i> a picture.  If it can't be created, that may mean that ImageMagick is not installed or is not at the expected path (/usr/local/bin/convert).
 
-<li>Go to the customer service submodule  (https://yourserver/admin/ecommerce/customer-service/ -- or http:// instead of https:// if you don't have SSL) and add an interaction (if you get an error on interaction-add-2.tcl, that may mean the zip_codes table hasn't been loaded).   Use the email address of an existing user.  All the other information can be garbage.  Return to the main customer service admin page and find the issue you just created (look under Customer Service Issues).  When you're viewing the issue, click Send Email at the top.  Try sending email.  Possible problem #1: spell checker doesn't exist.  Solution: install spell checker (tools module).  Possible problem #2: can't send email.  Solution: install qmail on your machine.
+<li>Go to the customer service submodule  (https://yourserver/admin/ecommerce/customer-service/ -- or http:// instead of https:// if you don't have SSL) and add an interaction (if you get an error on interaction-add-2, that may mean the zip_codes table hasn't been loaded).   Use the email address of an existing user.  All the other information can be garbage.  Return to the main customer service admin page and find the issue you just created (look under Customer Service Issues).  When you're viewing the issue, click Send Email at the top.  Try sending email.  Possible problem #1: spell checker doesn't exist.  Solution: install spell checker (tools module).  Possible problem #2: can't send email.  Solution: install qmail on your machine.
 
-<li>Go to http://yourserver/ecommerce/ and click on one of the products you just added.  Add it to your shopping cart and try to check out (using a real credit card).  If all has gone well, you will never see finalize-order.tcl (you'll be redirected immediately to thank-you.tcl), but if you get an error on finalize-order.tcl that may mean that CyberCash has not been correctly set up.
+<li>Go to http://yourserver/ecommerce/ and click on one of the products you just added.  Add it to your shopping cart and try to check out (using a real credit card).  If all has gone well, you will never see finalize-order (you'll be redirected immediately to thank-you), but if you get an error on finalize-order that may mean that CyberCash has not been correctly set up.
 
 </ul>
 
@@ -566,11 +570,11 @@ Once all this is working, you can further test your system:
 
 <ul>
 <li>Follow the setup instructions in
-<a href="ecommerce-setup.html">Setup of the Ecommerce Module</a>
+<a href="ecommerce-setup">Setup of the Ecommerce Module</a>
 <li>Go to the user pages at http://yourserver/ecommerce/ and place
 orders, write reviews of products, join mailing lists, view your
 account, etc.
-<li>Return to the admin pages and do some maintenance (see <a href="ecommerce-operation.html">Operation of the Ecommerce Module</a> for details).
+<li>Return to the admin pages and do some maintenance (see <a href="ecommerce-operation">Operation of the Ecommerce Module</a> for details).
 </ul>
 
 <h3>Display Module</h3>
@@ -777,10 +781,10 @@ from state to state.
 
 <h3>Referer Module</h3>
 <ul>
-<li>Make sure the referer parameter section of the server.ini file is set up correctly.
 <li>Go to some other web server, create a page with a link to the
 server you are testing on. Click on that link a few times.
 <li>Go to the referer admin page and see if your clicks were recorded.
+You should see the foreign referral, but no local ones.
 (Note: there's a cutoff so referers with only a few counts don't show. 
 If you select a report for one day only, three clicks on the referring link should do the trick).
 </ul>
@@ -790,7 +794,17 @@ If you select a report for one day only, three clicks on the referring link shou
 <li>Make sure the member value parameter section of the server.ini file is switched on .
 <li>Go to a page which supports member value (e.g. delete a bboard message).
 <li>Execute the page (e.g. actually delete a bboard message and charge the user for it).
-<li>Go to admin pages, member value. Look at expensive users and all charges. If your charge shows up there, fine, otherwise it's broken (aka this document is badly written).
+<li>Go to admin pages, member value. Look at all charges. Your charge shows up there.
+<li>Now accumulate enough charges, so that you surpass expensive threshold value
+    defined in parameters file. Once you do your name should show up in the expensive members list.
+<li>Go to http://hostname.com/admin/member-value/charges-all and click on a member. this should
+    bring you to page http://hostname.com/admin/member-value/user-charges?user_id=x. on this 
+    page charge member for 20. after you click the add button, this charge should show up on 
+    the list of charges.
+<li>On http://hostname.com/admin/member-value/user-charges?user_id=x credit the member with 
+    enough money (specify negative value in the amount field), so that his overall value
+    is bellow expensive threshold. visit expensive members page again -- the member shouldn't 
+    be shown now on the expensive members list. 
 <li>Make sure you switch the parameter off again after testing.
 <li>If you stumble across an error on other pages related to member value, please inform the module owner, as he has no clue where the calls to member value are and will be used, as this is and will be the responsibility of every single module owner (this being a meta system).
 </ul>

@@ -1,0 +1,17 @@
+In the file: /www/bboard/search-pls-subject.tcl
+
+Add bboard_user_can_view_topic_p SQL function contained in
+/www/bboard/contributions.tcl patch
+
+After
+  set_form_variables_string_trim_DoubleAposQQ
+Add
+  set user_id [ad_verify_and_get_user_id]
+
+Remove
+  set user_id [ad_get_user_id]
+
+After 
+  and topic_id = $topic_id
+Add
+  and bboard_user_can_view_topic_p($user_id, $topic_id) = 't'

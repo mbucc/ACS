@@ -1,4 +1,26 @@
-# $Id: category-delete-2.tcl,v 3.0.4.1 2000/04/28 15:09:48 carsten Exp $
+# www/calendar/admin/category-delete-2.tcl
+ad_page_contract {
+    Performs a delete on a category that has been verified as empty
+
+    Number of queries: ?
+    Number of dml: ?
+
+    @author Philip Greenspun (philg@mit.edu)
+    @author Sarah Ahmed (ahmeds@arsdigita.com)
+    @creation-date 1998-11-18
+    @cvs-id category-delete-2.tcl,v 3.2.2.3 2000/07/21 03:59:03 ron Exp
+    
+} {
+    category_id:integer
+    {scope public}
+    {user_id ""}
+    {group_id ""}
+    {on_what_id ""}
+    {on_which_group ""}
+}
+
+
+# category-delete-2.tcl,v 3.2.2.3 2000/07/21 03:59:03 ron Exp
 # File:     /calendar/admin/category-delete-2.tcl
 # Date:     1998-11-18
 # Contact:  philg@mit.edu, ahmeds@arsdigita.com
@@ -9,28 +31,34 @@
 #       group_name, group_short_name, group_admin_email, group_public_url, group_admin_url, group_public_root_url,
 #       group_admin_root_url, group_type_url_p, group_context_bar_list and group_navbar_list)
 
-set_the_usual_form_variables 0
 # category_id
 # maybe scope, maybe scope related variables (user_id, group_id, on_which_group, on_what_id)
 
 ad_scope_error_check
-set db [ns_db gethandle]
-ad_scope_authorize $db $scope admin group_admin none
+
+ad_scope_authorize $scope admin group_admin none
+
 
 # see if there are any calendar entries
 
-set num_category_entries [database_to_tcl_string $db "
-select count(calendar_id) from calendar where category_id=$category_id"]
+set query_num_entries "select count(calendar_id) from calendar where category_id=:category_id"
 
-if {$num_category_entries > 0} {
+set num_entries [db_string num_entries $query_num_entries]
 
-  ns_db dml $db "update calendar_categories set enabled_p ='f' where category_id=$category_id"
+if {$num_entries > 0} {
+
+    set dml_disable_category "update calendar_categories set enabled_p ='f' where category_id=:category_id"
+
+    db_dml disable_category $dml_disable_category
 
 } else {
 
-    ns_db dml $db "delete from calendar_categories where category_id=$category_id"
+    set dml_delete_category "delete from calendar_categories where category_id=:category_id"
+
+    db_dml delete_category $dml_delete_category
 
 }
 
 ad_returnredirect "categories.tcl?[export_url_scope_vars]"
 
+## END FILE category-delete-2.tcl

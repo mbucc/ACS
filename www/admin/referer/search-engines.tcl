@@ -1,11 +1,18 @@
-# $Id: search-engines.tcl,v 3.0 2000/02/06 03:27:55 ron Exp $
-ReturnHeaders
+# /www/admin/referer/search-engines.tcl
+#
 
-ns_write "[ad_admin_header "Search Engine Referrals to [ad_system_name]"]
+ad_page_contract {
+    List referal summary by search engine.
+    @cvs-id Id: search-engines.tcl,v 3.2.2.2 2000/07/13 06:27:03 paul Exp $
+} {
+}
+
+
+set page_content "[ad_admin_header "Search Engine Referrals to [ad_system_name]"]
 
 <h2>Search Engine Referrals to [ad_system_name]</h2>
 
-[ad_admin_context_bar [list "index.tcl" "Referrals"] "Search Engine Statistics"]
+[ad_admin_context_bar [list "" "Referrals"] "Search Engine Statistics"]
 
 <hr>
 
@@ -20,8 +27,8 @@ ns_write "[ad_admin_header "Search Engine Referrals to [ad_system_name]"]
 
 "
 
-set db [ns_db gethandle]
-set selection [ns_db select $db "
+
+set sql "
 select 
   search_engine_name, 
   count(*) as n_searches, 
@@ -30,23 +37,22 @@ select
 from query_strings
 where search_engine_name is not null
 group by search_engine_name
-order by n_searches desc"]
+order by n_searches desc"
 
 set table_rows ""
 
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+db_foreach referer_search_engine_summary $sql {
     append table_rows "
 <tr>
   <td>$search_engine_name
-  <td align=right><a href=\"search-engine-one.tcl?[export_url_vars search_engine_name]\">$n_searches</a>
+  <td align=right><a href=\"search-engine-one?[export_url_vars search_engine_name]\">$n_searches</a>
   <td>[util_AnsiDatetoPrettyDate $earliest]
   <td>[util_AnsiDatetoPrettyDate $latest]
 </tr>
 "
 }
 
-ns_write "
+append page_content "
 $table_rows
 
 </table>
@@ -56,7 +62,7 @@ $table_rows
 
 Note: Referrals from public search engines are identified by patterns recorded in the
 <code>referer_log_glob_patterns</code> table, maintained at 
-<a href=\"/admin/referer/mapping.tcl\">/admin/referer/mapping.tcl</a>.  The statistics 
+<a href=\"/admin/referer/mapping\">/admin/referer/mapping</a>.  The statistics 
 on these pages do not include searches done by users locally (i.e., with tools running
 on this server).
 
@@ -64,3 +70,7 @@ on this server).
 
 [ad_admin_footer]
 "
+
+
+
+doc_return  200 text/html $page_content

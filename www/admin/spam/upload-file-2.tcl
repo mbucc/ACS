@@ -1,15 +1,22 @@
-# File:     /admin/spam/upload-file-2.tcl
-# Date:     02/06/2000
-# Contact:  hqm@ai.mit.edu
-# Purpose:  
-#
-# Upload a message file to the spam drop zone
+# www/admin/spam/upload-file-2.tcl
 
-set_the_usual_form_variables
-#  clientfile as a multipart file upload
-#  path as target filename (may be blank, in which case we should use clientfile)
+ad_page_contract {
 
-set db [ns_db gethandle]
+ Upload a message file to the spam drop zone
+    @param path target filename (may be blank, in which case we should use clientfile)
+    @param  clientfile name of uploaded file
+    @param  clientfile.tmpfile name of tmp file on server
+
+    @author hqm@arsdigita.com
+    @cvs-id upload-file-2.tcl,v 3.4.2.5 2000/07/21 03:58:02 ron Exp
+
+
+} {
+     {path ""}
+     clientfile
+     clientfile.tmpfile:tmpfile
+
+}
 
 set exception_count 0
 set exception_text ""
@@ -23,7 +30,7 @@ if { ![info exists clientfile] || [empty_string_p $clientfile] } {
     incr exception_count
 } else {
     # this stuff only makes sense to do if we know the file exists
-    set tmp_filename [ns_queryget clientfile.tmpfile]
+    set tmp_filename ${clientfile.tmpfile}
 
     if {[empty_string_p $path]} {
 	set path $clientfile
@@ -50,10 +57,8 @@ if { $exception_count > 0 } {
 
 # copy the tmp file to the drop zone
 if {[catch {ns_cp $tmp_filename $absolute_path} errmsg]} {
-    ReturnHeaders
-    ns_write "error copying file using ns_cp $tmp_filename $absolute_path: $errmsg"
+    ad_return_error "error"  "error copying file using ns_cp $tmp_filename $absolute_path: $errmsg"
 } else {
     ad_returnredirect "show-daily-spam.tcl"
 }
-
 

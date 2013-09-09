@@ -1,0 +1,316 @@
+<html>
+<head>
+
+<title>Building Documents in ACS</title>
+
+</head>
+<body bgcolor=white>
+
+<h2>Building Documents in ACS</h2>
+
+part of <a href="">ACS Core Architecture</a>, by <a href="mailto:philg@mit.edu">Philip Greenspun</a> and <a href="mailto:jsalz@mit.edu">Jon Salz</a> on 22 May 2000<br>
+
+<hr>
+
+<ul>
+<li>Tcl procedures:  /packages/acs-core/document-procs
+</ul>
+
+This is an API for programmers writing scripts in the ArsDigita
+Community System that return documents (a degenerate form of which is a
+Web page) to Web clients.
+
+<h3>The Big Picture</h3>
+
+Standard AOLserver programming, like CGI scripting before it, had the
+programmer directly writing bytes to a client browser connection.  Thus
+from 1995 through 2000 an AOLserver programmer would build up a complete
+HTML page in a script and write the bytes of that page to the client
+either all at once with <code>ns_return</code> or incrementally with
+<code>ns_write</code>.
+
+<p>
+
+Problems with this standard old approach:
+
+<ul>
+<li>difficult to control style on a site-global basis via a master
+template 
+
+<li>difficult to write a script that returns an XML document that is
+then rendered by a higher-level request processor (i.e., each individual
+script has to be aware of all possible document types that might be
+required by client, e.g., HTML, WML, XML, etc.)
+
+<li>easy for novice programmer to create server performance problems by
+calling API procedures that block in the TCP stack while holding a
+database handle from the pool (i.e., a script could be waiting for a
+client on a slow modem to accept some packets while holding a database
+connection from a limited pool)
+
+</ul>
+
+<p>
+
+
+As of ACS 3.3, new modules and scripts can be constructed to build
+<i>documents</i> rather than <i>pages</i>. A document is a data
+structure containing a <i>body</i> and a series of attached properties
+(e.g., <i>title</i>). Once a document is built by a script, the request
+processor takes over and renders the document into something which the
+client can understand, e.g., an HTML page.
+
+<h3>How To Use It, In Twenty-Five Words Or Less</h3>
+
+<ul>
+<li>Use <tt>doc_body_append</tt> instead of <tt>ns_write</tt>.
+<li>Use <tt>doc_set_property</tt> to set the title and navbar.
+<li>Don't write page headers or footers; leave that to the master template.
+</ul>
+
+<h3>Using the Document API: An Example</h3>
+
+<h4>The Pre-3.3 Way: Writing to the Connection</h4>
+
+Consider the following hypothetical old-style Tcl page
+(call it <tt>user-list</tt>) that writes out a list of names
+of registered users:
+
+<blockquote><pre>
+ReturnHeaders "text/html"
+
+ns_write "[ad_header "User List"]
+&lt;h2>User List&lt;/h2>
+
+[ad_context_bar_ws [list "index" "Users"] "User List"]
+&lt;hr>
+
+&lt;ul>
+"
+
+set user_list ""
+
+set selection [ns_db select $db "
+    select first_names, last_name from users order by upper(last_name)
+"]
+while { [ns_db getrow $db $selection] } {
+    set_variables_after_query
+    append user_list "&lt;li>$first_names $last_name\n"
+}
+ns_db releasehandle
+
+ns_write "$user_list&lt;/ul>
+
+&lt;hr>
+[ad_footer]
+"
+</blockquote></pre>
+
+This is all well and good, but what if we decided we wanted to make that title appear
+in a sans-serif font on every page in the site, and have the context bar appear in
+a right-aligned table next the body, and eliminate the <tt>&lt;hr></tt>s as well? We couldn't,
+without manually fixing every single <tt></tt> file (or having Jin write a Perl script).
+
+<h4>The Enlightened Way: Building a Document</h4>
+
+<p>For reasons like this it's a good idea to
+break each page into a set of separate pieces which a master template can piece
+together however it sees fit. For HTML pages in general, we identify three pieces of
+information we can split up easily:
+
+<ul>
+<li>The page's title.
+<li>The navigational bar.
+<li>The body of the page (everything between the <tt>&lt;hr&gt;</tt>s).
+</ul>
+
+The document API allows us to output these pieces separately. <tt>user-list</tt> becomes:
+
+<blockquote><pre>
+<b>doc_set_property</b> title "User List"
+<b>doc_set_property</b> navbar [list [list "index" "Users"] "User List"]
+
+<b>doc_body_append</b> "&lt;ul>\n"
+
+
+set selection [ns_db select $db "
+    select first_names, last_name from users order by upper(last_name)
+"]
+while { [ns_db getrow $db $selection] } {
+    set_variables_after_query
+    <b>doc_body_append</b> "&lt;li>$first_names $last_name\n"
+}
+
+<b>doc_body_append</b> "&lt;/ul>\n"
+
+# we can release the db handle anywhere in the script now; nothing
+# gets written to the client until we return (or unless 
+# doc_body_flush is called)
+ns_db releasehandle
+
+
+</pre></blockquote>
+
+None of this actually writes to the connection. It calls a few magical
+APIs, <tt>doc_set_mime_type</tt>, <tt>doc_set_property</tt>,
+and <tt>doc_body_append</tt>, which construct a data structure. This data structure
+is then passed by the request processor
+to an ADP <i>master template</i> (usually called <tt>master.adp</tt>),
+which might look like:
+
+<blockquote><pre>
+&lt;html>
+  &lt;head>
+    &lt;title>&lt;%= $title %>&lt;/title>
+  &lt;/head>
+  &lt;body bgcolor=white>
+    &lt;h2>&lt;%= $title %>&lt;/h2>
+    <%= [eval ad_context_bar_ws $navbar] %>
+  &lt;hr>
+    &lt;%= $body %>
+  &lt;hr>
+    &lt;address>jsalz@mit.edu&lt;/address>
+&lt;/html>
+</pre></blockquote>
+
+Note that to refer to the document properties (title, navbar) we just use the usual
+ADP syntax for reading variables, e.g., <tt>&lt;%= $title %></tt> to read the <tt>title</tt>
+property. The same goes for the document body, which is read with <tt>&lt;%= $body %></tt>.
+
+The request processor locates the appropriate master template for a page as follows:
+
+<ul>
+
+<li>In the directory containing the file being delivered (e.g., <tt>user-list</tt>),
+look for a file called <tt>master.adp</tt>. If there's one there, use it. If not:
+<li>Look for <tt>master.adp</tt> in the parent directory of that directory. Keep traversing
+up the directory tree until a file called <tt>master.adp</tt> is found.
+
+<li>If no <tt>master.adp</tt> file is found anywhere in the main
+code tree, use the <tt>master.adp</tt>
+file in the <tt>templates</tt> directory (the site-wide default master template).
+</ul>
+
+For example, if <tt>user-list</tt> is really <tt>/web/arsdigita/www/users/user-list</tt>,
+we'll check for a master template at
+
+<ul>
+  <li><tt>/web/arsdigita/www/users/master.adp</tt>
+  <li><tt>/web/arsdigita/www/master.adp</tt>
+  <li><tt>/web/arsdigita/templates/master.adp</tt>
+</ul>
+
+This allows us to provide a default master template, but to override it for documents
+in specific parts of the site.
+
+<h3><a name=adp>ADPs as Documents</a></h3>
+
+You can also build a document in an ADP file, by enclosing the
+body in <tt>&lt;ad-document&gt;</tt> and <tt>&lt;/ad-document&gt;</tt>, and
+using the &lt;ad-property&gt; tag to set properties.
+The following ADP file (<tt>user-list.adp</tt>) is equivalent
+to <tt>user-list.tcl</tt> above:
+
+<blockquote><pre>
+<b>&lt;ad-document></b>
+  <b>&lt;ad-property name=title></b>User List<b>&lt;/ad-property></b>
+  <b>&lt;ad-property name=navbar></b>[list [list "index" "Users"] "User List"]<b>&lt;/ad-property></b>
+
+  &lt;ul>
+
+&lt;%
+
+set selection [ns_db select $db "
+    select first_names, last_name from users order by upper(last_name)
+"]
+while { [ns_db getrow $db $selection] } {
+    set_variables_after_query
+    <b>ns_adp_puts</b> "&lt;li>$first_names $last_name"
+}
+ns_db releasehandle
+%>
+
+  &lt;/ul>
+<b>&lt;/ad-document></b>
+</pre></blockquote>
+
+<h3>Complete Tcl API</h3>
+
+<dl>
+<dt><tt>doc_set_mime_type <i>mime-type</i></tt>
+<dd>Sets the MIME type for the current document to <i>mime-type</i>. This defaults to
+<tt>text/html;content-pane</tt> (which means that we should try to apply a master template),
+so you probably won't need to change it in most cases. In the rare case that you do need to
+write a page which shouldn't be generated through the master template (e.g., a differently
+formatted HTML page, or a <tt>text/plain</tt> page), you'd use this procedure, e.g.,
+
+<blockquote><pre>doc_set_mime_type "text/html"</pre></blockquote>
+
+or
+
+<blockquote><pre>doc_set_mime_type "text/plain"</pre></blockquote>
+
+Then you'd use <tt>doc_body_append</tt> to generate your document, and the request processor
+would just serve your document as is.
+
+</p>
+
+<dt><tt>doc_set_property <i>name</i> <i>value</i></tt><br>
+<dd>Sets the document-level property named <i>name</i> to <i>value</i>.
+</p>
+
+<dt><tt>doc_body_append <i>string</i></tt>
+<dd>Appends <i>string</i> to the document body.
+</p>
+
+<dt><tt>doc_body_flush <i>string</i></tt>
+
+<dd>Writes out as much as possible to the client.  This is a dangerous
+API call because the programmer runs the risk of tying up a database
+handle if he or she is not thoughtful.  Does nothing if the mime type
+has not been set.  Does nothing if the document being produced must be
+rendered via a master template.
+
+</dl>
+
+<h3>What's the Point?</h3>
+
+Many more interesting and important things (which we'll add for ACS 4.0) fit into this framework:
+
+<ul>
+
+<li>By adding
+datasources (really just single- or multi-row properties) we'll be able to generate documents
+programatically which are semantically equivalent to <tt>.spec</tt> files in
+<a href="http://karl.arsdigita.com/projects/template/doc/">Karl Goldstein's templating system</a>
+(but generated with a Tcl API).
+</p>
+
+<li>More specific types of data (e.g., ASJ articles, bulletin board topics, and even individual items in
+topics) will turn into documents which are individually templatized (allowing us complete
+separation of data and presentation).
+</p>
+
+<li>The request processor will have a set of rules allowing it to automatically determine
+which components to invoke based on document types and request headers (e.g., user agent) so we
+can dynamically serve the right form of data for a particular client.
+
+</ul>
+
+This API is part of a gradual move toward this model.
+
+<h3>Under the Hood</h3>
+
+<p>The <tt>doc_*</tt> API calls store stuff in a global variable named <tt>doc_properties</tt>.
+After the abstract URL system sources a <tt></tt> file, it checks to see if anything's been
+set in <tt>doc_properties</tt>. If so, it analyzes the MIME type in the document that's been
+returned, and invokes a template or returns the body, as appropriate. If not, it assumes the page did its own
+<tt>ns_write</tt> or <tt>ns_return</tt>ing (and doesn't do anything special).
+
+<hr>
+
+<a href="mailto:philg@mit.edu"><address>philg@mit.edu</address></a>
+<a href="mailto:jsalz@mit.edu"><address>jsalz@mit.edu</address></a>
+
+</body>
+</html>

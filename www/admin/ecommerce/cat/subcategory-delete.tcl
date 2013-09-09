@@ -1,18 +1,33 @@
-# $Id: subcategory-delete.tcl,v 3.0 2000/02/06 03:17:08 ron Exp $
-set_the_usual_form_variables
-# category_id, category_name, subcategory_id, subcategory_name
+#  www/admin/ecommerce/cat/subcategory-delete.tcl
+ad_page_contract {
 
-ReturnHeaders
+    Confirmation page for deleting an ecommerce product subcategory.
 
-ns_write "[ad_admin_header "Confirm Deletion"]
+    @param category_id the ID of the category
+    @param category_name the name of the category
+    @param subcategory_id the ID of the subcategory
+    @param subcategory_name the ID of the subcategory
+
+    @cvs-id subcategory-delete.tcl,v 3.1.6.4 2000/09/22 01:34:48 kevin Exp
+} {
+    category_id:integer,notnull
+    category_name:notnull
+    subcategory_id:integer,notnull
+    subcategory_name:notnull
+}
+
+
+
+
+set page_html "[ad_admin_header "Confirm Deletion"]
 
 <h2>Confirm Deletion</h2>
 
-[ad_admin_context_bar [list "../" "Ecommerce"] [list "index.tcl" "Categories &amp; Subcategories"] [list "category.tcl?[export_url_vars category_id category_name]" $category_name] [list "subcategory.tcl?[export_url_vars subcategory_id subcategory_name category_id category_name]" $subcategory_name] "Delete this Subcategory"]
+[ad_admin_context_bar [list "../" "Ecommerce"] [list "index" "Categories &amp; Subcategories"] [list "category?[export_url_vars category_id category_name]" $category_name] [list "subcategory?[export_url_vars subcategory_id subcategory_name category_id category_name]" $subcategory_name] "Delete this Subcategory"]
 
 <hr>
 
-<form method=post action=subcategory-delete-2.tcl>
+<form method=post action=subcategory-delete-2>
 [export_form_vars subcategory_id category_id category_name]
 Please confirm that you wish to delete the category $category_name.  Please also note the following:
 <p>
@@ -28,3 +43,4 @@ Please confirm that you wish to delete the category $category_name.  Please also
 
 [ad_admin_footer]
 "
+doc_return  200 text/html $page_html

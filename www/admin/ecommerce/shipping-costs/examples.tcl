@@ -1,7 +1,14 @@
-# $Id: examples.tcl,v 3.0 2000/02/06 03:21:31 ron Exp $
-ReturnHeaders
+#  www/admin/ecommerce/shipping-costs/examples.tcl
+ad_page_contract {
 
-ns_write "[ad_admin_header "Shipping Cost Examples"]
+  @author
+  @creation-date
+  @cvs-id examples.tcl,v 3.0.12.3 2000/09/22 01:35:02 kevin Exp
+} {
+}
+
+
+set page_html "[ad_admin_header "Shipping Cost Examples"]
 
 <h2>Shipping Cost Examples</h2>
 
@@ -68,3 +75,14 @@ ns_write "[ad_admin_header "Shipping Cost Examples"]
 
 [ad_admin_footer]
 "
+
+doc_return  200 text/html $page_html
+
+
+
+
+
+
+
+
+

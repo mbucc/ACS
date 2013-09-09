@@ -1,4 +1,8 @@
-# $Id: upload.tcl,v 3.1 2000/02/20 09:52:37 ron Exp $
+# /www/pvt/portrait/upload.tcl
+
+ad_page_contract {
+    @cvs-id upload.tcl,v 3.3.2.4 2000/09/22 01:39:13 kevin Exp
+}
 
 set_form_variables 0
 
@@ -6,22 +10,20 @@ ad_maybe_redirect_for_registration
 
 set user_id [ad_verify_and_get_user_id]
 
-set db [ns_db gethandle]
-
-set selection [ns_db 0or1row $db "select 
+set row_exists_p [db_0or1row portrait_upload_exists_check "select 
   first_names, 
   last_name
 from users 
-where user_id=$user_id"]
+where user_id=:user_id" -bind [ad_tcl_vars_to_ns_set user_id]]
 
-if [empty_string_p $selection] {
+if $row_exists_p==0 {
     ad_return_error "Account Unavailable" "We can't find you (user #$user_id) in the users table.  Probably your account was deleted for some reason."
     return
 }
 
-set_variables_after_query
+db_release_unused_handles
 
-ns_return 200 text/html "[ad_header "Upload Portrait"]
+doc_return  200 text/html "[ad_header "Upload Portrait"]
 
 <h2>Upload Portrait</h2>
 
@@ -38,7 +40,7 @@ computer system (note that you can't refer to an image elsewhere on
 the Internet; this image must be on your computer's hard drive).
 
 <blockquote>
-<form enctype=multipart/form-data method=POST action=\"upload-2.tcl\">
+<form enctype=multipart/form-data method=POST action=\"upload-2\">
 [export_form_vars return_url]
 <table>
 <tr>
@@ -65,9 +67,6 @@ the Internet; this image must be on your computer's hard drive).
 </center>
 </blockquote>
 </form>
-
-
-
 
 [ad_footer]
 "

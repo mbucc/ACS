@@ -1,51 +1,62 @@
-# $Id: add-alert-3.tcl,v 3.1 2000/03/10 23:58:20 curtisg Exp $
+ad_page_contract {
+    
+    Actually inserts into the database the correct types of email
+    alerts, according to the criterion the user selected.
+    
+    @author xxx
+    @date unknown
+    @cvs-id add-alert-3.tcl,v 3.2.6.6 2001/01/10 18:59:21 khy Exp
+} {
+    alert_id:naturalnum,notnull,verify
+    domain_id
+    frequency
+    howmuch
+    alert_type
+    query_string
+    primary_category
+}
+
 if {[ad_read_only_p]} {
     ad_return_read_only_maintenance_message
     return
 }
 
-set_the_usual_form_variables
-
-# alert_id, domain_id, frequency, howmuch, submit_type
-# also query_string, primary_category
-
 set user_id [ad_verify_and_get_user_id]
-
-set db [gc_db_gethandle]
 
 if { [info exists alert_type] && [string compare all $alert_type] == 0 } {
     # user wants all the new ads
-    ns_db dml $db "insert into classified_email_alerts
+    db_dml alert_for_all_new_ads_dml "insert into classified_email_alerts
       (alert_id, domain_id, user_id, alert_type, expires, howmuch, frequency)
       values
-      ($alert_id, $domain_id, $user_id, '$alert_type',sysdate+180, '$howmuch',
-      '$frequency')"
+      (:alert_id, :domain_id, :user_id, :alert_type, sysdate+180, :howmuch,
+      :frequency)" -bind [ad_tcl_vars_to_ns_set alert_id domain_id \
+              user_id alert_type howmuch frequency]
 
 } elseif { [info exists alert_type] && [string compare category $alert_type] == 0 } {
     if { $primary_category == "Choose a Category" } {
         ad_return_complaint 1 "<li>you need to choose a category\n"
         return
     } else {
-        ns_db dml $db "insert into classified_email_alerts
+        db_dml alert_for_category_new_ads_dml "insert into classified_email_alerts
       (alert_id, domain_id, user_id, alert_type, category, expires, howmuch,
       frequency)
       values
-      ($alert_id, $domain_id,
-      $user_id,'$alert_type','$QQprimary_category',sysdate+180,
-      '$howmuch', '$frequency')"
-
+      (:alert_id, :domain_id, :user_id, :alert_type, :primary_category, sysdate+180,
+      :howmuch, :frequency)" -bind [ad_tcl_vars_to_ns_set alert_id domain_id \
+              user_id alert_type primary_category howmuch frequency]
     }
 } elseif { [info exists alert_type] &&  [string compare keywords $alert_type] == 0  } {
     if { $query_string == "" } {
         ad_return_complaint 1 "<li>please choose at least keyword\n"
         return
     } else {
-        ns_db dml $db "insert into classified_email_alerts
+        db_dml alert_for_category_new_ads_dml "insert into classified_email_alerts
       (alert_id, domain_id, user_id, alert_type, keywords, expires, howmuch,
       frequency)
       values
-      ($alert_id, $domain_id', $user_id,'$alert_type','$QQquery_string',sysdate+180,
-      '$howmuch', '$frequency')"
+      (:alert_id, :domain_id, :user_id, :alert_type, :query_string,
+       sysdate+180, :howmuch, :frequency)" -bind [ad_tcl_vars_to_ns_set alert_id domain_id \
+              user_id alert_type query_string howmuch frequency]
     }
 } else {
     # no alert_type
@@ -56,10 +67,9 @@ if { [info exists alert_type] && [string compare all $alert_type] == 0 } {
     return
 }
 
-set selection [ns_db 1row $db [gc_query_for_domain_info $domain_id]]
-set_variables_after_query
+db_1row gc_query_for_domain_info [gc_query_for_domain_info $domain_id]
 
-ns_return 200 text/html "[gc_header "Alert Added"]
+set page_content "[gc_header "Alert Added"]
 
 <h2>Alert Added</h2>
 
@@ -67,6 +77,17 @@ ns_return 200 text/html "[gc_header "Alert Added"]
 
 <hr>
 
-Mail will be sent to [database_to_tcl_string $db "select email from users where user_id=$user_id"] [gc_PrettyFrequency $frequency].
+Mail will be sent to [db_string unused "select email from users where user_id=$user_id"] [gc_PrettyFrequency $frequency].
 
 [gc_footer $maintainer_email]"
+
+
+doc_return  200 text/html $page_content
+
+
+
+
+
+
+
+

@@ -1,16 +1,17 @@
-# $Id: style-list.tcl,v 3.0 2000/02/06 03:55:48 ron Exp $
-# File:        style-list.tcl
-# Date:        28 Nov 1999
-# Author:      Jon Salz <jsalz@mit.edu>
-# Description: Shows all styles.
-# Inputs:      None.
+# wp/style-list.tcl
+ad_page_contract {
+    Shows all styles.
+    @param none
+    @cvs-id style-list.tcl,v 3.1.6.9 2000/09/22 01:39:37 kevin Exp
+    @creation-date  28 Nov 1999
+    @author Jon Salz <jsalz@mit.edu>
+} {
+}
+# modified by jwong@arsdigita.com on 11 Jul 2000 for ACS 3.4 upgrade
 
-set_the_usual_form_variables 0
-set db [ns_db gethandle]
 set user_id [ad_maybe_redirect_for_registration]
 
-ReturnHeaders
-ns_write "[wp_header_form "name=f action=style-image-add.tcl method=post enctype=multipart/form-data" \
+set page_output "[wp_header_form "name=f action=style-image-add method=post enctype=multipart/form-data" \
            [list "" "WimpyPoint"] "Your Styles"]
 
 <p><center>
@@ -25,18 +26,17 @@ ns_write "[wp_header_form "name=f action=style-image-add.tcl method=post enctype
 <tr><td colspan=7><hr></td></tr>
 "
 
-set db2 [ns_db gethandle subquery]
-
 set out ""
-wp_select $db "
+
+db_foreach styles_select "
     select s.style_id, s.name, count(file_size) images, sum(file_size) total_size
     from wp_styles s, wp_style_images i
     where s.style_id = i.style_id(+)
-    and s.owner = $user_id
+    and s.owner = :user_id
     group by s.style_id, s.name
     order by lower(s.name)
 " {
-    append out "<tr><td><a href=\"style-view.tcl?style_id=$style_id\">$name</a></td><td></td>
+    append out "<tr><td><a href=\"style-view?style_id=$style_id\">$name</a></td><td></td>
 <td align=right>$images</td><td></td>
 "
     if { $total_size != "" } {
@@ -44,16 +44,16 @@ wp_select $db "
     } else {
 	append out "<td align=right>-</td>"
     }
-    append out "<td></td><td>\[ <a href=\"style-delete.tcl?style_id=$style_id\">delete</a> \]</td></tr>\n"
+    append out "<td></td><td>\[ <a href=\"style-delete?style_id=$style_id\">delete</a> \]</td></tr>\n"
 } else {
     append out "<tr><td align=center colspan=7><i>You haven't created any styles.</i></td></tr>"
 }
 
-ns_db releasehandle $db2
+db_release_unused_handles
 
-ns_write "$out
+append page_output  "$out
 
-<tr><td colspan=7 align=center><hr><b><a href=\"style-edit.tcl\">Create a new style</a></b></td></tr>
+<tr><td colspan=7 align=center><hr><b><a href=\"style-edit\">Create a new style</a></b></td></tr>
 
 </table>
 </td></tr></table>
@@ -62,3 +62,5 @@ ns_write "$out
 
 [wp_footer]
 "
+
+doc_return  200 "text/html" $page_output

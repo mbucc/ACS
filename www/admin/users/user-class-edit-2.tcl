@@ -1,8 +1,19 @@
-# $Id: user-class-edit-2.tcl,v 3.0.4.1 2000/04/28 15:09:38 carsten Exp $
-set_the_usual_form_variables
+ad_page_contract {
+    /www/admin/users/user-class-edit-2.tcl
 
-# user_class_id, description, sql_description, sql_post_select, name 
-# maybe return_url
+    Update the database with information about a user class
+
+    @cvs-id user-class-edit-2.tcl,v 3.2.2.3.2.2 2000/07/25 06:06:04 jmp Exp
+} {
+    user_class_id:integer,notnull
+    description:notnull
+    sql_description:notnull
+    sql_post_select:notnull
+    name:notnull
+    return_url:optional
+}
+
+
 
 set exception_text ""
 set exception_count 0
@@ -27,12 +38,12 @@ if {$exception_count > 1} {
     return
 }
 
-set db [ns_db gethandle]
 
-ns_db dml $db "update user_classes set name = '$QQname', 
-sql_description = '$QQsql_description', 
-sql_post_select = '$QQsql_post_select',
-description = '$QQdescription'
-where user_class_id = $user_class_id"
 
-ad_returnredirect "action-choose.tcl?[export_url_vars user_class_id]"
+db_dml admin_users_user_class_edit_update  "update user_classes set name = :name,
+sql_description = :sql_description,
+sql_post_select = :sql_post_select,
+description = :description
+where user_class_id = :user_class_id"
+
+ad_returnredirect "action-choose?[export_url_vars user_class_id]"

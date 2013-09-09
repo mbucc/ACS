@@ -1,7 +1,14 @@
-# $Id: index.tcl,v 3.0 2000/02/06 03:21:27 ron Exp $
-ReturnHeaders
+#  www/admin/ecommerce/sales-tax/index.tcl
+ad_page_contract {
 
-ns_write "[ad_admin_header "Sales Tax"]
+  @author
+  @creation-date
+  @cvs-id index.tcl,v 3.2.2.6 2000/09/22 01:35:01 kevin Exp
+} {
+}
+
+
+set page_html "[ad_admin_header "Sales Tax"]
 
 <h2>Sales Tax</h2>
 
@@ -19,28 +26,23 @@ ns_write "[ad_admin_header "Sales Tax"]
 # for audit table
 set table_names_and_id_column [list ec_sales_tax_by_state ec_sales_tax_by_state_audit usps_abbrev]
 
-set db [ns_db gethandle]
 
-set selection [ns_db select $db "select state_name, tax_rate*100 as tax_rate_in_percent, decode(shipping_p,'t','Yes','No') as shipping_p
+
+db_foreach get_sales_taxes "select state_name, tax_rate*100 as tax_rate_in_percent, decode(shipping_p,'t','Yes','No') as shipping_p
 from ec_sales_tax_by_state, states
-where ec_sales_tax_by_state.usps_abbrev = states.usps_abbrev"]
+where ec_sales_tax_by_state.usps_abbrev = states.usps_abbrev" {
 
-set state_counter 0
-while { [ns_db getrow $db $selection] } {
-    incr state_counter
-    set_variables_after_query
-    ns_write "<li>$state_name:
+    append page_html "<li>$state_name:
     <blockquote>
     Tax rate: $tax_rate_in_percent%<br>
     Charge tax on shipping? $shipping_p
     </blockquote>
     "
-}
+} if_no_rows {
 
-if { $state_counter == 0 } {
-    ns_write "No tax is currently charged in any state.\n"
+    append page_html "No tax is currently charged in any state.\n"
 }
-ns_write "
+append page_html "
 </ul>
 
 <p>
@@ -56,12 +58,14 @@ later what the tax rates are and whether to charge tax on shipping in those stat
 
 <p>
 
-<form method=post action=edit.tcl>
+<form method=post action=edit>
 "
 
-set current_state_list [database_to_tcl_list $db "select usps_abbrev from ec_sales_tax_by_state"]
+set current_state_list [db_list get_abbrevs "select usps_abbrev from ec_sales_tax_by_state"]
 
-ns_write "[ec_multiple_state_widget $db $current_state_list]
+db_release_unused_handles
+
+append page_html "[ec_multiple_state_widget $current_state_list]
 
 <center>
 <input type=submit value=\"Submit\">
@@ -76,7 +80,7 @@ ns_write "[ec_multiple_state_widget $db $current_state_list]
 <h3>Clear All Settings</h3>
 
 <blockquote>
-If you want to start from scratch, <a href=\"clear.tcl\">clear all settings</a>.
+If you want to start from scratch, <a href=\"clear\">clear all settings</a>.
 </blockquote>
 
 In general, you must collect sales tax on orders shipped to states
@@ -97,12 +101,15 @@ sales tax more precisely.  See
  of Philip and Alex's Guide to Web Publishing</a> for 
 more on this mournful topic.
 
-
 <h3>Audit Trail</h3>
 
 <ul>
-<li><a href=\"/admin/ecommerce/audit-tables.tcl?[export_url_vars table_names_and_id_column]\">Audit Sales Tax Settings</a>
+<li><a href=\"/admin/ecommerce/audit-tables?[export_url_vars table_names_and_id_column]\">Audit Sales Tax Settings</a>
 </ul>
 
 [ad_admin_footer]
 "
+
+doc_return  200 text/html $page_html
+
+

@@ -1,4 +1,22 @@
-# $Id: comment-add-2.tcl,v 3.0.4.1 2000/04/28 15:11:12 carsten Exp $
+# comment-add-2.tcl
+
+ad_page_contract {
+    2nd page in neighbor_to_neighbor comment-adding process.
+
+    @param neighbor_to_neighbor_id id of the neighbor_to_neighbor item to comment on.
+    @param content the user-entered comment, in plain-text or HTML format.
+    @param comment_id id of the new comment, generated on comment-add.tcl.
+    @param html_p is the comment HTML-formatted? (t or f)
+    @author Philip Greenspun (philg@mit.edu)
+    @creation-date ?
+    @cvs-id comment-add-2.tcl,v 3.3.2.5 2001/01/11 19:44:31 khy Exp
+} {
+    neighbor_to_neighbor_id:integer
+    content
+    comment_id:integer,verify,notnull
+    html_p
+}
+
 if {[ad_read_only_p]} {
     ad_return_read_only_maintenance_message
     return
@@ -9,13 +27,10 @@ if {[ad_read_only_p]} {
 set user_id [ad_get_user_id]
 
 if { $user_id == 0 } {
-    ad_returnredirect /register/index.tcl    
+    ad_returnredirect /register/    
     return
 }
 
-set_the_usual_form_variables
-
-# neighbor_to_neighbor_id, content, comment_id, html_p
 
 # check for bad input
 if { ![info exists content] || [empty_string_p $content] } {
@@ -23,18 +38,25 @@ if { ![info exists content] || [empty_string_p $content] } {
     return
 }
 
-set db [ns_db gethandle]
+#check for bad html
+set naughty_html_text [ad_check_for_naughty_html $content]
+
+if {![empty_string_p $naughty_html_text]} {
+    ad_return_complaint 1 "<li>$naughty_html_text"
+    return
+}
+
     
-set selection [ns_db 1row $db "select about, title from neighbor_to_neighbor where neighbor_to_neighbor_id = $neighbor_to_neighbor_id"]
-set_variables_after_query
+db_1row n_to_n_tem_info "select about, title from neighbor_to_neighbor where neighbor_to_neighbor_id = :neighbor_to_neighbor_id"
 
-ReturnHeaders
+db_release_unused_handles
 
-ns_write "[ad_header "Confirm comment on <i>$about : $title</i>" ]
+
+set doc_body "[ad_header "Confirm comment on <i>$about : $title</i>" ]
 
 <h2>Confirm comment</h2>
 
-on <A HREF=\"view-one.tcl?[export_url_vars neighbor_to_neighbor_id]\">$about : $title</a>
+on <A HREF=\"view-one?[export_url_vars neighbor_to_neighbor_id]\">$about : $title</a>
 
 <hr>
 
@@ -45,14 +67,14 @@ correct it.  Otherwise, press \"Continue\".
 <blockquote>"
 
 if { [info exists html_p] && $html_p == "t" } {
-    ns_write "$content
+    append doc_body "$content
 </blockquote>
 Note: if the story has lost all of its paragraph breaks then you
 probably should have selected \"Plain Text\" rather than HTML.  Use
 your browser's Back button to return to the submission form.
 "
 } else {
-    ns_write "[util_convert_plaintext_to_html $content]
+    append doc_body "[util_convert_plaintext_to_html $content]
 </blockquote>
 
 Note: if the story has a bunch of visible HTML tags then you probably
@@ -61,7 +83,7 @@ browser's Back button to return to the submission form.  "
 }
 
 
-ns_write "<form action=comment-add-3.tcl method=post>
+append doc_body "<form action=comment-add-3 method=post>
 <center>
 <input type=submit name=submit value=\"Confirm\">
 </center>
@@ -69,3 +91,5 @@ ns_write "<form action=comment-add-3.tcl method=post>
 </form>
 [ad_footer]
 "
+
+doc_return  200 text/html $doc_body

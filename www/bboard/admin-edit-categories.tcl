@@ -1,71 +1,69 @@
-# $Id: admin-edit-categories.tcl,v 3.0 2000/02/06 03:32:49 ron Exp $
-set_form_variables_string_trim_DoubleAposQQ
-set_form_variables
+# /www/bboard/admin-edit-categories.tcl
+ad_page_contract {
+    Form to edit categories
 
-# topic, topic_id
-
-
-set db [bboard_db_gethandle]
-if { $db == "" } {
-    bboard_return_error_page
-    return
+    @param topic the name of the bboard topic
+    @param topic_id the ID of the bboard topic
+    
+    @cvs-id admin-edit-categories.tcl,v 3.2.2.3 2000/09/22 01:36:43 kevin Exp
+} {
+    topic
+    topic_id:notnull,integer
 }
+
+# -----------------------------------------------------------------------------
  
 if  {[bboard_get_topic_info] == -1} {
-    return}
+    return
+}
 
 if {[bboard_admin_authorization] == -1} {
-	return}
-
-
-
+    return
+}
 
 # cookie checks out; user is authorized
 
-
-if [catch {set selection [ns_db 0or1row $db "select unique * from bboard_topics where topic_id=$topic_id"]} errmsg] {
+if { ![db_0or1row topic_info "
+select unique * from bboard_topics 
+where topic_id = :topic_id"]} {
     [bboard_return_cannot_find_topic_page]
     return
 }
-# we found the data we needed
-set_variables_after_query
 
-ReturnHeaders
 
-ns_write "[bboard_header "Edit categories for $topic"]
+append page_content "[bboard_header "Edit categories for $topic"]
 
 <h2>Edit Categories for \"$topic\"</h2>
 
 <ul>
 "
 
-set selection [ns_db select $db "select cats.rowid, cats.category, sum(decode(b.category,NULL,0,1)) as n_threads
-from bboard_q_and_a_categories cats, bboard b
-where cats.topic_id=$topic_id
-and cats.category = b.category(+)
-and cats.topic_id = b.topic_id(+)
-and b.refers_to is null
-and (b.topic_id is null or b.topic_id = $topic_id)
+db_foreach cat_info "
+select cats.rowid, 
+       cats.category, 
+       sum(decode(b.category,NULL,0,1)) as n_threads
+from   bboard_q_and_a_categories cats, bboard b
+where  cats.topic_id=:topic_id
+and    cats.category = b.category(+)
+and    cats.topic_id = b.topic_id(+)
+and    b.refers_to is null
+and    (b.topic_id is null or b.topic_id = :topic_id)
 group by cats.rowid, cats.category
-order by cats.category"]
+order by cats.category" {
 
-set counter 0
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
-    incr counter
     if { $n_threads == 0 } {
-	ns_write "<li>$category ($n_threads threads) 
-  <a href=\"admin-delete-category.tcl?[export_url_vars topic topic_id category rowid]\">delete</a>\n"
+	append page_content "<li>$category ($n_threads threads) 
+  <a href=\"admin-delete-category?[export_url_vars topic topic_id category rowid]\">delete</a>\n"
     } else {
-	ns_write "<li>$category ($n_threads threads)\n"
+	append page_content "<li>$category ($n_threads threads)\n"
     }
+
+} if_no_rows {
+
+    append page_content "no categories defined"
 }
 
-if { $counter == 0 } {
-    ns_write "no categories defined"
-}
-
-ns_write "
+append page_content "
 
 </ul>
 
@@ -84,3 +82,5 @@ feeling smarter, I'll add an option to rename a category and all the
 threads underneath.
 
 [bboard_footer]"
+
+doc_return  200 text/html $page_content

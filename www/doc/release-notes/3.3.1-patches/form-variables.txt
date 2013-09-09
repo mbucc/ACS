@@ -1,0 +1,287 @@
+Modify these functions (in ACS3.3, they're in /packages/acs-core/utilities-procs.tcl;
+in earlier versions of ACS, they're in /tcl/00-ad-utilities.tcl or /tcl/ad-utilities.tcl
+[and for extremely early versions, this was utilities.tcl in the public Tcl directory]):
+
+
+proc set_form_variables {{error_if_not_found_p 1}} {
+    if { $error_if_not_found_p == 1} {
+        uplevel { if { [ns_getform] == "" } {
+            ns_returnerror 500 "Missing form data"
+            return
+        }
+       }
+     } else {
+         uplevel { if { [ns_getform] == "" } {
+             # we're not supposed to barf at the user but we want to return
+             # from this subroutine anyway because otherwise we'd get an error
+             return
+         }
+     }
+  }
+
+    # at this point we know that the form is legal
+    # The variable names are prefixed with a V to avoid confusion with the form variables while checking for naughtiness.
+    uplevel {
+        set Vform [ns_getform]
+        set Vform_size [ns_set size $Vform]
+        set Vform_counter_i 0
+        while {$Vform_counter_i<$Vform_size} {
+            set Vname [ns_set key $Vform $Vform_counter_i]
+            set Vvalue [ns_set value $Vform $Vform_counter_i]
+            check_for_form_variable_naughtiness $Vname $Vvalue
+            set $Vname $Vvalue
+            incr Vform_counter_i
+        }
+    }
+}
+  proc set_form_variables_string_trim_DoubleAposQQ {} {
+    # The variable names are prefixed with a V to avoid confusion with the form variables while checking for naughtiness.
+    uplevel {
+        set Vform [ns_getform]
+        if {$Vform == ""} {
+            ns_returnerror 500 "Missing form data"
+            return;
+        }
+        set Vform_size [ns_set size $Vform]
+        set Vform_counter_i 0
+        while {$Vform_counter_i<$Vform_size} {
+            set Vname [ns_set key $Vform $Vform_counter_i]
+            set Vvalue [ns_set value $Vform $Vform_counter_i]
+            check_for_form_variable_naughtiness $Vname $Vvalue
+            set QQ$Vname [DoubleApos [string trim $Vvalue]]
+            incr Vform_counter_i
+        }
+    }
+}
+   proc set_the_usual_form_variables {{error_if_not_found_p 1}} {
+    if { [ns_getform] == "" } {
+        if $error_if_not_found_p {
+            uplevel {
+                ns_returnerror 500 "Missing form data"
+                return
+            }
+        } else {
+            return
+        }
+    }
+     # The variable names are prefixed with a V to avoid confusion with the form variables while checking for naughtiness.
+    uplevel {
+        set Vform [ns_getform]
+        set Vform_size [ns_set size $Vform]
+        set Vform_counter_i 0
+        while {$Vform_counter_i<$Vform_size} {
+            set Vname [ns_set key $Vform $Vform_counter_i]
+            set Vvalue [ns_set value $Vform $Vform_counter_i]
+            check_for_form_variable_naughtiness $Vname $Vvalue
+            set QQ$Vname [DoubleApos [string trim $Vvalue]]
+            set $Vname $Vvalue
+            incr Vform_counter_i
+        }
+    }
+}
+  proc set_form_variables_string_trim_DoubleApos {} {
+    # The variable names are prefixed with a V to avoid confusion with the form variables while checking for naughtiness.
+    uplevel {
+        set Vform [ns_getform]
+        if {$Vform == ""} {
+            ns_returnerror 500 "Missing form data"
+            return;
+        }
+        set Vform_size [ns_set size $Vform]
+        set Vform_counter_i 0
+        while {$Vform_counter_i<$Vform_size} {
+            set Vname [ns_set key $Vform $Vform_counter_i]
+            set Vvalue [ns_set value $Vform $Vform_counter_i]
+            check_for_form_variable_naughtiness $Vname $Vvalue
+            set $Vname [DoubleApos [string trim $Vvalue]]
+            incr Vform_counter_i
+        }
+    }
+}
+   proc set_form_variables_string_trim {} {
+    # The variable names are prefixed with a V to avoid confusion with the form variables while checking for naughtiness.
+    uplevel {
+        set Vform [ns_getform]
+        if {$Vform == ""} {
+            ns_returnerror 500 "Missing form data"
+            return;
+        }
+        set Vform_size [ns_set size $Vform]
+        set Vform_counter_i 0
+        while {$Vform_counter_i<$Vform_size} {
+            set Vname [ns_set key $Vform $Vform_counter_i]
+            set Vvalue [ns_set value $Vform $Vform_counter_i]
+            check_for_form_variable_naughtiness $Vname $Vvalue
+            set $Vname [string trim $Vvalue]
+            incr Vform_counter_i
+        }
+    }
+}
+  proc_doc ad_page_variables {variable_specs} {
+<pre>
+Current syntax:
+     ad_page_variables {var_spec1 [varspec2] ... }
+     This proc handles translating form inputs into Tcl variables, and checking
+    to see that the correct set of inputs was supplied.  Note that this is mostly a
+    check on the proper programming of a set of pages.
+ Here are the recognized var_specs:
+     variable                            ; means it's required
+    {variable default-value}
+      Optional, with default value.  If the value is supplied but is null, and the
+      default-value is present, that value is used.
+    {variable -multiple-list}
+      The value of the Tcl variable will be a list containing all of the
+      values (in order) supplied for that form variable.  Particularly useful
+      for collecting checkboxes or select multiples.
+      Note that if required or optional variables are specified more than once, the
+      first (leftmost) value is used, and the rest are ignored.
+    {variable -array}
+      This syntax supports the idiom of supplying multiple form variables of the
+      same name but ending with a "_[0-9]", e.g., foo_1, foo_2.... Each value will be
+      stored in the array variable variable with the index being whatever follows the
+      underscore.
+ There is an optional third element in the var_spec.  If it is "QQ", "qq", or
+some variant, a variable named "QQvariable" will be created and given the
+same value, but with single quotes escaped suitable for handing to SQL.
+ Other elements of the var_spec are ignored, so a documentation string
+describing the variable can be supplied.
+ Note that the default value form will become the value form in a "set"
+ Note that the default values are filled in from left to right, and can depend on
+values of variables to their left:
+ad_page_variables {
+    file
+    {start 0}
+    {end {[expr $start + 20]}}
+}
+</pre>
+} {
+    set exception_list [list]
+    set form [ns_getform]
+    if { $form != "" } {
+        set form_size [ns_set size $form]
+        set form_counter_i 0
+         # first pass -- go through all the variables supplied in the form
+        while {$form_counter_i<$form_size} {
+            set variable [ns_set key $form $form_counter_i]
+            set value [ns_set value $form $form_counter_i]
+            check_for_form_variable_naughtiness $variable $value
+            set found "not"
+            # find the matching variable spec, if any
+            foreach variable_spec $variable_specs {
+                if { [llength $variable_spec] >= 2 } {
+                    switch -- [lindex $variable_spec 1] {
+                        -multiple-list {
+                            if { [lindex $variable_spec 0] == $variable } {
+                                # variable gets a list of all the values
+                                upvar 1 $variable var
+                                lappend var $value
+                                set found "done"
+                                break
+                            }
+                        }
+                        -array {
+                            set varname [lindex $variable_spec 0]
+                            set pattern "($varname)_(.+)"
+                            if { [regexp $pattern $variable match array index] } {
+                                if { ![empty_string_p $array] } {
+                                    upvar 1 $array arr
+                                    set arr($index) [ns_set value $form $form_counter_i]
+                                }
+                                set found "done"
+                                break
+                            }
+                        }
+                        default {
+                            if { [lindex $variable_spec 0] == $variable } {
+                                set found "set"
+                                break
+                            }
+                        }
+                    }
+                } elseif { $variable_spec == $variable } {
+                    set found "set"
+                    break
+                }
+            }
+            if { $found == "set" } {
+                upvar 1 $variable var
+                if { ![info exists var] } {
+                    # take the leftmost value, if there are multiple ones
+                    set var [ns_set value $form $form_counter_i]
+                }
+            }
+            incr form_counter_i
+        }
+    }
+     # now make a pass over each variable spec, making sure everything required is there
+    # and doing defaulting for unsupplied things that aren't required
+    foreach variable_spec $variable_specs {
+        set variable [lindex $variable_spec 0]
+        upvar 1 $variable var
+         if { [llength $variable_spec] >= 2 } {
+            if { ![info exists var] } {
+                set default_value_or_flag [lindex $variable_spec 1]
+                 switch -- $default_value_or_flag {
+                    -array {
+                        # don't set anything
+                    }
+                    -multiple-list {
+                        set var [list]
+                    }
+                    default {
+                        # Needs to be set.
+                        uplevel [list eval set $variable "\[subst [list $default_value_or_flag]\]\
+"]
+                        # This used to be:
+                        #
+                        #   uplevel [list eval [list set $variable "$default_value_or_flag"]]
+                        #
+                        # But it wasn't properly performing substitutions.
+                    }
+                }
+            }
+             # no longer needed because we QQ everything by default now
+            #       # if there is a QQ or qq or any variant after the var_spec,
+            #       # make a "QQ" variable
+            #       if { [regexp {^[Qq][Qq]$} [lindex $variable_spec 2]] && [info exists var] } {
+            #           upvar QQ$variable QQvar
+            #           set QQvar [DoubleApos $var]
+            #       }
+         } else {
+            if { ![info exists var] } {
+                lappend exception_list "\"$variable\" required but not supplied"
+            }
+        }
+         # modified by rhs@mit.edu on 1/31/2000
+        # to QQ everything by default (but not arrays)
+        if {[info exists var] && ![array exists var]} {
+            upvar QQ$variable QQvar
+            set QQvar [DoubleApos $var]
+        }
+     }
+     set n_exceptions [llength $exception_list]
+    # this is an error in the HTML form
+    if { $n_exceptions == 1 } {
+        ns_returnerror 500 [lindex $exception_list 0]
+        return -code return
+    } elseif { $n_exceptions > 1 } {
+        ns_returnerror 500 "<li>[join $exception_list "\n<li>"]\n"
+        return -code return
+    }
+}
+ proc_doc util_GetCheckboxValues {form checkbox_name {default_return 0}} "For getting all the boxes from a set of checkboxes in a form.  This procedure takes the complete ns_conn form and returns a list of checkbox values.  It returns 0 if none are found (or some other default return value if specified)." {
+     set i 0
+    set size [ns_set size $form]
+     while {$i<$size} {
+         if { [ns_set key $form $i] == $checkbox_name} {
+             set value [ns_set value $form $i]
+            check_for_form_variable_naughtiness $checkbox_name $value
+             # LIST_TO_RETURN will be created if it doesn't exist
+            lappend list_to_return $value
+        }
+        incr i
+    }
+     #if no list, you can specify a default return
+    #default default is 0
+     if { [info exists list_to_return] } { return $list_to_return } else {return $default_return}
+}

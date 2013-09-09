@@ -1,8 +1,14 @@
 # domain-add.tcl
-# Add a new mail domain.
-# Written by jsc@arsdigita.com.
 
-ns_return 200 text/html "[ad_admin_header "Add a Domain"]
+ad_page_contract {
+    Add a new mail domain.
+
+    @author Jin Choi (jsc@arsdigita.com)
+    @creation-date 2000-02-23
+    @cvs-id domain-add.tcl,v 1.4.2.3 2000/09/22 01:36:38 kevin Exp
+} {}
+
+doc_return  200 text/html "[ad_admin_header "Add a Domain"]
 <h2>Add a Domain</h2>
 
 [ad_admin_context_bar [list "index.tcl" "WebMail Admin"] "Add Domain"]
@@ -10,7 +16,7 @@ ns_return 200 text/html "[ad_admin_header "Add a Domain"]
 
 <hr>
 
-<form action=\"domain-add-2.tcl\">
+<form action=\"domain-add-2\">
 
 Short name should be a short, descriptive name made up only of lower case letters
  (no spaces or punctuation). Example: arsdigita.

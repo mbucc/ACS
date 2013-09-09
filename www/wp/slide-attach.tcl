@@ -1,23 +1,28 @@
-# $Id: slide-attach.tcl,v 3.0 2000/02/06 03:55:34 ron Exp $
-# File:        slide-attach.tcl
-# Date:        28 Nov 1999
-# Author:      Jon Salz <jsalz@mit.edu>
-# Description: Allows the user to add and delete attachments.
-# Inputs:      slide_id
+# /wp/slide-attach.tcl
 
-set_the_usual_form_variables
-set db [ns_db gethandle]
+ad_page_contract {
+    Allows the user to add and delete attachments.
+
+    @param slide_id the slide to which to attach
+
+    @creation-date  28 Nov 1999
+    @author Jon Salz <jsalz@mit.edu>
+    @cvs-id slide-attach.tcl,v 3.2.2.6 2000/09/22 01:39:35 kevin Exp
+} {
+    slide_id:naturalnum,notnull
+}
+
 set user_id [ad_maybe_redirect_for_registration]
 
-set selection [ns_db 1row $db "select * from wp_slides where slide_id = $slide_id"]
-set_variables_after_query
-wp_check_authorization $db $presentation_id $user_id "write"
+db_1row wp_slide_attach_slide_info "
+select presentation_id, title from wp_slides where slide_id = :slide_id"
 
-ReturnHeaders
-ns_write "
+wp_check_authorization $presentation_id $user_id "write"
+
+append whole_page "
 [wp_header_form "enctype=multipart/form-data action=slide-attach-2.tcl method=post" [list "" "WimpyPoint"] \
   [list "index.tcl?show_user=" "Your Presentations"] \
-  [list "presentation-top.tcl?presentation_id=$presentation_id" [database_to_tcl_string $db "select title from wp_presentations where presentation_id = $presentation_id"]] "Attachments to $title"]
+  [list "presentation-top.tcl?presentation_id=$presentation_id" [db_string wp_prsent_title "select title from wp_presentations where presentation_id = :presentation_id"]] "Attachments to $title"]
 [export_form_vars slide_id]
 
 <center><p>
@@ -58,10 +63,10 @@ proc wp_attach_display_options { selected prompt } {
 
 # Generate the list of all attached images.
 set out ""
-wp_select $db "
+db_foreach wp_img_sel "
     select attach_id, file_name, file_size, display
     from   wp_attachments
-    where  slide_id = $slide_id
+    where  slide_id = :slide_id
     order by lower(file_name)
 " {
     append out "
@@ -72,14 +77,14 @@ wp_select $db "
 [wp_attach_display_options $display 2]
 </select>
 </td><td></td>
-  <td>\[ <a href=\"slide-attach-delete.tcl?slide_id=$slide_id&attach_id=$attach_id\">delete</a> \]</td>
+  <td>\[ <a href=\"slide-attach-delete?slide_id=$slide_id&attach_id=$attach_id\">delete</a> \]</td>
 </tr>
 "
 } else {
     append out "<tr><td colspan=7 align=center><i>There are no attachments currently associated with this slide.</i></td></tr>\n"
 }
 
-ns_write "$out
+append whole_page "$out
 
   <tr valign=top><td colspan=7>
     <center>
@@ -109,3 +114,4 @@ ns_write "$out
 "
 
 
+doc_return  200 text/html $whole_page

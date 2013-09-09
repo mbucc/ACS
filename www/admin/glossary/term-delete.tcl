@@ -1,45 +1,26 @@
-# $Id: term-delete.tcl,v 3.0.4.1 2000/04/28 15:09:07 carsten Exp $
+# /www/admin/glossary/term-delete.tcl
+
+ad_page_contract {
+    drops the specified row from glossary table
+
+    @author Walter McGinnis (walter@arsdigita.com)
+    @cvs-id: term-delete.tcl,v 3.2.2.5 2000/07/25 23:47:38 david Exp
+    @param term The term to delete.
+} {
+    {term:notnull,trim} 
+}
+
 if {[ad_read_only_p]} {
     ad_return_read_only_maintenance_message
     return
 }
 
-set user_id [ad_verify_and_get_user_id]
-if { $user_id == 0 } {
-    ad_returnredirect "/register/index.tcl"
-    return
-}
+set user_id [ad_maybe_redirect_for_registration]
 
-set_the_usual_form_variables
+db_dml deleteterm "delete from glossary 
+where term = :term"
 
-# term
 
-set exception_count 0
-set exception_text ""
+db_release_unused_handles
 
-set db [ns_db gethandle]
-
-if { ![info exists term] || [empty_string_p $QQterm]} {
-    incr exception_count
-    append exception_text "<li>You somehow got here without specifying a term to delete."
-}
-
-if {$exception_count > 0} { 
-    ad_return_complaint $exception_count $exception_text
-    return
-}
-
-if [catch { ns_db dml $db "delete from glossary 
-where term = '$QQterm'" } errmsg] {
-    # update failed
-    ad_return_error "Delete Failed" "The Database did not like what you typed.  This is probably a bug in our code.  Here's what the database said:
-<blockquote>
-<pre>
-$errmsg
-</pre>
-</blockquote>
-"
-    return
-}
-
-ad_returnredirect "index.tcl"
+ad_returnredirect "index"

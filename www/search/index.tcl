@@ -1,34 +1,37 @@
-# $Id: index.tcl,v 3.0.4.1 2000/04/28 15:11:27 carsten Exp $
-# search.tcl
-# 
-# the main public search form
-# 
-# 
+# /www/search/index.tcl
 
+ad_page_contract {
+    the main public search form
+
+    @author phong@arsdigita.com
+    @creation-date 2000-08-01
+    @cvs-id index.tcl,v 3.4.6.6 2000/09/22 01:39:17 kevin Exp
+} 
+
+# check to see if another search server should handle searching
 set search_server [ad_parameter BounceQueriesTo site-wide-search ""]
-
 if { ![empty_string_p $search_server] } {
     ad_returnredirect "$search_server/search/"
     return
 }
 
-set db [ns_db gethandle]
-
-ns_return 200 text/html "[ad_header "Search [ad_system_name]"]
-
+set page_content  "
+[ad_header "Search [ad_system_name]"]
 <h2>Search</h2>
-
 [ad_context_bar_ws_or_index "Search"]
-
 <hr>
 
-<a href=\"/photo/pcd1253/outside-hearst-56.tcl\"><img hspace=5 vspace=5 align=right HEIGHT=198 WIDTH=132 src=\"/photo/pcd1253/outside-hearst-56.1.jpg\" ALT=\"Manhattan 1995.\"></a>
+Search [ad_system_name]<br>
+[ad_site_wide_search_widget ""]
 
-<form action=search.tcl method=GET>
-[ad_site_wide_search_widget $db]
-</form>
-
-<br clear=right>
-
+<a href=\"advanced-search\">Advanced search</a>
 [ad_footer]
 "
+
+doc_return  200 text/html $page_content
+
+
+
+
+
+

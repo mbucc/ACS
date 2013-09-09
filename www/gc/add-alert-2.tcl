@@ -1,19 +1,24 @@
-# $Id: add-alert-2.tcl,v 3.1.2.1 2000/03/15 05:03:48 curtisg Exp $
+# /www/gc/add-alert-2.tcl
+ad_page_contract {
+    Allows user to specify an email alert to receive for certain classified ads.
+
+    @author xxx
+    @date unknown
+    @cvs-id add-alert-2.tcl,v 3.4.6.5 2001/01/10 18:58:32 khy Exp
+} {
+    domain_id
+    frequency
+    howmuch
+}
+
 if {[ad_read_only_p]} {
     ad_return_read_only_maintenance_message
     return
 }
 
-set_the_usual_form_variables
+db_1row gc_query_for_domain_info [gc_query_for_domain_info $domain_id]
 
-# domain_id, frequency,  howmuch
-
-set db [gc_db_gethandle]
-
-set selection [ns_db 1row $db [gc_query_for_domain_info $domain_id]]
-set_variables_after_query
-
-set alert_id [database_to_tcl_string $db "select classified_email_alert_id_seq.nextval from dual"]
+set alert_id [db_string classified_ad_alert_seq_nextval_query "select classified_email_alert_id_seq.nextval from dual"]
 
 append html "[gc_header "Add Alert (Form 2)"]
 
@@ -21,8 +26,9 @@ append html "[gc_header "Add Alert (Form 2)"]
 
 [ad_context_bar_ws_or_index [list "index.tcl" [gc_system_name]] [list "domain-top.tcl?[export_url_vars domain_id]" $full_noun] "Add Alert, Step 2"]
 
-<form method=POST action=\"add-alert-3.tcl\">
-[export_form_vars alert_id domain_id frequency howmuch]
+<form method=POST action=\"add-alert-3\">
+[export_form_vars -sign alert_id]
+[export_form_vars domain_id frequency howmuch]
 
 <table>
 <tr>
@@ -38,15 +44,15 @@ value=category></td><td>Choose a category</td>
 <option>Choose a Category
 "
 
-set selection [ns_db select $db "select primary_category,
-upper(primary_category)
-from ad_categories
-where domain_id = $domain_id
-order by 2"]
-
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
-    append page_content  "<option>$primary_category\n"
+db_foreach primary_category_query "
+     select
+       primary_category,
+       upper(primary_category)
+     from ad_categories
+     where domain_id = :domain_id
+     order by 2
+" -bind [ad_tcl_vars_to_ns_set domain_id] {
+    append html  "<option>$primary_category\n"
 }
 
 append html "</select></td>
@@ -70,4 +76,10 @@ name=query_string></td>
 </form>
 "
 
-ns_return 200 text/html $html
+
+
+doc_return  200 text/html $html
+
+
+
+

@@ -1,38 +1,65 @@
-# $Id: edit-2.tcl,v 3.0.4.1 2000/04/28 15:08:42 carsten Exp $
-set_the_usual_form_variables
-# email_template_id, variables, title, subject, message, when_sent, issue_type (select multiple)
+# edit-2.tcl
+
+ad_page_contract {  
+    @param email_template_id
+    @param variables
+    @param title
+    @param subject
+    @param message
+    @param when_sent
+    @param issue_type:multiple
+
+    @author
+    @creation-date
+    @cvs-id edit-2.tcl,v 3.2.2.7 2000/09/22 01:34:55 kevin Exp
+} {
+    email_template_id:notnull
+    variables
+    title:trim,notnull
+    subject:notnull
+    message:notnull
+    when_sent
+    issue_type:multiple
+}
+
+
+
 
 set user_id [ad_verify_and_get_user_id]
 
 if {$user_id == 0} {
     
-    set return_url "[ns_conn url]?[export_entire_form_as_url_vars]"
+    set return_url "[ad_conn url]?[export_entire_form_as_url_vars]"
 
     ad_returnredirect "/register.tcl?[export_url_vars return_url]"
     return
 }
 
-set form [ns_getform]
-set form_size [ns_set size $form]
-set form_counter 0
-set issue_type_list [list]
-while { $form_counter < $form_size} {
-    set form_key [ns_set key $form $form_counter]
-    if { $form_key == "issue_type" } {
-	set form_value [ns_set value $form $form_counter]
-	if { ![empty_string_p $form_value] } {
-	    lappend ${form_key}_list $form_value
-	}
-    }
-    incr form_counter
+if {[fm_adp_function_p $message]} {
+    doc_return  200 text/html "
+    <P><tt>We're sorry, but message templates edited here cannot
+    have functions in them for security reasons. Only HTML and 
+    <%= \$variable %> style code may be used.</tt>"
 }
 
-set db [ns_db gethandle]
 
-regsub -all "\r" $QQmessage "" newQQmessage
+#regsub -all "\r" $QQmessage "" newQQmessage
 
-ns_db dml $db "update ec_email_templates
-set title='$QQtitle', subject='$QQsubject', message='$QQmessage', variables='$QQvariables', when_sent='$QQwhen_sent', issue_type_list='[DoubleApos $issue_type_list]', last_modified=sysdate, last_modifying_user='$user_id', modified_ip_address='[DoubleApos [ns_conn peeraddr]]'
-where email_template_id=$email_template_id"
+if { [catch {db_dml update_ec_email_template "
+     update ec_email_templates
+     set title=:title, 
+         subject=:subject, 
+         message=:message, 
+         variables=:variables, 
+         when_sent=:when_sent, 
+         issue_type_list=:issue_type, 
+         last_modified=sysdate, 
+         last_modifying_user=:user_id, 
+         modified_ip_address='[DoubleApos [ns_conn peeraddr]]'
+     where email_template_id=:email_template_id"} errMsg ]} {
+     ad_return_complaint 1 "Failed to update the email template."
+}
+
+db_release_unused_handles
 
 ad_returnredirect "index.tcl"

@@ -1,10 +1,15 @@
-# $Id: toggle-active-p.tcl,v 3.1.2.1 2000/04/28 15:09:03 carsten Exp $
-set_the_usual_form_variables
+# /www/admin/gc/toggle-active-p.tcl
+ad_page_contract {
+    Activates or deactivates a domain by setting active_p appropriately.
+    
+    @author xxx
+    @creation-date unknown
+    @cvs-id toggle-active-p.tcl,v 3.2.6.3 2000/07/21 03:57:20 ron Exp
+} {
+    domain_id:integer
+}
 
-# domain_id
 
-set db [ns_db gethandle]
-
-ns_db dml $db "update ad_domains set active_p = logical_negation(active_p) where domain_id = $domain_id"
+db_dml toggle_domain_active_p "update ad_domains set active_p = logical_negation(active_p) where domain_id = $domain_id"
 
 ad_returnredirect "index.tcl"

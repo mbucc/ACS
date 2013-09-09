@@ -1,40 +1,40 @@
-# $Id: content-section-view.tcl,v 3.0 2000/02/06 03:15:12 ron Exp $
-# File:     /admin/content-sections/content-section-view.tcl
-# Date:     22/12/99
-# Contact:  tarik@arsdigita.com
-# Purpose:  shows the properties of the content section
-#
-# Note: if page is accessed through /groups pages then group_id and group_vars_set are already set up in 
-#       the environment by the ug_serve_section. group_vars_set contains group related variables (group_id, 
-#       group_name, group_short_name, group_admin_email, group_public_url, group_admin_url, group_public_root_url,
-#       group_admin_root_url, group_type_url_p, group_context_bar_list and group_navbar_list)
+# /www/admin/content-sections/content-section-view.tcl
+ad_page_contract {
+    Shows the properties of the content section
 
-set_the_usual_form_variables
-# section_key
+    Scope aware. scope := (public|group). Scope related variables are passed implicitly in 
+    the local environment and checked with ad_scope_error_check.
+
+    @author Contact:  tarik@arsdigita.com
+    @creation-date    22/12/99
+    @cvs-id content-section-view.tcl,v 3.1.6.7 2000/09/22 01:34:34 kevin Exp
+
+    @param section_key
+} {
+    section_key:notnull
+}
+
 
 if { ![info exist scope] } {
     set scope public
 }
 
-set db [ns_db gethandle]
-set selection [ns_db 1row $db "
-select section_pretty_name, type, section_url_stub, requires_registration_p,
-       decode(sort_key, NULL, 'N/A', sort_key) as sort_key, 
-       decode(intro_blurb, NULL, 'N/A', intro_blurb) as intro_blurb,
-       decode(help_blurb, NULL, 'N/A', help_blurb) as help_blurb
-from content_sections_temp
-where [ad_scope_sql] and section_key='[DoubleApos $section_key]'"]
 
-set_variables_after_query
+db_1row content_get_section_info "
+select section_pretty_name, type, section_url_stub, requires_registration_p, 
+ decode (sort_key, NULL, 'N/A', sort_key) as sort_key, 
+ decode (intro_blurb, NULL, 'N/A', intro_blurb) as intro_blurb, 
+ decode (help_blurb, NULL, 'N/A', help_blurb) as help_blurb 
+ from content_sections_temp 
+ where [ad_scope_sql] and section_key = :section_key"
 
-ReturnHeaders
 
-ns_write "
+set page_body "
 [ad_admin_header "View the entry for $section_pretty_name"]
 
 <h2>View the entry for $section_pretty_name</h2>
 
-[ad_admin_context_bar [list "index.tcl" "Content sections"] "View a content section"]
+[ad_admin_context_bar [list "index" "Content sections"] "View a content section"]
 
 <hr>
 "
@@ -74,12 +74,16 @@ append html "
 
 </table>
 <ul>
-<li><a href=\"content-section-edit.tcl?[export_url_vars section_key]\">Edit the data for $section_pretty_name</a><br>
+<li><a href=\"content-section-edit?[export_url_vars section_key]\">Edit the data for $section_pretty_name</a><br>
 </ul>
 <p>
 "
+db_release_unused_handles
 
-ns_write "
+append page_body "
 $html
 [ad_admin_footer]
 "
+
+doc_return  200 text/html $page_body
+

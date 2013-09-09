@@ -1,31 +1,39 @@
-# $Id: image-attachment.tcl,v 3.0 2000/02/06 03:44:02 ron Exp $
-# File:     /general-comments/image-attachment.tcl
-# Date:     01/21/2000
-# Contact:  philg@mit.edu, tarik@mit.edu
-# Purpose:  Present a pretty page with caption and image info with an IMG tag.
-#           This page should only get called for image attachments; any other
-#           attachments should be sent directly to 
-#           /general-comments/attachment/[comment_id]/[filename]
-#
-# Note: if page is accessed through /groups pages then group_id and group_vars_set are already set up in 
-#       the environment by the ug_serve_section. group_vars_set contains group related variables (group_id, 
-#       group_name, group_short_name, group_admin_email, group_public_url, group_admin_url, group_public_root_url,
-#       group_admin_root_url, group_type_url_p, group_context_bar_list and group_navbar_list)
+ad_page_contract {
+    Purpose:  Present a pretty page with caption and image info with an IMG tag.
+              This page should only get called for image attachments; any other
+              attachments should be sent directly to 
+              /general-comments/attachment/[comment_id]/[filename]
 
-set_the_usual_form_variables
-# maybe scope, maybe scope related variables (user_id, group_id, on_which_group, on_what_id)
-# comment_id return_url
+    @author philg@mit.edu
+    @author tarik@mit.edu
+    @creation-date 01/21/2000
+    @cvs-id image-attachment.tcl,v 3.2.2.5 2000/09/22 01:38:01 kevin Exp
+} {
+    {scope ""}
+    {group_id ""}
+    {on_which_group ""}
+    comment_id
+    return_url
+}
 
-set db [ns_db gethandle]
-set selection [ns_db 1row $db "select one_line_item_desc, file_type, caption, original_width, original_height, client_file_name, users.user_id, users.first_names, users.last_name, users.email, on_what_id
-from general_comments, users
-where comment_id = $comment_id
-and users.user_id = general_comments.user_id"]
+db_1row comment_data_get {
+    select one_line_item_desc, file_type, caption, original_width, original_height, client_file_name, 
+           users.user_id, users.first_names, users.last_name, users.email, on_what_id
+    from general_comments, users
+    where comment_id = :comment_id
+    and users.user_id = general_comments.user_id
+}
+
+db_release_unused_handles
 
 
-set_variables_after_query
+if { ![empty_string_p $original_width] && ![empty_string_p $original_height] } {
+    set width_and_height "width=$original_width height=$original_height"
+} else {
+    set width_and_height {}
+}
 
-ns_return 200 text/html "[ad_header "Image Attachment"]
+doc_return  200 text/html "[ad_header "Image Attachment"]
 
 <h2>Image Attachment</h2>
 
@@ -36,13 +44,12 @@ ns_return 200 text/html "[ad_header "Image Attachment"]
 <center>
 <i>$caption</i>
 <p>
-<img src=\"attachment/$comment_id/$client_file_name\" width=$original_width height=$original_height>
+<img src=\"attachment/$comment_id/$client_file_name\" $width_and_height>
 </center>
 
 <hr>
-<a href=\"/shared/community-member.tcl?user_id=$user_id\">$first_names $last_name</a>
+<a href=\"/shared/community-member?user_id=$user_id\">$first_names $last_name</a>
 </body>
 </html>
 "
-
 

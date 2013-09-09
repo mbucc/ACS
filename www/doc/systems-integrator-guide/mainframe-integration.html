@@ -1,0 +1,98 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+
+<head>
+<title>Mainframe Integation</title>
+<link rel="stylesheet" type="text/css" href="systems-integrator-guide.css">
+</head>
+
+<body>
+
+<h2>Integrating the ArsDigita Community System with Mainframe Data</h2>
+
+by <A href="http://photo.net/philg/">Philip Greenspun</a>
+
+
+<p>
+
+<a href="/doc/">ACS Documentation</a> :
+<a href="">Systems Integrator's Guide to the ACS </a> :
+Mainframe Integration
+
+<hr>
+
+At most large companies, the most useful information is held by
+transaction systems running on an IBM mainframe of some sort, e.g., an
+S/390.  The ACS-backed Web service <i>per se</i> isn't as interesting to
+an end-user as the access to data or transaction opportunities.  For
+example, consider <a href="http://www.fedex.com">www.fedex.com</a>.
+What users value is the ability to find out the current location of
+their package, not interaction with other users or any pure Web service.
+
+<h3>Approach 1: have AOLserver talk to the mainframe</h3>
+
+AOLserver comes with drivers for a bunch of RDBMSes, including a driver
+for the Solid RDBMS, whose C library is basically the same as ODBC (and
+therefore libraries from companies like 
+<a href="http://www.openlinksw.com/">http://www.openlinksw.com/</a> 
+and
+<a href="http://www.merant.com/">http://www.merant.com/</a> (used to be
+InterSolv)
+will work).  AOL publishes a document entitled "Developing Database
+Drivers for AOLserver" at 
+<a
+href="http://www.aolserver.com/server/docs/3.0/html/dr-app.htm#3527">http://www.aolserver.com/server/docs/3.0/html/dr-app.htm#3527</a>.
+
+<p>
+
+It takes a good C programmer only a few days to write a database driver
+for AOLserver and the result is typically 500-1000 lines of code.
+Remarkably, there is nothing in the AOLserver database pooling system
+that says the database has to be <em>relational</em> or interpret SQL.
+The database management system to which you're talking ought to return a
+cursor and then you page through row-by-row and/or just grab one row at
+a time.  It ought to have some kind of ASCII query language.  It ought
+to be running on the same machine as AOLserver or have some facility to
+be queried over TCP/IP.
+
+<p>
+
+Making AOLserver talk directly to an RDBMS or other DBMS on the
+mainframe works great if all you want to do is display pages of
+information from the mainframe or send user data back to the mainframe.
+However, if you want to combine queries or transactions with a local
+Oracle RDBMS and some kind of DBMS on the mainframe, it might be better
+to take the next approach.
+
+<h3>Approach 2: have Oracle talk to the mainframe</h3>
+
+AOLserver knows how to talk to Oracle.  Oracle knows how to talk to
+virtually any database management system in the world, via the Oracle
+Procedural Gateways (see <a
+href="http://www.oracle.com/gateways/html/procedural">http://www.oracle.com/gateways/html/procedural</a>).
+If you need to query from your local Oracle and include or exclude rows
+depending on what's in the mainframe, an Oracle Procedural Gateway is a
+convenience.  If you want to do an atomic transaction where you
+are guaranteed that a local operation and a mainframe operation will
+either both commit or both rollback, the Procedural Gateway is
+essential. 
+
+
+<blockquote>
+<font size=-2 face="verdana, arial, helvetica">
+
+
+Note: AOLserver is free and open-source.  It runs on any computer with a C
+compiler.  Oracle runs on most mainframes.  So you could just move
+everything to the mainframe and serve all the Web pages from there.
+Not too many companies would choose to do this, however.
+
+
+</font>
+</blockquote>
+
+
+<hr>
+<a href="mailto:philg@mit.edu"><address>philg@mit.edu</address></a>
+</body>
+</html>

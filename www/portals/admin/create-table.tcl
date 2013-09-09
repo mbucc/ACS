@@ -1,20 +1,16 @@
-#
-# /portals/admin/create-table.tcl
-#
-# first step in creation of a portal table prompting the user for name, html, and an optional administration URL
-#
-# by aure@arsdigita.com and dh@arsdigita.com
-#
-# Last modified: 10/8/1999
-#
-# $Id: create-table.tcl,v 3.0.4.1 2000/03/17 18:08:07 aure Exp $
-#
+# www/portals/admin/create-table.tcl
 
-# ad_page_variables {group_id ""}
-set_the_usual_form_variables 0 
-# maybe group_id
-
-set db [ns_db gethandle]
+ad_page_contract {
+    first step in creation of a portal table prompting the user for name, html, and an optional administration URL
+    
+    @author aure@arsdigita.com 
+    @author dh@arsdigita.com
+    @param group_id
+    @creation-date 10/8/1999
+    @cvs-id create-table.tcl,v 3.3.2.6 2000/09/22 01:39:03 kevin Exp
+} {
+    group_id:optional
+}
 
 # ------------------------------------------
 # verify user and set up the context bar and admin_url field
@@ -23,7 +19,7 @@ set user_id [ad_verify_and_get_user_id]
 if  {![info exists group_id]} {
     # the user came from index.tcl 
     set group_id ""
-    set context_bar "[ad_context_bar [list /portals/ "Portals"] [list index.tcl "Administration"] "Create Table"]"
+    set context_bar "[ad_context_bar [list /portals/ "Portals"] [list index "Administration"] "Create Table"]"
     set admin_url_table_row "<tr><td align=right valign=top>Administration URL (optional)</td>
     <td width=400><input type=text size=35 name=admin_url><br>
     You may associate an administration url with this table to which ordinary managers will be redirected.  
@@ -34,12 +30,11 @@ if  {![info exists group_id]} {
     set context_bar ""
     set admin_url_table_row ""
 }
-portal_check_administrator_maybe_redirect $db $user_id $group_id
+portal_check_administrator_maybe_redirect $user_id $group_id
 # ------------------------------------------
 
 # done with the database
-ns_db releasehandle $db
-
+db_release_unused_handles
 
 # ---------------------------------
 # serve the page
@@ -89,7 +84,15 @@ pool).
 [portal_admin_footer]
 "
 
-ns_return 200 text/html $page_content
+doc_return  200 text/html $page_content
+
+
+
+
+
+
+
+
 
 
 

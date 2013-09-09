@@ -8,7 +8,7 @@ on <a href=<%= "\"$return_url\"" %>><%= $object_name %></a>
 
 <form action=permission-grant method=post>
 
-<%= [export_form_vars on_what_id on_which_table scope user_id_from_search return_url] %>
+<%= [export_form_vars on_what_id on_which_table user_id_from_search return_url] %>
 
 <blockquote>
 
@@ -25,7 +25,7 @@ permission on <a href=<%= "\"$return_url\"" %>><%= $object_name %></a>
 to
 
 <blockquote>
-<input type=radio name=scope value=group> all members<br>
+<input type=radio CHECKED name=scope value=group> all members<br>
 <input type=radio name=scope value=group_role> members in the role:
 <input type=text name=role size=20 maxlength=20>
 </blockquote>
@@ -41,3 +41,5 @@ of <%= $user_group_widget %>
 </form>
 
 <%= [ad_footer] %>
+
+

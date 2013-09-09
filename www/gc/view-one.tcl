@@ -1,20 +1,28 @@
-# $Id: view-one.tcl,v 3.1 2000/03/10 23:58:34 curtisg Exp $
-# this page is used to display one ad to a user; we do not sign the page
-# with the maintainer email of the realm because otherwise naive users
-# will send that person bids on items
+# /www/gc/view-one.tcl
 
-set_form_variables
+ad_page_contract {
+    this page is used to display one ad to a user; we do not sign the page
+    with the maintainer email of the realm because otherwise naive users
+    will send that person bids on items
 
-# classified_ad_id is the key
+    @cvs_id view-one.tcl,v 3.3.2.6 2000/09/22 01:37:57 kevin Exp
+} {
+    classified_ad_id:integer
+}
 
-set db [gc_db_gethandle]
-
-if [catch {set selection [ns_db 1row $db "select employer, salary_range, classified_ads.state, classified_ads.country, domain_id, html_p, days_since_posted(posted) as days_since_posted, reply_to_poster_p,  one_line, posted, full_ad, auction_p as ad_auction_p, users.email as poster_email, users.first_names || ' ' || users.last_name as poster_name, users.user_id as poster_id
-from classified_ads, users
-where classified_ads.user_id = users.user_id
-and classified_ad_id = $classified_ad_id"]} errmsg] {
+if { [catch { db_1row gc_view_one_ad_info_get "
+select  employer, salary_range, classified_ads.state, 
+        classified_ads.country, domain_id, html_p, 
+        days_since_posted(posted) as days_since_posted, 
+        reply_to_poster_p,  one_line, posted, full_ad, 
+        auction_p as ad_auction_p, users.email as poster_email, 
+        users.first_names || ' ' || users.last_name as poster_name, 
+        users.user_id as poster_id
+from   classified_ads, users
+where  classified_ads.user_id = users.user_id
+and    classified_ad_id = :classified_ad_id"} errmsg] } {
     # error getting stuff from db
-    ns_return 404 text/html "[gc_header "Ad missing"]
+    doc_return  404 text/html "[gc_header "Ad missing"]
 
 <h2>Ad missing</h2>
 
@@ -38,12 +46,9 @@ $errmsg
      return
 }
 
-set_variables_after_query
-
 # now domain_id is set
 
-set selection [ns_db 1row $db [gc_query_for_domain_info $domain_id]]
-set_variables_after_query
+db_1row domain_info_get [gc_query_for_domain_info $domain_id]
 
 switch $days_since_posted { 
     0 { set age_string "today" }
@@ -55,10 +60,10 @@ switch $days_since_posted {
 if {$geocentric_p == "t"} {
     set geocentric_info "<p>\n"    
     if { ![empty_string_p $country] } {
-	append geocentric_info "Country:   [ad_country_name_from_country_code $db $country]<br>\n"
+	append geocentric_info "Country:   [ad_country_name_from_country_code $country]<br>\n"
     }
     if { ![empty_string_p $state] } {
-	append geocentric_info "State:   [ad_state_name_from_usps_abbrev $db $state]<br>\n"
+	append geocentric_info "State:   [ad_state_name_from_usps_abbrev $state]<br>\n"
     }
 } else {
     set geocentric_info ""
@@ -67,20 +72,20 @@ if {$geocentric_p == "t"} {
 set action_items [list]
 
 if { $ad_auction_p == "t" && $auction_p != "f" } {
-    lappend action_items "<a href=\"place-bid.tcl?classified_ad_id=$classified_ad_id\">Place a bid</a> <font size=-1>(an email notice will be sent to the advertiser)</font> "
+    lappend action_items "<a href=\"place-bid?classified_ad_id=$classified_ad_id\">Place a bid</a> <font size=-1>(an email notice will be sent to the advertiser)</font> "
     lappend action_items "<a href=\"mailto:$poster_email\">Reply privately to $poster_email</a>"
-    set selection [ns_db select $db "select bid, bid_time, currency, location, 
-email as bidder_email, first_names || ' ' || last_name as bidder_name, users.user_id as bidder_user_id
-from classified_auction_bids, users
-where users.user_id = classified_auction_bids.user_id
-and classified_ad_id = $classified_ad_id 
-order by bid_time desc"]
+    set sql "
+    select bid, bid_time, currency, location, 
+           email as bidder_email, first_names || ' ' || last_name as bidder_name, users.user_id as bidder_user_id
+    from classified_auction_bids, users
+    where users.user_id = classified_auction_bids.user_id
+    and classified_ad_id = :classified_ad_id 
+    order by bid_time desc"
 
     set bid_items ""
-    while {[ns_db getrow $db $selection]} {
-	set_variables_after_query
+    db_foreach gc_view_one_get_bids $sql -bind [ad_tcl_vars_to_ns_set classified_ad_id] {
 	append bid_items "<li>[string trim $bid] $currency bid by
-<a href=\"/shared/community-member.tcl?user_id=$bidder_user_id\">$bidder_name</a>
+<a href=\"/shared/community-member?user_id=$bidder_user_id\">$bidder_name</a>
 on [util_AnsiDatetoPrettyDate $bid_time] in $location
 "
     }
@@ -95,20 +100,19 @@ on [util_AnsiDatetoPrettyDate $bid_time] in $location
     set bid_history ""
 }
 
-lappend action_items  "<a href=\"/shared/community-member.tcl?user_id=$poster_id\">view $poster_name's history as a community member</a>"
+lappend action_items  "<a href=\"/shared/community-member?user_id=$poster_id\">view $poster_name's history as a community member</a>"
 
-
-set n_audit_rows [database_to_tcl_string $db "select count(*) as n_audit_rows from classified_ads_audit where classified_ad_id = $classified_ad_id"]
+set n_audit_rows [db_string num_audit_rows "select count(*) as n_audit_rows from classified_ads_audit where classified_ad_id = :classified_ad_id" -bind [ad_tcl_vars_to_ns_set classified_ad_id]]
 
 if { $n_audit_rows > 0 } {
-    lappend action_items "<a href=\"view-ad-history.tcl?classified_ad_id=$classified_ad_id\">view previous versions of this ad</a>
+    lappend action_items "<a href=\"view-ad-history?classified_ad_id=$classified_ad_id\">view previous versions of this ad</a>
 <font size=-1 color=red>(this ad has been edited)</font>
 "
 }
 
-set comment_html [ad_general_comments_list $db  $classified_ad_id classified_ads $one_line gc]
+set comment_html [ad_general_comments_list  $classified_ad_id classified_ads $one_line gc]
 
-ns_db releasehandle $db
+db_release_unused_handles
 
 if [ad_parameter IncludeBannerIdeasP gc 0] {
     set banneridea_html "<br>
@@ -124,7 +128,7 @@ if [ad_parameter IncludeBannerIdeasP gc 0] {
 
 }
 
-ns_return 200 text/html "[gc_header $one_line]
+doc_return 200 text/html "[gc_header $one_line]
 
 <h2>$one_line</h2>
 
@@ -133,8 +137,7 @@ ns_return 200 text/html "[gc_header $one_line]
 <hr>
 advertised $age_string 
 by
-<a href=\"/shared/community-member.tcl?user_id=$poster_id\">$poster_name</a>
-
+<a href=\"/shared/community-member?user_id=$poster_id\">$poster_name</a>
 
 <blockquote>
 

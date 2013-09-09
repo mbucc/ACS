@@ -1,24 +1,25 @@
-# $Id: update-display.tcl,v 3.0 2000/02/06 03:47:18 ron Exp $
-set_form_variables
-# filesystem_node
+# /homepage/update-display.tcl
 
-# First, we need to get the user_id
-set user_id [ad_verify_and_get_user_id]
+ad_page_contract {
 
-# If the user is not registered, we need to redirect him for
-# registration
-if { $user_id == 0 } {
-    ad_redirect_for_registration
-    return
+    Allow user to update display settings.
+
+    @param filesystem_node The top directory displayed (passed argument).
+
+    @author mobin@mit.edu
+    @cvs-id update-display.tcl,v 3.2.2.6 2000/09/22 01:38:19 kevin Exp
+} {
+    filesystem_node:naturalnum,notnull
 }
 
-set db [ns_db gethandle]
+set document ""
 
-ReturnHeaders
+
+set user_id [ad_maybe_redirect_for_registration]
 
 set title "Display Settings "
 
-ns_write "
+append document "
 [ad_header $title]
 <h2>$title</h2>
 [ad_context_bar_ws [list "index.tcl?filesystem_node=$filesystem_node" "Homepage Maintenance"] $title]
@@ -27,7 +28,7 @@ ns_write "
 [help_upper_right_menu]
 "
 
-set selection [ns_db 0or1row $db "
+db_0or1row user_homepage {
 select user_id,
        bgcolor, 
        textcolor, 
@@ -44,33 +45,17 @@ select user_id,
        maint_link_font_weight, 
        maint_font_type
 from users_homepages
-where user_id=$user_id"]
+where user_id=:user_id
+}
 
-#if { [empty_string_p $selection] }  {
-    # there is no entry for this scope, let's go and create the default one
-#    ns_db dml $db "
-#    insert into simple
-#    (id, [ad_scope_cols_sql], bgcolor, textcolor, unvisited_link, visited_link, 
-#     link_text_decoration, font_type)
-#    values
-#    (simple_id_sequence.nextval, [ad_scope_vals_sql], 'white', 'black', 'blue', 'purple', 'none', 'arial')
-#    "
-
-#    set selection [ns_db 1row $db "
-#    select bgcolor, textcolor, unvisited_link, visited_link, link_text_decoration, font_type
-#    from simple
-#    where [ad_scope_sql]
-#    "]
-#}
- 
-set_variables_after_query
+db_release_unused_handles
 
 set color_names_list { "choose new color" Black Blue Cyan Gray Green Lime Magenta Maroon Navy Olive Purple Red Silver Teal White Yellow }
 set color_values_list { "" black blue cyan gray green lime magenta maroon navy olive purple red silver teal white yellow }
 
-#present the user with graphical options:
+# Present the user with graphical options:
 append html "
-<form method=post action=update-display-2.tcl>
+<form method=post action=update-display-2>
 [export_form_vars filesystem_node]
 <font size=+1>Public Pages:</font>
 <table>
@@ -81,28 +66,28 @@ append html "
 <td>Body Background Color:
 <td><font color=red>$bgcolor</font>
 <td>[ns_htmlselect -labels $color_names_list bgcolor $color_values_list $bgcolor]
-<td><input type=text name=bgcolor_val size=8>
+<td><input type=text name=bgcolor_val size=8 maxlength=20>
 </tr>
 
 <tr>
 <td>Body Text Color:
 <td>[ad_space 2]<font color=red>$textcolor</font>
 <td>[ns_htmlselect -labels $color_names_list textcolor $color_values_list $textcolor]
-<td><input type=text name=textcolor_val size=8>
+<td><input type=text name=textcolor_val size=8 maxlength=20>
 </tr>
 
 <tr>
 <td>Links Color:
 <td>[ad_space 2]<font color=red>$unvisited_link</font>
 <td>[ns_htmlselect -labels $color_names_list unvisited_link $color_values_list $unvisited_link]
-<td><input type=text name=unvisited_link_val size=8>
+<td><input type=text name=unvisited_link_val size=8 maxlength=20>
 </tr>
 
 <tr>
 <td>Visited Links Color:
 <td>[ad_space 2]<font color=red> $visited_link</font>
 <td>[ns_htmlselect -labels $color_names_list visited_link $color_values_list $visited_link]
-<td><input type=text name=visited_link_val size=8>
+<td><input type=text name=visited_link_val size=8 maxlength=20>
 </tr>
 
 <tr>
@@ -133,7 +118,6 @@ if { $link_text_decoration == "none" } {
     " 
 }
 
-
 if { $link_font_weight == "none" || [empty_string_p $link_font_weight] } {
     append html "
     <tr>
@@ -152,7 +136,6 @@ if { $link_font_weight == "none" || [empty_string_p $link_font_weight] } {
     " 
 }
 
-
 append html "</table><br><p>"
 
 # For Maintenance Pages
@@ -167,28 +150,28 @@ append html "
 <td>Body Background Color:
 <td><font color=red>$maint_bgcolor</font>
 <td>[ns_htmlselect -labels $color_names_list maint_bgcolor $color_values_list $maint_bgcolor]
-<td><input type=text name=maint_bgcolor_val size=8>
+<td><input type=text name=maint_bgcolor_val size=8 maxlength=20>
 </tr>
 
 <tr>
 <td>Body Text Color:
 <td>[ad_space 2]<font color=red>$maint_textcolor</font>
 <td>[ns_htmlselect -labels $color_names_list maint_textcolor $color_values_list $maint_textcolor]
-<td><input type=text name=maint_textcolor_val size=8>
+<td><input type=text name=maint_textcolor_val size=8 maxlength=20>
 </tr>
 
 <tr>
 <td>Links Color:
 <td>[ad_space 2]<font color=red>$maint_unvisited_link</font>
 <td>[ns_htmlselect -labels $color_names_list maint_unvisited_link $color_values_list $maint_unvisited_link]
-<td><input type=text name=maint_unvisited_link_val size=8>
+<td><input type=text name=maint_unvisited_link_val size=8 maxlength=20>
 </tr>
 
 <tr>
 <td>Visited Links Color:
 <td>[ad_space 2]<font color=red>$maint_visited_link</font>
 <td>[ns_htmlselect -labels $color_names_list maint_visited_link $color_values_list $maint_visited_link]
-<td><input type=text name=maint_visited_link_val size=8>
+<td><input type=text name=maint_visited_link_val size=8 maxlength=20>
 </tr>
 
 <tr>
@@ -219,7 +202,6 @@ if { $maint_link_text_decoration == "none" } {
     " 
 }
 
-
 if { $maint_link_font_weight == "none" || [empty_string_p $maint_link_font_weight] } {
     append html "
     <tr>
@@ -238,36 +220,20 @@ if { $maint_link_font_weight == "none" || [empty_string_p $maint_link_font_weigh
     " 
 }
 
-
 append html "
 </table>
 <p>
 <table><tr><td><input type=submit value=\"Update\"></form></td><td>
-<form method=post action=update-display-3.tcl>
+<form method=post action=update-display-3>
 [export_form_vars filesystem_node]
 <input type=submit value=\"Delete Customizations\"></form>
 </td></tr></table>
 "
 
-ns_write "
+append document "
 <blockquote>
 $html
 </blockquote>
 [ad_footer]
 "
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+doc_return  200 text/html $document

@@ -1,0 +1,95 @@
+<html>
+<!--AD_DND-->
+<head>
+<title>Company Houses Reservation System</title>
+</head>
+
+<body bgcolor=#ffffff text=#000000>
+<h2>Company Houses Reservation System</h2>
+
+part of the <a href="">ArsDigita Community System</a>
+by <a href="mailto:mburke@arsdigita.com">Matthew Burke</a>, 
+   <a href="mailto:lin@arsdigita.com">Lin Chen</a>   
+
+<hr>
+
+<ul>
+<li>User-accessible directory:  <a href="/reservations/ch/">/reservations/ch/</a>
+<li>data model :  <a href="/doc/sql/display-sql?url=/doc/sql/house.sql">/doc/sql/house.sql</a>
+<li>Tcl procs:  /tcl/ch-defs, /tcl/ch-calendar
+
+</ul>
+
+<h3>The Big Idea</h3>
+This module allows admin users to manage company housing information and reservations.  And allows 
+employees to make reservations in company housing via the web.
+
+<h3>Details</h3>
+All employees of the company are authorized to the following:
+<ul>
+  <li> Reserve beds in public housing (may subject to approval) for oneself, another employee, or
+  someone else
+  <li> View/cancel/add note to any future reservations made by or made for oneself
+  <li> View house, room, bed and amenity informaiton of any public housing
+  <li> View reservations made to any public housing
+</ul>
+
+Each house is assigned an administration group. All members in the group are considered admin users
+for that house. <i>Note: an admin user for one house can just be an ordinary user to another house.</i>
+The admin users are entitled to do the following:
+<ul>
+  <li> View, edit, add public/non-public house information
+  <li> View, edit, add, delete room
+  <li> View, edit, add, delete bed
+  <li> View, edit, add, delete amenity
+  <li> Reserve any bed and get approval automatically
+  <li> View, delete any future reservation
+  <li> Approve/deny reservations made by non-admin users
+  <li> Run reports (not implemented yet)
+</ul>
+
+Only Site-Wide administrators can add a new house and assign it an admin group. 
+
+Besides make reservations for a continuous period of time, users can make recurring reservations, for
+example, reserve a bed from Monday through Thursday for eight weeks.
+
+<h3>Prerequest of using this module</h3>
+Site-Wide administrator should create a group of type "Administration" and name "Facility Administration". All admin groups for houses will be subgroups of this group.
+
+<h3>Under the Hood</h3>
+
+The data model has tables for houses, rooms, beds, amenities and reservations. 
+
+Each house is represented 
+by a row in "im_facilities" table, also a row in "im_house_info" table, while the information in 
+"im_house_info" table is house-specific.
+
+Each room corresponds to a row in "im_house_rooms" table. Each bed corresponds to a row in "im_house_beds"
+table. Each type of amenity has a row in "im_house_amenities" table. And there are two mapping tables:
+"im_house_amenity_map" and "im_room_amenity_map" to associate an amenity with a house or a room.
+
+In "im_house_reservations" table, there is one row for each reservation. Here one reservation means reserve
+one bed for a continuous period of time, i.e. one start date and one end date. Recurring reservation
+is stored as a set of individual reservations.
+
+<h3>Future Enhancements</h3>
+
+<ul>
+  <li>Usage Reports<br>
+  <li> Links to map<br>
+	This is possible only for US addresses. Data model may need to be changed to store street address,
+	city, state and zip separately.
+  <li> Links to floor-plans<br>
+  <li> Email reservation reminders to guests
+  <li> Email end of available date reminders to admin users
+  <li> Email agreements to guests<br>
+	Data model may need to be changed to store agreement document for each house. And possibly also
+	store the information of which guest has signed which agreement when.
+</ul>
+
+<hr>
+
+<a href="mailto:mburke@arsdigita.com"><address>mburke@arsdigita.com</address></a>
+<a href="mailto:lin@arsdigita.com"><address>lin@arsdigita.com</address></a>
+</body>
+</html>

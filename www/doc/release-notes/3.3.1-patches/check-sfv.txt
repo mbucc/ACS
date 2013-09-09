@@ -1,0 +1,123 @@
+#!/usr/bin/tclsh
+
+# Program: check-sfv (Check Set Form Variables)
+# Author:  Michael A. Cleverly <michael@cleverly.com> 02 July 2000
+# Usage:   find acs/www -name *.tcl | sort | check-sfv
+#          find acs/www -name *.tcl | sort | check-sfv --ignore-procs
+#
+# This program looks for .tcl scripts that set variables before
+# calling one of the set_form_variable family of functions.
+# The danger being that a malicious user could pass in form variables
+# that might clobber existing variables.
+#
+# For example in /www/pvt/portait/upload-2.tcl (ACS 3.3) user_id is set
+# before set_form_variables is called.  A malicious user can pass in
+# another value for user_id, clobbering their real user_id, and allowing
+# them to upload a portrait for any other user!
+#
+# Some .tcl scripts define their own helper proc's inline which can
+# lead to false positives.  Use the --ignore-procs command line option to
+# ignore them.
+
+if {[string compare [lindex $argv 0] "--ignore-procs"] == 0} {
+    set ignore_inline_procs_p 1
+} else {
+    set ignore_inline_procs_p 0
+}
+
+set sfv_patterns {^(set_form_variables|set_the_usual_form_variables)}
+set set_patterns {^(set |l?append |nsv_|ns_share |global |set_variables_)}
+
+# what files do we need to check?
+set files [split [read stdin] \n]
+
+# nothing to do?
+if {[llength $files] == 0} {
+    puts "Pipe the names of the files to be checked into this program.  IE:"
+    puts "find acs/www/ -name *.tcl | sort | check-sfv"
+    exit
+}
+
+# spit out when we were run, in case the output is being saved
+puts "# check-sfv run at [clock format [clock seconds]]"
+if {$ignore_inline_procs_p} {
+    puts "# ignoring inline proc definitions"
+} else {
+    puts "# inline proc definitions WILL NOT BE ignored (may lead to false positives)"
+    puts "# re-run with --ignore-procs to avoid false positives"
+}
+
+foreach file $files {
+
+    # does the file exist?
+    if { ![file exists $file] } { continue }
+
+    # can we read it?
+    if { ![file readable $file] } {
+        puts "Unable to open $file"
+        continue
+    }
+
+    set fp [open $file]
+    set counter 0
+    set inside_a_proc_def_p 0
+    set lines_with_sfv [list]
+    set lines_with_set [list]
+
+    # let's check each line
+    while {[gets $fp line] != -1} {
+        incr counter
+        set trimmed_line [string trim $line]
+
+        # if we need to ignore inline proc def's (usually at the top of the
+        # .tcl file to avoid false positives)
+        #
+        # our method is simple: we assume that a proc begins with proc and
+        # ends with a closing brace, without any identation.
+
+        if {$inside_a_proc_def_p && [regexp {^\}} $line]} {
+            # we were inside a proc, but we're leaving it now
+            set inside_a_proc_def_p 0
+            continue
+        } elseif {[regexp {^(ad_)?proc} $line] && $ignore_inline_procs_p} {
+            # we are entering a proc now
+            set inside_a_proc_def_p 1
+            continue
+        } elseif {$inside_a_proc_def_p} {
+            # we are inside a proc, so we don't care what this line is
+            continue
+        }
+
+        # do we have a match for either set_form_variable or a regular set?
+        if {[regexp $sfv_patterns $trimmed_line]} {
+            lappend lines_with_sfv $counter
+        } elseif {[regexp $set_patterns $trimmed_line]} {
+            lappend lines_with_set $counter
+        }
+
+    }
+    close $fp
+
+    # if no set_form_variables found, we're done with this file
+    if {[llength $lines_with_sfv] == 0} { continue }
+
+    # if no other variables set (odd, but safe), we're done with this file
+    if {![llength $lines_with_set]} { continue }
+
+    # both set_form_variable and a regular set found -- find out which
+    # came first
+    set first_sfv [lindex $lines_with_sfv 0]
+    set first_set [lindex $lines_with_set 0]
+    set last_sfv  [lindex $lines_with_sfv end]
+
+    # if set_form_variable occured after a set, issue warning
+    if {$first_sfv > $first_set} {
+        puts "Check $file (at lines $first_set and $first_sfv)"
+    }
+
+    # if we had more than one set_form_variable we need to check and see if
+    # there was a set before the final set_form_variable
+    if {$first_sfv != $last_sfv && $first_set < $last_sfv} {
+        puts "Check multiple occurences in $file at: [join $lines_with_sfv ", "]"
+    }
+}

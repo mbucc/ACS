@@ -1,17 +1,19 @@
-# $Id: delete.tcl,v 3.0.4.1 2000/04/28 15:09:36 carsten Exp $
-#
-# /admin/users/delete.tcl
-#
-# present a form that will let an admin mark a user's account deleted
-# (or ban the user)
-#
-# by philg@mit.edu late in 1998
-#
+#/admin/users/delete.tcl
 
-set_form_variables
+ad_page_contract {
+    present a form that will let an admin mark a user's account deleted
+    (or ban the user)
+    
+    @param user_id
+    @param return_url
+    @author philg@mit.edu
+    @creation-date  late in 1998
+    @cvs-id delete.tcl,v 3.3.2.3.2.4 2000/09/22 01:36:18 kevin Exp
+} {
+    user_id:integer,notnull
+    return_url:optional
+}
 
-# user_id
-# return_url (optional)
 
 set admin_user_id [ad_verify_and_get_user_id]
 
@@ -20,12 +22,11 @@ if { $admin_user_id == 0 } {
     return
 }
 
-set db [ns_db gethandle]
 
-set selection [ns_db 1row $db "select first_names, last_name from users where user_id = $user_id"]
-set_variables_after_query
 
-ns_return 200 text/html "[ad_admin_header "Deleting $first_names $last_name"]
+db_1row user_full_name "select first_names, last_name from users where user_id = :user_id"
+
+set page_content "[ad_admin_header "Deleting $first_names $last_name"]
 
 <h2>Deleting $first_names $last_name</h2>
 
@@ -35,12 +36,12 @@ You have two options here:
 
 <ul>
 
-<li><a href=\"delete-2.tcl?[export_url_vars user_id return_url]\">just mark the account deleted</a> 
+<li><a href=\"delete-2?[export_url_vars user_id return_url]\">just mark the account deleted</a> 
 (as if the user him or herself had unsubscribed)
 
 <p>
 
-<li><form method=POST action=\"delete-2.tcl\">
+<li><form method=POST action=\"delete-2\">
 [export_form_vars return_url]
 <input type=submit value=\"Ban this user\">
 [export_form_vars user_id]
@@ -51,6 +52,9 @@ reason:  <input type=text size=60 name=banning_note>
 
 </ul>
 
-
 [ad_admin_footer]
 "
+
+
+
+doc_return  200 text/html $page_content

@@ -9,8 +9,8 @@
 --
 
 -- Add WimpyPoint user group type.
-insert into user_group_types(group_type, pretty_name, pretty_plural, approval_policy, default_new_member_policy, group_module_administration)
-values('wp', 'WimpyPoint presentation', 'WimpyPoint presentations', 'closed', 'closed', 'none');
+insert into user_group_types(group_type, pretty_name, pretty_plural, approval_policy, default_new_member_policy, group_module_administration, user_group_types_id)
+values('wp', 'WimpyPoint presentation', 'WimpyPoint presentations', 'closed', 'closed', 'none', user_group_types_seq.nextval);
 
 create sequence wp_ids;
 
@@ -42,17 +42,20 @@ values(-1, 'Default (Plain)', 't',
        'BODY { background-color: white; color: black } P { line-height: 120% } UL { line-height: 140% }');
 
 -- Images used for styles.
+create sequence wp_style_images_seq;
+
 create table wp_style_images (
+	wp_style_images_id integer primary key,
 	style_id	references wp_styles on delete cascade not null,
 	image		blob not null,
 	file_size	integer not null,
 	file_name	varchar(200) not null,
 	mime_type	varchar(100) not null,
-	primary key (style_id, file_name)
+	unique (style_id, file_name)
 );
 
 alter table wp_styles add (
-	foreign key (style_id, background_image) references wp_style_images on delete set null
+	foreign key (style_id, background_image) references wp_style_images(style_id, file_name) on delete set null
 );
 
 -- N.B.: Interdependent tables - you have to use CASCADE CONSTRAINTS to drop wp_styles and wp_style_images!
@@ -62,7 +65,7 @@ create table wp_presentations (
 	-- The title of the presentation, as displayed to the user.
 	title			varchar2(400) not null,
 	-- A signature on the bottom.
-	page_signature		varchar2(200),
+	page_signature		varchar2(4000),
 	-- The copyright notice displayed on all pages.
 	copyright_notice	varchar2(400),
 	-- Creation date and user. The creation user always has admin access to
@@ -85,13 +88,16 @@ create table wp_presentations (
 
 create index wp_presentations_by_date on wp_presentations(creation_date);
 
--- A list of checkpoints (frozen versions of a presentation).
+-- A list of checkpoints (frozen versions of a presentation).	
+create sequence wp_checkpoints_seq;
+
 create table wp_checkpoints (
+	wp_checkpoints_id 	integer primary key,
 	presentation_id		references wp_presentations on delete cascade not null,
 	checkpoint		integer not null,
 	description		varchar(200),
 	checkpoint_date		date,
-	primary key(presentation_id, checkpoint)
+	unique(presentation_id, checkpoint)
 );
 
 -- Slides belonging to presentations. When a slide is created, set checkpoint
@@ -119,20 +125,22 @@ create table wp_slides (
 	modification_date	date not null,
 	-- Can override the style setting for the presentation.
 	style			references wp_styles,
-        foreign key (presentation_id, min_checkpoint) references wp_checkpoints,
-	foreign key (presentation_id, max_checkpoint) references wp_checkpoints
+        foreign key (presentation_id, min_checkpoint) references wp_checkpoints(presentation_id, checkpoint),
+	foreign key (presentation_id, max_checkpoint) references wp_checkpoints(presentation_id, checkpoint)
 );
 
 create index wp_sorted_slides on wp_slides(presentation_id, max_checkpoint, sort_key);
 
 -- Keeps track of the sorting order for frozen sets of slides.
+create sequence wp_historical_sort_seq;
 create table wp_historical_sort (
+	wp_historical_sort_id integer primary key,
 	slide_id	references wp_slides on delete cascade not null,
         presentation_id integer not null,
         checkpoint      integer not null,        
 	sort_key	numeric not null,
-	primary key (slide_id, checkpoint),
-	foreign key (presentation_id, checkpoint) references wp_checkpoints on delete cascade
+	unique (slide_id, checkpoint),
+	foreign key (presentation_id, checkpoint) references wp_checkpoints(presentation_id, checkpoint) on delete cascade
 );
 
 create index wp_sorted_historical_slides on wp_historical_sort(presentation_id, checkpoint, sort_key);
@@ -389,11 +397,11 @@ begin
     set   description = v_description, checkpoint_date = sysdate
     where presentation_id = v_presentation_id
     and   checkpoint = latest_checkpoint;
-  insert into wp_checkpoints(presentation_id, checkpoint)
-    values(v_presentation_id, latest_checkpoint + 1);
+  insert into wp_checkpoints(presentation_id, checkpoint, wp_checkpoints_id)
+    values(v_presentation_id, latest_checkpoint + 1, wp_checkpoints_seq.nextval);
   -- Save sort order.
-  insert into wp_historical_sort(slide_id, presentation_id, checkpoint, sort_key)
-    select slide_id, v_presentation_id, latest_checkpoint, sort_key
+  insert into wp_historical_sort(slide_id, presentation_id, checkpoint, sort_key, wp_historical_sort_id)
+    select slide_id, v_presentation_id, latest_checkpoint, sort_key, wp_historical_sort_seq.nextval
     from   wp_slides
     where  presentation_id = v_presentation_id
     and    max_checkpoint is null;

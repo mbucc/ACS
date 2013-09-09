@@ -1,0 +1,312 @@
+<html>
+<head>
+<title>Manual System</title>
+</head>
+
+<body bgcolor=white fgcolor=black>
+
+<h2>Manual System</h2>
+
+
+by <a href=mailto:kevin@arsdigita.com>kevin@arsdigita.com</a>
+
+<hr>
+
+<p>
+User accessible pages: <a href="/manuals/">/manuals/</a><br>
+Manual editing pages: <a href="/manuals/admin">/manuals/admin/</a><br>
+Manual administration pages: <a href="/admin/manuals/">/admin/manuals/</a><br>
+Data model: <a href="/doc/sql/display-sql?url=/doc/sql/manuals.sql">/doc/sql/manuals.sql</a>
+
+<h3>The Big Picture</h3>
+
+This is a system for managing a set of manuals or books through the
+database.  This system allows users to view a dynamically generated
+table of contents, view sections and make comments on sections.
+Administrators can add, delete, edit and rearrange sections.  Manuals
+can also have figures or use image to decorate their pages.
+
+<p>
+
+Printable versions of the manual are produced using <a
+href="http://www.easysw.com/htmldoc/htmldoc">HTMLDOC</a>.
+Readers can download the complete manual in HTML or PDF;
+PostScript is an option but almost never what you want to offer for
+download because of size relative to PDF. 
+
+<p>
+
+As an option, the system can be configured to use <a
+href=http://www.loria.fr/~molli/cvs/doc/cvs_toc>CVS</a> to manage
+version control for section content.  If there is any chance of
+concurrent edits, CVS should be installed and turned on in this
+module.  Trying to avoid this by keeping track of locks in the
+database is ugly and we don't support it because basically you just
+end up with a bad re-implementation of CVS.
+
+<h3>Our data model</h3>
+
+We use three tables to store all content for a manual: <code>manuals,
+manual_sections</code> and <code>manual_figures</code>.  
+
+<p>
+
+<code>manuals</code> holds the name of each manual stored on
+the system.  Additional information we keep includes the owner of the
+manual and the scope of the document (public or restricted to a group).
+
+<pre>
+create table manuals (
+	manual_id		integer primary key,
+	-- title of the manual
+	title			varchar(500) not null unique,
+	-- compact title used to generate file names, e.g. short_name.pdf
+	short_name		varchar(100) not null unique,
+	-- person responsible for the manual (editor-in-chief)
+	owner_id		references users(user_id) not null,
+	-- a string containing the author or authors which will
+	-- be included on the title page of the printable version
+	author			varchar(500),
+	-- copyright notice (may be null)
+	copyright		varchar(500),
+	-- string describing the version and/or release date of the manual
+	version			varchar(500),
+	-- if scope=public, this manual is viewable by anyone
+	-- if scope=group, this manual is restricted to group members
+	scope			varchar(20) not null,
+	-- if scope=group, this is the owning group_id
+	group_id		references user_groups,
+	-- is this manual currently active?
+	active_p		char(1) default 'f' check (active_p in ('t','f')),
+	-- notify the editor-in-chief on all changes to the manual
+	notify_p		char(1) default 't' check (notify_p in ('t','f')),
+	-- insure consistent state
+	constraint manual_scope_check check ((scope='group' and group_id is not null)
+	                                     or (scope='public'))
+);
+</pre>
+
+
+<p><code>manual_sections</code> holds information about the sections of
+the manuals:
+
+<pre>
+create table manual_sections (
+	section_id		integer primary key,
+	-- which manual this section belongs to
+	manual_id		integer references manuals not null,
+	-- a string we use for cross-referencing this section
+	label			varchar(100),
+	-- used to determine where this section fits in the document hierarchy
+	sort_key		varchar(50) not null,
+	-- title of the section
+	section_title		varchar(500) not null,
+	-- user who first created the section
+	creator_id		references users(user_id) not null,
+	-- notify the creator whenever content is edited?
+	notify_p		char(1) default 'f' check (notify_p in ('t','f')),
+	-- user who last edited content for this section
+	last_modified_by	references users(user_id),
+	-- is there an html file associated with this section?
+	content_p		char(1) default 'f' check (content_p in ('t','f')),
+	-- determines whether a section is displayed on the user pages
+	active_p		char(1) default 't' check (active_p in ('t','f')),
+	-- we may want to shorten the table of contents by not displaying all sections
+	display_in_toc_p 	char(1) default 't' check (display_in_toc_p in ('t','f')),
+	-- make sure that sort_keys are unique within a give manual
+	unique(manual_id,sort_key)
+	-- want to add the following but can't figure out the syntax
+	-- contraint manual_label_check check ((label is null) or (unique(manual_id,label))
+);
+</pre>
+
+The sort key uses a system similar to that in the threaded bboard
+system, whereby sections sort lexigraphically and the depth is
+determined by the length of the sort key.  Ex.,
+
+<ul>
+<li>00
+<li>01
+  <ul>
+  <li>0100
+  <li>0101
+  <li>0102
+  </ul>
+<li>02
+  <ul>
+  <li>0200
+    <ul>
+    <li>020000
+    <li>020001
+    </ul>
+  <li>...
+  </ul>
+<li>...
+</ul>
+
+Unlike the bboard system, we only use digits since it simplifies the
+code and 100 seems like a reasonable limitation on the number of
+subsections of a given section.  While these are numbers, the database
+treats them as strings and care must be taken to always single quote
+sort keys in SQL statements.  Similarly, one should be careful to avoid
+TCL's hangups with leading zeros.
+
+<p>
+
+<h3>Manual Administration</h3>
+
+<p>High level administration occurs in <a
+href="/admin/manuals/">/admin/manuals/</a>.  Here, administrators can
+add or delete manuals, change owners, authorize editors or otherwise
+dramatically alter the properties of a manual.
+
+<p>Editorial tasks are handled in <a
+href="/manuals/admin/">/manuals/admin/</a>.  Here the editor of a
+manual can add, delete or edit sections of a manual and manipulate the
+figures contained in a manual.
+
+<p>The system uses CVS to provide support for multiple, simultaneous
+editors.  This means that multiple editors can work on section content
+at the same time without clobbering each other's changes.  Using CVS
+has the added bonus of keeping a record of what changes were made and
+by whom.
+
+<p>Figure numbers are generated automatically based on the order they
+are referenced within the sections of a manual.  This requires global
+processing of the document and can be a relatively expensive operation
+(compared to the executation time to construct a typical web page).
+Figure numbers can get out-of-sync whenever figures are added,
+removed, or rearranged.  A figure-numbering procedure runs nightly to
+update figure numbers, but this can also be done on demand from the
+admin page for a manual.
+
+<h3>HTMLDOC</h3>
+
+<p>We run a nightly proc to shove all the parts of each manual into one
+big file then run HTMLDOC on it to generate PostScript and PDF
+versions of the manual.  This is easy.
+
+<p> The hard part is getting around how braindead HTMLDOC is.  First,
+it requires a strict heirarchy for heading tags.  This is accomplished
+by forbidding the authors from putting any &lt;H#&gt; tags by hand.  All heading
+tags are generated on the fly at the appropriate level based on the
+table of contents for the manual.
+
+<p>It works out that this is not the only stupidity in HTMLDOC's
+parser.  Things like
+<code>&lt;p&gt;&lt;u&gt;some&nbsp;text&lt;/p&gt;&lt;/u&gt;</code> also 
+confuse it.  While most HTML editors are standard compliant in this
+respect, it seems that MS Word really likes to produce stuff like
+this.  I don't know of any solution to this other than strongly
+encouraging authors not to use MS Word to generate their documents.
+Since the HTML produced by Word is deficient in several other ways,
+this probably won't be a big problem.
+
+<p>Yet another fun aspect of HTMLDOC is that it seems to have some
+problems with images if an absolute path is given, although I'm just
+guessing here since this doesn't seem to be documented.
+
+<p> Currently we are using HTMLDOC version 1.7.  The latest version is
+1.8.4.  Possibly some of these problems are solved in later releases.
+However, there doesn't seem to be a version history on their web page,
+so the only way to find out seems to be to download the new version
+and install it and see.
+
+<h3>Figures and References</h3>
+
+To handle figure and section references in an evolving document we
+have developed a reference system which is an extension of HTML.  This
+system allows authors to refer to images and sections without knowing
+where the image is stored, where it appears in the text or what the
+numbering of a particular section happens to be.
+
+<p>Each section and figure has an entry in the database,
+<code>label</code>, which is used to make references.  Instead of
+using IMG tags, authors insert images with the tag
+
+<p>
+<blockquote>
+    <code>&lt;FIGURE NAME=&quot;<var>label</var>&quot;&gt;</code>
+</blockquote>
+<p>
+References to figures in the text use
+<p>
+<blockquote>
+    <code>&lt;FIGREF NAME=&quot;<var>label</var>&quot;&gt;</code>
+</blockquote>
+<p>
+A similar construct is used for referring to sections:
+<p>
+<blockquote>
+    <code>&lt;SECREF NAME=&quot;<var>label</var>&quot;&gt;</code>
+</blockquote>
+<p>
+
+<p> When a manual section is served, the above tags are replaced as
+follows:
+
+<p>
+
+<table cellspacing=5>
+  <tr>
+    <td valign=top><code>
+      &lt;SECREF&nbsp;NAME=&quot;<var>label</var>&quot;&gt;
+    </code></td>
+    <td><code>
+      &lt;A&nbsp;HREF=&quot;section-view?manual_id=$manual_id&amp;section_id=$section_id&quot;&gt;$section_name&lt;/A&gt;
+    </code></td>
+  </tr>
+  <tr>
+    <td valign=top><code>
+      &lt;FIGREF&nbsp;NAME=&quot;<var>label</var>&quot;&gt;      
+    </code></td>
+    <td><code>
+      &lt;A&nbsp;HREF=&quot;#<var>label</var>&quot&gt;Figure $sort_key&lt;/A&gt;
+    </code><br>
+    -or-<br>
+    <code>
+      &lt;A&nbsp;TARGET=OTHER&nbsp;HREF=&quot;figure-view?manual_id=$manual_id&amp;figure=<var>label</var>&quot;&gt;Figure $sort_key&lt;/A&gt;</code>
+</td>
+  </tr>
+  <tr>
+    <td valign=top><code>
+      &lt;FIGURE NAME=&quot;<var>label</var>&quot;&gt;
+    </code></td>
+    <td><code>
+      &lt;A NAME=&quot;<var>label</var>&quot;&gt;<br>
+      &lt;IMG&nbsp;SRC=&quot;$file_name&quot;&nbsp;ALT=&quot;<var>label</var>&quot&nbsp;HEIGHT=$height&nbsp;WIDTH=$width&gt;<br>
+      &lt;P&gt;Figure $sort_key: $caption&lt;/P&gt;
+    </code></td>
+  </tr>
+</table>
+<p>
+with values pulled out of the database as appropriate.
+
+<p>
+
+When the text of a section is uploaded or edited, we parse the file to
+look for any references which aren't already in the database.
+References to nonexistant sections are not allowed and the user must
+go back and change the offending reference.  References to unknown
+figures send the user to a page where they can upload a figure from
+their hard drive to the server.
+
+<h3>Future Improvements</h3>
+
+<ul>
+<li>Need to add CVS tagging so that a group of section revisions can be
+associated with a particular "release" of the manual and old versions
+of the manual can be retrieved on the fly.
+
+<li>Need to add full-text searching of manual content.
+
+<li>notify_p doesn't actually do anything
+</ul>
+
+<p>
+
+<hr>
+<address><a href="mailto:kevin@caltech.edu">kevin@caltech.edu</a></address>
+
+</body>
+</html>

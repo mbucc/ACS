@@ -8,14 +8,14 @@
 <table>
 <tr>
 <td>
-<a href="http://photo.net/photo/pcd0834/helgumannen-60.tcl"><img HEIGHT=198 WIDTH=132 src="http://photo.net/photo/pcd0834/helgumannen-60.1.jpg" ALT="Old fishing hamlet of Helgumannen.  Faro, Gotland. Sweden"></a>
+<a href="http://photo.net/photo/pcd0834/helgumannen-60"><img HEIGHT=198 WIDTH=132 src="http://photo.net/photo/pcd0834/helgumannen-60.1.jpg" ALT="Old fishing hamlet of Helgumannen.  Faro, Gotland. Sweden"></a>
 
 
 <td>
 
 <h2>Help System</h2>
 
-part of the <a href="index.html">ArsDigita Community System</a>
+part of the <a href="index">ArsDigita Community System</a>
 by <a href="http://photo.net/philg/">Philip Greenspun</a>
 
 </tr>
@@ -29,7 +29,7 @@ by <a href="http://photo.net/philg/">Philip Greenspun</a>
 <li>Admin directory: /admin/help/
 <li>Admin directory (complete system guide): /admin/help/guide/
 <li>Data model: none (file system-based)
-<li>procedures (includes ADP tags): /tcl/help-defs.tcl
+<li>procedures (includes ADP tags): /tcl/help-defs
 </ul>
 
 <h3>The Big Idea</h3>
@@ -70,7 +70,7 @@ The high level documentation is in traditionally authored directories of
 HTML files, but we augment HTML with a set of additional tags to enforce
 site-wide style conventions (these will be a superset of the site-wide
 style tags used by online pages, as described in <a
-href="/doc/style.html">/doc/style.html</a>).  The augmentation also provides for tags
+href="/doc/style">/doc/style</a>).  The augmentation also provides for tags
 that will switch on a section only if a user has selected a particular
 feature (for example, in a documentation production site, only users
 whose companies have elected "fancy workflow authorization" will see
@@ -78,7 +78,7 @@ sections related to that).  Sometimes we augment HTML in order to
 provide greater convenience for the documentation authors, for example,
 we provide by default a <code>glossterm</code> tag that saves a doc author from
 having to hard-code in a link to the ACS glossary module: 
-<code>/glossary/one.tcl?term=film</code>.
+<code>/glossary/one?term=film</code>.
 
 <p>
 
@@ -116,11 +116,11 @@ file exists then the empty string is returned.
 
 We name all page-level help files with the same filename as the page
 that they document, with a .help extension.  For instance, if we have
-a URL named foo.tcl, the help file will be named foo.help.  If a
+a URL named foo, the help file will be named foo.help.  If a
 multi-lingual help system is in place then the help file in english
 will be foo.en.help (the help file in french will be foo.fr.help,
 etc.).  Language encoding and the sorting out of user preferences are
-as described in <a href="/doc/style.html">/doc/style.html</a>.
+as described in <a href="/doc/style">/doc/style</a>.
 
 <p>
 
@@ -132,7 +132,7 @@ the help file's directory hierarchy as a relative path from the server's
 page root, so HelpPageRoot=/help would specify that all help files lived
 under /web/servername/www/help. Leaving it blank specifies that the help
 page root is the same as the server's page root, so .help files reside
-in the same directories as their corresponding .tcl files.
+in the same directories as their corresponding  files.
 
 <p>
 
@@ -177,7 +177,7 @@ to have (for instance, if you only want to show the workflow section to
 specific companies, you can wrap the workflow section in a
 <code>&lt;workflow&gt;</code> tag).
 
-<li>insert calls to <code>help_link</code> in your .tcl scripts and .adp
+<li>insert calls to <code>help_link</code> in your  scripts and .adp
 templates
 
 </ul>

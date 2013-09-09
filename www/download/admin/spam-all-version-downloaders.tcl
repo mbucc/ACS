@@ -1,54 +1,68 @@
 # /www/download/admin/spam-all-version-downloaders.tcl
-#
-# Date:     01/04/2000
-# Author :  ahmeds@mit.edu
-# Purpose: spams all users who downloaded this version
-#
-# $Id: spam-all-version-downloaders.tcl,v 3.0.6.1 2000/04/12 09:00:48 ron Exp $
-# -----------------------------------------------------------------------------
+ad_page_contract {
+    spams all users who downloaded this version
 
-set_the_usual_form_variables
-# maybe scope, maybe scope related variables (group_id)
-# version_id
+    @param version_id the version we are spamming about
+    @param scope
+    @param group_id
+    
+    @author ahmeds@mit.edu
+    @creation-date  4 Jan 2000
+    @cvs-id spam-all-version-downloaders.tcl,v 3.10.2.6 2000/09/24 22:37:17 kevin Exp
+} {
+    version_id:integer,notnull
+    scope:optional
+    group_id:optional
+}
+
+# -----------------------------------------------------------------------------
 
 ad_scope_error_check
 
-set db [ns_db gethandle]
 
-set user_id [download_version_admin_authorize $db $version_id]
+set user_id [download_version_admin_authorize $version_id]
 
+if { ![db_0or1row all_version_info "
+select * from download_versions 
+where version_id=:version_id"]} {
 
-set selection [ns_db 0or1row $db \
-	"select * from download_versions where version_id=$version_id"]
-
-set exception_count 0
-set exception_text ""
-
-if { [empty_string_p $selection] } {
-    incr exception_count
-    append exception_text "<li>There is no file with the given version id."
-} else {
-    set_variables_after_query
-}
-
-if { $exception_count >0 } {
-    ad_scope_return_complaint $exception_count $exception_text $db
+    ad_scope_return_complaint 1 "<li>There is no file with the given version id."
     return
 }
 
-set download_name [database_to_tcl_string $db "
+db_1row download_name "
 select download_name
 from   downloads 
-where  download_id = $download_id"]
+where  download_id = :download_id" 
 
-append html "
-<form method=POST action=\"spam-all-version-downloaders-1.tcl\">
+
+# -----------------------------------------------------------------------------
+
+set page_title "Spam All Users who downloaded $pseudo_filename"
+
+doc_return 200 text/html "
+[ad_scope_header $page_title]
+[ad_scope_page_title $page_title]
+[ad_scope_context_bar_ws \
+	[list "/download/index?[export_url_scope_vars]" "Download"] \
+	[list "/download/admin/index?[export_url_scope_vars]" "Admin"] \
+	[list "download-view?[export_url_scope_vars download_id]" "$download_name"] \
+	[list "view-versions?[export_url_scope_vars download_id]" "Versions"] \
+	[list "view-one-version?[export_url_scope_vars version_id]" "One Version"] \
+	[list "view-one-version-report?[export_url_scope_vars version_id]" "Report"] \
+	"Spam" ]
+
+<hr>
+[help_upper_right_menu]
+
+<blockquote>
+<form method=POST action=\"spam-all-version-downloaders-1\">
 [export_form_scope_vars version_id]
 <table>
 
 <tr><th align=left>From</th>
 <td><input name=from_address type=text size=30 
-value=\"[database_to_tcl_string $db "select email from users where user_id =[ad_get_user_id]"]\"></td></tr>
+value=\"[db_string unused "select email from users where user_id =[ad_get_user_id]"]\"></td></tr>
 
 <tr><td></td></tr>
 
@@ -68,29 +82,7 @@ value=\"[database_to_tcl_string $db "select email from users where user_id =[ad_
 </center>
 </form>
 <p>
-"
 
-# -----------------------------------------------------------------------------
-
-set page_title "Spam All Users who downloaded $pseudo_filename"
-
-ns_return 200 text/html "
-[ad_scope_header $page_title $db]
-[ad_scope_page_title $page_title $db]
-[ad_scope_context_bar_ws \
-	[list "/download/" "Download"] \
-	[list "/download/admin/" "Admin"] \
-	[list "download-view.tcl?[export_url_scope_vars download_id]" "$download_name"] \
-	[list "view-versions.tcl?[export_url_scope_vars download_id]" "Vesrions"] \
-	[list "view-one-version.tcl?[export_url_scope_vars version_id]" "One Version"] \
-	[list "view-one-version-report.tcl?[export_url_scope_vars version_id]" "Report"] \
-	"Spam" ]
-
-<hr>
-[help_upper_right_menu]
-
-<blockquote>
-$html
 </blockquote>
 [ad_scope_footer]
 "

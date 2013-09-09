@@ -1,22 +1,29 @@
-# $Id: group-type-member-field-delete.tcl,v 3.0 2000/02/06 03:29:15 ron Exp $
-set_the_usual_form_variables
-# group_type, field_name, group_type_pretty_name
+ad_page_contract {
+    @param group_type the type of group
+    @param field_name the name of the field to delete
+    @param group_type_pretty_name the human recogniseable name
 
-set db [ns_db gethandle]
+    @cvs-id group-type-member-field-delete.tcl,v 3.1.6.5 2000/09/22 01:36:14 kevin Exp
+} {
+    group_type:notnull
+    field_name:notnull
+    group_type_pretty_name:notnull
+}
 
-ns_return 200 text/html "[ad_admin_header "Delete Field From User Group Type"]
+
+set page_html  "[ad_admin_header "Delete Field From User Group Type"]
 
 <h2>Delete Column $field_name</h2>
 
-from the <a href=\"group-type.tcl?[export_url_vars group_type]\">$group_type_pretty_name</a> group type
+from the <a href=\"group-type?[export_url_vars group_type]\">$group_type_pretty_name</a> group type
 
 <hr> 
 
-<form action=\"group-type-member-field-delete-2.tcl\" method=POST>
+<form action=\"group-type-member-field-delete-2\" method=POST>
 [export_form_vars group_type field_name]
 
 Do you really want to remove this field from this group type, and all 
-[database_to_tcl_string $db "select count(*) from user_groups where group_type = '$QQgroup_type'"] groups of this type?
+[db_string get_count_from_ug "select count(*) from user_groups where group_type = :group_type"] groups of this type?
 <p>
 You may not be able to undo this action.
 <center>
@@ -25,3 +32,7 @@ You may not be able to undo this action.
 
 [ad_admin_footer]
 "
+
+
+doc_return  200 text/html $page_html
+

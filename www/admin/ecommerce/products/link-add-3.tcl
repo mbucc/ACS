@@ -1,44 +1,46 @@
-# $Id: link-add-3.tcl,v 3.0.4.1 2000/04/28 15:08:52 carsten Exp $
-set_the_usual_form_variables
-# action, product_id, product_name, link_product_name, link_product_id
+#  www/admin/ecommerce/products/link-add-3.tcl
+ad_page_contract {
+
+  @author Eve Andersson (eveander@arsdigita.com)
+  @creation-date Summer 1999
+  @cvs-id link-add-3.tcl,v 3.1.6.2 2000/07/22 07:57:39 ron Exp
+} {
+  action
+  product_id:integer,notnull
+  link_product_id:integer,notnull
+}
+
+set product_name [ec_product_name $product_id]
+set link_product_name [ec_product_name $link_product_id]
 
 # we need them to be logged in
-set user_id [ad_verify_and_get_user_id]
+ad_maybe_redirect_for_registration
+set user_id [ad_get_user_id]
 
-if {$user_id == 0} {
-    
-    set return_url "[ns_conn url]?[export_entire_form_as_url_vars]"
+set peeraddr [ns_conn peeraddr]
 
-    ad_returnredirect "/register.tcl?[export_url_vars return_url]"
-    return
-}
+db_transaction {
 
-set db [ns_db gethandle]
-
-ns_db dml $db "begin transaction"
-
-if { $action == "both" || $action == "to" } {
-
+  if { $action == "both" || $action == "to" } {
     # see if it's already in there
-    if { 0 == [database_to_tcl_string $db "select count(*) from ec_product_links where product_a=$link_product_id and product_b=$product_id"] } {
-	ns_db dml $db "insert into ec_product_links
-	(product_a, product_b, last_modified, last_modifying_user, modified_ip_address)
-	values
-	($link_product_id, $product_id, sysdate, $user_id, '[DoubleApos [ns_conn peeraddr]]')
-	"
+    if { 0 == [db_string both_or_to_duplicate_check "select count(*) from ec_product_links where product_a=:link_product_id and product_b=:product_id"] } {
+      db_dml to_link_insert "insert into ec_product_links
+      (product_a, product_b, last_modified, last_modifying_user, modified_ip_address)
+      values
+      (:link_product_id, :product_id, sysdate, :user_id, :peeraddr)
+      "
     }
+  }
+
+  if { $action == "both" || $action == "from" } {
+    if { 0 == [db_string both_or_from_duplicate_check "select count(*) from ec_product_links where product_a=:product_id and product_b=:link_product_id"] } {
+      db_dml from_link_insert "insert into ec_product_links
+      (product_a, product_b, last_modified, last_modifying_user, modified_ip_address)
+      values
+      (:product_id, :link_product_id, sysdate, :user_id, :peeraddr)
+      "
+    }
+  }
 }
 
-if { $action == "both" || $action == "from" } {
-    if { 0 == [database_to_tcl_string $db "select count(*) from ec_product_links where product_a=$product_id and product_b=$link_product_id"] } {
-	ns_db dml $db "insert into ec_product_links
-	(product_a, product_b, last_modified, last_modifying_user, modified_ip_address)
-	values
-	($product_id, $link_product_id, sysdate, $user_id, '[DoubleApos [ns_conn peeraddr]]')
-	"
-    }
-}
-
-ns_db dml $db "end transaction"
-
-ad_returnredirect "link.tcl?[export_url_vars product_id product_name]"
+ad_returnredirect "link.tcl?[export_url_vars product_id]"

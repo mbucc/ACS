@@ -1,25 +1,23 @@
-#
-# /portals/admin/add-manager.tcl
-#
-# standard ACS prompt for email or name of proposed administrator 
-#
-# by aure@arsdigita.com and dh@arsdigita.com
-#
-# Last modified: 10/8/1999
-#
-# $Id: add-manager.tcl,v 3.0.4.2 2000/03/17 18:08:06 aure Exp $
-#
+# www/portals/admin/add-manager.tcl
 
-ad_page_variables {group_id}
+ad_page_contract {
+    standard ACS prompt for email or name of proposed administrator 
 
-set db [ns_db gethandle]
+    @author aure@arsdigita.com 
+    @author dh@arsdigita.com
+    @creation-date 10/8/1999
+    @param group_id
+    @cvs-id add-manager.tcl,v 3.3.2.5 2000/09/22 01:39:02 kevin Exp
+} {
+    group_id:notnull,naturalnum
+}
 
 # -----------------------------------
 # verify user
 set user_id [ad_verify_and_get_user_id]
 
-set group_name [portal_group_name $db $group_id]
-portal_check_administrator_maybe_redirect $db $user_id
+set group_name [portal_group_name $group_id]
+portal_check_administrator_maybe_redirect $user_id
 # -----------------------------------
 
 # set variables for user-search.tcl  
@@ -35,7 +33,7 @@ regsub "manager" [ns_conn url] "manager-2" target
 set page_content "
 [portal_admin_header $custom_title]
 
-[ad_context_bar [list /portals/ "Portals"] [list index.tcl "Administration"] "Add Manager"]
+[ad_context_bar [list /portals/ "Portals"] [list index "Administration"] "Add Manager"]
 <hr>
 
 <form action=/user-search method=post> 
@@ -61,13 +59,8 @@ Enter either the last name or email of the proposed manager:
 </form>
 
 [portal_admin_footer]"
-
-ns_return 200 text/html $page_content 
-
-
-
-
-
+ 
+doc_return  200 text/html $page_content 
 
 
 

@@ -10,7 +10,7 @@
 -- our open-source toolkit (so that we can later spam them with 
 -- upgrade notifications)
 --
--- $Id: download.sql,v 3.4.2.2 2000/05/18 00:05:14 ron Exp $
+-- download.sql,v 3.6 2000/04/21 05:35:26 ron Exp
 
 create sequence download_id_sequence;
 

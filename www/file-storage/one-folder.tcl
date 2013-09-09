@@ -1,15 +1,15 @@
 # /file-storage/one-folder.tcl
-#
-# by philg@mit.edu July 23 1999 
-#
-# summary of one folder
-#
-# modified by randyg@arsdigita.com January, 2000 to use 
-# the general permissions system
-#
-# one-folder.tcl,v 3.3.2.1 2000/03/15 20:27:58 carsten Exp
 
-ad_page_variables {
+ad_page_contract {
+    summary of one folder
+
+    @author philg@mit.edu 
+    @creation-date July 23 1999 
+    @cvs-id one-folder.tcl,v 3.23.2.5 2000/09/22 01:37:48 kevin Exp
+
+    modified by randyg@arsdigita.com January, 2000 to use 
+    the general permissions system
+} {
     {file_id}
     {group_id ""}
     {source ""}
@@ -18,11 +18,12 @@ ad_page_variables {
 
 set return_url "one-folder?[ns_conn query]"
 
-set user_id [ad_verify_and_get_user_id]
+set local_user_id [ad_maybe_redirect_for_registration]
 
-ad_maybe_redirect_for_registration
-
-set db [ns_db gethandle]
+set name_query "select first_names||' '||last_name as name 
+                from   users 
+                where  user_id = :local_user_id"
+set user_name [db_string unused $name_query]
 
 set exception_text ""
 set exception_count 0
@@ -32,45 +33,35 @@ if [empty_string_p $file_id] {
     append exception_text "<li>No folder was specified"
 }
 
-set version_id [database_to_tcl_string $db "
+set version_id [db_string unused "
     select version_id 
     from   fs_versions_latest 
-    where  file_id = $file_id"]
+    where  file_id = :file_id"]
 
-if { ![fs_check_read_p $db $user_id $version_id $group_id] } {
-    incr exception_count
-    append exception_text "<li>You don't have authority to read this folder"
-}
-
-## return errors
-if { $exception_count> 0 } {
-    ad_return_complaint $exception_count $exception_text
-    return 0
-}
-
-set selection [ns_db 0or1row $db "
+set sql "
     select fsf1.file_title,
            fsf2.file_title as parent_title,
            fsf1.folder_p,
            fsf1.parent_id,
-           u.first_names || ' ' || u.last_name as owner_name,
+	   fsf1.public_p,
+	   fsf1.owner_id,
+	   fsf1.group_id,
+	   u.first_names || ' ' || u.last_name as owner_name,
            ad_general_permissions.user_has_row_permission_p ( fsf1.owner_id, 'read', fsvl.version_id, 'FS_VERSIONS' ) as public_read_p
     from   fs_files fsf1,
            fs_files fsf2,
            fs_versions_latest fsvl,
            users u
-    where  fsf1.file_id = $file_id
+    where  fsf1.file_id = :file_id
     and    fsf1.file_id = fsvl.file_id
     and    fsf1.parent_id = fsf2.file_id (+)
-    and    fsf1.owner_id = u.user_id"]
+    and    fsf1.owner_id = u.user_id"
  
-if [empty_string_p $selection] {
+if { [db_0or1row file_list $sql]==0 } {
     ad_return_error "Folder not found" "Could not find 
         folder $file_id; it may have been deleted."
     return
 }
-
-set_variables_after_query
 
 if { $folder_p != "t" } {
     # we got here by mistake, push them out into the right place 
@@ -80,6 +71,9 @@ if { $folder_p != "t" } {
     return
 }
 
+if { ![fs_check_read_p $local_user_id $version_id $group_id] } {
+    ad_return_complaint 1 "<li>You don't have authority to read this folder"
+}
 
 set object_type "Folder"
 
@@ -89,60 +83,51 @@ if { [empty_string_p $parent_title] } {
     set parent_title "Root (Top Level)"
 }
 
-if { ![empty_string_p $group_id]} {
-    set group_name [database_to_tcl_string $db "
-    select group_name 
-    from   user_groups 
-    where  group_id=$group_id"]
-
-    set tree_name "$group_name document tree"
-
-} else {
-    if {$public_read_p == "t"} {
-	set tree_name "Shared [ad_system_name] document tree"
-    } else {
-	set tree_name "Your personal document tree"
-    }
+if { [empty_string_p $source] } {
+    set source [fs_guess_source $public_p $owner_id $group_id $local_user_id]
 }
-
 
 # the navbar is determined by where the just came from
 
 set sql_suffix ""
 
 switch $source {
-    "personal" {
-	set navbar [ad_context_bar_ws [list "" [ad_parameter SystemName fs]] [list "personal" "Personal Document Tree"] "One File"]
-	set sql_suffix "and fsf.public_p = 'f' and fsf.owner_id = $user_id and fsf.group_id is null"
+    "private_individual" {
+	set tree_name "Your personal document tree"
+
+	set navbar [ad_context_bar_ws [list "" [ad_parameter SystemName fs]] [list "private-one-person" $tree_name] "One Folder"]
+	set box [fs_folder_box $local_user_id [fs_private_individual_option]]
 	set public_p f
 }
-    "group" { 
-	set navbar [ad_context_bar_ws [list "" [ad_parameter SystemName fs]] [list "group?group_id=$group_id" "$group_name document tree"] "One File"]
-	set sql_suffix "and fsf.group_id = $group_id"
-	set public_p t
+    "private_group" {
+	set group_name [db_string unused "
+		select group_name from user_groups where group_id=:group_id" -default ""]
+	set tree_name "$group_name group document tree"
+
+	set navbar [ad_context_bar_ws [list "" [ad_parameter SystemName fs]] [list "private-one-group?[export_url_vars group_id]" $tree_name] "One Folder"]
+	set box [fs_folder_box $local_user_id [fs_private_group_option [list $group_id $group_name]]]
+	set public_p f
     }
     "public_individual" {
-	set navbar [ad_context_bar_ws [list "" [ad_parameter SystemName fs]] [list "public-one-person?[export_url_vars owner_id]" "$owner_name's publically accessible files"] "One File"]
-	set sql_suffix "and ad_general_permissions.user_has_row_permission_p ( $owner_id, 'read', fsvl.version_id, 'FS_VERSIONS' ) = 't' and fsf.owner_id = $owner_id and fsf.group_id is null"
+	set tree_name "$owner_name's document tree"
+
+	set navbar [ad_context_bar_ws [list "" [ad_parameter SystemName fs]] [list "all-public" "Publically accessible files"] [list "public-one-person?user_id=$owner_id" $tree_name] "One Folder"]
+	set box [fs_folder_box $local_user_id [fs_public_individual_option [list $owner_id $owner_name]]]
 	set public_p t
     }
     "public_group" {
-	set navbar [ad_context_bar_ws [list "" [ad_parameter SystemName fs]] [list "public-one-group?[export_url_vars group_id]" "$group_name publically accessible files"] "One File"]
-	set sql_suffix "and ad_general_permissions.user_has_row_permission_p ( $owner_id, 'read', fsvl.version_id, 'FS_VERSIONS' ) = 't' and fsf.group_id = $group_id"
+	set group_name [db_string unused "
+		select group_name from user_groups where group_id=:group_id" -default ""]
+	set tree_name "$group_name group public document tree"
+
+	set navbar [ad_context_bar_ws [list "" [ad_parameter SystemName fs]] [list "all-public" "Publically accessible files"] [list "public-one-group?[export_url_vars group_id]" $tree_name] "One Folder"]
+	set box [fs_folder_box $local_user_id [fs_public_group_option [list $group_id $group_name]]]
 	set public_p t
     }
-    "private_individual" {
-	set navbar [ad_context_bar_ws [list "" [ad_parameter SystemName fs]] [list "private-one-person?[export_url_vars owner_id]" "$owner_name's privately accessible files"] "One File"]
-	set sql_suffix "and fsf.owner_id = $owner_id and fsf.public_p = 'f'"
-	set public_p f
-    }
-    "private_group" {
-	set navbar [ad_context_bar_ws [list "" [ad_parameter SystemName fs]] [list "private-one-group?[export_url_vars group_id]" "$group_name privately accessible files"] "One File"]
-	set sql_suffix "and ad_general_permissions.user_has_row_permission_p ( $owner_id, 'read', fsvl.version_id, 'FS_VERSIONS' ) = 'f' and fsf.group_id = $group_id"
-	set public_p f
-    }
     default {
-	set navbar [ad_context_bar_ws [list "" [ad_parameter SystemName fs]] "One File"]
+	set tree_name "Shared [ad_system_name] document tree"
+	set navbar [ad_context_bar_ws [list "" [ad_parameter SystemName fs]] "One Folder"]
+	set box [fs_folder_box $local_user_id [fs_shared_option]]
 	set public_p t
     }
 }
@@ -154,25 +139,23 @@ set page_content  "
 
 $navbar
 
-<hr>
+<hr align=left>
 "
 
 ## determine if the user owns the folder - user_id is the owner_id?
 set action_list [list]
 
-
-if [fs_check_edit_p $db $user_id $version_id $group_id] {
+if [fs_check_edit_p $local_user_id $version_id $group_id] {
     # If she owns it, provide links for folder editing, file upload and
     # creation of subfolders.
 
-    set current_folder $file_id
-    set url_vars [export_url_vars return_url public_p current_folder group_id]
+    set this_folder $file_id
+    set url_vars [export_url_vars return_url public_p this_folder group_id]
 
     lappend action_list "<a href=\"file-edit?[export_url_vars group_id file_id return_url]\">edit</a>" \
     "<a href=upload-new?$url_vars>Add a URL / Upload a file</a>" \
     "<a href=create-folder?$url_vars>Create New Folder</a>"
 }
-
 
 if {[llength $action_list] >0} {
     set actions_option "<p><li>Actions:  [join $action_list " | "]"
@@ -189,7 +172,7 @@ append page_content "
 
 $actions_option
 
-</ul>"
+"
 
 set tree_walk "
 select file_id,	
@@ -204,7 +187,7 @@ select file_id,
        level as the_level
 from   fs_files
 where  deleted_p = 'f'
-connect by parent_id = prior file_id start with file_id = $file_id
+connect by parent_id = prior file_id start with file_id = :file_id
 "
 
 # get the files from the database and parse 
@@ -217,98 +200,49 @@ set sorted_query "
            folder_p,
            depth * 24 as n_pixels_in,
            round (fsvl.n_bytes / 1024) as n_kbytes,
+           n_bytes,
            to_char (fsvl.creation_date, '[fs_date_picture]') as creation_date,
            nvl (fsvl.file_type, upper (fsvl.file_extension) || ' File') as file_type,
-           sort_key
+           sort_key,
+           fsvl.version_id,
+           fsvl.client_file_name,
+           fsvl.url
     from   fs_versions_latest fsvl,
 	   ($tree_walk) desired
     where  fsvl.file_id = desired.file_id
-    and    (ad_general_permissions.user_has_row_permission_p ($user_id, 'read', fsvl.version_id, 'FS_VERSIONS') = 't' or owner_id = $user_id or folder_p = 't')
+    and    (ad_general_permissions.user_has_row_permission_p (:local_user_id, 'read', fsvl.version_id, 'FS_VERSIONS') = 't' or owner_id = :local_user_id or folder_p = 't')
     order by sort_key"
 
 set file_html ""
 set file_count 0
 
-set selection [ns_db select $db $sorted_query]
-
 set font "<nobr><font face=arial,helvetica size=-1>"
 
 set header_color [ad_parameter HeaderColor fs]
+
+append page_content <li>$box</li>
 
 append page_content "
 <blockquote>
 <table border=1 bgcolor=white  cellpadding=0 cellspacing=0>
  <tr>
  <td><table bgcolor=white cellspacing=1 border=0 cellpadding=0>
-     <tr>
-     <td colspan=4 bgcolor=#666666>$font &nbsp;<font color=white>files in $file_title</td>
-     </tr>
-     <tr>
-     <td bgcolor=$header_color>$font &nbsp; Name</td>
-     <td bgcolor=$header_color align=right>$font &nbsp; Size &nbsp;</td>
-     <td bgcolor=$header_color>$font &nbsp; Type &nbsp;</td>
-     <td bgcolor=$header_color>$font &nbsp; Modified &nbsp;</td>
-     </tr>" 
+     [fs_header_row_for_files -title "Files in $file_title"]
+" 
 
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
-
+db_foreach list_of_files $sorted_query {
     # We ignore the first element's indentation and shift all rows left by
     # that many pixels.
     if !$file_count {
 	set initial_pixels $n_pixels_in
     }
-    set n_pixels_in [expr $n_pixels_in - $initial_pixels]
 
-     if { $n_pixels_in == 0 } {
-	set spacer_gif ""
-     } else {
-	set spacer_gif "<img src=\"/graphics/file-storage/spacer.gif\" width=$n_pixels_in height=1>"
-    }
-
-    set one_file_url "one-file?[export_url_vars file_id group_id owner_id source]"
-
-    if {$folder_p=="t"} {
-
-        append file_html "<tr><td valign=top>&nbsp; $spacer_gif $font"
-        if $file_count { append file_html "<a href=\"one-folder?[export_url_vars file_id]\">" }
-        append file_html "<img border=0 src=/graphics/file-storage/ftv2folderopen.gif align=top>"
-        if $file_count { append file_html "</a> <a href=\"one-folder?[export_url_vars file_id]\">" }
-        append file_html $file_title
-        if $file_count { append file_html "</a>" }
-        append file_html "</td>
-	<td align=right>&nbsp;</td>
-	<td>$font &nbsp; File Folder &nbsp;</td>
-	<td>&nbsp;</td>
-	</tr>\n"
-
-    } elseif {[empty_string_p $n_kbytes]} {
-
-        append file_html "
-	<tr>
-	<td valign=top>&nbsp; $spacer_gif $font
-	<a href=\"$one_file_url\">
-	<img border=0 src=/graphics/file-storage/ftv2doc.gif align=top></a>
-	<a href=\"$one_file_url\">$file_title</a>&nbsp;</td>
-	<td align=right>&nbsp;</td>
-	<td>$font &nbsp; URL &nbsp;</td>
-	<td>$font &nbsp; $creation_date &nbsp;</td>
-	</tr>\n"
-
-    } else {
-
-        append file_html "
-	<tr>
-	<td valign=top>&nbsp; $spacer_gif $font
-	<a href=\"$one_file_url\">
-	<img border=0 src=/graphics/file-storage/ftv2doc.gif align=top></a>
-	<a href=\"$one_file_url\">$file_title</a>&nbsp;</td>
-	<td align=right>$font &nbsp; $n_kbytes KB &nbsp;</td>
-	<td>$font &nbsp; [fs_pretty_file_type $file_type] &nbsp;</td>
-	<td>$font &nbsp; $creation_date &nbsp;</td>
-	</tr>\n"
-
-    }
+    append file_html [fs_row_for_one_file -n_pixels_in [expr $n_pixels_in - $initial_pixels] \
+	    -file_id $file_id \
+	    -folder_p $folder_p -links $file_count -client_file_name $client_file_name \
+	    -n_kbytes $n_kbytes -n_bytes $n_bytes -file_title $file_title -url $url -creation_date $creation_date \
+	    -version_id $version_id -file_type $file_type \
+	    -export_url_vars [export_url_vars file_id group_id owner_id source]]
 
     incr file_count
 }
@@ -331,9 +265,9 @@ append page_content "
 
 # release the database handle
 
-ns_db releasehandle $db
+db_release_unused_handles
 
 # serve the page
 
-ns_return 200 text/html $page_content
+doc_return  200 text/html $page_content
 

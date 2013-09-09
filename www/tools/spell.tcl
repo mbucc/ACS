@@ -1,20 +1,25 @@
-# $Id: spell.tcl,v 3.0.4.1 2000/04/28 15:11:37 carsten Exp $
-# Jan 6, 2000  (OUMI) 
+# /www/tools/spell.tcl
+
+ad_page_contract {
+    @author Jin Choi (jsc@arsdigita.com)
+    @author Eve Andersson (eveander@arsdigita.com)
+    @creation-date July 5, 1999
+    @cvs-id spell.tcl,v 3.3.2.4 2000/09/22 01:39:26 kevin Exp
+} {
+    {merge_p 0}
+    {var_to_spellcheck}
+    {target_url}
+    {html_p f}
+    {error -array}
+}
+
 #    added html_p argument, set to 1 if $var_to_spellcheck contains html tags 
 #    and you don't want to spell check the HTML tags.  Also fixed a bug in
 #    the exporting of $processed_text.
 
-# spell.tcl 
-
-# Written by Jin Choi (jsc@arsdigita.com), with additions by Eve Andersson
-# (eveander@arsdigita.com). Added to the ACS July 5, 1999.
-
 # See http://photo.net/doc/tools.html for more information and usage
 # example.
 
-# Arguments: merge_p, var_to_spellcheck, target_url, error_0, error_1...
-#            html_p
-#
 # To use, call with var_to_spellcheck, target_url, and whatever form
 # variable you specified as var_to_spellcheck. You can also specify
 # html_p (set to 't') if the variable to spellcheck contains HTML tags
@@ -36,6 +41,13 @@
 
 # In either case, we re-export any form variable we don't use.
 
+# Wrapper for the exec to run ispell that requires the HOME
+# environment variable to be set.
+
+proc ispell_exec { dictionary file } {
+    set ispell "/usr/local/bin/ispell"
+    return [exec /bin/env HOME=/home/nsadmin /bin/sh -c "$ispell -a -p $dictionary < $file"]
+}
 
 proc spell_sorted_list_with_unique_elements {the_list} {
 
@@ -53,7 +65,6 @@ proc spell_sorted_list_with_unique_elements {the_list} {
     return $new_list
 }
 
-
 set form [ns_conn form]
 set var_to_spellcheck [ns_set get $form var_to_spellcheck]
 set text [ns_set get $form $var_to_spellcheck]
@@ -62,7 +73,9 @@ set merge_p [ns_set get $form merge_p]
 ns_set delkey $form $var_to_spellcheck
 ns_set delkey $form merge_p
 
-if { $merge_p == "" || $merge_p == 0 } {
+set doc_body ""
+
+if { [empty_string_p $merge_p] || $merge_p == 0 } {
 
     # if $html_p then substitute out all HTML tags
     set text_to_spell_check $text
@@ -71,41 +84,28 @@ if { $merge_p == "" || $merge_p == 0 } {
     }
 
     set tmpfile [ns_mktemp "/tmp/webspellXXXXXX"]
-    set f [open $tmpfile w]
-    puts $f $text_to_spell_check
-    close $f
+    puts [set fp [open $tmpfile w]] $text_to_spell_check
+    close $fp
     
     set lines [split $text "\n"]
     
     set dictionaryfile "[ns_info pageroot]/tools/ispell-words"
 
-    # The webspell wrapper is necessary because ispell requires
-    # the HOME environment set, and setting env(HOME) doesn't appear
-    # to work from AOLserver.
-    set spelling_program "[ns_info pageroot]/tools/webspell"
-
-    set ispell_proc [open "|$spelling_program $tmpfile $dictionaryfile" r]
-
-    # read will occasionally error out with "interrupted system call",
-    # so retry a few times in the hopes that it will go away.
-    set try 0
-    set max_retry 10
-    while {[catch {set ispell_text [read -nonewline $ispell_proc]} errmsg]
-	   && $try < $max_retry} {
-	incr try
-	ns_log Notice "spell.tcl had a problem: $errmsg"
-    }
-    close $ispell_proc
-    ns_unlink $tmpfile
-
-    if { $try == $max_retry } {
-	ns_return 200 text/html "[ad_header "Spell Checker Error"]
-<h2>Spell Checker Error</h2>
-<hr>
-The spell checker was unable to process your document.  Please hit \"Reload\" to try again  If this message occurs again, please contact <a href=\"mailto:[ad_system_owner]\">[ad_system_owner]</a>.
-[ad_footer]"
+    if [catch {	set ispell_text [ispell_exec $dictionaryfile $tmpfile] } errmsg] {
+	doc_return  200 text/html "
+	[ad_header "Spell Checker Error"]
+	<h2>Spell Checker Error</h2>
+	<hr>
+	<p>The spell checker was unable to process your document.
+	Please hit \"Reload\" to try again  If this message occurs
+	again, please contact 
+	<a href=\"mailto:[ad_system_owner]\">[ad_system_owner]</a>.  
+	[ad_footer]"
+	ns_unlink $tmpfile 
         return
-    }
+    } 
+
+    ns_unlink $tmpfile 
     
     set ispell_lines [split $ispell_text "\n"]
     # Remove the version line.
@@ -115,9 +115,7 @@ The spell checker was unable to process your document.  Please hit \"Reload\" to
     
     set error_num 0
     set errors [list]
-    
     set processed_text ""
-    
     set line [lindex $lines 0]
     
     foreach ispell_line $ispell_lines {
@@ -179,8 +177,8 @@ The spell checker was unable to process your document.  Please hit \"Reload\" to
 	# a hidden variable.
 	set processed_text [philg_quote_double_quotes $processed_text]
 
-        ReturnHeaders
-	ns_write "[ad_header "Spell Checker"]
+        
+	append doc_body "[ad_header "Spell Checker"]
 	<h2>Spell Checker</h2>
 	<hr>
 	The spell checker has found one or more words in your document which could not be found in our dictionary.
@@ -194,7 +192,7 @@ The spell checker was unable to process your document.  Please hit \"Reload\" to
 	<b>Please make changes below:</b>
 	</center>
 	<p>
-	<form action=spell.tcl method=post>
+	<form action=spell method=post>
 	<input type=hidden name=merge_p value=1>
 	<input type=hidden name=merge_text value=\"$processed_text\">
 	<input type=hidden name=num_errors value=$error_num>
@@ -202,7 +200,7 @@ The spell checker was unable to process your document.  Please hit \"Reload\" to
 	"
 	
 	regsub -all "\r\n" $formtext "<br>" formtext_to_display
-	ns_write "
+	append doc_body "
 	$formtext_to_display
 	<p>
 	<center>
@@ -222,18 +220,17 @@ The spell checker was unable to process your document.  Please hit \"Reload\" to
 	}
 
 	foreach errword [spell_sorted_list_with_unique_elements $just_the_errwords] {
-	    ns_write "<form method=post action=spelling-dictionary-add-to.tcl>[export_form_vars errword]<li><input type=submit value=\"Add\"> $errword</form><p>"
+	    append doc_body "<form method=post action=spelling-dictionary-add-to>[export_form_vars errword]<li><input type=submit value=\"Add\"> $errword</form><p>"
 	}
-	ns_write "</ul>
+	append doc_body "</ul>
 	<p>
 	[ad_footer]"
-	
-    }
-    
+
+    }    
 } 
 
-
 # an "if" instead of an "elseif" because the above clause may set merge_p to 1
+
 if { $merge_p != "" && $merge_p } {
     set target_url [ns_set get $form target_url]
     ns_set delkey $form target_url
@@ -253,24 +250,19 @@ if { $merge_p != "" && $merge_p } {
 	ns_set delkey $form "error_$i"
     }
 
-#    set merge_text [ns_urlencode $merge_text]
 
-#    ad_returnredirect "$target_url?$var_to_spellcheck=$merge_text&[export_url_vars $form]"
-
-    ReturnHeaders
-
-    ns_write "[ad_header "Spell Checker"]
+    append doc_body "[ad_header "Spell Checker"]
     <h2>Spell Checker</h2>
     <hr>
     "
 
     if { [info exists error_free_p] } {
-	ns_write "Your document contains 0 spelling errors.  "
+	append doc_body "Your document contains 0 spelling errors.  "
     } else {
-	ns_write "Here is the final document with any spelling corrections included.  "
+	append doc_body "Here is the final document with any spelling corrections included.  "
     }
 
-    ns_write "Please confirm that you are satisfied 
+    append doc_body "Please confirm that you are satisfied 
     with it.  If not, push your browser's \"Back\" button to go back and make changes.
     <form method=post action=\"$target_url\">
     [export_entire_form]
@@ -283,5 +275,7 @@ if { $merge_p != "" && $merge_p } {
     <p>
     [ad_footer]
     "
-    return
 }
+
+doc_return  200 text/html $doc_body
+

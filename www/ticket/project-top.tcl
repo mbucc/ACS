@@ -1,6 +1,11 @@
-#
-# This no longer does anything and instead redirects to 
-# index.tcl which does all the things project top did.
+# /www/ticket/project-top.tcl
+ad_page_contract {
+    This no longer does anything and instead redirects to 
+    index.tcl which does all the things project top did.
+
+    @cvs-id project-top.tcl,v 3.1.6.3 2000/07/21 04:04:32 ron Exp
+} {}
+
 #
 
 # Original inputs were -- 
@@ -23,7 +28,5 @@
 #
 #
 # order_by       column name to sort table by
-
-# set_form_variables
 
 ad_returnredirect {/ticket/index.tcl}

@@ -12,7 +12,7 @@ by <a href="http://teadams.com">Tracy Adams</a>
 
 <p>
 
-(part of the <a href="developers.html">ArsDigita Community System
+(part of the <a href="developers">ArsDigita Community System
 Developer's guide</a>)
 
 <hr>
@@ -24,18 +24,18 @@ building new ACS pages. The examples use the standard ACS platform (Oracle, AOLs
 <li><b>String parameters in a URL must be urlencoded</b><br>
 <blockquote>
 Incorrect:<br>
-ns_write "&lt;a href=\"index.tcl?<font color=red>foo=$foo</font>\"&gt;ACS&lt;/a&gt;"
+ns_write "&lt;a href=\"index?<font color=red>foo=$foo</font>\"&gt;ACS&lt;/a&gt;"
 <br>
 If foo contains a space, ?, & or another character not valid in an URL parameter, foo will not be defined correctly on the next page.
 <p>
 Solutions:<br>
 Use <code>ns_urlencode</code> to protect an individual string.
 <br>
-ns_write "&lt;a href=\"index.tcl?<font color=red>foo=[ns_urlencode $foo]</font>\"&gt;ACS&lt;/a&gt;"<br>
+ns_write "&lt;a href=\"index?<font color=red>foo=[ns_urlencode $foo]</font>\"&gt;ACS&lt;/a&gt;"<br>
 <br>
 Use <code>export_url_vars</code> to handle one or more url parameters (<code>export_url_vars</code> also filters out undefined variables).<br>
 
-ns_write "&lt;a href=\"index.tcl?<font color=red>[export_url_vars foo bar]</font>\"&gt;ACS&lt;/a&gt;"
+ns_write "&lt;a href=\"index?<font color=red>[export_url_vars foo bar]</font>\"&gt;ACS&lt;/a&gt;"
 <p>
 </blockquote>
 Complex case relevant to ACS:<br>
@@ -43,10 +43,10 @@ When you use the <code>return_url</code> parameter to pass a URL through the reg
 <p>
 <blockquote>
 Incorrect:<br>
-ns_returnredirect "/register/index.tcl?return_url=[<font color=red>ns_urlencode</font> "index.tcl?<font color=red>domain=$domain</font>"]"<br>
+ns_returnredirect "/register/index?return_url=[<font color=red>ns_urlencode</font> "index?<font color=red>domain=$domain</font>"]"<br>
 <p>
 Correct:<br>
-ns_returnredirect "/register/index.tcl?return_url=[<font color=red>ns_urlencode</font> "index.tcl?<font color=red>[export_url_vars domain]</font>"]"
+ns_returnredirect "/register/index?return_url=[<font color=red>ns_urlencode</font> "index?<font color=red>[export_url_vars domain]</font>"]"
 </blockquote>
 
 <li><b> Form values (except for textareas) need to be enclosed in doublequotes. The " character within a form value should be replace with &amp;quot;</b>
@@ -82,7 +82,7 @@ ns_write "&lt;textarea&gt;<font color=red>[ns_quotehtml $foo]</font>&lt;/textare
 The ' is SQL's escape character.
 <p>
 Incorrect:<br>
-ns_db dml $db "insert into foo (string_column) values (<font color=red>'$string_column'</font>)"
+db_dml unused "insert into foo (string_column) values (<font color=red>'$string_column'</font>)"
 <p>
 
 Solutions:<br>
@@ -91,25 +91,25 @@ If you use <code>set_form_variables_string_trim_DoubleApos</code> or <code> set_
 
 Correct:<br>
 <font color=red>set_the_usual_form_variables</font><br>
-ns_db dml $db "insert into foo (string_column) values (<font color=red>'$QQstring_column'</font>)"
+db_dml unused "insert into foo (string_column) values (<font color=red>'$QQstring_column'</font>)"
 <p>
 Alternatively, you can use <code>DoubleApos</code> or <code>ns_dbquotevalue</code>:
 <br>
-ns_db dml $db "insert into foo (string_column) values (<font color=red>'[DoubleApos $string_column]'</font>)"
+db_dml unused "insert into foo (string_column) values (<font color=red>'[DoubleApos $string_column]'</font>)"
 <br>
 or
 <br>
-ns_db dml $db "insert into foo (string_column) values (<font color=red>[ns_dbquotevalue $string_colum]</font>)"
+db_dml unused "insert into foo (string_column) values (<font color=red>[ns_dbquotevalue $string_colum]</font>)"
 </blockquote>
 <li><b>Escape special TCL characters with \ </b>
 <blockquote>
 You will often have to escape special TCL characters. ", {, }, [, and ] are the most common examples.
 <p>
 Incorrect:<br>
-ns_write "&lt;a href=<font color=red>"index.tcl"</font>&gt;ACS&lt;/a&gt;"
+ns_write "&lt;a href=<font color=red>"index"</font>&gt;ACS&lt;/a&gt;"
 <p>
 Correct:<br>
-ns_write "&lt;a href=<font color=red>\"index.tcl\"</font>&gt;ACS&lt;/a&gt;"
+ns_write "&lt;a href=<font color=red>\"index\"</font>&gt;ACS&lt;/a&gt;"
 
 </blockquote>
 
@@ -119,7 +119,7 @@ ns_write "&lt;a href=<font color=red>\"index.tcl\"</font>&gt;ACS&lt;/a&gt;"
 
 <ul>
 <li><b>Double clicks</b><br> 
-For any insert, you should always assume the user is going to double click on the submission form. To prevent integrity an constraint or duplicate data, you should generate the sequence id before the insert.  This concept is described in depth in <a href="http://photo.net/wtr/thebook/ecommerce.html">the ecommerce</a> chapter in <a href="http://photo.net/wtr/thebook/">Philip and Alex's Guide to Web Publishing</a>.
+For any insert, you should always assume the user is going to double click on the submission form. To prevent integrity an constraint or duplicate data, you should generate the sequence id before the insert.  This concept is described in depth in <a href="http://photo.net/wtr/thebook/ecommerce">the ecommerce</a> chapter in <a href="http://photo.net/wtr/thebook/">Philip and Alex's Guide to Web Publishing</a>.
 <p>
 <li><b>Bad data</b><br>
 Always consider cases where the user input might be blank, too long, or an incorrect type.  Use Maxlength or the standard user error trapping to handle these cases before they result in a database error or data problems.
@@ -140,7 +140,7 @@ Depending on your browser, failure to close your table tags can result in a blan
 <li><b>Domains with the same IP don't always recognize each other's cookies</b><br>
 For example, http://photo.net and http://www.photo.net are the same site.
 However, if a user is at http://photo.net, the server will not recognize a cookie set by a prior visit to http://www.photo.net.
-In addition, most servers (including AOLserver)  may redirect a user to the server's Hostname domain while the user is surfing for various reasons (when redirecting, for example).  The cookie chain files (starting with cookie-chain.tcl) should be used to set cookies on both domains. 
+In addition, most servers (including AOLserver)  may redirect a user to the server's Hostname domain while the user is surfing for various reasons (when redirecting, for example).  The cookie chain files (starting with cookie-chain) should be used to set cookies on both domains. 
 </ul>
 
 <H3>Infinite Loops</h3>
@@ -180,12 +180,12 @@ update users set <font color=red>home_phone = null</font> where user_id = 10
 <li> <b>In Oracle, '' is not equivalent to NULL</b> 
 <blockquote>
 Incorrect.<br>
-set num_users [database_to_tcl_string $db "select count(user_id) from users where <font color=red>url = '$foo'</font>"]
+set num_users [db_string unused "select count(user_id) from users where <font color=red>url = '$foo'</font>"]
 <p>
 If $foo is "", num_users will always be 0.
 <p>
 Correct:<br>
-set num_users [database_to_tcl_string $db "select count(user_id) from users where  (<font color=red>url = '$foo'
+set num_users [db_string unused "select count(user_id) from users where  (<font color=red>url = '$foo'
 or ('$foo' is null and url is null)</font>)"]
 </blockquote>
 
@@ -206,7 +206,7 @@ or last_visit is null</font>)
 </blockquote>
 
 
-<i>See <a href="http://photo.net/wtr/oracle-tips.html"</a>Tips for using Oracle</a> for more discussion of this and other Oracle issues.</i>
+<i>See <a href="http://photo.net/wtr/oracle-tips"</a>Tips for using Oracle</a> for more discussion of this and other Oracle issues.</i>
 </ul>
 <h3>Dates</h3>
 <ul>
@@ -231,8 +231,8 @@ order by <font color=red>posting_time</font>"]
 <li><b>Timing issues within one page</b><br>
  You can still have concurrency bugs even with Oracle if you assume a given page runs in isolation. For example, if you have the following logic:
 <blockquote>
-if { [database_to_tcl_string $db "select count(id) from foo_table where id=$id"] == 0 } {<br>
-&nbsp;&nbsp;&nbsp;&nbsp;ns_db dml $db "insert into foo_table (id) values ($id)"<br>
+if { [db_string unused "select count(id) from foo_table where id=$id"] == 0 } {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;db_dml unused "insert into foo_table (id) values ($id)"<br>
 }<br>
 </blockquote>
 
@@ -248,13 +248,13 @@ In these cases, be sure to use select for update to get the appropriate lock.
 <br>
 For example:
 <blockquote>
-ns_db dml $db "<font color=red>begin transaction</font>"<br>
+db_dml unused "<font color=red>begin transaction</font>"<br>
 set selection [ns_db $db 0or1row  "select id from foo_table where id=$id <font color=red>for update of foo_table.id</font>"]<br>
 <p>
 if [empty_string_p $selection] {<br>
-&nbsp;&nbsp;&nbsp;&nbsp;ns_db dml $db "insert into foo_table (id) values ($id)"<br>
+&nbsp;&nbsp;&nbsp;&nbsp;db_dml unused "insert into foo_table (id) values ($id)"<br>
 }<br>
-ns_db dml $db "<font color=red>end transaction</font>"
+db_dml unused "<font color=red>end transaction</font>"
 </blockquote>
 </ul>
 
@@ -270,7 +270,7 @@ If you perform a query and then process each row using a while loop, you should 
 
 <blockquote><pre>
 Incorrect:
-<font color=red>set db [ns_db gethandle]</font>
+<font color=red></font>
 
 set <font color=red>selection</font> [ns_db select <font color=red>$db</font> "select posting_date, bboard.* 
 from bboard
@@ -340,12 +340,12 @@ if { [info exists foo] <font color=red>&&</font> ![empty_string_p $foo] } {<br>
 <blockquote>
 Incorrect:<br>
 <font color=red>ns_return 200 text/html</font> "This is the first form fragment"<br>
-...tcl code...<br>
+.. code...<br>
 <font color=red>ns_write</font> "This is the second form fragment"<br>
 <p>
 Correct:<br>
 <font color=red>append output_string</font> "This is the first form fragment"<br>
-...tcl code...<br>
+.. code...<br>
 <font color=red>append output_string</font> "This is the second form fragment"<br>
 <font color=red>ns_return 200 text/html</font> $output_string
 <p>
@@ -353,7 +353,7 @@ or
 <p>
 <font color=red>ReturnHeaders<br>
 ns_write</font> "This is the first form fragment."<br>
-...tcl code...<br>
+.. code...<br>
 <font color=red>ns_write</font> "This is the second form fragment."<br>
 </blockquote>
 
@@ -382,18 +382,18 @@ String comparison using "==" can cause subtle type problems due to the way the T
 <blockquote>
 Unsafe:<br>
 if { <font color=red>$foo == "bar"</font> } { <br> 
-&nbsp;&nbsp;&nbsp;...tcl...<br>
+&nbsp;&nbsp;&nbsp;.....<br>
 }
 <p>
 Correct: (Note that a exact match with string compare returns a 0.)<br>
 if { <font color=red>[string compare $foo "bar"] == 0</font> } { <br>
-&nbsp;&nbsp;&nbsp;...tcl... <br>
+&nbsp;&nbsp;&nbsp;..... <br>
 }
 <p>
 If you just want to see if the variable is empty, use <code>empty_string_p</code><br>
 
 if <font color=red>[empty_string_p $foo]</font>  {<br>
-&nbsp;&nbsp;&nbsp;...tcl...<br>
+&nbsp;&nbsp;&nbsp;.....<br>
 }
 
 </blockquote>
@@ -427,10 +427,10 @@ For example:
 set foo "two<br>
 lines"
 <br>
-ns_write "&lt; a href=index.tcl?foo=[ns_urlencode $foo]"&gt;ACS&lt;/a&gt;
+ns_write "&lt; a href=index?foo=[ns_urlencode $foo]"&gt;ACS&lt;/a&gt;
 </blockquote>
 
-If the user clicks to index.tcl, <code>ns_conn form</code> will not contain any data.
+If the user clicks to index, <code>ns_conn form</code> will not contain any data.
 <p>
 <i>This will be fixed in AOLServer 2.3.3.</i>
 

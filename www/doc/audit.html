@@ -7,7 +7,7 @@
 <body bgcolor=#ffffff text=#000000>
 <h2>Audit Trail Package</h2>
 
-part of the <a href="index.html">ArsDigita Community System</a>
+part of the <a href="index">ArsDigita Community System</a>
 by <a href="mailto:jkoontz@arsdigita.com">Jesse Koontz</a>
 
 <hr>
@@ -17,12 +17,12 @@ by <a href="mailto:jkoontz@arsdigita.com">Jesse Koontz</a>
 <a href="/admin/ecommerce/">/admin/ecommerce/</a>
 
 <li>data model:  examples in
-<a href="/doc/sql/display-sql.tcl?url=/doc/sql/ecommerce.sql">/doc/sql/ecommerce.sql</a>
+<a href="/doc/sql/display-sql?url=/doc/sql/ecommerce.sql">/doc/sql/ecommerce.sql</a>
 
-<li>procedures:  /tcl/ad-audit-trail.tcl
-<li>Audit site: <a href="/admin/ecommerce/audit-tables.tcl">/admin/ecommerce/audit-tables.tcl</a>
-<li>Display table: <a href="/admin/ecommerce/audit-table.tcl">/admin/ecommerce/audit-table.tcl</a>
-<li>Display record: <a href="/admin/ecommerce/audit.tcl">/admin/ecommerce/audit.tcl</a>
+<li>procedures:  /tcl/ad-audit-trail
+<li>Audit site: <a href="/admin/ecommerce/audit-tables">/admin/ecommerce/audit-tables</a>
+<li>Display table: <a href="/admin/ecommerce/audit-table">/admin/ecommerce/audit-table</a>
+<li>Display record: <a href="/admin/ecommerce/audit">/admin/ecommerce/audit</a>
 </ul>
 
 <h3>The Big Picture</h3>
@@ -35,12 +35,12 @@ Tcl procedures (<code>ad_audit_trail</code> and
 values of a row, including highlighting particular changed columns, (3)
 a Tcl procedure (<code>ad_audit_delete_row</code>) that simplifies the
 logging of a deleted row, and (4) an example user interface (
-<code>audit-tables.tcl</code>, <code>audit-table.tcl</code>, <code>audit.tcl</code>) to retrieve and display audit histories.
+<code>audit-tables</code>, <code>audit-table</code>, <code>audit</code>) to retrieve and display audit histories.
 
 <h3>Steps for Auditing a Table</h3>
 
 We record old information in a separate audit table (see 
-<a href="http://photo.net/sql/triggers.html">the triggers chapter of 
+<a href="http://photo.net/sql/triggers">the triggers chapter of 
 <cite>SQL for Web Nerds</cite></a> for more explanation of this idea).
 
 <p>
@@ -127,7 +127,7 @@ show errors
 Note that it is not possible to automatically populate the audit table on
 deletion because we need the IP address of the deleting user.
 
-<li>Change any .tcl script that deletes rows from an audited table.  It
+<li>Change any  script that deletes rows from an audited table.  It
 should call <code>ad_audit_delete_row</code> with args key list, column 
 name list, and audit_table_name. This procedure calls 
 <code>ad_get_user_id</code> and <code>ns_conn peeraddr</code> and records
@@ -135,10 +135,10 @@ the user_id and IP address of the user deleting the row.
 
 <blockquote>
 <pre><code>
-ns_db dml $db "begin transaction"
-ns_db dml $db "delete from ec_products where product_id=$product_id"
-ad_audit_delete_row $db [list $product_id] [list product_id] ec_products_audit
-ns_db dml $db "end transaction"
+db_transaction {
+db_dml unused "delete from ec_products where product_id=$product_id"
+ad_audit_delete_row [list $product_id] [list product_id] ec_products_audit
+}
 </code></pre>
 </blockquote>
 
@@ -147,7 +147,7 @@ show the changes made to a key. Insert a call to <code>ad_audit_trail_for_table<
 
 <li> <em>optionally</em> define two views to provide "user friendly"
 audits.  Look at the 
-<a href="/doc/sql/display-sql.tcl?url=/doc/sql/ticket.sql">ticket
+<a href="/doc/sql/display-sql?url=/doc/sql/ticket.sql">ticket
 tracker data model</a> tables <code>ticket_pretty</code> and
 <code>ticket_pretty_audit</code> for an example.  This has the
 benefit of decoding the meaningless integer ID's and highlighting potential data 
@@ -166,7 +166,7 @@ Audit columns:
 </ul>
 
 Arguments for 
-<a href="proc-one.tcl?proc_name=ad_audit_trail_for_table"><code>ad_audit_trail_for_table</code></a>
+<a href="proc-one?proc_name=ad_audit_trail_for_table"><code>ad_audit_trail_for_table</code></a>
 
 <ul>
 
@@ -185,7 +185,7 @@ Returns an audit trail across an entire table, (multiple keys).
 </ul>
 
 Arguments for 
-<a href="proc-one.tcl?proc_name=ad_audit_trail"><code>ad_audit_trail</code></a>
+<a href="proc-one?proc_name=ad_audit_trail"><code>ad_audit_trail</code></a>
 
 <ul>
 
@@ -206,7 +206,7 @@ Tcl list of column names in audit_table_name and main_table
 
 </ul>
 
-Arguments for <a href="proc-one.tcl?proc_name=ad_audit_delete_row"><code>ad_audit_delete_row</code></a>
+Arguments for <a href="proc-one?proc_name=ad_audit_delete_row"><code>ad_audit_delete_row</code></a>
 
 <ul>
 

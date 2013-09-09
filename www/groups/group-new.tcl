@@ -1,15 +1,17 @@
-# $Id: group-new.tcl,v 3.0.4.1 2000/04/28 15:10:56 carsten Exp $
-# File: /groups/group-new.tcl
-# Date: mid-1998
-# Contact: teadams@mit.edu, tarik@mit.edu
-# Purpose: creation of a new user group
-# 
-# Note: groups_public_dir, group_type_url_p, group_type, group_type_pretty_name, 
-#       group_type_pretty_plural, group_public_root_url and group_admin_root_url
-#       are set in this environment by ug_serve_group_pages. if group_type_url_p
-#       is 0, then group_type, group_type_pretty_name and group_type_pretty_plural
-#       are empty strings)
+# /www/groups/group-new.tcl
 
+ad_page_contract {
+    @cvs-id group-new.tcl,v 3.2.6.8 2001/01/10 21:21:41 khy Exp
+
+ Purpose: creation of a new user group
+ 
+ Note: groups_public_dir, group_type_url_p, group_type, group_type_pretty_name, 
+       group_type_pretty_plural, group_public_root_url and group_admin_root_url
+       are set in this environment by ug_serve_group_pages. if group_type_url_p
+       is 0, then group_type, group_type_pretty_name and group_type_pretty_plural
+       are empty strings)
+} {
+}
 if {[ad_read_only_p]} {
     ad_return_read_only_maintenance_message
     return
@@ -22,9 +24,9 @@ if {$user_id == 0} {
     return
 }
 
-ReturnHeaders
 
-ns_write "[ad_header "Define a New User Group"]
+
+set page_html "[ad_header "Define a New User Group"]
 
 <h2>Define a New User Group</h2>
 
@@ -38,24 +40,21 @@ Which of these categories best characterizes your group?
 
 "
 
-set db [ns_db gethandle]
 
-set selection [ns_db select $db "select * 
+
+db_foreach get_ugt_info "select group_type, pretty_name
 from user_group_types
-where approval_policy <> 'closed'"]
+where approval_policy <> 'closed'" {
 
-set count 0
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
-    incr count
-    ns_write "<li><a href=\"group-new-2.tcl?[export_url_vars group_type]\">$pretty_name</a>\n"
+
+    append page_html "<li><a href=\"group-new-2?[export_url_vars group_type]\">$pretty_name</a>\n"
+} if_no_rows {
+
+
+    append page_html "currently there are no types of groups that users may define"
 }
 
-if { $count == 0 } {
-    ns_write "currently there are no types of groups that users may define"
-}
-
-ns_write "
+append page_html "
 
 <p>
 
@@ -67,4 +66,8 @@ create <a href=\"mailto:[ad_system_owner]\">send mail to
 
 [ad_footer]
 "
+doc_return  200 text/html $page_html
+
+
+
 

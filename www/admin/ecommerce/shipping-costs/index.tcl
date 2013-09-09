@@ -1,7 +1,14 @@
-# $Id: index.tcl,v 3.0 2000/02/06 03:21:33 ron Exp $
-ReturnHeaders
+#  www/admin/ecommerce/shipping-costs/index.tcl
+ad_page_contract {
 
-ns_write "[ad_admin_header "Shipping Costs"]
+  @author
+  @creation-date
+  @cvs-id index.tcl,v 3.1.6.5 2000/09/22 01:35:02 kevin Exp
+} {
+}
+
+
+set page_html "[ad_admin_header "Shipping Costs"]
 
 <h2>Shipping Costs</h2>
 
@@ -15,14 +22,14 @@ ns_write "[ad_admin_header "Shipping Costs"]
 <blockquote>
 "
 # for audit table
-set table_names_and_id_column [list ec_admin_settings ec_admin_settings_audit 1]
+set table_names_and_id_column [list ec_admin_settings ec_admin_settings_audit  admin_setting_id ]
 
-set db [ns_db gethandle]
-set selection [ns_db 1row $db "select base_shipping_cost, default_shipping_per_item, weight_shipping_cost, add_exp_base_shipping_cost, add_exp_amount_per_item, add_exp_amount_by_weight
-from ec_admin_settings"]
-set_variables_after_query
 
-ns_write "[ec_shipping_cost_summary $base_shipping_cost $default_shipping_per_item $weight_shipping_cost $add_exp_base_shipping_cost $add_exp_amount_per_item $add_exp_amount_by_weight]
+db_1row get_shipping_costs "select base_shipping_cost, default_shipping_per_item, weight_shipping_cost, add_exp_base_shipping_cost, add_exp_amount_per_item, add_exp_amount_by_weight
+from ec_admin_settings"
+
+
+append page_html "[ec_shipping_cost_summary $base_shipping_cost $default_shipping_per_item $weight_shipping_cost $add_exp_base_shipping_cost $add_exp_amount_per_item $add_exp_amount_by_weight]
 
 </blockquote>
 
@@ -39,14 +46,14 @@ section is not applicable, just leave it blank.
 
 <p>
 
-It is recommended that you read <a href=\"examples.tcl\">some
+It is recommended that you read <a href=\"examples\">some
 examples</a> before you fill in this form.
 
 <p>
 
 <ol>
 
-<form method=post action=edit.tcl>
+<form method=post action=edit>
 
 <b><li>Set the Base Cost:</b>
 <input type=text name=base_shipping_cost size=5 value=\"$base_shipping_cost\">
@@ -122,8 +129,13 @@ Ignore this section if you do not do express shipping.  The amounts you specify 
 <h3>Audit Trail</h3>
 
 <ul>
-<li><a href=\"/admin/ecommerce/audit-tables.tcl?[export_url_vars table_names_and_id_column]\">Audit Shipping Costs</a>
+<li><a href=\"/admin/ecommerce/audit-tables?[export_url_vars table_names_and_id_column]\">Audit Shipping Costs</a>
 </ul>
 
 [ad_admin_footer]
 "
+
+
+
+
+doc_return  200 text/html $page_html

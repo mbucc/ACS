@@ -1,51 +1,59 @@
-# $Id: usgeospatial-post-new-3.tcl,v 3.0.4.1 2000/04/28 15:09:44 carsten Exp $
-set_the_usual_form_variables
+# /www/bboard/usgeospatial-post-new-3.tcl
+ad_page_contract {
+    Posts a new message in the geospatial bboard system
 
-# topic, epa_region, usps_abbrev, fips_county_code (optional) 
+    @param topic the name of the bboard topic
+    @param epa_region the region of the country
+    @param usps_abbrev the postal abbreviation of the state
+    @param fips_county_code the ID for the county
 
-set db [bboard_db_gethandle]
-if { $db == "" } {
-    bboard_return_error_page
-    return
+    @cvs-id usgeospatial-post-new-3.tcl,v 3.3.2.6 2000/09/22 01:36:57 kevin Exp
+} {
+    topic:notnull
+    epa_region:integer,notnull
+    usps_abbrev:notnull
+    fips_county_code:optional,integer
 }
 
+# -----------------------------------------------------------------------------
 
 if {[bboard_get_topic_info] == -1} {
     return
 }
 
-
 #check for the user cookie
 
 set user_id [ad_verify_and_get_user_id]
-
-if {$user_id == 0} {
-   ad_returnredirect /register.tcl?return_url=[ns_urlencode "[bboard_partial_url_stub]usgeospatial-post-new-3.tcl?[export_url_vars topic epa_region usps_abbrev fips_county_code]"]
-    return
-}
+ad_maybe_redirect_for_registration
 
 # we know who this is
 
 if [info exists fips_county_code] {
-    append pretty_location [database_to_tcl_string $db "select fips_county_name from rel_search_co where fips_county_code = '$QQfips_county_code'"] " County, " [database_to_tcl_string $db "select state_name from rel_search_st where state = '$QQusps_abbrev'"]
+    append pretty_location [db_string county_name "
+    select fips_county_name 
+    from counties 
+    where fips_county_code = :fips_county_code"] " County, " [db_string \
+	    state_name "
+    select state_name from states 
+    where usps_abbrev = :usps_abbrev"]
 } else {
-    set pretty_location [database_to_tcl_string $db "select state_name from rel_search_st where state = '$QQusps_abbrev'"]
+    set pretty_location [db_string state_name "
+    select state_name from states where usps_abbrev = :usps_abbrev"]
 }
 
 set menubar_items [list]
-lappend menubar_items "<a href=\"usgeospatial-search-form.tcl?[export_url_vars topic topic_id]\">Search</a>"
+lappend menubar_items "<a href=\"usgeospatial-search-form?[export_url_vars topic topic_id]\">Search</a>"
 
-lappend menubar_items "<a href=\"help.tcl?[export_url_vars topic topic_id]\">Help</a>"
+lappend menubar_items "<a href=\"help?[export_url_vars topic topic_id]\">Help</a>"
 
 set top_menubar [join $menubar_items " | "]
 
-ReturnHeaders
-
-ns_write "[bboard_header "Post New Message"]
+append page_content "
+[bboard_header "Post New Message"]
 
 <h2>Post a New Message</h2>
 
-about $pretty_location into <a href=\"usgeospatial-2.tcl?[export_url_vars topic epa_region]\">the $topic (region $epa_region) forum</a>.
+about $pretty_location into <a href=\"usgeospatial-2?[export_url_vars topic epa_region]\">the $topic (region $epa_region) forum</a>.
 
 <hr>
 
@@ -54,8 +62,7 @@ about $pretty_location into <a href=\"usgeospatial-2.tcl?[export_url_vars topic 
 <br>
 <br>
 
-
-<form method=post action=\"insert-msg.tcl\" target=\"_top\">
+<form method=post action=\"insert-msg\" target=\"_top\">
 [export_form_vars topic epa_region usps_abbrev fips_county_code]
 
 [philg_hidden_input usgeospatial_p t]
@@ -78,11 +85,9 @@ about $pretty_location into <a href=\"usgeospatial-2.tcl?[export_url_vars topic 
 <textarea name=message rows=10 cols=70 wrap=hard></textarea>
 </blockquote>
 
-
 <P>
 
 <center>
-
 
 <input type=submit value=\"Post\">
 
@@ -92,3 +97,5 @@ about $pretty_location into <a href=\"usgeospatial-2.tcl?[export_url_vars topic 
 
 [bboard_footer]
 "
+
+doc_return  200 text/html $page_content

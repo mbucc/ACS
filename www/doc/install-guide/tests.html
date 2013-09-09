@@ -1,0 +1,192 @@
+<html><head><title>Acceptance Tests</title></head>
+<body bgcolor="#FFFFFF">
+
+<a name="ACS"></a>
+
+<table width="100%">
+<tr><td width="33%" align="left" valign="top">
+<b>Previous</b>: <a href="acs.html">Installing the ArsDigita<br> Community System 3.3</a></td>
+<td width="34%" align="center" valign="top"><h1>Acceptance Tests</h1>
+<td width="33%" align="right" valign="top">
+<b>Next</b>: <a href="credits.html">Credits</a></td>
+</tr>
+</table>
+
+<a href="/doc/">ACS Documentation</a> :
+<a href="">ACS Installation Guide</a> :
+Acceptance Tests
+
+<hr>
+
+
+
+Use this abridged version of the full length acceptance test to test an ACS installation quickly. If time permits, going through the full length <a href="/doc/acceptance-test">acceptance test</a> is a good way to learn the major features of ArsDigita Community
+System administration. 
+
+
+<a name="top"></a>
+<h3>Table of Contents</h3>
+<ol>
+<li> <a href="#installation">Installation </a>
+<li> <a href="#registration">Registration </a>
+<li> <a href="#user-admin">User Administration</a>
+<li> <a href="#bboard">Bboard System</a>
+<li> <a href="#news">News</a>
+<li> <a href="#comments">General Comments</a>
+</ol>
+
+
+
+<a name="installation"></a>
+<h3>Installation</h3><p>
+
+
+You should ensure the database has been properly configured and that your AOLServer installation will actually start.<br>
+Suggested method: 
+<ul>
+<li> Open up a sqlplus session as the Oracle user your AOLServer will connect as. We want to ensure we've completed the installation
+     step of adding NLS_DATE_FORMAT = "YYYY-MM-DD" to the Oracle instance init file. Make sure the date format is set
+     correctly. 
+
+<blockquote><pre><code>
+         SQL> select to_date('1-1-2000', 'MM-DD-YYYY') as y2k from dual ;
+
+         Y2K
+         ----------
+         2000-01-01
+</blockquote></pre></code>
+     If the date did not read "2000-01-01" that installation step failed. 
+<li> Next, make sure that the step of feeding Oracle the data model works. In the same sqlplus session, make sure the country_codes,
+     counties, and states tables were loaded: 
+
+<blockquote><pre><code>
+         SQL> select table_name from user_tables where lower(table_name) in ('country_codes', 'states', 'counties') ;
+
+         TABLE_NAME
+         ------------------------------
+         COUNTIES 
+         COUNTRY_CODES
+         STATES
+</blockquote></pre></code>
+     If these three tables do not show up, we failed to properly feed Oracle the data model. 
+     Spot-check that database objects created in <code>/web/yourservername/www/doc/sql</code> exist. 
+<li> If you installed site-wide-search make sure the im_convert PL/SQL proc is there. This procedure converts a search string into a
+     form interMedia understands to perform the search. 
+
+
+<blockquote><pre><code>
+         SQL> select im_convert('foo bar') from dual ;
+
+         IM_CONVERT('FOOBAR')
+         --------------------------------------------------------------------------------
+         ( { foo } NEAR { bar })*2.0,about(   foo     bar  )
+</blockquote></pre></code>
+
+
+     If this is not what you see, then you likely failed to properly feed Oracle the data model. 
+<li> Unless you have specified port numbers for both the ns_sock and ns_ssl (if applicable) modules that are greater than 1024, you will
+     need sudo permissions or root access for the following command. As root make sure your server will start 
+<blockquote><pre><code>
+         /webroot/aol30/bin/nsd -fc /webroot/aol30/.ini -r /webroot
+</blockquote></pre></code>
+     The -f option runs the server in the foreground, so you can easily see any errors that may have occurred when the server was run. If
+     you see any errors indicating the failure of a virtual server to start, this step failed.<br> 
+</ul>
+<a name="registration"></a>
+<a href="#top">TOP</a><br>
+<h3>Registration</h3><p>
+
+You should test basic registration and the login process. <br>
+Suggested method:
+<ul>
+<li> Go to /pvt/home.tcl
+<li> Walk through registering as a new user
+<li> Go back to /pvt/home.tcl and "Log out"
+<li> Go back to /pvt/home.tcl again and log in as the same user
+</ul>
+
+<a name="user-admin"></a>
+<a href="#top">TOP</a><br>
+<h3>User Administration</h3><p>
+
+You should test adding a user, searching for users, modifying user data, banning or deleting a user, and spamming a class of users. <br>
+Suggested method:
+<ul>
+<li> Go to /admin/users
+<li> Admin email/password = system/changeme
+<li> Create a test user
+<li> Search for a class of users (which includes the test user)
+<li> View the list of matching users and edit the user data for the new test user
+<li> Spam a (small) group of users.
+<li> Delete the test user
+<li> Ban the test user
+<li> Nuke the test user
+</ul>
+
+<a name="bboard"></a>
+<a href="#top">TOP</a><br>
+<h3>Bboard System</h3><p>
+
+You should test setting up a bboard, posting a message, alerts, and searching.<br>
+Suggested method:
+<ul>
+<li> Create a test bboard
+<li> Sign up for an instantaneous alert
+<li> Post a message
+<li> Respond to your message
+<li> Search for your message (Note that you must wait for the index to be rebuilt before you'll actually see your new posting. Or you can do it manually by going to SQL*Plus and typing <code>alter index sws_ctx_index rebuild parameters('sync')</code>.)
+<li> Deactivate the test bboard (you can leave it for later testing)
+</ul>
+
+<a name="news"></a>
+<a href="#top">TOP</a><br>
+<h3>News</h3><p>
+
+You should test story posting, story approval, and story editing (for both site-wide and group scope). You can also test the interface into the general comments module.
+<br>
+Suggested Method:<br>
+<ul>
+<li> Add a story
+<li> Approve the story in the admin pages (depends on policy)
+<li> Add a comment to the story 
+<li> Approve the comment in the admin pages (depends on policy)
+<li> Revoke approval for the story in the admin pages. The story should not appear the user pages.
+</ul>
+
+<a name="comments"></a>
+<a href="#top">TOP</a><br>
+<h3>General Comments</h3><p>
+
+
+Test tcl procedures used for adding comments to pages and test
+general comments admin pages
+<ul>
+<li>adding a comment using <code>ad_general_comment_add</code>
+<li>updating a comment using <code>ad_general_comment_update</code>
+<li>displaying general comments using <code>ad_general_comments_summary</code> 
+  and <code>ad_general_comments_summary_sorted</code>
+<li>approving/disapproving a comment through admin pages
+<li>editing a comment through admin pages
+<li>deleting a comment through admin pages
+<li>using dimensions on admin pages (sections, approving/disapproving, number of days)
+</ul>
+
+
+<hr>
+<table width="100%">
+<tr><td width="33%" align="left" valign="top">
+<b>Previous</b>: <a href="acs.html">Installing the ArsDigita<br> Community System 3.3</a></td>
+<td width="34%" align="center" valign="top"><b>Acceptance Tests</b>
+<br>part of the
+<a href="index.html">ACS Installation Guide</a>
+<td width="33%" align="right" valign="top">
+<b>Next</b>: <a href="credits.html">Credits</a></td>
+</tr>
+</table>
+<hr>
+<a href="mailto:bquinn@arsdigita.com">bquinn@arsdigita.com</a>
+
+
+</body>
+</html>
+

@@ -1,8 +1,17 @@
-set_the_usual_form_variables
+ad_page_contract {
+    This is /www/doc/schema-browser/column-comments.tcl
 
-#
-# expected: table_name, column_name
-#
+    @param table_name
+    @param column_name
+
+    @author ?
+    @creation-date ?
+    @cvs-id column-comments.tcl,v 1.3.2.5 2000/09/22 01:37:24 kevin Exp
+} {
+    table_name:notnull
+    column_name:notnull
+}
+
 
 set error_count 0
 set error_message ""
@@ -22,20 +31,18 @@ if { $error_count > 0 } {
 }
 
 
-set db [ns_db gethandle]
 
-
-set comments [database_to_tcl_string_or_null $db "
-    select comments from user_col_comments where table_name = '[string toupper $table_name]' and column_name = '[string toupper $column_name]'"
+set comments [db_string -default "" unused "
+select comments from user_col_comments where table_name = upper(:table_name) and column_name = upper(:column_name)"
 ]
 
-ns_write "
+set page_content "
 <h2>ArsDigita Schema Browser</h2>
 <hr>
-<a href=\"index.tcl?[export_url_vars table_name]\">Tables</a> : Column Comment
+<a href=\"index?[export_url_vars table_name]\">Tables</a> : Column Comment
 <p>
 <b>Enter or revise the comment on $table_name.$column_name:</b>
-<form method=post action=\"column-comments-2.tcl\">
+<form method=post action=\"column-comments-2\">
 [export_form_vars table_name column_name]
 <textarea name=\"comments\" rows=\"4\" cols=\"40\" wrap=soft>$comments</textarea>
 <p>
@@ -43,3 +50,7 @@ ns_write "
 </form>
 <hr>
 "
+
+
+doc_return  200 text/html $page_content
+

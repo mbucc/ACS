@@ -1,18 +1,26 @@
-# $Id: category-delete.tcl,v 3.0 2000/02/06 03:16:57 ron Exp $
-set_the_usual_form_variables
-# category_id, category_name
+# /www/admin/ecommerce/cat/category-delete.tcl
 
-ReturnHeaders
+ad_page_contract {
 
-ns_write "[ad_admin_header "Confirm Deletion"]
+    @param category_id the ID of the category to delete
+    @param category_name the name of the category to delete
+
+    @cvs-id category-delete.tcl,v 3.1.6.4 2000/09/22 01:34:47 kevin Exp
+} {
+    category_id:integer,notnull
+    category_name:notnull
+}
+
+
+set page_html "[ad_admin_header "Confirm Deletion"]
 
 <h2>Confirm Deletion</h2>
 
-[ad_admin_context_bar [list "../" "Ecommerce"] [list "index.tcl" "Categories &amp; Subcategories"] [list "category.tcl?[export_url_vars category_id category_name]" $category_name] "Delete this Category"]
+[ad_admin_context_bar [list "../" "Ecommerce"] [list "index" "Categories &amp; Subcategories"] [list "category?[export_url_vars category_id category_name]" $category_name] "Delete this Category"]
 
 <hr>
 
-<form method=post action=category-delete-2.tcl>
+<form method=post action=category-delete-2>
 [export_form_vars category_id]
 Please confirm that you wish to delete the category $category_name.  Please also note the following:
 <p>
@@ -29,3 +37,5 @@ Please confirm that you wish to delete the category $category_name.  Please also
 
 [ad_admin_footer]
 "
+
+doc_return  200 text/html $page_html

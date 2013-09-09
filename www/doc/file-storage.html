@@ -7,7 +7,7 @@
 <body bgcolor=#ffffff text=#000000>
 <h2>Community File Storage System</h2>
 
-part of the <a href="index.html">ArsDigita Community System</a>
+part of the <a href="index">ArsDigita Community System</a>
 by <a href="mailto:dh@caltech.edu">David Hill</a> and  <a href="http://aure.com/">Aurelius Prochazka</a>
 
 <hr>
@@ -16,7 +16,7 @@ by <a href="mailto:dh@caltech.edu">David Hill</a> and  <a href="http://aure.com/
 <li> User-accessible directory: <a href="/file-storage/">/file-storage/</a>
 <li> Site adminstrator directory: <a href="/admin/file-storage/">/admin/file-storage/</a> (must use https://)
 <li> data model: <a href="/doc/sql/display-sql?url=/doc/sql/file-storage.sql">/doc/sql/file-storage.sql</a>
-<li> procedures: /tcl/file-storage-defs.tcl
+<li> procedures: /tcl/file-storage-defs
 </ul>
 
 <h3>The big picture</h3>
@@ -31,7 +31,7 @@ emplacements of files through a Webmaster.
 If you simply give everyone FTP access to a Web-accessible directory,
 you are running some big security risks.  FTP is insecure and passwords
 are transmitted in the clear.  A cracker might sniff a password, upload
-.pl, .tcl, and .adp pages, then grab those URLs from a Web browser.  The
+.pl, , and .adp pages, then grab those URLs from a Web browser.  The
 cracker is now executing arbitrary code on your server with all the
 privileges that you've given your Web server.
 
@@ -87,7 +87,7 @@ to extend to allow folders to have thier own permissions.
 
 <p>
 
-The permissions are handled by the <a href="general-permissions.html">general permissions</a> system.
+The permissions are handled by the <a href="general-permissions">general permissions</a> system.
 
 <p>
 
@@ -149,7 +149,7 @@ statement in file-storage.sql (and then feed it to Oracle)
 Warning: Intermedia is a tricky product for users.  The default mode is
 exact phrase matching, which means that the more a user types the fewer
 search results will be returned (a violation of the user interface
-guidelines in <a href="developers.html">developers.html</a>).  So you
+guidelines in <a href="developers">developers</a>).  So you
 might be letting yourself in for some education of users...
 
 <h3>Future Improvements</h3>

@@ -1,0 +1,6 @@
+<%= [wp_help_header "Editing Styles"] %>
+<h3>Creating a presentation</h3>
+A presentation can be created simply by following the instructions on the page and pressing the "Save Presentation" button. Once you save your presentation you will be able to go on to adding slides to it, and setting up who is able to modify it.
+<h3>Editing a presentation</h3>
+If the presentation being worked on already exists, the information previously entered for it, will appear in these text boxes. Following the instructions given on the page, any of this information can be edited, and the the "Save Presentation" button pressed.
+<%=[wp_footer]%>

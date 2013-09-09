@@ -1,16 +1,19 @@
-# $Id: ad-content-tagging.tcl,v 3.0 2000/02/06 03:12:15 ron Exp $
-# ad-content-tagging.tcl
-# by aure@arsdigita.com May 1999
-
-# helper procedures for the Content Tagging system
-
+# /tcl/ad-content-tagging.tcl
+ad_library {
+    helper procedures for the Content Tagging system
+    
+    @creation-date May 1999
+    @author Aurelius Prochazka (aure@arsdigita.com)
+    @cvs-id ad-content-tagging.tcl,v 3.1.2.6 2000/07/21 00:34:27 berkeley Exp
+}
 proc_doc naughty_content_mask_for_user {user_id} "Queries database and returns content mask for user or the system-wide DefaultContentMask if we get a NULL or no row back from the database." {
-    set db [ns_db gethandle subquery]
-    set content_mask [database_to_tcl_string_or_null $db "select content_mask from users_preferences where user_id=$user_id"]
+
+
+    set content_mask [db_string -default "" unused "select content_mask from users_preferences where user_id=:user_id"]
     if {[empty_string_p $content_mask]} {
 	set content_mask [ad_parameter DefaultContentMask "content-tagging" 0]
     }
-    ns_db releasehandle $db
+    db_release_unused_handles
     return $content_mask
 }
 
@@ -95,22 +98,28 @@ proc_doc content_string_ok_for_site_p {text {table_name ""} {the_key ""}} {Deter
     set content_tag [tag_content $text]
     
     if { $content_tag&$loggable_naughtiness && $user_id != 0 } {
-	set db [ns_db gethandle subquery]
-	ns_ora clob_dml $db "insert into naughty_events 
-(table_name, the_key, offensive_text, creation_user, creation_date) 
-values
-('$table_name','[DoubleApos $the_key]',empty_clob(),$user_id, sysdate)
-returning offensive_text into :1" $text
-        ns_db releasehandle $db      
+	db_dml insert_naughty "insert into naughty_events 
+	(table_name, the_key, offensive_text, creation_user, creation_date) 
+	values
+	(:table_name,'[DoubleApos $the_key]',empty_clob(),:user_id, sysdate)
+	returning offensive_text into :1" -clobs [list $text]
+	#db_dml "insert into naughty_events 
+#(table_name, the_key, offensive_text, creation_user, creation_date) 
+#values
+#('$table_name','[DoubleApos $the_key]',empty_clob(),$user_id, sysdate)
+#returning offensive_text into :1" -clobs [list $text]
+        db_release_unused_handles      
     }
 
     if { $content_tag&$notifiable_naughtiness } {
-	set db [ns_db gethandle subquery]
-	set selection [ns_db 0or1row $db "select first_names, last_name, email from users where user_id = $user_id"]
-	if [empty_string_p $selection] {
+
+	
+	db_0or1row select_person "select first_names, last_name, email from users where user_id = :user_id"
+	if { [db_0or1row select_person "select first_names, last_name, email from users where user_id = :user_id"] == 0} {
+	#if [empty_string_p $selection] {
 	    set user_description "unknown user"
-	} else {
-	    set_variables_after_query
+	#} else 
+	} else {    
 	    set user_description "$first_names $last_name ($email)"
 	}
 	naughty_notify_admin "$user_description being naughty at [ad_url]" "Here's what $user_description posted at [ad_url]:
@@ -119,7 +128,7 @@ $text
 
 Table:  $table_name
 "
-        ns_db releasehandle $db      
+        db_release_unused_handles      
     }
     if { $content_tag & $bounceable_naughtiness } {
 	return 1
@@ -147,22 +156,19 @@ proc_doc bowdlerization_level {} {Returns bowdlerization mask for site, if ANDed
 proc naughty_words_for_level {bowdlerization_level} {
     # Returns list of | separated words which are to be restricted
     # at the given bowdlerization level.
-    set db [ns_db gethandle subquery]
 
-    set selection [ns_db select $db "select word, tag
-from content_tags
-order by tag desc"]
 
     set naughty_words [list]
 
-    while { [ns_db getrow $db $selection] } {
-	set_variables_after_query
-
+    db_foreach bowdlerize_find_naughty_list "
+         select word, tag
+                from content_tags
+                order by tag desc" {
 	if { $tag & $bowdlerization_level } {
 	    lappend naughty_words $word
 	}
     }
-    ns_db releasehandle $db
+    db_release_unused_handles
     return [join $naughty_words "|"]
 }
 
@@ -209,19 +215,15 @@ proc_doc bowdlerize_text {text} {Returns bowdlerized version of TEXT or empty st
     }
 }
 
-
-
 proc_doc get_content_tags {} {Load the naughty words into a shared tcl array entitled tag_array} {
 
-    set db [ns_db gethandle subquery]
+
     ns_share tag_array
-    set sql "select word, tag from content_tags order by tag desc"
-    set selection [ns_db select $db $sql]
-    while {[ns_db getrow $db $selection]} {
-	set_variables_after_query
+    db_foreach select_tag_info "select word, tag from content_tags order by tag desc" {
 	set tag_array($word) $tag
     }
-    ns_db releasehandle $db
+
+    db_release_unused_handles
 }
 
 proc_doc naughty_administrator {} "Returns email address of person to notify if naughty content is added" {
@@ -231,7 +233,6 @@ proc_doc naughty_administrator {} "Returns email address of person to notify if 
 	return [ad_parameter Administrator content-tagging]
     }
 }
-
 
 ns_share -init { set naughty_administrator_last_notified 0 } naughty_administrator_last_notified
 
@@ -267,3 +268,7 @@ $body
 "
     }
 }
+
+
+
+

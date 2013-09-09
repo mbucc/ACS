@@ -230,11 +230,79 @@ create or replace function group_section_module_exists_p
 /
 show errors
 
+-- we need to associate modules with user group types. The following procedure
+-- creates the mapping between the user_group_type and the module_key and updates
+-- all user groups of the specified type that do not already have the associated
+-- module
+create or replace procedure user_group_type_module_add ( p_group_type IN varchar,  
+							 p_module_key IN varchar ) 
+IS
+    v_module_pretty_name		acs_modules.pretty_name%TYPE;  
+    v_section_type			varchar(100);
+    v_group_id				user_groups.group_id%TYPE;
+    v_section_key			varchar(100);
+
+    -- Prepare the cursor to pull out all the user groups we need to modify
+
+    CURSOR c_groups_to_update ( v_group_type IN varchar, v_module_key IN varchar ) IS
+      	select ug.group_id, uniq_group_module_section_key(v_module_key, ug.group_id) 
+          from user_groups ug
+         where ug.group_type=v_group_type
+	   and not exists (select 1 
+                             from content_sections cs
+                      	    where cs.scope='group'
+                      	      and cs.group_id=ug.group_id
+                      	      and cs.module_key=v_module_key)
+ 	   for update;
+
+BEGIN
+
+    BEGIN
+	-- pull out the pretty name and section type from the acs_modules table.
+	-- If we get an exception, then the specified module doesn't exist - 
+	-- Return right away as we can't really do anything else!
+    	select pretty_name, section_type_from_module_key(module_key) into v_module_pretty_name, v_section_type
+      	  from acs_modules 
+         where module_key=p_module_key;
+        EXCEPTION WHEN OTHERS THEN 
+            raise_application_error(-20000, 'Module key ' || p_module_key || ' not found in acs_modules tables');
+    END;
+ 
+    -- We take special care here not to remap the same module key twice! This means
+    -- re-running this procedure for the same group_type/module_key will have no 
+    -- side-effects
+    insert into user_group_type_modules_map
+    (group_type_module_id, group_type, module_key)
+    select group_type_modules_id_sequence.nextval, p_group_type, p_module_key 
+      from dual
+     where not exists (select 1 
+                         from user_group_type_modules_map
+                        where group_type=p_group_type
+                          and module_key=p_module_key);
 
 
+    -- Now we need to select out all the groups of this group_type which do not already have this
+    -- module installed. 
 
+    open c_groups_to_update (p_group_type, p_module_key);
 
+    LOOP 
+    	FETCH c_groups_to_update into v_group_id, v_section_key;
+    	EXIT WHEN c_groups_to_update%NOTFOUND;    
 
+	-- associate the specified module key with the user group
+	insert into content_sections
+	(section_id, scope, section_type, requires_registration_p, visibility, group_id, 
+	 section_key, module_key, section_pretty_name, enabled_p)
+	values
+	(content_section_id_sequence.nextval, 'group', v_section_type, 'f', 'public', v_group_id, 
+	 v_section_key, p_module_key, v_module_pretty_name, 't');
+
+    END LOOP;
+
+END;
+/ 
+show errors;
 
 
 

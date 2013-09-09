@@ -1,0 +1,15 @@
+/*
+ * /www/doc/systems-integrator-guide.css
+ *
+ * Style sheet for the Systems Integrator's Guide to the ACS
+ *
+ * michael@arsdigita.com, 2000-06-16
+ *
+ * systems-integrator-guide.css,v 1.2 2000/06/17 18:49:37 ron Exp
+ */
+
+BODY {
+	background-color: #FFFFFF;
+	color: #000000;
+	font-family: Tahoma, Helvetica, sans-serif
+}

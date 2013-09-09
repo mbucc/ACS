@@ -1,0 +1,3 @@
+This directory stores files that are currently being edited.  There is a sub-
+directory for each editor (a user_id) that contains a checked-out copy of the 
+files they are editing.

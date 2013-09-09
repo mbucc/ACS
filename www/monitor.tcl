@@ -1,6 +1,11 @@
-# $Id: monitor.tcl,v 3.0 2000/02/06 02:39:07 ron Exp $
-# this program was written by Philip Greenspun (philg@mit.edu)
-# it is free to everyone under the standard GNU Public License 
+# /www/monitor.tcl
+
+ad_page_contract {
+    @author        Philip Greenspun <philg@mit.edu>
+    @creation-date 
+    @cvs-id        monitor.tcl,v 3.1.2.4 2000/09/22 01:34:08 kevin Exp
+} {}
+
 
 set connections [ns_server active]
 
@@ -15,13 +20,10 @@ foreach connection $connections {
 set distinct [ns_set size $scratch]
 
 
-set whole_page "<html>
-<head>
-<title>Life on the [ns_info server] server</title>
-</head>
-
-<body bgcolor=#ffffff text=#000000>
+set whole_page "
+[ad_header "Life on the [ns_info server] server"]
 <h2>Life on the [ns_info server] server</h2>
+[ad_context_bar_ws_or_index "Current page requests"]
 <hr>
 
 There are a total of [llength $connections] requests being served
@@ -72,11 +74,7 @@ foreach connection $connections {
 
 
 append whole_page "</table>
-
-<hr>
-<a href=\"http://photo.net/philg/\"><address>philg@mit.edu</address></a>
-</body>
-</html>
+[ad_footer]
 "
 
-ns_return 200 text/html $whole_page
+doc_return  200 text/html $whole_page

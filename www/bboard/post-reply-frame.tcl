@@ -1,9 +1,15 @@
-# $Id: post-reply-frame.tcl,v 3.0 2000/02/06 03:34:07 ron Exp $
-set_form_variables
+# /www/bboard/post-reply-frame.tcl
+ad_page_contract {
+    @param refers_to the message this reply is to
 
-# refers_to
+    @cvs-id post-reply-frame.tcl,v 3.1.2.3 2000/09/22 01:36:52 kevin Exp
+} {
+    refers_to
+}
 
-ns_return 200 text/html "
+# -----------------------------------------------------------------------------
+
+doc_return  200 text/html "
 
 <HTML><BASE F0NTSIZE=3>
 
@@ -12,7 +18,6 @@ ns_return 200 text/html "
 <TITLE>Bulletin Board System</TITLE>
 
 </HEAD>
-
 
 <FRAMESET ROWS=\"25%,*\">
 
@@ -33,12 +38,10 @@ browser.
 
 Perhaps you should consider running Netscape 2.0?
 
-
 </BODY></HTML>
 
 </NOFRAME>
 
 </FRAMESET>
-
 
 "

@@ -1,52 +1,50 @@
-# /www/download/admin/download-remove-1.tcl
-#
-# Date:     01/04/2000
-# Author :  ahmeds@mit.edu
-# Purpose:  removes a download
-#
-# $Id: download-remove-2.tcl,v 1.1.2.2 2000/04/28 15:09:57 carsten Exp $
+# /www/download/admin/download-remove-2.tcl
+ad_page_contract {
+    removes a download file
 
-set_the_usual_form_variables
-# maybe scope, maybe scope related variables (group_id)
-# download_id
+    @param download_id the download to remove
+    @param scope
+    @param group_id
+
+    @author ahmeds@mit.edu
+    @creation-date 4 Jan 2000
+    @cvs-id download-remove-2.tcl,v 3.4.2.6 2000/10/16 09:08:51 kolja Exp
+} {
+    download_id:integer,notnull
+    scope:optional
+    group_id:optional,integer
+}
+
+# -----------------------------------------------------------------------------
 
 ad_scope_error_check
 
-set db_pools [ns_db gethandle [philg_server_default_pool] 2]
-set db [lindex $db_pools 0]
-set db2 [lindex $db_pools 1]
+ad_scope_authorize $scope admin group_admin none
 
-ad_scope_authorize $db $scope admin group_admin none
-
-set user_id [download_admin_authorize $db $download_id]
+set user_id [download_admin_authorize $download_id]
 
 # Now check to see if the input is good as directed by the page designer
 
-set exception_count 0
-set exception_text ""
-
-set selection [ ns_db 0or1row $db "
+if { ![db_0or1row download_info "
 select directory_name, 
        scope as file_scope, 
        group_id as gid 
 from   downloads
-where  download_id = $download_id"]
+where  download_id = :download_id"] } {
 
-if {[empty_string_p $selection]} {
     ad_scope_return_complaint 1 "
-    <li>There is no downloadable file with id=$download_id<br>" $db
+    <li>There is no downloadable file with id=$download_id<br>"
     return
 }
 
-set_variables_after_query
+# -----------------------------------------------------------------------------
 
-set selection [ns_db select $db \
-	"select version_id from download_versions where download_id = $download_id"]
+db_foreach versions_for_one_download "
+select version_id from download_versions 
+where download_id = :download_id" {
 
-while { [ns_db getrow $db $selection ] } {
-    set_variables_after_query
     # remove the version from both file storage and the database 
-    download_version_delete $db2 $version_id
+    download_version_delete $version_id
 }
     
 if {$file_scope == "public"} {
@@ -63,13 +61,9 @@ if [catch {ns_rmdir $dir_full_name } errmsg] {
     return
 }
 
-ns_db dml $db "delete from downloads where download_id = $download_id"
-ns_db releasehandle $db
+db_dml download_delete "
+delete from downloads where download_id = :download_id"
+db_release_unused_handles
 
-ad_returnredirect index.tcl?[export_url_scope_vars]
-
-
-
-
-
+ad_returnredirect index?[export_url_scope_vars]
 

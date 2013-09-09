@@ -7,18 +7,18 @@
 <body bgcolor=#ffffff text=#000000>
 <h2>Curriculum System</h2>
 
-part of the <a href="index.html">ArsDigita Community System</a>
+part of the <a href="index">ArsDigita Community System</a>
 by <a href="http://photo.net/philg/">Philip Greenspun</a>
 
 <hr>
 
 <ul>
 <li>User directory:  <a href="/curriculum/">/curriculum/</a>
-<li>Admin directory:  <a href="/admin/curriculum/element-list.tcl">/admin/curriculum/element-list.tcl</a> 
+<li>Admin directory:  <a href="/admin/curriculum/element-list">/admin/curriculum/element-list</a> 
 <li>data model:  
-<a href="/doc/sql/display-sql.tcl?url=/doc/sql/curriculum.sql">/doc/sql/curriculum.sql</a>
+<a href="/doc/sql/display-sql?url=/doc/sql/curriculum.sql">/doc/sql/curriculum.sql</a>
 
-<li>procedures:  /tcl/curriculum.tcl 
+<li>procedures:  /tcl/curriculum 
 
 </ul>
 
@@ -119,7 +119,7 @@ create table user_curriculum_map (
 
 You might wonder why we don't use the <code>user_content_map</code>
 table.  We have some good reasons:  (a) the table only records static
-.html page loads, (b) the table is only properly used to record content
+ page loads, (b) the table is only properly used to record content
 viewed on our server whereas a curriculum may include content from
 foreign sites.
 
@@ -134,9 +134,9 @@ to claim their curriculum progress when logging in from another browser.
 
 Our canonical location for the curriculum bar is at the bottom of
 the page, just above the HR tag the precedes the signature.  We can get
-this into most .tcl pages by making <code>ad_footer</code> check for the
+this into most  pages by making <code>ad_footer</code> check for the
 publisher's curriculum system settings.  A modification to
-<code>ad_serve_html_page</code> in /tcl/ad-html.tcl suffices to make
+<code>ad_serve_html_page</code> in /tcl/ad-html suffices to make
 the bar visible on static pages.
 
 <h3>When displayed</h3>
@@ -175,7 +175,7 @@ reflect the current page.
 
 <p>
 
-By default, the filter ought to be run before every .html, .tcl, or .adp
+By default, the filter ought to be run before every , , or .adp
 page served, if the curriculum system is enabled.
 
 

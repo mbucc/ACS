@@ -1,19 +1,29 @@
-# $Id: offer-delete-2.tcl,v 3.0.4.1 2000/04/28 15:08:52 carsten Exp $
-set_the_usual_form_variables
-# deleted_p, product_id, product_name, retailer_id
+#  www/admin/ecommerce/products/offer-delete-2.tcl
+ad_page_contract {
+  Delete an offer.
 
-# we need them to be logged in
-set user_id [ad_verify_and_get_user_id]
-
-if {$user_id == 0} {
-    
-    set return_url "[ns_conn url]?[export_entire_form_as_url_vars]"
-
-    ad_returnredirect "/register.tcl?[export_url_vars return_url]"
-    return
+  @author Eve Andersson (eveander@arsdigita.com)
+  @creation-date Summer 1999
+  @cvs-id offer-delete-2.tcl,v 3.1.6.2 2000/07/22 07:57:40 ron Exp
+} {
+  deleted_p
+  product_id:integer,notnull
+  retailer_id:integer,notnull
 }
 
-set db [ns_db gethandle]
-ns_db dml $db "update ec_offers set deleted_p='$deleted_p', last_modified=sysdate, last_modifying_user='$user_id', modified_ip_address='[DoubleApos [ns_conn peeraddr]]' where product_id=$product_id and retailer_id=$retailer_id"
+# we need them to be logged in
+set user_id [ad_maybe_redirect_for_registration]
 
-ad_returnredirect "offers.tcl?[export_url_vars product_id product_name]"
+set peeraddr [ns_conn peeraddr]
+
+db_dml offer_delete_update "
+update ec_offers
+set deleted_p=:deleted_p,
+    last_modified=sysdate,
+    last_modifying_user=:user_id,
+    modified_ip_address=:peeraddr
+where product_id=:product_id
+and retailer_id=:retailer_id
+"
+
+ad_returnredirect "offers.tcl?[export_url_vars product_id]"

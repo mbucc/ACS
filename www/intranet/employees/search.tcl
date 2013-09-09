@@ -1,75 +1,109 @@
-# $Id: search.tcl,v 3.2.2.2 2000/04/28 15:11:06 carsten Exp $
-#
-# File: /www/intranet/employees/search.tcl
-#
-# Author: mbryzek@arsdigita.com, Jan 2000
-#
-# Allows you to search through all employees
-# 
+# /www/intranet/employees/search.tcl
 
-set_the_usual_form_variables 0
+ad_page_contract {
+    Allows you to search through all employees
 
-# keywords
+    @param search_type Search|'Feeling Lucky' - If Feeling Lucky
+    (case-insensitive match), we redirect to the first match found
 
-if { ![exists_and_not_null keywords] } {
-    ad_returnredirect index.tcl
+    @author mbryzek@arsdigita.com
+    @creation-date Jan 2000
+
+    @cvs-id search.tcl,v 3.15.2.8 2000/09/22 01:38:31 kevin Exp
+} {
+    { keywords "" }
+    { target "" }
+    { search_type "Search" }
+}
+
+set search_type [string toupper [string trim $search_type]]
+
+if { [empty_string_p [string trim $keywords]] } {
+    # Show all employees
+    ad_returnredirect index
     return
 }
 
-set upper_keywords [string toupper $keywords]
+if { [empty_string_p $target] } {
+    set target "../users/view"
+}
+
+# Get target ready to use
+if { [regexp {\?} $target] } {
+    append target "&"
+} else {
+    append target "?"
+}
+
+set upper_keywords [string toupper [string trim $keywords]]
 # Convert * to oracle wild card
 regsub -all {\*} $upper_keywords {%} upper_keywords
 
-set db [ns_db gethandle]
+set upper_keywords "%$upper_keywords%"
 
-set selection [ns_db select $db \
-        "select u.last_name || ', ' || u.first_names as full_name, email, u.user_id
-           from users_active u, user_group_map ugm, users_contact uc
-          where upper(u.last_name||' '||u.first_names||' '||u.email||' '||uc.aim_screen_name||' '||u.screen_name) like '%[DoubleApos $upper_keywords]%'
-            and u.user_id=ugm.user_id
-            and ugm.group_id=[im_employee_group_id]
+# Search everyone, but list employees first
+
+set list_everyone_sql "
+        select u.last_name || ', ' || u.first_names as full_name, email, u.user_id,
+                ad_group_member_p(u.user_id, [im_employee_group_id]) as employee_p
+           from users_active u, users_contact uc
+          where upper(u.last_name||' '||u.first_names||' '||u.last_name||' '||u.email||' '||uc.aim_screen_name||' '||u.screen_name) like (:upper_keywords)
             and u.user_id=uc.user_id(+)
-          order by lower(trim(full_name))"]
+          order by employee_p desc, lower(trim(full_name))"
 
 set number 0
-set page_body ""
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
-    incr number
-    if { $number == 1 && [exists_and_not_null search_type] && [string compare $search_type "Feeling Lucky"] == 0 } {
-	ns_db flush $db
-	ad_returnredirect ../users/view.tcl?[export_url_vars user_id]
-	return
+set results ""
+set last_employee_p ""
+
+db_foreach list_everyone $list_everyone_sql {
+    incr number    
+    if { $employee_p == "t" } {
+	set url "$target[export_url_vars user_id]"
+    } else {
+	set url "/shared/community-member?[export_url_vars user_id]"
+	
     }
-    append page_body "  <li> <a href=../users/view.tcl?[export_url_vars user_id]>$full_name</a>"
+
+    if { $number == 1 && [string compare $search_type "FEELING LUCKY"] == 0 } {
+	db_release_unused_handles
+	ad_returnredirect $url
+	# Let's bail out of here...
+	ad_script_abort
+    }
+    if { [string compare $employee_p $last_employee_p] != 0 } {
+	if { ![empty_string_p $last_employee_p] } {
+	    append results "</ul>\n"
+	}
+	append results "<h3>[util_decode $employee_p "t" "Employees" "Community members"]</h3><ul>\n"
+	set last_employee_p $employee_p
+    }
+
+    append results "  <li> <a href=$url>$full_name</a>"
     if { ![empty_string_p $email] } {
-        append page_body " - <a href=\"mailto:$email\">$email</a>"
+        append results " &lt;<a href=\"mailto:$email\">$email</a>&gt;"
     }
-    append page_body "\n"
+    append results "\n"
 }
 
-ns_db releasehandle $db
+db_release_unused_handles
 
-
-if { [empty_string_p $page_body] } {
+if { [empty_string_p $results] } {
     set page_body "
 <blockquote>
 <b>No matches found.</b>
-Look at all <a href=index.tcl>employees</a>
+Look at all <a href=index>employees</a>
 </blockquote>
 "
 } else {
+    append results "</ul>\n"
     set page_body "
-<b>$number [util_decode $number 1 "employee was" "employees were"] found</b>
-<ul>
-$page_body
-</ul>
+<b>[util_commify_number $number] [util_decode $number 1 "match was" "matches were"] found</b>
+$results
 
 "
 }
 
+set page_title "User and Employee Search"
+set context_bar [ad_context_bar_ws [list ./ "Employees"] Search]
 
-set page_title "Employee Search"
-set context_bar [ad_context_bar [list "/" Home] [list ../index.tcl "Intranet"] [list index.tcl "Employees"] Search]
-
-ns_return 200 text/html [ad_partner_return_template]
+doc_return  200 text/html [im_return_template]

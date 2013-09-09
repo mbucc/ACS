@@ -4,7 +4,7 @@
 
 <h2>Claim a Gift Certificate</h2>
 
-<form method=post action="gift-certificate-claim-2.tcl">
+<form method=post action="gift-certificate-claim-2">
 
 <blockquote>
 If you've received a gift certificate, enter the claim

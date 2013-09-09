@@ -1,7 +1,8 @@
 This is the ArsDigita Community System, described in
 http://photo.net/wtr/thebook/community.html 
 
-Copyright (C) 1995-99 Philip Greenspun and ArsDigita, LLC
+Copyright (C) 1995-2000 ArsDigita Corporation and, in some cases,
+individual authors
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -23,5 +24,5 @@ Documentation for this system is at www/doc/
 
 The version history is at www/doc/version-history.html 
 
-This is release $Name: acs-3-2-3-R20000517 $
+This is release acs-3-4-10-R20010211
 

@@ -1,19 +1,24 @@
-# $Id: style-delete-2.tcl,v 3.0.4.1 2000/04/28 15:11:42 carsten Exp $
-# File:        slide-delete-2.tcl
-# Date:        28 Nov 1999
-# Author:      Jon Salz <jsalz@mit.edu>
-# Description: Deletes the style.
-# Inputs:      style_id
+# /wp/style-delete-2.tcl
 
-set_the_usual_form_variables
+ad_page_contract {
+    Description: Deletes the style.
 
-# everything for an old slide
-set db [ns_db gethandle]
+    @param style_id is the ID of the style to delete
+
+    @creation-date  28 Nov 1999
+    @author Jon Salz (jsalz@mit.edu)
+    @cvs-id style-delete-2.tcl,v 3.1.6.5 2000/08/16 21:49:44 mbryzek Exp
+} {
+    style_id:naturalnum,notnull
+}
+
 set user_id [ad_maybe_redirect_for_registration]
 
-wp_check_style_authorization $db $style_id $user_id
+wp_check_style_authorization $style_id $user_id
 
-ns_db dml $db "delete from wp_styles where style_id = $style_id"
+db_dml wp_style_delete "delete from wp_styles where style_id = :style_id"
+
+db_release_unused_handles
 
 ad_returnredirect "style-list.tcl"
 

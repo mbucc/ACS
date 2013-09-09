@@ -1,10 +1,18 @@
-# $Id: add.tcl,v 3.0 2000/02/06 03:21:37 ron Exp $
-set_form_variables 0
-# possibly based_on
+#  www/admin/ecommerce/templates/add.tcl
+ad_page_contract {
+    @param based_on optional to base template on
 
-ReturnHeaders
+  @author
+  @creation-date
+  @cvs-id add.tcl,v 3.1.6.4 2000/09/22 01:35:03 kevin Exp
+} {
+    based_on:optional
+}
 
-ns_write "[ad_admin_header "Add a Template"]
+
+
+
+set page_html "[ad_admin_header "Add a Template"]
 
 <h2>Add a Template</h2>
 
@@ -14,13 +22,13 @@ ns_write "[ad_admin_header "Add a Template"]
 "
 
 if { [info exists based_on] && ![empty_string_p $based_on] } {
-    set db [ns_db gethandle]
-    set template [database_to_tcl_string $db "select template from ec_templates where template_id=$based_on"]
+    
+    set template [db_string get_template "select template from ec_templates where template_id=:based_on"]
 } else {
     set template ""
 }
 
-ns_write "<form method=post action=add-2.tcl>
+append page_html "<form method=post action=add-2>
 
 Name: <input type=text name=template_name size=30>
 
@@ -39,3 +47,6 @@ ADP template:<br>
 
 [ad_admin_footer]
 "
+
+
+doc_return  200 text/html $page_html

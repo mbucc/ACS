@@ -1,30 +1,28 @@
-# $Id: recommendation-text-edit-2.tcl,v 3.0.4.1 2000/04/28 15:08:53 carsten Exp $
-# recommendation-text-edit-2.tcl
-#
-# by philg@mit.edu on July 18, 1999
-#
-# actually updates the row
-# 
+#  www/admin/ecommerce/products/recommendation-text-edit-2.tcl
+ad_page_contract {
+  Actually updates the row.
 
-set_the_usual_form_variables
-
-# recommendation_id, recommendation_text
-
-# we need them to be logged in
-set user_id [ad_verify_and_get_user_id]
-
-if {$user_id == 0} {
-    
-    set return_url "[ns_conn url]?[export_entire_form_as_url_vars]"
-
-    ad_returnredirect "/register.tcl?[export_url_vars return_url]"
-    return
+  @author philg@mit.edu
+  @creation-date July 18, 1999
+  @cvs-id recommendation-text-edit-2.tcl,v 3.1.6.2 2000/07/22 07:57:42 ron Exp
+} {
+  recommendation_id:integer,notnull
+  recommendation_text:html
 }
 
-set db [ns_db gethandle]
+# we need them to be logged in
+ad_maybe_redirect_for_registration
+set user_id [ad_get_user_id]
 
-ns_db dml $db "update ec_product_recommendations 
-set recommendation_text = '$QQrecommendation_text', last_modified=sysdate, last_modifying_user='$user_id', modified_ip_address='[DoubleApos [ns_conn peeraddr]]'
-where recommendation_id=$recommendation_id"
+set peeraddr [ns_conn peeraddr]
+
+db_dml recommendation_text_update "
+update ec_product_recommendations 
+set recommendation_text = :recommendation_text,
+    last_modified=sysdate,
+    last_modifying_user=:user_id,
+    modified_ip_address=:peeraddr
+where recommendation_id=:recommendation_id
+"
 
 ad_returnredirect "recommendation.tcl?[export_url_vars recommendation_id]"

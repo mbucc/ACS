@@ -1,18 +1,20 @@
-#
 # /portals/manage-portal-js.tcl
-#
-# Javascript for manage-portal.tcl
-#
-# by aure@arsdigita.com and dh@arsdigita.com
-#
-# Last modified: 10/8/1999
-#
-# $Id: manage-portal-js.tcl,v 3.1 2000/03/10 22:58:47 richardl Exp $
-#
 
-set_the_usual_form_variables
+ad_page_contract {
+    Javascript for manage-portal.tcl
+    
+    @author aure@arsdigita.com
+    @author dh@arsdigita.com
+    @param max_page
+    @param total
+    @creation-date ?
+    @cvs-id manage-portal-js.tcl,v 3.2.2.6 2000/09/22 01:39:01 kevin Exp
+} {
+    {max_page:integer,notnull}
+    {total:integer,notnull}
+}
 
-ns_write "
+set page_content "
 
 // Key for functions:
 //  down = 0: move up
@@ -40,7 +42,6 @@ function moveTable(direction,side,page) {
 		// the table was at the top of the page already, so we now place it at the end of the previous page 
 		newpage = page-1;
 		newselectbox = side + newpage;
-
 
 		// calculate where to move the table to (length of the current select box + 1)
 		real_length = 0
@@ -194,7 +195,6 @@ function slide(side,page) {
     return false;
 }
 
-
 function Delete(side, page) {
     selectbox = side + page;
     selected_index = document.theForm\[selectbox].selectedIndex;
@@ -206,7 +206,6 @@ function Delete(side, page) {
 	alert(\"Please select a module first\");
 	return false;
     }
-
 
     if (oldValue != \"null\") {
 	document.theForm\[selectbox].options\[selected_index].value=\"null\"; 
@@ -254,7 +253,6 @@ function Delete(side, page) {
     }
     return false;
 }
-
 
 function addTable(side, page) {
     selectbox = side + page;
@@ -317,23 +315,19 @@ function addTable(side, page) {
     return false;
 }
 
-
-
-
-
 function doSub() {
     // Loads the string of elements on a page into hidden variables .left and  .right
     // These are used on the latter page for the update.
 "
     set page_temp 1
 while {$page_temp <= $max_page} {
-	ns_write "
+	append page_content "
     document.theForm\[\"left\"].value += '{'+doSubSide(\"left$page_temp\")+'} ';
     document.theForm\[\"right\"].value += '{'+doSubSide(\"right$page_temp\")+'} ' ;
     document.theForm\[\"hiddennames\"].value += '{'+document.theForm.page_name$page_temp.value+'} '"    
 	incr page_temp
     }
-ns_write "
+append page_content "
     return true;
 }
 
@@ -367,7 +361,6 @@ function spawnWindow(action, side,page) {
 	return false;
     }
 
-
     Value = document.theForm\[selectbox].options\[selected_index].value;
 
     if (Value != \"null\") {
@@ -382,9 +375,4 @@ function spawnWindow(action, side,page) {
 
 "
 
-
-
-
-
-
-
+doc_return  200 text/html $page_content

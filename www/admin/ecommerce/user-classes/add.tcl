@@ -1,10 +1,15 @@
-# $Id: add.tcl,v 3.0 2000/02/06 03:21:53 ron Exp $
-set_the_usual_form_variables
-# user_class_name
+#  www/admin/ecommerce/user-classes/add.tcl
+ad_page_contract {
+    @param user_class_name
 
-ReturnHeaders
+  @author
+  @creation-date
+  @cvs-id add.tcl,v 3.1.6.6 2001/01/12 19:35:03 khy Exp
+} {
+    user_class_name:trim,notnull
+}
 
-ns_write "[ad_admin_header "Confirm New User Class"]
+set page_html "[ad_admin_header "Confirm New User Class"]
 
 <h2>Confirm New User Class</h2>
 
@@ -19,11 +24,12 @@ Add the following new user class?
 </blockquote>
 "
 
-set db [ns_db gethandle]
-set user_class_id [database_to_tcl_string $db "select ec_user_class_id_sequence.nextval from dual"]
 
-ns_write "<form method=post action=add-2.tcl>
-[export_form_vars user_class_name user_class_id]
+set user_class_id [db_string get_uc_id_seq "select ec_user_class_id_sequence.nextval from dual"]
+
+append page_html "<form method=post action=add-2>
+[export_form_vars user_class_name]
+[export_form_vars -sign user_class_id]
 <center>
 <input type=submit value=\"Yes\">
 </center>
@@ -31,3 +37,6 @@ ns_write "<form method=post action=add-2.tcl>
 
 [ad_admin_footer]
 "
+
+
+doc_return  200 text/html $page_html

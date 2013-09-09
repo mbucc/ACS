@@ -7,10 +7,10 @@
 
 <p>
 
-<%= $saved_addresses %>
+<b>Please enter your address.</b> <%= $saved_addresses %>
 <ul>
-<li><a href="shipping-address.tcl">Enter a new U.S. address as your shipping address</a>
-<li><a href="shipping-address-international.tcl">Enter a new international address for anywhere else in the world</a>
+<li><a href="shipping-address">Enter a new U.S. address <%= [ec_decode $shipping_unavail_p 0 "as your shipping address " ""] %></a>
+<li><a href="shipping-address-international">Enter a new international address for anywhere else in the world</a>
 </ul>
 
 </blockquote>
