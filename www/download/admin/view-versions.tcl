@@ -1,27 +1,34 @@
 # /www/download/admin/view-versions.tcl
-#
-# Author:  ahmeds@mit.edu
-# Date:     01/04/2000
-# Purpose:  displays different versions of one download
-#
-# $Id: view-versions.tcl,v 3.0.4.1 2000/04/12 09:00:52 ron Exp $
+ad_page_contract {
+    displays different versions of one download
 
-set_the_usual_form_variables
-# download_id
+    @param download_id the file we are viewing versions of
+    @param scope
+    
+    @author ahmeds@mit.edu
+    @creation-date 4 Jan 2000
+    @cvs-id view-versions.tcl,v 3.11.2.6 2000/09/24 22:37:18 kevin Exp
+} {
+    download_id:integer,notnull
+    scope:optional
+}
+
+# -----------------------------------------------------------------------------
 
 ad_scope_error_check
 
-set db [ns_db gethandle]
+set user_id [download_admin_authorize $download_id]
 
-set user_id [download_admin_authorize $db $download_id]
+db_0or1row download_name "
+select d.download_name as download_name,
+       d.scope as file_scope, 
+       d.group_id as gid, 
+       d.directory_name as directory
+from downloads d
+where download_id = :download_id"
 
-set download_name [database_to_tcl_string $db "
-select download_name 
-from downloads
-where download_id = $download_id"]
 
 # ------------------------------- databaseQuery codeBlock ----
-
 
 # This query will extract the list of all the files that are
 # available for download 
@@ -29,23 +36,20 @@ set sql_query "
 select version_id as vid, 
        version as ver
 from download_versions 
-where download_id = $download_id
-and status !='removed'
+where download_id = :download_id
+and status != 'removed'
 order by ver asc, version_id desc
 "
 
-# Get the results of the query...
-set selection [ns_db select $db $sql_query] 
-
-# This counter will keep track of the number of rows returned
-# by the query
-set counter 0
-
-while { [ns_db getrow $db $selection] } {
-
-    set_variables_after_query
-
-    incr counter
+db_foreach available_versions $sql_query {
+     
+    if {$file_scope == "public"} {
+	set full_filename "[ad_parameter DownloadRoot download]$directory/$vid.file"
+    } else {
+	# scope is group
+	# download_authorize $did
+	set full_filename "[ad_parameter DownloadRoot download]groups/$gid/$directory/$vid.file"
+    }
 
     if {![info exists ver] || [empty_string_p $ver]} {
 	# If no version info exists in database (=> the file has no
@@ -60,18 +64,17 @@ while { [ns_db getrow $db $selection] } {
     }
 
     append current_html "
-    <li><a href=\"view-one-version.tcl?[export_url_scope_vars]&version_id=$vid\">$download_name $ver_html</a> 
+    <li><a href=\"view-one-version?[export_url_scope_vars]&version_id=$vid\">$download_name $ver_html</a> ([expr [file size $full_filename] / 1000]k) 
     <br>
     "
  
-}
+} if_no_rows {
 
-# If the counter reads zero, then there were no downloadable files
-if { $counter == 0 } {
-    set current_html "<li>There are no files available for download right now.<p>"
-} else {
-    append current_html "</ul>"
-}
+    append current_html "<li>There are no files available for download right now.<p>"
+} 
+
+append current_html "</ul>"
+
 
 append removed_html "
 <b>Removed Versions </b> <br>
@@ -83,19 +86,20 @@ set sql_query "
 select version_id as vid, 
        version as ver
  from download_versions 
-where download_id = $download_id
+where download_id = :download_id
 and status = 'removed'
 order by ver asc, version_id desc
 "
 
-set selection [ns_db select $db $sql_query] 
-
-set counter 0
-
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
-
-    incr counter
+db_foreach removed_versions $sql_query {
+     
+    if {$file_scope == "public"} {
+	set full_filename "[ad_parameter DownloadRoot download]$directory/$vid.file"
+    } else {
+	# scope is group
+	# download_authorize $did
+	set full_filename "[ad_parameter DownloadRoot download]groups/$gid/$directory/$vid.file"
+    }
 
     if {![info exists ver] || [empty_string_p $ver]} {
 	set ver_html ""
@@ -104,19 +108,16 @@ while { [ns_db getrow $db $selection] } {
     }
 
     append removed_html "
-    <li><a href=\"view-one-version.tcl?[export_url_scope_vars]&version_id=$vid\">$download_name $ver_html</a><br>
+    <li><a href=\"view-one-version?[export_url_scope_vars]&version_id=$vid\">$download_name $ver_html</a> ([expr [file size $full_filename] / 1000]k)<br>
     "
  
+} if_no_rows {
+    set removed_html "<i>No removed version</i>"
 }
 
-# If the counter reads zero, then there were no downloadable files with status = removed
-if { $counter > 0 } {
-    append removed_html "</ul>"
-} else {
-    set removed_html ""
-}
+append removed_html "</ul>"
 
-append html "
+append page_content "
 $current_html
 $removed_html
 "
@@ -124,19 +125,19 @@ $removed_html
 
 set page_title "$download_name Versions"
 
-ns_return 200 text/html "
-[ad_scope_header $page_title $db]
-[ad_scope_page_title $page_title $db]
+doc_return 200 text/html "
+[ad_scope_header $page_title]
+[ad_scope_page_title $page_title]
 [ad_scope_context_bar_ws \
-	[list "/download/" "Download"] \
-	[list "/download/admin/" "Admin"] \
-	[list "download-view.tcl?[export_url_scope_vars download_id]" "$download_name"] \
+	[list "/download/index?[export_url_scope_vars]" "Download"] \
+	[list "/download/admin/index?[export_url_scope_vars]" "Admin"] \
+	[list "download-view?[export_url_scope_vars download_id]" "$download_name"] \
 	"Versions"]
 <hr>
 [help_upper_right_menu]
 
 <blockquote>
-$html
+$page_content
 </blockquote>
 
 [ad_scope_footer]

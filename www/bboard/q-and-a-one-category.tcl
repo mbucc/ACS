@@ -1,16 +1,27 @@
-# $Id: q-and-a-one-category.tcl,v 3.0.4.1 2000/05/11 13:09:17 carsten Exp $
-set_the_usual_form_variables
+# /www/bboard/q-and-a-one-category.tcl
+ad_page_contract {
+    we're just looking at the uninteresting postings now
 
-# topic, category required
+    @param topic the name of the bboard topic
+    @param category a category within the topic
 
-# we're just looking at the uninteresting postings now
+    @cvs-id q-and-a-one-category.tcl,v 3.1.2.5 2000/09/22 01:36:52 kevin Exp
+} {
+    topic_id:integer,notnull
+    topic:optional
+    {q_and_a_sort_order ""}
+    category:notnull
+}
 
-set db [ns_db gethandle]
- 
+# -----------------------------------------------------------------------------
+
+# will set uplevel $topic if not passed to this page 
 if  {[bboard_get_topic_info] == -1} {
-    return}
+    return
+}
 
-set moby_string "[bboard_header "$category threads in $topic"]
+set page_content "
+[bboard_header "$category threads in $topic"]
 
 <h2>$category Threads</h2>
 
@@ -23,32 +34,39 @@ set moby_string "[bboard_header "$category threads in $topic"]
 "
 
 if { $category != "uncategorized" } {
-    set category_clause "and category = '$QQcategory'"
+    set category_clause "and category = :category"
 } else {
     # **** NULL/'' problem, needs " or category = '' "
     set category_clause "and (category is NULL or category = 'Don''t Know')"
 }
 
 
-
-set sql "select urgent_p, msg_id, one_line, sort_key, posting_time, email, first_names || ' ' || last_name as name, users.user_id as poster_id, bboard_uninteresting_p(interest_level) as uninteresting_p
-from bboard, users
-where bboard.user_id = users.user_id
-and topic_id = $topic_id
-and refers_to is null
-$category_clause
-order by uninteresting_p, sort_key $q_and_a_sort_order"
-
-set selection [ns_db select $db $sql]
-
 set uninteresting_header_written 0
 
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
+db_foreach messages "
+select urgent_p, 
+       msg_id, 
+       one_line, 
+       sort_key, 
+       posting_time, 
+       email, 
+       first_names || ' ' || last_name as name, 
+       users.user_id as poster_id, 
+       bboard_uninteresting_p(interest_level) as uninteresting_p
+from   bboard, users
+where  bboard.user_id = users.user_id
+and    topic_id = :topic_id
+and    refers_to is null
+$category_clause
+order by uninteresting_p, sort_key $q_and_a_sort_order" -column_set selection {
+
+    set msg_id [ns_set iget $selection msg_id]
+    set one_line [ns_set iget $selection one_line]
+    set uninteresting_p [ns_set iget $selection uninteresting_p]
 
     if { $uninteresting_p == "t" && $uninteresting_header_written == 0 } {
 	set uninteresting_header_written 1
-	append moby_string "
+	append page_content "
 <h3>Uninteresting Threads</h3>
 
 (or at least the forum moderator thought they would only be of interest to rare individuals; truly worthless threads get deleted altogether)
@@ -57,17 +75,17 @@ while {[ns_db getrow $db $selection]} {
 
 "
     }
-    append moby_string "<li><a target=\"_top\" href=\"[bboard_msg_url $presentation_type $msg_id $topic_id $topic]\">$one_line</a> [bboard_one_line_suffix $selection $subject_line_suffix]\n"
+    append page_content "<li><a target=\"_top\" href=\"[bboard_msg_url $presentation_type $msg_id $topic_id]\">$one_line</a> [bboard_one_line_suffix $selection $subject_line_suffix]\n"
 
 }
 
 # let's assume there was at least one posting
 
-append moby_string "
+append page_content "
 </ul>
 [bboard_footer]
 "
 
-ns_db releasehandle $db
 
-ns_return 200 text/html $moby_string
+
+doc_return  200 text/html $page_content

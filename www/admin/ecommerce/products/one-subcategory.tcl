@@ -1,10 +1,22 @@
-# $Id: one-subcategory.tcl,v 3.0 2000/02/06 03:20:30 ron Exp $
-set_the_usual_form_variables
-# category_id, category_name, subcategory_id, subcategory_name
+# one-subcategory.tcl
 
-ReturnHeaders
+ad_page_contract { 
+    @param category_id
+    @param category_name
+    @param subcategory_id
+    @param subcategory_name
 
-ns_write "[ad_admin_header "Products in $category_name: $subcategory_name"]
+    @author
+    @creation-date
+    @cvs-id one-subcategory.tcl,v 3.1.6.4 2000/07/21 03:57:02 ron Exp
+} {
+    category_id
+    category_name
+    subcategory_id
+    subcategory_name
+}
+
+doc_body_append "[ad_admin_header "Products in $category_name: $subcategory_name"]
 
 <h2>Products in $category_name: $subcategory_name</h2>
 
@@ -15,26 +27,30 @@ ns_write "[ad_admin_header "Products in $category_name: $subcategory_name"]
 <ul>
 "
 
-set db [ns_db gethandle]
 
-set selection [ns_db select $db "select m.product_id, p.product_name
+
+set sql "select m.product_id, p.product_name
 from ec_subcategory_product_map m, ec_products p
 where m.product_id = p.product_id
-and m.subcategory_id=$subcategory_id
-order by product_name"]
+and m.subcategory_id=:subcategory_id
+order by product_name"
 
 set product_counter 0
-while { [ns_db getrow $db $selection] } {
+db_foreach get_product_infos $sql {
     incr product_counter
-    set_variables_after_query
-    ns_write "<li><a href=\"one.tcl?[export_url_vars product_id]\">$product_name</a>\n"
+    
+    doc_body_append "<li><a href=\"one?[export_url_vars product_id]\">$product_name</a>\n"
 }
 
 if { $product_counter == 0 } {
-    ns_write "There are no products in this subcategory.\n"
+    doc_body_append "There are no products in this subcategory.\n"
 }
 
-ns_write "</ul>
+doc_body_append "</ul>
 
 [ad_admin_footer]
 "
+
+
+
+

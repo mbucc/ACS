@@ -1,30 +1,34 @@
-# $Id: cancel-spam.tcl,v 3.0 2000/02/06 03:30:00 ron Exp $
-# cancel-spam.tcl
-#
-# hqm@arsdigita.com
-#
-# Cancel a scheduled spam
-set_the_usual_form_variables
+# www/admin/spam/cancel-spam.tcl
 
-# spam_id
 
-set db [ns_db gethandle] 
+ad_page_contract {
 
-set selection [ns_db 0or1row $db "select sh.from_address, sh.title, sh.body, sh.user_class_description, send_date, to_char(sh.creation_date,'YYYY-MM-DD HH24:MI:SS') as creation_time, sh.n_sent, users.user_id, users.first_names || ' ' || users.last_name as user_name, users.email, sh.status
+ Cancel a scheduled spam
+
+
+    @param spam_id the id of the spam message
+    @author hqm@arsdigita.com
+    @cvs-id cancel-spam.tcl,v 3.1.8.5 2000/09/22 01:36:05 kevin Exp
+} {
+  spam_id:integer
+}
+
+if {[db_0or1row spam_cancel_prompt "
+ select sh.from_address, sh.title, sh.body_plain, sh.user_class_description, 
+        send_date, sh.n_sent, users.user_id, users.email, sh.status,
+        to_char(sh.creation_date,'YYYY-MM-DD HH24:MI:SS') as creation_time, 
+        users.first_names || ' ' || users.last_name as user_name 
 from spam_history sh, users
 where sh.creation_user = users.user_id
-and sh.spam_id = $spam_id"]
-
-if { $selection == "" } {
+and sh.spam_id = :spam_id"] == 0}
+{
     ad_return_error "Couldn't find spam" "Could not find an old spam with an id of $spam_id"
     return
 }
 
-set_variables_after_query
 
-ReturnHeaders
 
-ns_write "[ad_admin_header "$title"]
+append page_content "[ad_admin_header "$title"]
 
 <h2>$title</h2>
 
@@ -35,13 +39,18 @@ ns_write "[ad_admin_header "$title"]
 "
 
 if {[string compare $status "unsent"] != 0} {
-ns_write "<font color=red>This spam has already been sent or cancelled, you cannot cancel it.</font>"
+append page_content "<font color=red>This spam has already been sent or cancelled, you cannot cancel it.</font>"
 } else {
-    ns_db dml $db "delete from spam_history where spam_id = $spam_id"
-    ns_write "Spam ID $spam_id, \"$title\", scheduled for $send_date has been cancelled."
+    db_dml delete_spam "delete from spam_history where spam_id = :spam_id"
+    append page_content "Spam ID $spam_id, \"$title\", scheduled for $send_date has been cancelled."
 }
 
-ns_write "</blockquote>
+append page_content "</blockquote>
 <p>
 [ad_admin_footer]
 "
+
+
+doc_return  200 text/html $page_content
+
+

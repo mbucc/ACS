@@ -1,49 +1,58 @@
-# $Id: partner-proc-ae-2.tcl,v 3.0.4.1 2000/04/28 15:09:13 carsten Exp $
-set_the_usual_form_variables
-# url_id, proc_name, proc_id, proc_type, call_number
+# /www/admin/partner/partner-proc-ae-2.tcl
 
-# Check arguments
-set err ""
-set req_vars [list url_id proc_id proc_name proc_type call_number]
-foreach var $req_vars {
-    if {![exists_and_not_null $var] } {
-	append err "  <LI> Must specify $var\n"
-    }
+ad_page_contract {
+    Writes procedures name to database
+
+    @param url_id associated url
+    @param proc_id procedure ID (for adding/editing)
+    @param proc_name name of procedure
+    @param proc_type header/footer
+    @param call_number order in which to call this procedure
+    @param return_url 
+
+    @author mbryzek@arsdigita.com
+    @creation-date 10/1999
+
+    @cvs-id partner-proc-ae-2.tcl,v 3.2.2.3 2000/07/24 02:53:26 mshurpik Exp
+} {
+    url_id:naturalnum,notnull
+    proc_id:naturalnum,notnull
+    proc_name:trim,notnull
+    proc_type:trim,notnull
+    call_number:notnull
+    { return_url "" }
 }
 
-set db [ns_db gethandle]
 
 # Check for uniqueness
-set exists_p [database_to_tcl_string $db "select decode(count(*),0,0,1) 
-                                          from ad_partner_procs 
-                                          where url_id='$QQurl_id' 
-                                          and proc_name='$QQproc_name' 
-                                          and proc_id<>$proc_id
-                                          and proc_type='$QQproc_type'"]
+set exists_p [db_string partner_proc_name_unique_check \
+	"select decode(count(*),0,0,1) 
+           from ad_partner_procs 
+          where url_id=:url_id 
+            and proc_name=:proc_name
+            and proc_id<>:proc_id
+            and proc_type=:proc_type"]
 
 if { $exists_p } {
-    append err "  <li> Specified proc \"$proc_name\" has already been registered for this partner and url\n"
-}
-
-if { ![empty_string_p $err] } {
-    ad_partner_return_error "Missing Arguments" "<UL> $err</UL>"
+    ad_partner_return_error "Duplicate procedure name" "<ul><li>Specified proc \"$proc_name\" has already been registered for this partner and url</ul>\n"
     return
 }
 
-ns_db dml $db "begin transaction"
 
-ns_db dml $db "update ad_partner_procs set 
-               proc_name='$QQproc_name'
-               where proc_id = $proc_id"
-
-if {[ns_ora resultrows $db] == 0} {
-    ns_db dml $db "insert into ad_partner_procs
-(url_id, proc_id, proc_name, proc_type, call_number)
-values 
-($url_id, $proc_id, '$QQproc_name', '$QQproc_type', $call_number)"
+db_dml partner_proc_name_update \
+	"update ad_partner_procs 
+            set proc_name=:proc_name
+          where proc_id = :proc_id"
+    
+if { [db_resultrows] == 0 } {
+    db_dml partner_proc_name_insert \
+	    "insert into ad_partner_procs
+             (url_id, proc_id, proc_name, proc_type, call_number)
+             values 
+             (:url_id, :proc_id, :proc_name, :proc_type, :call_number)"
 }
 
-ns_db dml $db "end transaction"
+db_release_unused_handles
 
-ad_returnredirect "partner-url.tcl?[export_url_vars url_id]"
+ad_returnredirect "partner-url?[export_url_vars url_id]"
 

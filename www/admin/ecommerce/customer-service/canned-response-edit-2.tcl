@@ -1,11 +1,25 @@
-# $Id: canned-response-edit-2.tcl,v 3.0.4.1 2000/04/28 15:08:37 carsten Exp $
-set_the_usual_form_variables
-# response_id, one_line, response_text
+# canned-response-edit-2.tcl
 
-set db [ns_db gethandle]
+ad_page_contract { 
+    @param response_id
+    @param one_line
+    @param response_text
+    @author
+    @creation-date
+    @cvs-id canned-response-edit-2.tcl,v 3.1.6.3 2000/07/21 03:56:51 ron Exp
+} {
+    response_id
+    one_line
+    response_text
 
-ns_db dml $db "update ec_canned_responses
-set one_line = '$QQone_line', response_text = '$QQresponse_text'
-where response_id = $response_id"
+}
+
+
+
+
+db_dml update_cs_canned_response "update ec_canned_responses
+set one_line = :one_line, response_text = :response_text
+where response_id = :response_id"
+db_release_unused_handles
 
 ad_returnredirect "canned-responses.tcl"

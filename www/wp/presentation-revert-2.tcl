@@ -1,17 +1,24 @@
-# $Id: presentation-revert-2.tcl,v 3.0.4.1 2000/04/28 15:11:41 carsten Exp $
-# File:        presentation-revert-2.tcl
-# Date:        28 Nov 1999
-# Author:      Jon Salz <jsalz@mit.edu>
-# Description: Reverts a presentation to a previous version.
-# Inputs:      presentation_id, checkpoint
+# /wp/presentation-revert-2.tcl
 
-set_the_usual_form_variables
+ad_page_contract {
+    Reverts a presentation to a previous version.
 
-set db [ns_db gethandle]
+    @param presentation_id id of the prsentation to revert
+    @param checkpoint checkpoint to which to revert
+
+    @creation-date  28 Nov 1999
+    @author Jon Salz <jsalz@mit.edu>
+    @cvs-id presentation-revert-2.tcl,v 3.1.6.5 2000/08/16 21:49:42 mbryzek Exp
+} {
+    presentation_id:naturalnum,notnull
+    checkpoint:naturalnum,notnull
+}
 
 set user_id [ad_maybe_redirect_for_registration]
-wp_check_authorization $db $presentation_id $user_id "admin"
+wp_check_authorization $presentation_id $user_id "admin"
 
-ns_db dml $db "begin wp_revert_to_checkpoint($presentation_id, [wp_check_numeric $checkpoint]); end;"
+db_dml wp_pres_revert "begin wp_revert_to_checkpoint(:presentation_id, :checkpoint); end;"
 
-ad_returnredirect "presentation-top.tcl?presentation_id=$presentation_id"
+db_release_unused_handles
+
+ad_returnredirect "presentation-top?presentation_id=$presentation_id"

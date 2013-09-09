@@ -1,51 +1,53 @@
-# $Id: add-link-to-parent-2.tcl,v 3.1.2.1 2000/04/28 15:08:27 carsten Exp $
-#
-# /admin/categories/add-link-to-parent-2.tcl
-#
-# by sskracic@arsdigita.com and michael@yoon.org on October 31, 1999
-#
-# creates a parent-child relationship between two categories
-#
+# /www/admin/categories/add-link-to-parent-2.tcl
+ad_page_contract {
 
-set_the_usual_form_variables
+  Creates a parent-child relationship between two categories.
 
-# category_id, parent_category_id
+  @param category_id Which category is being worked on
+  @param parent_category_id Category designated as parent to category_id
 
-set exception_count 0
-set exception_text ""
-
-if {![info exists category_id] || [empty_string_p $category_id]} {
-    incr exception_count
-    append exception_text "<li>Child category ID is missing\n"
-}
-
-if {![info exists parent_category_id] || [empty_string_p $parent_category_id]  || \
-    $parent_category_id <= 0} {
-    incr exception_count
-    append exception_text "<li>Parent category ID is incorrect or missing\n"
-}
-
-if { $exception_count > 0 } {
-    ad_return_complaint $exception_count $exception_text 
-    return
-}
-
-set db [ns_db gethandle]
-
-with_transaction $db {
-
-    ns_db dml $db "DELETE FROM category_hierarchy
-WHERE child_category_id = $category_id
-AND parent_category_id IS NULL"
-
-    ns_db dml $db "INSERT INTO category_hierarchy(child_category_id, parent_category_id)
-VALUES ($category_id, $parent_category_id)"
-
+  @author sskracic@arsdigita.com 
+  @author michael@yoon.org 
+  @creation-date October 31, 1999
+  @cvs-id add-link-to-parent-2.tcl,v 3.3.2.5 2000/07/23 16:47:21 seb Exp
 } {
+
+  category_id:naturalnum,notnull
+  parent_category_id:naturalnum,notnull
+
+}
+
+db_transaction {
+
+    #  If parent_category_id is 0, that means that user clicked on a
+    #  'top-level' link.  We respond by clearing all parentage lines
+    #  of that category and putting onto the top of hierarchy.
+
+    if {$parent_category_id == 0} {
+
+	db_dml delete_current_parents "DELETE FROM category_hierarchy
+    WHERE child_category_id = :category_id" 
+
+	db_dml put_on_top_of_hierarchy "INSERT INTO category_hierarchy
+      (child_category_id, parent_category_id)
+    VALUES (:category_id, NULL)" 
+
+    } else {
+
+	db_dml remove_from_top_of_hierarchy "DELETE FROM category_hierarchy
+    WHERE child_category_id = :category_id
+    AND parent_category_id IS NULL" 
+
+	db_dml insert_parent_child_relationship "INSERT INTO category_hierarchy
+	(child_category_id, parent_category_id)
+    VALUES (:category_id, :parent_category_id)" 
+    }
+
+} on_error {
     ad_return_error "Database error" "Database threw an error: $errmsg"
     return
 }
 
-ns_db releasehandle $db
+db_release_unused_handles
 
-ad_returnredirect "edit-parentage.tcl?[export_url_vars category_id]"
+ad_returnredirect "edit-parentage?[export_url_vars category_id]"

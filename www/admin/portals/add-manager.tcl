@@ -1,28 +1,27 @@
-# $Id: add-manager.tcl,v 3.0.4.1 2000/03/24 01:38:01 aure Exp $
-# add-manager.tcl
-#
-# standard ACS promt for email or name of proposed super administrator 
-#
-# by aure@arsdigita.com and dh@arsdigita.com
-#
-# Last modified: 10/8/1999
+# www/admin/portals/add-manager.tcl
 
+ad_page_contract {
+    standard ACS prompt for email or name of proposed super administrator 
 
-set db [ns_db gethandle]
+    @author aure@arsdigita.com
+    @author dh@arsdigita.com
+    @creation-date 10/8/1999
+    @cvs-id add-manager.tcl,v 3.3.2.7 2000/09/22 01:35:49 kevin Exp
+} {
+}
 
 # get group_id
-set group_id [database_to_tcl_string_or_null $db "select group_id 
+set group_id [db_string group_id "select group_id 
     from user_groups
     where group_name = 'Super Administrators'
-    and group_type = 'portal_group'"]
+    and group_type = 'portal_group'" -default ""]
 
 if [empty_string_p $group_id] {
     ad_return_error "No Super Administrators group" "You need to set up a \"Super Administrators\" group (of type \"portal_group\") before you can use the system."
     return
 }
 
-set group_name [portal_group_name $db $group_id]
-
+set group_name [portal_group_name $group_id]
 
 # set variables for user-search.tcl  
 set custom_title "Add  $group_name"
@@ -34,7 +33,9 @@ regsub "manager" [ns_conn url] "manager-2" target
 # ----------------------------------------
 # serve the page
 
-ns_return 200 text/html "[ad_admin_header "Add Administrator"]
+
+
+doc_return  200 text/html "[ad_admin_header "Add Administrator"]
 
 <h2>Add Administrator</h2>
 
@@ -42,7 +43,7 @@ ns_return 200 text/html "[ad_admin_header "Add Administrator"]
 
 <hr>
 
-<form action=/user-search.tcl method=post> 
+<form action=/user-search method=post> 
 [export_form_vars target  custom_title]
 
 Enter either the last name or email of the proposed manager:
@@ -66,3 +67,20 @@ Enter either the last name or email of the proposed manager:
 
 [ad_admin_footer]
 "
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

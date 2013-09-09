@@ -1,10 +1,17 @@
-# $Id: add-new-topic.tcl,v 3.0 2000/02/06 02:49:17 ron Exp $
-set user_id [ad_get_user_id]
+# /www/admin/bboard/add-new-topic.tcl
+ad_page_contract {
+    Page to add a new bboard topic.
 
-set db [ns_db gethandle]
-ReturnHeaders
+    @cvs-id add-new-topic.tcl,v 3.1.6.4 2000/09/22 01:34:21 kevin Exp
+} {
+}
 
-ns_write  "[ad_admin_header "Add New Topic"]
+# -----------------------------------------------------------------------------
+
+
+set user_id [ad_verify_and_get_user_id]
+
+append page_content  "[ad_admin_header "Add New Topic"]
 
 <h2>Add New Topic</h2>
 
@@ -12,9 +19,9 @@ ns_write  "[ad_admin_header "Add New Topic"]
 
 <hr>
 
-<form action=\"/admin/users/search.tcl\" method=get>
+<form action=\"/admin/users/search\" method=post>
 <input type=hidden name=target value=\"/admin/bboard/add-new-topic-2.tcl\">
-<input type=hidden name=passthrough value=\"topic presentation_type moderation_policy iehelper_notify_of_new_postings_p\">
+<input type=hidden name=passthrough value=\"topic presentation_type moderation_policy notify_of_new_postings_p\">
 <input type=hidden name=custom_title value=\"Choose a Member to Add as an Administrator\">
 
 <h3>The Most Important Things</h3>
@@ -72,7 +79,8 @@ threads, they'd have stuck with USENET.)
 What moderation category does this fall under?
 <select name=moderation_policy>"
 set optionlist [bboard_moderation_policy_order]
-ns_write "
+
+append page_content "
 [ad_generic_optionlist $optionlist $optionlist]
 </select>
 
@@ -86,7 +94,7 @@ probably want to disable this feature
 <p>
 
 Notify me of all new postings?
-<input type=radio name=iehelper_notify_of_new_postings_p value=t CHECKED> Yes <input type=radio name=iehelper_notify_of_new_postings_p value=f> No
+<input type=radio name=notify_of_new_postings_p value=t CHECKED> Yes <input type=radio name=notify_of_new_postings_p value=f> No
 
 <p>
 <center>
@@ -99,3 +107,8 @@ Notify me of all new postings?
 
 [ad_admin_footer]
 "
+
+doc_return  200 text/html $page_content
+
+
+

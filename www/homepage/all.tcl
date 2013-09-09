@@ -1,39 +1,43 @@
-# $Id: all.tcl,v 3.0 2000/02/06 03:46:38 ron Exp $
 # File:     /homepage/all.tcl
-# Date:     Thu Jan 27 06:47:54 EST 2000
-# Location: 42Å∞21'N 71Å∞04'W
-# Location: 80 PROSPECT ST CAMBRIDGE MA 02139 USA
-# Author:   mobin@mit.edu (Usman Y. Mobin)
-# Purpose:  Page to show all members
 
+ad_page_contract {
+    Page to show all members.
 
-# http headers
-ReturnHeaders
+    @author Usman Y. Mobin (mobin@mit.edu)
+    @author jmp@arsdigita.com
+    @creation-date Thu Jan 27 06:47:54 EST 2000
+    @cvs-id all.tcl,v 3.3.2.9 2000/09/22 01:38:16 kevin Exp
+} {
+}
+
+# Figure out what letters should be linked to
+set letters [db_list homepage_letters {
+    select distinct upper(substr(last_name, 1, 1)) as letter
+      from users
+      where screen_name is not null
+      order by letter
+}]
+
+proc letter_to_url {letter} {
+    return "<a href='#$letter'>$letter</a>"
+}
 
 set title "Homepages at [ad_parameter SystemName]"
 
-# packet of html
-ns_write "
+# A packet of html
+set page_content "
 [ad_header $title]
 <h2>$title</h2>
 [ad_context_bar_ws_or_index $title] 
 <hr>
 <table width=100%>
 <tr>
-<td align=right>\[ <a href=neighborhoods.tcl>browse neighborhoods</a> \]
+<td align=right>\[ <a href=neighborhoods>browse neighborhoods</a> \]
 </td></tr></table>
 <blockquote>
 
 <center>
-\[ <A HREF=\"#A\">A</A> | <A HREF=\"#B\">B</A> | 
-<A HREF=\"#C\">C</A> | <A HREF=\"#D\">D</A> | <A HREF=\"#E\">E</A> | 
-<A HREF=\"#F\">F</A> | <A HREF=\"#G\">G</A> | <A HREF=\"#H\">H</A> | 
-<A HREF=\"#I\">I</A> | <A HREF=\"#J\">J</A> | <A HREF=\"#K\">K</A> | 
-<A HREF=\"#L\">L</A> | <A HREF=\"#M\">M</A> | <A HREF=\"#N\">N</A> | 
-<A HREF=\"#O\">O</A> | <A HREF=\"#P\">P</A> | <A HREF=\"#Q\">Q</A> | 
-<A HREF=\"#R\">R</A> | <A HREF=\"#S\">S</A> | <A HREF=\"#T\">T</A> | 
-<A HREF=\"#U\">U</A> | <A HREF=\"#V\">V</A> | <A HREF=\"#W\">W</A> | 
-<A HREF=\"#X\">X</A> | <A HREF=\"#Y\">Y</A> | <A HREF=\"#Z\">Z</A> \] 
+\[ [join [map letter_to_url $letters] " | "] \]
 </center>
 
 <br>
@@ -44,81 +48,60 @@ ns_write "
     <ul>
 "
 
-set db [ns_db gethandle]
-
+set old_letter ""
 set counter 0
 
-for {set cx 1} {$cx <= 26} {incr cx} {
-
-    set letter [mobin_number_to_letter $cx]
-
-    set selection [ns_db select $db "
-    select uh.user_id as user_id,
-    u.screen_name as screen_name,
-    u.first_names as first_names,
-    u.last_name as last_name
-    from users_homepages uh, users u
-    where uh.user_id=u.user_id
-    and upper(u.last_name) like '$letter%'
-    order by last_name desc, first_names desc"]
-    
-    append html "
-    <h3><a name=\"$letter\">$letter</a></h3>
-    <table>
+db_foreach select_all_by_letter {
+    select upper(substr(u.last_name, 1, 1)) as letter,
+           uh.user_id as user_id,
+           u.screen_name as screen_name,
+           u.first_names as first_names,
+           u.last_name as last_name
+      from users_homepages uh, users u
+      where uh.user_id = u.user_id
+        and u.screen_name is not null
+      order by upper(u.last_name)
+} {
+    # Starting new letter?
+    if ![string equal $old_letter $letter] {
+	# In a letter before?
+	if ![empty_string_p $old_letter] {
+	    append page_content "
+	        </table>
+	        <hr>
+	    "
+	}
+	append page_content "
+	    <h3><a name='$letter'>$letter</a></h3>
+	    <table>
+	"
+	set old_letter $letter
+    }
+    incr counter
+    append page_content "
+        <tr>
+         <td><a href='/users/$screen_name'>$last_name, $first_names</a></td>
+        </tr>
     "
-        
-    set sub_counter 0
-
-    while {[ns_db getrow $db $selection]} {
-	incr counter
-	incr sub_counter
-	set_variables_after_query
-	append html "
-	<tr>
-	<td><a href=\"/users/$screen_name\">$last_name, $first_names</a>
-	</td>
-	</tr>
-	"
-    }
-
-    if {$sub_counter == 0} {
-	append html "
-	<tr>
-	<td>
-	Nobody here
-	</td>
-	</tr>
-	"
-    }
-
-    append html "
-    </table>
-    <hr>"
-
-    ns_write "$html"
-    set html ""
 }
 
-# And finally, we're done with the database (duh)
-ns_db releasehandle $db
+if { $counter > 0 } {
+    append page_content "
+        </table>
+        <hr>
+    "
+}
 
+# And finally, we're done with the database
+db_release_unused_handles
 
-ns_write "
+append page_content "
 </ul>
 $counter member(s)
 </table>
 <p>
 <center>
-
-\[ <A HREF=\"#A\">A</A> | <A HREF=\"#B\">B</A> | 
-<A HREF=\"#C\">C</A> | <A HREF=\"#D\">D</A> | <A HREF=\"#E\">E</A> | 
-<A HREF=\"#F\">F</A> | <A HREF=\"#G\">G</A> | <A HREF=\"#H\">H</A> | 
-<A HREF=\"#I\">I</A> | <A HREF=\"#J\">J</A> | <A HREF=\"#K\">K</A> | 
-<A HREF=\"#L\">L</A> | <A HREF=\"#M\">M</A> | <A HREF=\"#N\">N</A> | 
-<A HREF=\"#O\">O</A> | <A HREF=\"#P\">P</A> | <A HREF=\"#Q\">Q</A> | 
-<A HREF=\"#R\">R</A> | <A HREF=\"#S\">S</A> | <A HREF=\"#T\">T</A> | 
-<A HREF=\"#U\">U</A> | <A HREF=\"#V\">V</A> | <A HREF=\"#W\">W</A> | 
-<A HREF=\"#X\">X</A> | <A HREF=\"#Y\">Y</A> | <A HREF=\"#Z\">Z</A> \] 
+\[ [join [map letter_to_url $letters] " | "] \]
 </center>
 
 <br>
@@ -126,4 +109,5 @@ $counter member(s)
 [ad_footer]
 "
 
-
+# Show them the page
+doc_return  200 text/html $page_content

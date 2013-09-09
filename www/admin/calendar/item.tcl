@@ -1,59 +1,90 @@
-# $Id: item.tcl,v 3.1 2000/03/10 21:50:40 jkoontz Exp $
-# File:     admin/calendar/item.tcl
-# Date:     1998-11-18
-# Contact:  philg@mit.edu, ahmeds@arsdigita.com
-# Purpose:  shows one calendar item  
+# www/admin/calendar/item.tcl
+ad_page_contract {
+    Displays a calendar item
 
-set_the_usual_form_variables
+    Number of queries: 3 or 4
 
-# calendar_id
+    @author Philip Greenspun (philg@mit.edu)
+    @author Sarah Ahmed (ahmeds@arsdigita.com)
+    @creation-date 1998-11-18
+    @cvs-id item.tcl,v 3.3.2.5 2000/09/22 01:34:26 kevin Exp
+    
+} {
+    calendar_id:naturalnum
+}
+
+
 
 set return_url [ns_urlencode [ns_conn url]?calendar_id=$calendar_id]
 
-set db [ns_db gethandle]
 
-set selection [ns_db 0or1row $db "
-select title, body, html_p, calendar.approved_p, start_date, end_date, expiration_date, category_id,event_url, event_email, creation_user, creation_date, first_names, last_name
+
+
+set query_item "
+select title, body, html_p, calendar.approved_p, start_date, end_date, expiration_date, 
+category_id, event_url, event_email, creation_user, creation_date, first_names, last_name
 from calendar, users 
-where calendar_id = $calendar_id
-and users.user_id = creation_user"]
+where calendar_id = :calendar_id
+and users.user_id = creation_user"
 
-if { $selection == "" } {
+if { ![db_0or1row item $query_item] } {
+
     ad_return_error "Can't find calendar item" "Can't find calendar item $calendar_id"
     return
 }
 
-set_variables_after_query
-
-set category [database_to_tcl_string $db "
+set query_category "
 select category 
 from calendar_categories
-where category_id = $category_id "]
+where category_id = :category_id "
 
-set selection [ns_db 1row $db "
+set category [db_string category $query_category] 
+
+set query_scope_group_id "
 select scope, group_id
 from calendar_categories
-where category_id = $category_id "]
+where category_id = :category_id "
 
-set_variables_after_query
+db_1row scope_group_id $query_scope_group_id
 
-if { $scope=="group" } {
-    set short_name [database_to_tcl_string $db "select short_name
-                                                from user_groups
-                                                where group_id = $group_id"]    
+
+switch $scope {
+
+    group {
+    
+	db_1row short_name "select short_name 
+	from user_groups 
+	where group_id = :group_id"
+	
+	set admin_url_string "/[ad_parameter GroupsDirectory ug]/
+	[ad_parameter GroupsAdminDirectory ug]/[ad_urlencode $short_name]/calendar/item.tcl?calendar_id=$calendar_id&scope=$scope&group_id=$group_id"
+	
+	set userpage_url_string "/[ad_parameter GroupsDirectory ug]/[ad_urlencode $short_name]/calendar/item.tcl?calendar_id=$calendar_id&scope=$scope&group_id=$group_id" 
+	
+    }
+    
+    public {
+	
+	set admin_url_string "/calendar/admin/item.tcl?calendar_id=$calendar_id&scope=$scope"
+	set userpage_url_string "/calendar/item.tcl?calendar_id=$calendar_id&scope=$scope"
+
+    }
+    
+    user {
+
+	set admin_url_string "/calendar/admin/item.tcl?calendar_id=$calendar_id&scope=$scope"
+	set userpage_url_string "/calendar/item.tcl?calendar_id=$calendar_id&scope=$scope"
+    }
+
+    default {
+
+	set admin_url_string "/calendar/admin/item.tcl?calendar_id=$calendar_id&scope=$scope"
+	set userpage_url_string "/calendar/item.tcl?calendar_id=$calendar_id&scope=$scope"
+    }
 }
 
-if { $scope == "public" } {
-    set admin_url_string "/calendar/admin/item.tcl?calendar_id=$calendar_id&scope=$scope"
-    set userpage_url_string "/calendar/item.tcl?calendar_id=$calendar_id&scope=$scope"
-} else {
-    set admin_url_string "/[ad_parameter GroupsDirectory ug]/[ad_parameter GroupsAdminDirectory ug]/[ad_urlencode $short_name]/calendar/item.tcl?calendar_id=$calendar_id&scope=$scope&group_id=$group_id"
-    set userpage_url_string "/[ad_parameter GroupsDirectory ug]/[ad_urlencode $short_name]/calendar/item.tcl?calendar_id=$calendar_id&scope=$scope&group_id=$group_id" 
-}
 
-ReturnHeaders
-
-ns_write "
+set page_content "
 [ad_admin_header "$title"]
 <h2>$title</h2>
 [ad_admin_context_bar [list "index.tcl" "Calendar"] "One Item"]
@@ -79,27 +110,33 @@ ns_write "
 "
 
 if {$approved_p == "t" } {
-    ns_write "Approved (<a href=\"toggle-approved-p.tcl?calendar_id=$calendar_id\">Revoke</a>)"
+
+    append page_content "Approved (<a href=\"toggle-approved-p?calendar_id=$calendar_id\">Revoke</a>)"
+
 } else {
-    ns_write "<font color=red>Awaiting approval</font> (<a href=\"toggle-approved-p.tcl?calendar_id=$calendar_id\">Approve</a>)"
+
+    append page_content "<font color=red>Awaiting approval</font> (<a href=\"toggle-approved-p?calendar_id=$calendar_id\">Approve</a>)"
 }
 
-ns_write "
+
+append page_content "
 <li>Start Date: [util_AnsiDatetoPrettyDate $start_date]
 <li>End Date: [util_AnsiDatetoPrettyDate $end_date]
 <li>Expires: [util_AnsiDatetoPrettyDate $expiration_date]
-<li>Submitted by: <a href=\"/admin/users/one.tcl?user_id=$creation_user\">$first_names $last_name</a>"
+<li>Submitted by: <a href=\"/admin/users/one?user_id=$creation_user\">$first_names $last_name</a>"
 
 
 if ![empty_string_p $event_url] {
-    ns_write "<li>Web: <a href=\"$event_url\">$event_url</a>\n"
+    append page_content "<li>Web: <a href=\"$event_url\">$event_url</a>\n"
 }
+
 
 if ![empty_string_p $event_email] {
-    ns_write "<li>Email: <a href=\"mailto:$event_email\">$event_email</a>\n"
+    append page_content "<li>Email: <a href=\"mailto:$event_email\">$event_email</a>\n"
 }
 
-ns_write "</ul>
+
+append page_content "</ul>
 
 <h4>Body</h4>
 
@@ -107,7 +144,7 @@ ns_write "</ul>
 [util_maybe_convert_to_html $body $html_p]
 <br>
 <br>
-<form action=post-edit.tcl method=get>
+<form action=post-edit method=get>
 <input type=hidden name=calendar_id value=\"$calendar_id\">
 <input type=submit name=submit value=\"Edit\">
 </form>
@@ -116,25 +153,29 @@ ns_write "</ul>
 
 "
 
-
 # see if there are any comments on this item
-set selection [ns_db select $db "select comment_id, content, comment_date, first_names || ' ' || last_name as commenter_name, users.user_id as comment_user_id, html_p as comment_html_p, general_comments.approved_p as comment_approved_p from
-general_comments, users
-where on_what_id = $calendar_id 
+
+set query_comments "select comment_id, content, comment_date, first_names || ' ' || last_name as commenter_name, 
+users.user_id as comment_user_id, html_p as comment_html_p, general_comments.approved_p as comment_approved_p 
+from general_comments, users
+where on_what_id = :calendar_id 
 and on_which_table = 'calendar'
-and general_comments.user_id = users.user_id"]
+and general_comments.user_id = users.user_id"
 
 set first_iteration_p 1
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
+
+db_foreach comments $query_comments {
+
     if $first_iteration_p {
-	ns_write "<h4>Comments</h4>\n"
+
+	append page_content "<h4>Comments</h4>\n"
 	set first_iteration_p 0
     }
-    ns_write "<table width=90%>
+
+    append page_content "<table width=90%>
     <tr><td><blockquote>\n[util_maybe_convert_to_html $content $comment_html_p]\n"
-    ns_write "<br><br>-- <a href=\"/admin/users/one.tcl?user_id=$comment_user_id\">$commenter_name</a>"
-    ns_write "</blockquote>
+    append page_content "<br><br>-- <a href=\"/admin/users/one?user_id=$comment_user_id\">$commenter_name</a>"
+    append page_content "</blockquote>
     </td>
     <td align=right>"
 
@@ -142,20 +183,28 @@ while {[ns_db getrow $db $selection]} {
     
     # print out the approval status if we are using the approval system
     if { [ad_parameter CommentApprovalPolicy calendar] != "open"} {
+
 	if {$comment_approved_p == "t" } {
-	    ns_write "<a href=\"/admin/general-comments/toggle-approved-p.tcl?comment_id=$comment_id&return_url=$return_url\">Revoke approval</a>"
+
+	    append page_content "<a href=\"/admin/general-comments/toggle-approved-p?comment_id=$comment_id&return_url=$return_url\">Revoke approval</a>"
+
 	} else {
-	    ns_write "<a href=\"/admin/general-comments/toggle-approved-p.tcl?comment_id=$comment_id&return_url=$return_url\">Approve</a>"
+
+	    append page_content "<a href=\"/admin/general-comments/toggle-approved-p?comment_id=$comment_id&return_url=$return_url\">Approve</a>"
 	}
-	ns_write "<br>"
+
+	append page_content "<br>"
     }
 
-    ns_write "<a href=\"/admin/general-comments/edit.tcl?comment_id=$comment_id\" target=working>edit</a>
-<br>
-<a href=\"/admin/general-comments/delete.tcl?comment_id=$comment_id\" target=working>delete</a>
-</td>
-</table>"
+    append page_content "<a href=\"/admin/general-comments/edit?comment_id=$comment_id\" target=working>edit</a>
+    <br>
+    <a href=\"/admin/general-comments/delete?comment_id=$comment_id\" target=working>delete</a>
+    </td>
+    </table>"
 }
 
-ns_write "[ad_admin_footer]"
+append page_content "[ad_admin_footer]"
 
+doc_return  200 text/html $page_content
+
+## END FILE item.tcl

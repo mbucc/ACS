@@ -1,9 +1,19 @@
-# $Id: offer-edit.tcl,v 3.0 2000/02/06 03:20:28 ron Exp $
-set_the_usual_form_variables
-# offer_id, product_id, product_name, retailer_id
+#  www/admin/ecommerce/products/offer-edit.tcl
+ad_page_contract {
+  Edit an offer.
 
-ReturnHeaders
-ns_write "[ad_admin_header "Edit Retailer Offer on $product_name"]
+  @author Eve Andersson (eveander@arsdigita.com)
+  @creation-date Summer 1999
+  @cvs-id offer-edit.tcl,v 3.1.6.3 2000/08/18 20:23:46 stevenp Exp
+} {
+  offer_id:integer,notnull
+  product_id:integer,notnull
+  retailer_id:integer,notnull
+}
+
+set product_name [ec_product_name $product_id]
+
+doc_body_append "[ad_admin_header "Edit Retailer Offer on $product_name"]
 
 <h2>Edit Retailer Offer on $product_name</h2>
 
@@ -14,7 +24,7 @@ ns_write "[ad_admin_header "Edit Retailer Offer on $product_name"]
 
 set old_retailer_id $retailer_id
 
-ns_write "<form method=post action=offer-edit-2.tcl>
+doc_body_append "<form method=post action=offer-edit-2>
 [export_form_vars offer_id product_id product_name old_retailer_id]
 
 <table>
@@ -26,24 +36,28 @@ Retailer
 <select name=retailer_id>
 <option value=\"\">Pick One
 "
-set db [ns_db gethandle]
-set selection [ns_db select $db "select retailer_name, retailer_id, city, usps_abbrev from ec_retailers order by retailer_name"]
 
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+db_foreach retailer_select "
+select retailer_name, retailer_id, city, usps_abbrev
+from ec_retailers
+order by retailer_name
+" {
     if { $retailer_id == $old_retailer_id } {
-	ns_write "<option value=$retailer_id selected>$retailer_name ($city, $usps_abbrev)\n"
+	doc_body_append "<option value=$retailer_id selected>$retailer_name ($city, $usps_abbrev)\n"
     } else {
-	ns_write "<option value=$retailer_id>$retailer_name ($city, $usps_abbrev)\n"
+	doc_body_append "<option value=$retailer_id>$retailer_name ($city, $usps_abbrev)\n"
     }
 }
 
-set selection [ns_db 1row $db "select price, shipping, stock_status, shipping_unavailable_p, offer_begins, offer_ends, special_offer_p, special_offer_html from ec_offers where offer_id=$offer_id"]
-set_variables_after_query
+db_1row offer_select "
+select price, shipping, stock_status, shipping_unavailable_p, offer_begins,
+       offer_ends, special_offer_p, special_offer_html from ec_offers
+where offer_id=:offer_id
+"
 
 set currency [ad_parameter Currency ecommerce]
 
-ns_write "</select>
+doc_body_append "</select>
 </td>
 </tr>
 <tr>
@@ -57,10 +71,10 @@ ns_write "</select>
 <input type=checkbox name=shipping_unavailable_p value=\"t\""
 
 if { $shipping_unavailable_p == "t" } {
-    ns_write " checked "
+    doc_body_append " checked "
 }
 
-ns_write ">
+doc_body_append ">
 Pick Up only
 </td>
 </tr>
@@ -81,17 +95,17 @@ Pick Up only
 <input type=radio name=special_offer_p value=\"t\""
 
 if { $special_offer_p == "t" } {
-    ns_write " checked "
+    doc_body_append " checked "
 }
 
-ns_write ">Yes &nbsp; 
+doc_body_append ">Yes &nbsp; 
 <input type=radio name=special_offer_p value=\"f\""
 
 if { $special_offer_p == "f" } {
-    ns_write " checked "
+    doc_body_append " checked "
 }
 
-ns_write ">No
+doc_body_append ">No
 </td>
 </tr>
 <tr>

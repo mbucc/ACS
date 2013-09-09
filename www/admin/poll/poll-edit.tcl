@@ -1,9 +1,15 @@
-# $Id: poll-edit.tcl,v 3.0 2000/02/06 03:27:05 ron Exp $
-# poll-edit.tcl -- present the form to edit a single poll
+# /admin/poll/poll-edit.tcl 
 
-set_form_variables
+ad_page_contract {
+    Present the form to edit a single poll
 
-# expects poll_id
+    @param poll_id the ID of the poll
+    
+    @cvs-id poll-edit.tcl,v 3.2.2.4 2000/09/22 01:35:48 kevin Exp
+} {
+    poll_id:naturalnum,notnull
+}
+
 
 
 # random preliminaries
@@ -16,17 +22,13 @@ if {[ad_read_only_p]} {
 set user_id [ad_verify_and_get_user_id]
 ad_maybe_redirect_for_registration
 
-
-set db [ns_db gethandle]
-
-set selection [ns_db 1row $db "
+db_1row poll_data_get {
 select name, description, start_date, end_date, require_registration_p
   from polls
- where poll_id = $poll_id
-"]
+ where poll_id = :poll_id
+}
 
-set_variables_after_query
-
+db_release_unused_handles
 
 if { $require_registration_p == "t" } {
     set checked_text "CHECKED"
@@ -34,16 +36,16 @@ if { $require_registration_p == "t" } {
     set checked_text ""
 }
 
-ReturnHeaders
 
-ns_write "
+
+set page_html "
 [ad_admin_header "Edit Poll: $name"]
 <h2>Edit Poll: $name</h2>
 [ad_admin_context_bar [list "/admin/poll" Polls] Edit]
 <hr>
 <p>
 
-<form method=post action=poll-edit-2.tcl>
+<form method=post action=poll-edit-2>
 
 [export_form_vars poll_id]
 
@@ -78,7 +80,6 @@ ns_write "
 <td> <input type=checkbox name=require_registration_p value=\"t\" $checked_text> Require Registration </td>
 </tr>
 
-
 </table>
 
 <p>
@@ -90,4 +91,9 @@ ns_write "
 <p>
 [ad_admin_footer]
 "
+
+doc_return  200 text/html $page_html
+
+
+
 

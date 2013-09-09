@@ -1,39 +1,42 @@
-# $Id: category-nuke-2.tcl,v 3.1.2.1 2000/04/28 15:08:28 carsten Exp $
-#
-# /admin/categories/category-nuke.tcl
-#
-# by sskracic@arsdigita.com and michael@yoon.org on October 31, 1999
-#
-# actually nukes a category
-#
+# /www/admin/categories/category-nuke-2.tcl
+ad_page_contract {
 
-set_form_variables
+  Actually nukes a category.
 
-# category_id
+  @param category_id Category ID we're nuking
 
-set db [ns_db gethandle]
+  @author sskracic@arsdigita.com
+  @author michael@yoon.org 
+  @creation-date October 31, 1999
+  @cvs-id category-nuke-2.tcl,v 3.3.2.5 2000/07/23 16:47:22 seb Exp
 
-if {[database_to_tcl_string $db "
+} {
+
+  category_id:naturalnum,notnull
+
+}
+
+
+if {[db_string children_count "
 select count(child_category_id)
 from category_hierarchy
-where parent_category_id = $category_id
-"] > 0} {
+where parent_category_id = :category_id" ] > 0} {
     ad_return_error "Problem nuking category" \
 	"Cannot nuke category until all of its subcategories have been nuked."
     return
 }
 
-with_transaction $db {
-    ns_db dml $db "delete from users_interests where category_id = '$category_id'"
-    ns_db dml $db "delete from category_hierarchy where child_category_id = '$category_id'"
-    ns_db dml $db "delete from categories where category_id = '$category_id'"
+db_transaction {
+    db_dml delete_users_interests "delete from users_interests where category_id = :category_id" 
+    db_dml delete_category_hierarchy "delete from category_hierarchy where child_category_id = :category_id" 
+    db_dml delete_category "delete from categories where category_id = :category_id" 
 
-} {
+} on_error {
     ad_return_error "Problem nuking category" "$errmsg"
     return
 }
 
-ns_db releasehandle $db
+db_release_unused_handles
 
-ad_returnredirect "index.tcl"
+ad_returnredirect "index"
 

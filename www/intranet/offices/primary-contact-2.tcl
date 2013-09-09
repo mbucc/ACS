@@ -1,25 +1,40 @@
-# $Id: primary-contact-2.tcl,v 3.0.4.2 2000/04/28 15:11:08 carsten Exp $
-# File: /www/intranet/offices/primary-contact-2.tcl
-#
-# Author: mbryzek@arsdigita.com, Jan 2000
-#
-# stores primary contact id for the office
-#
+# /www/intranet/offices/primary-contact-2.tcl
 
-set user_id [ad_verify_and_get_user_id]
-ad_maybe_redirect_for_registration
+ad_page_contract {
+    stores primary contact id for the office
 
-set_form_variables
-# group_id, user_id_from_search
+    @param group_id The group_id of the office.
+    @param user_id_from_search The user_id to add as the primary contact.
 
-set db [ns_db gethandle]
+    @author mbryzek@arsdigita.com
+    @creation-date Jan 2000
 
-ns_db dml $db \
-	"update im_offices 
-            set contact_person_id=$user_id_from_search
-          where group_id=$group_id"
+    @cvs-id primary-contact-2.tcl,v 3.3.2.5 2000/08/16 21:24:55 mbryzek Exp
+} {
+    group_id:notnull,integer
+    user_id_from_search:notnull,integer
+}
 
-ns_db releasehandle $db
+set user_id [ad_maybe_redirect_for_registration]
+
+db_dml update_im_facilities \
+	"update im_facilities
+            set contact_person_id=:user_id_from_search
+          where facility_id = (select facility_id 
+                              from im_offices where 
+                              group_id=:group_id)"
+
+db_release_unused_handles
+
+ad_returnredirect view?[export_url_vars group_id]
 
 
-ad_returnredirect view.tcl?[export_url_vars group_id]
+
+
+
+
+
+
+
+
+

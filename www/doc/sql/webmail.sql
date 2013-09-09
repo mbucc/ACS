@@ -12,7 +12,7 @@
 -- connect ctxsys
 -- grant execute on ctx_ddl to <username>;
 
--- $Id: webmail.sql,v 1.5 2000/03/10 05:02:25 jsc Exp $
+-- webmail.sql,v 1.8.10.2 2000/10/23 02:33:40 jsc Exp
 
 
 -- Domains we receive email for.
@@ -42,7 +42,7 @@ create table wm_messages (
 	-- plain text portions of MIME message; empty if 
 	-- entire message is of type text/*.
 	mime_text	clob,
-        message_id      varchar(200), -- RFC822 Message-ID field
+        message_id      varchar(500), -- RFC822 Message-ID field
 	unique_id	integer -- for both POP3 UIDL and IMAP UID
 );
 
@@ -75,7 +75,7 @@ create table wm_mailboxes (
 );
 
 -- Maps messages to mailboxes (and thus to users).
-create table wm_message_user_map (
+create table wm_message_mailbox_map (
 	mailbox_id	integer references wm_mailboxes,
 	msg_id		integer references wm_messages,
 	seen_p		char(1) default 'f' check(seen_p in ('t','f')),
@@ -86,7 +86,7 @@ create table wm_message_user_map (
 	recent_p	char(1) default 't' check(recent_p in ('t','f')),
 	primary key (msg_id, mailbox_id)
 );
-
+create unique index wm_message_mailbox_box_msg_idx on wm_message_mailbox_map(mailbox_id, msg_id, deleted_p);
 
 -- Parsed recipients for a message; enables search by recipient.
 create table wm_recipients (
@@ -117,6 +117,9 @@ create table wm_headers (
 );
 
 create index wm_headers_by_msg_id_name on wm_headers (msg_id, lower_name);
+
+-- for summary.tcl
+create index wm_headers_by_name_msg_id on wm_headers (lower_name, msg_id);
 
 
 -- Table for recording messages that we failed to parse for whatever reason.
@@ -176,9 +179,6 @@ begin
 end;
 /
 
-variable jobno number;
-exec dbms_job.submit(:jobno, 'wm_cleanup_outgoing_msgs;', sysdate, 'sysdate + 1');
-
 -- Sean's POP3 server stuff (currently unused).
 create sequence wm_pop3_servers_seq;
 create table wm_pop3_servers (
@@ -227,7 +227,7 @@ for each row
 begin
   delete from wm_headers where msg_id = :old.msg_id;
   delete from wm_recipients where msg_id = :old.msg_id;
-  delete from wm_message_user_map where msg_id = :old.msg_id;
+  delete from wm_message_mailbox_map where msg_id = :old.msg_id;
   delete from wm_attachments where msg_id = :old.msg_id;
 end;
 /
@@ -305,3 +305,11 @@ begin
 		  interval => 'sysdate + 1/24');
 end;
 /
+
+
+-- Mailing list data model
+
+create table wm_lists (
+	list_name	varchar(100) not null primary key
+);
+

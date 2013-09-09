@@ -1,8 +1,18 @@
+# File:  events/admin/order-history-state.tcl
+# Owner: bryanche@arsdigita.com
+# Purpose:   ...
+#####
+ad_page_contract {
+    Lists number of registrations in each state.
+
+    @author Bryan Che (bryanche@arsdigita.com)
+    @cvs_id order-history-state.tcl,v 3.9.2.4 2000/09/22 01:37:38 kevin Exp
+} {
+}
+
 set admin_id [ad_maybe_redirect_for_registration]
 
-ReturnHeaders
-
-ns_write "[ad_header "[ad_system_name] Events Administration: Order History - By Order State"]
+append whole_page "[ad_header "[ad_system_name] Events Administration: Order History - By Order State"]
 
 <h2>Order History - By Registration State</h2>
 [ad_context_bar_ws [list "index.tcl" "Events Administration"] [list "order-history.tcl" "Order History"] "By Registration State"]
@@ -15,23 +25,14 @@ ns_write "[ad_header "[ad_system_name] Events Administration: Order History - By
 <th align=center>Registrations
 "
 
-set db [ns_db gethandle]
+
 
 # count the number of orders (in events_registrations) for each order_state in 
 # events_registrations
 
-set selection [ns_db select $db "select 
-reg_state, count(reg_id) as n_orders
-from events_registrations r, events_activities a, events_events e,
-events_prices p,
-user_group_map ugm
-where p.event_id = e.event_id
-and p.price_id = r.price_id
-and e.activity_id = a.activity_id
-and a.group_id = ugm.group_id
-and ugm.user_id = $admin_id
-group by reg_state
-union
+set history_type "state"
+
+db_foreach sel_regs "
 select 
 reg_state, count(reg_id) as n_orders
 from events_registrations r, events_activities a, events_events e,
@@ -39,22 +40,26 @@ events_prices p
 where p.event_id = e.event_id
 and p.price_id = r.price_id
 and e.activity_id = a.activity_id
-and a.group_id is null
+     and r.reg_id not in (select distinct r.reg_id
+          from events_registrations r,events_activities a, events_events e,
+               events_prices p
+         where p.event_id = e.event_id
+           and e.activity_id = a.activity_id
+           and p.price_id = r.price_id
+           and a.group_id not in (select distinct group_id 
+                from user_group_map 
+               where user_id = :admin_id) )
 group by reg_state
-"]
+order by reg_state
+" {
+    #set r_state $reg_state
+    set state_filter $reg_state
 
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
-    ns_write "<tr><td align=left>$reg_state<td align=right><a href=\"order-history-one-state.tcl?[export_url_vars reg_state]\">$n_orders</a></tr>\n"
+    append whole_page "<tr><td align=left>$reg_state<td align=right><a href=\"order-history-one?[export_url_vars state_filter]\">$n_orders</a></tr>\n"
 }
 
-
-ns_write "
-</table>
-
-[ad_footer]
-"
+append whole_page " </table>\n [ad_footer] "
 
 
-
-
+doc_return  200 text/html $whole_page
+#####

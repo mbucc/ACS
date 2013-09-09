@@ -1,42 +1,33 @@
 # File: /groups/group/spam.tcl
-# Date: Fri Jan 14 19:27:42 EST 2000
-# Contact: ahmeds@mit.edu
-# Purpose: this is the group spam page
-#
-# Note: group_id and group_vars_set are already set up in the environment by the ug_serve_section.
-#       group_vars_set contains group related variables (group_id, group_name, group_short_name,
-#       group_admin_email, group_public_url, group_admin_url, group_public_root_url, group_admin_root_url, 
-#       group_type_url_p, group_context_bar_list and group_navbar_list)
-#
-# $Id: spam.tcl,v 3.2 2000/02/23 19:20:31 ron Exp $
-# -----------------------------------------------------------------------------
+ad_page_contract {
 
-set_the_usual_form_variables 0
-# sendto
+ Purpose: this is the group spam page
+    @param sendto the recipient(s)
+    
+    @cvs-id spam.tcl,v 3.6.2.6 2000/09/22 01:38:15 kevin Exp
+} {
+    sendto:multiple
+}
 
 set group_name [ns_set get $group_vars_set group_name]
 
-set db [ns_db gethandle]
-ad_scope_authorize $db $scope all group_member none
+
+ad_scope_authorize $scope all group_member none
 
 set user_id [ad_verify_and_get_user_id]
-set first_names [database_to_tcl_string $db "select first_names
-                                             from users
-                                             where user_id = $user_id"]
-set last_name [database_to_tcl_string $db "select last_name
-                                           from users
-                                           where user_id = $user_id"]
 
-set sendto_string [ad_decode $sendto "members" "Group Members" "Group Administrators"]
+db_1row get_user_names {
+	select first_names, last_name
+           from users
+    where user_id = :user_id} 
+
+
+
+
+set sendto_string [ad_decode $sendto "members" "Group Members" "all" "Everyone in the group" "administrators" "Group Administrators" $sendto]
 
 set default_msg "
 Dear <first_names>,
-
-
-
-
-
-
 
 Thanks
 $first_names $last_name
@@ -44,22 +35,24 @@ $first_names $last_name
 
 # -----------------------------------------------------------------------------
 
-ns_return 200 text/html "
-[ad_scope_header "Send Email to $sendto_string" $db]
-[ad_scope_page_title "Email $sendto_string" $db]
-[ad_scope_context_bar_ws_or_index [list index.tcl $group_name] [list spam-index.tcl "Email"] "$sendto_string"]
+doc_return  200 text/html "
+[ad_scope_header "Send Email to $sendto_string"]
+[ad_scope_page_title "Email $sendto_string"]
+[ad_scope_context_bar_ws_or_index [list index $group_name] [list spam-index "Email"] "$sendto_string"]
 
 <hr>
 
 <blockquote>
-<form method=POST action=\"spam-confirm.tcl\">
+
+<form method=POST action=\"spam-confirm\">
+
 [export_form_vars sendto]
 
 <table>
 <tr>
 <th align=left>From:</th>
 <td><input name=from_address type=text size=20 
-value=\"[database_to_tcl_string $db "select email from users where user_id =[ad_get_user_id]"]\">
+value=\"[db_string get_email "select email from users where user_id =[ad_get_user_id]"]\">
 </td>
 </tr>
 
@@ -118,10 +111,6 @@ value=\"[database_to_tcl_string $db "select email from users where user_id =[ad_
 
 [ad_scope_footer]
 "
-
-
-
-
 
 
 

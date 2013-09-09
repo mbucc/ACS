@@ -1,37 +1,36 @@
-# $Id: cc.tcl,v 3.0 2000/02/06 03:33:21 ron Exp $
-set_form_variables_string_trim_DoubleAposQQ
-set_form_variables
+# /www/bboard/cc.tcl
+ad_page_contract {
+    Displays threads for one category
 
-# topic, topic_id, key (category)
+    @param topic the name of the bboard topic
+    @param topic_id the ID of the bboard topic
+    @param key a bboard category
 
-set category $key
-set QQcategory $QQkey
-
-set db [bboard_db_gethandle]
-if { $db == "" } {
-    bboard_return_error_page
-    return
+    @cvs-id cc.tcl,v 3.1.6.5 2000/09/22 01:36:48 kevin Exp
+} {
+    topic:notnull
+    topic_id:notnull,integer
+    key
 }
 
+# -----------------------------------------------------------------------------
 
-if [catch {set selection [ns_db 1row $db "select unique * from bboard_topics where topic_id = $topic_id"]} errmsg] {
+set category $key
+
+if {![db_0or1row bboard_topics "
+select unique * from bboard_topics where topic_id = :topic_id"]} {
     bboard_return_cannot_find_topic_page
     return
 }
 # we found subject_line_suffix at least 
-set_variables_after_query
 
-ReturnHeaders
 
-ns_write "<html>
-<head>
-<title>$category threads in $topic</title>
-</head>
-<body bgcolor=[ad_parameter bgcolor "" "white"] text=[ad_parameter textcolor "" "black"]>
+append page_content "
+[bboard_header "$category threads in $topic"]
 
 <h2>$category Threads</h2>
 
-in the <a href=\"q-and-a.tcl?[export_url_vars topic topic_id]\">$topic question and answer forum</a>
+in the <a href=\"q-and-a?[export_url_vars topic topic_id]\">$topic question and answer forum</a>
 
 <hr>
 
@@ -39,33 +38,37 @@ in the <a href=\"q-and-a.tcl?[export_url_vars topic topic_id]\">$topic question 
 "
 
 if { $category != "uncategorized" } {
-    set category_clause "and category = '$QQcategory'"
+    set category_clause "and category = :category"
 } else {
     # **** NULL/'' problem, needs " or category = '' "
     set category_clause "and (category is NULL or category = 'Don''t Know')"
 }
 
 
-set sql "select msg_id, one_line, sort_key, email, first_names || ' ' || last_name as name, bboard_uninteresting_p(interest_level) as uninteresting_p
-from bboard, users
-where topic_id = $topic_id
-$category_clause
-and refers_to is null
-and users.user_id = bboard.user_id
-order by uninteresting_p, sort_key $q_and_a_sort_order"
-
-set selection [ns_db select $db $sql]
-
-ns_write "<ul>\n"
+append page_content "<ul>\n"
 
 set uninteresting_header_written 0
 set counter 0
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
+
+db_foreach category_messages "
+select msg_id, 
+       one_line, 
+       sort_key, 
+       email, 
+       first_names || ' ' || last_name as name, 
+       bboard_uninteresting_p(interest_level) as uninteresting_p
+from   bboard, 
+       users
+where  topic_id = :topic_id
+$category_clause
+and    refers_to is null
+and    users.user_id = bboard.user_id
+order by uninteresting_p, sort_key $q_and_a_sort_order" {
+
     incr counter
     if { $uninteresting_p == "t" && $uninteresting_header_written == 0 } {
 	set uninteresting_header_written 1
-	ns_write "</ul>
+	append page_content "</ul>
 <h3>Uninteresting Threads</h3>
 
 (or at least the forum moderator thought they would only be of interest to rare individuals; truly worthless threads get deleted altogether)
@@ -78,11 +81,11 @@ while {[ns_db getrow $db $selection]} {
     } elseif { $subject_line_suffix == "email" && $email != "" } {
 	append display_string "  ($email)"
     }
-    ns_write "<li><a href=\"q-and-a-fetch-msg.tcl?msg_id=$msg_id\">$display_string</a>\n"
+    append page_content "<li><a href=\"q-and-a-fetch-msg?msg_id=$msg_id\">$display_string</a>\n"
 
 }
 
-ns_write "
+append page_content "
 
 </ul>
 
@@ -101,7 +104,7 @@ if { $headers == "" || ![regexp {LusenetName=([^;]*).*$} [ns_set get $headers Co
 }
 
 if { $counter == 0 } {
-    ns_write "There hasn't been any discussion yet.
+    append page_content "There hasn't been any discussion yet.
 
 <h3>You can be the one to start the discussion</h3> 
 
@@ -109,16 +112,16 @@ if { $counter == 0 } {
 
 " } else {
 
-    ns_write "<h3>You can ask a new question</h3>
+    append page_content "<h3>You can ask a new question</h3>
 
 (about $key)
 
 "
 }
 
-ns_write "<p>
+append page_content "<p>
 
-<form method=post action=\"insert-msg.tcl\" target=\"_top\">
+<form method=post action=\"insert-msg\" target=\"_top\">
 
 <input type=hidden name=q_and_a_p value=\"t\">
 <input type=hidden name=category value=\"[philg_quote_double_quotes $key]\">
@@ -156,22 +159,24 @@ ns_write "<p>
 </center>
 
 </form>
-"
-
-
-
-ns_write "
 
 [bboard_footer]
 "
+
+doc_return  200 text/html $page_content
+
 
 # *** here we want an [ns_conn close] but it didn't make 2.2b2
 
 # let's see if we need to put this into the categories table
 
-if { $counter == 0 && [database_to_tcl_string $db "select count(*) from bboard_q_and_a_categories where topic_id = $topic_id and category = '$QQkey'"] == 0 } {
+if { $counter == 0 && [db_string category_check "
+select count(*) from bboard_q_and_a_categories 
+where topic_id = :topic_id and category = :key"] == 0 } {
     # catch to trap the primary key complaint from Oracle
-    catch { ns_db dml $db "insert into bboard_q_and_a_categories (topic_id, category)
-values
-($topic_id,'$QQkey')" }
+    catch { db_dml category_insert "
+    insert into bboard_q_and_a_categories (topic_id, category)
+    values
+    (:topic_id,:key)" }
 }
+

@@ -1,26 +1,33 @@
-# $Id: category-update-2.tcl,v 3.0.4.1 2000/04/28 15:09:11 carsten Exp $
-set_form_variables 
+# /www/admin/neighbor/category-update-2.tcl
+ad_page_contract {
+    Updates a category.
 
-# category_id, submit
-# regional_p, region_type, top_title, top_blurb,
-#  noun_for_action, decorative_photo
-
-
-# user error checking
+    @author Philip Greenspun (philg@mit.edu)
+    @creation-date 1 January 1996
+    @cvs-id category-update-2.tcl,v 3.3.2.3 2000/07/21 03:57:42 ron Exp
+    @param category_id the category to edit
+    @param primary_category the category name
+    @param noun_for_about an about noun
+    @param regional_p whether to group by region
+    @param region_type the region to group by
+    @param top_title a title for the category page
+    @param top_blurb a blurb about the category
+    @param noun_for_action an about noun
+    @param decorative_photo some HTML to place at the top of the category page
+} {
+    category_id:notnull,integer
+    primary_category:notnull
+    noun_for_about:notnull
+    regional_p:optional
+    region_type
+    top_title
+    top_blurb
+    noun_for_action:optional
+    decorative_photo:html
+}
 
 set exception_text ""
 set exception_count 0
-
-
-if { ![info exist primary_category] || [empty_string_p $primary_category] } {
-    incr exception_count
-    append exception_text "<li>Please enter a category name."
-}
-
-if { ![info exist noun_for_about] || [empty_string_p $noun_for_about] } {
-    incr exception_count
-    append exception_text "<li>Please enter what users are posting about."
-}
 
 if { [info exist top_blurb] && [string length $top_blurb] > 4000 } {
     incr exception_count
@@ -47,27 +54,30 @@ if { $exception_count > 0 } {
   return
 }
 
-set db [ns_db gethandle]
+
 
 # edit the form vars so we can use the magic update
 ns_set delkey [ns_conn form] submit
-
 
 # Check the database to see if there is a row for this category already.
 # If there is a row, update the database with the information from the form.
 # If there is no row, insert into the database with the information from the form.
 
-set sql_statement  [util_prepare_update $db n_to_n_primary_categories category_id $category_id [ns_conn form]]
- 
-if [catch { ns_db dml $db $sql_statement } errmsg] {
-	    ad_return_error "Failure to update category  information" "The database rejected the attempt:
-	    <blockquote>
-<pre>
-$errmsg
-</pre>
-</blockquote>
-"
+set sql_statement_and_bind_vars [util_prepare_update n_to_n_primary_categories category_id $category_id [ns_conn form]]
+set sql_statement [lindex $sql_statement_and_bind_vars 0]
+set bind_vars [lindex $sql_statement_and_bind_vars 1]
+
+if [catch { db_dml category_update $sql_statement -bind $bind_vars} errmsg] {
+    db_release_unused_handles
+    ad_return_error "Failure to update category  information" "The database rejected the attempt:
+    <blockquote>
+    <pre>
+    $errmsg
+    </pre>
+    </blockquote>
+    "
     return
 }
 
-ad_returnredirect "category.tcl?[export_url_vars category_id]"
+db_release_unused_handles
+ad_returnredirect "category?[export_url_vars category_id]"

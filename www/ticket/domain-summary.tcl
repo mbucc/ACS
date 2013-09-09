@@ -1,33 +1,40 @@
-# $Id: domain-summary.tcl,v 3.1.4.1 2000/04/27 18:54:09 carsten Exp $
-# domain-summary.tcl
-#
-# hqm@arsdigita.com
-#
-# Summarize all domains
-#
+# /www/ticket/domain-summary.tcl
+ad_page_contract {
+    Summarize all domains
 
-ad_page_variables {{orderby {title_long}} {return_url {/ticket/index.tcl?}} {project_id {}}}
+    @param orderby the heading to sort on
+    @param return_url where to send them back to
+    @param project_id a project to restrict to
 
-set db [ns_db gethandle]
+    @author hqm@arsdigita.com
+    @author Kevin Scaldeferri (kevin@caltech.edu)
+    @cvs-id domain-summary.tcl,v 3.2.2.6 2000/09/22 01:39:22 kevin Exp
+} {
+    {orderby "title_long"} 
+    {return_url "/ticket/index.tcl?"} 
+    {project_id:integer ""}
+}
 
-ReturnHeaders
+# -----------------------------------------------------------------------------
 
 set sql_restrict {}
 
 if {![empty_string_p $project_id]} { 
-    set project_title "- Project: [database_to_tcl_string $db "select title_long from ticket_projects where project_id = $project_id"]"
+    set project_title "- Project: [db_string title_of_project "select title_long from ticket_projects where project_id = :project_id"]"
+    append sql_restrict " and tp.project_id = :project_id"
 } else {
     set project_title {}
 }
 
-if {![empty_string_p $project_id]} {
-    append sql_restrict " and tp.project_id = $project_id"
-} 
-ns_write "[ad_header "Feature Area Summaries"]
- <h3>Feature Area Summaries $project_title</h3>
- [ad_context_bar_ws_or_index [list $return_url "Ticket Tracker"]  "Feature Area Summaries"]
- <hr>"
+append page_content "
+[ad_header "Feature Area Summaries"]
 
+<h2>Feature Area Summaries $project_title</h2>
+
+[ad_context_bar_ws_or_index [list $return_url "Ticket Tracker"]  "Feature Area Summaries"]
+
+<hr>
+"
 
 set dimensional {
     {projectstate "Project State" open {
@@ -71,10 +78,17 @@ set sql "select
  [ad_order_by_from_sort_spec $orderby $table_def]\n"
 
 
+set bind_vars [ad_tcl_vars_to_ns_set project_id]
 
+append page_content "[ad_dimensional $dimensional]<br> 
 
-ns_write "[ad_dimensional $dimensional]<br> <blockquote>"
-set selection [ns_db select $db $sql]
-ns_write "[ad_table -Torderby $orderby $db $selection $table_def]
+<blockquote>
+
+[ad_table -Torderby $orderby -bind $bind_vars domain_summary_table \
+	$sql $table_def]
+
  </blockquote>
+
  [ad_footer]"
+
+doc_return  200 text/html $page_content

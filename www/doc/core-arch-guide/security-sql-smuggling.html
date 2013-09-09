@@ -1,0 +1,125 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+
+<head>
+<title>Preventing SQL-Smuggling in ACS</title>
+<link rel="stylesheet" type="text/css" href="core-arch-guide.css">
+</head>
+
+<body>
+
+<h2>Preventing SQL-smuggling in ACS</h2>
+
+by <a href="mailto:branimir@arsdigita.com">Branimir Dolicki</a>
+
+<p>
+
+
+<a href="/doc/">ACS Documentation</a> :
+<a href="">ACS Core Architecture Guide</a> :
+Preventing SQL-smuggling in ACS
+
+<hr>
+
+<ul>
+<li>Data model: <a href="/doc/sql/display-sql?url=/security.sql&package_key=acs-core">/packages/acs-core/security.sql</a> (the <tt>test_sql</tt> function)
+<li>Procedures: /packages/acs-core/security-init.tcl, /packages/acs-core/security-procs.tcl (<a href="/doc/proc-one?proc_name=ad%5fblock%5fsql%5furls">ad_block_sql_urls</a>)
+</ul>
+
+<h3>The Problem</h3>
+You construct your SQL on the fly in your Tcl script.  The SQL is
+parametrized by user input comming from form variables.  If you don't check for user
+input a cracker can smuggle additional SQL and gain access to your system.  Typically
+your <tt>WHERE</tt> clause looks like this
+<blockquote><tt>
+... WHERE user_id=$user_id
+</tt></blockquote>
+
+where <tt>user_id</tt> is collected from an URL variable.
+<p>
+If you don't check the content of <tt>user_id</tt> before constructing your SQL a
+cracker can add additional logical clauses and even complete subqueries or UNION
+clauses thus obtaining pretty much anything from your database.
+
+<h3>The One Month Solution</h3>
+
+Check every Tcl script in your server and make sure every form variable
+is checked either in the script itself or outside by an external filter.
+Educate your programmers so that they always write code that doesn't
+suffer from this problem.  Create a code-review process to make sure
+that no script ever goes live without being checked against security.
+Enforce usage of a secure database API...
+
+<h3>The Five Minutes Solution</h3>
+
+Install <a href="http://www.clasohm.com">Carsten</a>'s <a
+href="/doc/proc-one?proc_name=ad%5fblock%5fsql%5furls">global filter</a>
+that will check every URL paramateter.  If the parameter looks like a
+part of a SQL <tt>WHERE</tt> clause it will reject the request.
+
+<h4>How does it work</h4>
+For each form variable that came with the request ask Oracle whether
+it would accept the following SQL statement:
+<blockquote><tt>
+select 1 from dual where 1 = $value
+</tt></blockquote>
+Or:
+<blockquote><tt>
+select 1 from dual where 1 = '$value'
+</tt></blockquote>
+The first form guards against smuggling SQL where integers are expected
+while the second form does the same for character strings.
+<h4>So you go to Oracle with every form variable for request???</h4>
+No.  We first do some regexp checks which make further processing unecessary for vast
+majority of cases.  We go to Oracle only if one of these regexps maches:
+<ul>
+    <li><p><tt> [regexp -nocase {[^a-z_]or[^a-z0-9_]} $value]</tt></p>
+    <li><p><tt> [regexp -nocase {union([^a-z].*all)?[^a-z].*select} $value]</tt></p>
+</ul>
+Regexps are generally cheap and the majority of pages in ACS do things
+that are much more expensive than these two regexps (such as database calls).
+<h4>Still, you are going to Oracle with every form value that contains word "OR"!</h4>
+Yes.  But how many normal hits contain form values with word OR in
+them? (A word, not just the two letters - see the regexp above - words
+such as "w<b>or</b>d" don't match).  Actually the only form values
+that might contain the word OR are from forms where users actually
+submit contributions.  Those normally consist a tiny fraction of all
+hits that the site receives.
+
+<h4>Doesn't this filter sometimes reject legitimate content?</h4>
+Theoretically that is possible.  But in practice
+it is almost impossible to accidentally write a string that will become a
+valid <tt>WHERE</tt> statement after "<tt>1 = </tt>" is prepended to it.
+Even in a forum for SQL nerds or on pages that actually accept SQL as
+input parameters - it will NOT lead to a valid SQL statement.
+<p>
+Besides, Carsten's program writes an Error entry to your log file whenever
+a request is rejected and you'll be informed about it by the Watchdog
+so if it ever happens that a legitimate request gets rejected you'll
+know about it (and you'll be able to appologize to the user personally,
+for example).  But I repeat: that is _very_unlikely_.
+
+<h4>Are there SQL-smuggling attacks this filter cannot prevent</h4>
+
+There is only one we are aware of.  If you collect data from URL
+path and not from form variables.  For example Wimpy Point uses URLs
+like <tt>/wp/display/581/</tt>.  That means that you have to grep for
+<tt>register_proc</tt> among your initialization scripts and see whether
+the registered procs check user input.  In ACS we do it only in a handful
+of places but if you have custom code you should check.
+
+<h3>Conclusion</h3>
+This solution:
+<ul>
+  <li>Guards against all known SQL-smuggling attacks where hostile
+      SQL is passed in form variables
+  <li>Does not requre editing or even checking any of your scripts
+  <li>Makes your site more secure in five minutes than checking every single
+      file would make it in one month
+  <li>Does not significantly increase your server load
+  <li>Is not likely to reject legitimate requests
+</ul>
+
+<hr>
+
+<address><a href="mailto:carsten@arsdigita.com">carsten@arsdigita.com</a>, <a href="mailto:branimir@arsdigita.com">branimir@arsdigita.com</a>

@@ -1,19 +1,21 @@
-#
-# Edit a press item
-# 
-# Author: ron@arsdigita.com, December 1999
-#
-# $Id: edit.tcl,v 3.1.2.1 2000/03/15 20:33:09 aure Exp $
-#
+# /www/press/admin/edit.tcl
 
-ad_page_variables {press_id}
+ad_page_contract { 
+
+    Edit a press item
+    
+    @author  Ron Henderson (ron@arsdigita.com)
+    @created December 1999
+    @cvs-id  edit.tcl,v 3.3.8.5 2000/09/22 01:39:07 kevin Exp
+} {
+    press_id:integer
+}
 
 set user_id [ad_verify_and_get_user_id]
-set db      [ns_db gethandle]
 
 # Initialize the form variables
 
-set selection [ns_db 1row $db "
+if ![db_0or1row press_item "
 select scope,
        group_id,
        important_p,
@@ -28,17 +30,14 @@ select scope,
        html_p,
        template_id
 from   press
-where  press_id = $press_id"]
-set_variables_after_query
-
-if {[empty_string_p $selection]} {
+where  press_id = $press_id"] {
     ad_return_error "An error occurred looking up press_id = $press_id"
     return
 }
 
 # Verify this user is authorized to edit this press item
 
-if {![press_admin_p $db $user_id $group_id]} {
+if {![press_admin_p $user_id $group_id]} {
     ad_return_complaint 1 "<li>You are not authorized to access this page"
     return
 }
@@ -64,8 +63,8 @@ press_coverage_samples
 # -----------------------------------------------------------------------------
 # Ship out the form
 
-ns_return 200 text/html "
-[ad_header Admin]
+doc_return  200 text/html "
+[ad_header "Edit a Press Item"]
 
 <h2>Edit a Press Item</h2>
 
@@ -113,8 +112,8 @@ while others may be required depending on which template you choose.</p>
   </td>
 </tr>
 
-[press_scope_widget $db $group_id]
-[press_template_widget $db $template_id]
+[press_scope_widget $group_id]
+[press_template_widget $template_id]
 
 <tr>
   <td align=right valign=top><b>Importance</b>:</td>
@@ -142,6 +141,6 @@ while others may be required depending on which template you choose.</p>
 
 <p>Press coverage templates:</p>
 
-[press_template_list $db]
+[press_template_list]
 
 [ad_footer]"

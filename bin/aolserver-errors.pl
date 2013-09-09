@@ -38,6 +38,9 @@
 #
 # 2/01/2000 -- fixed a bug that caused trouble the first of every 
 # month. (Now the problem happens only on the first of each year)
+#
+# 5/12/2000 -- mbryzek@arsdigita.com
+#   Added exit at end of script to kill the thread
 
 $num_args = scalar @ARGV;
 
@@ -179,3 +182,5 @@ while (<LOG>) {
     }
 }
 close LOG;
+
+exit(0);

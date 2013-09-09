@@ -1,5 +1,5 @@
 #!/usr/local/bin/perl
-# $Id: restart-aolserver,v 3.2.4.1 2000/03/16 10:59:24 james Exp $
+# restart-aolserver,v 3.3 2000/03/20 07:59:52 ron Exp
 
 ## Restarts an AOLserver. Takes as its only argument the name of the
 ## server to kill.

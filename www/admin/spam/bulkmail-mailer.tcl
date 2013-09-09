@@ -1,18 +1,20 @@
-# $Id: bulkmail-mailer.tcl,v 3.0.4.1 2000/04/28 15:09:20 carsten Exp $
-# bulkmail-mailer.tcl
-#
-# hqm@arsdigita.com
-#
-# enable or disable the use of bulkmail module for sending of email from the spam system.
-#
-# If disabled, we revert to ns_sendmail (slower, and no bounce handling)
-#
+# www/admin/spam/bulkmail-mailer.tcl
 
-# form vars:
-# enable_p      enable or disable outgoing user of bulkmail
+ad_page_contract {
 
-set_the_usual_form_variables
+ Force spam into a specific state.
+
+    @param enable_p boolean (t or f) to enable or disable use of bulkmailer module for sending mail
+    @author hqm@arsdigita.com
+    @cvs-id bulkmail-mailer.tcl,v 3.1.6.2 2000/07/21 03:57:59 ron Exp
+} {
+   enable_p
+}
+
 
 spam_set_use_bulkmail_p $enable_p
 
 ad_returnredirect "index.tcl"
+
+
+

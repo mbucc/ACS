@@ -1,0 +1,294 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+
+<head>
+<title>Publishing URLs</title>
+<link rel="stylesheet" type="text/css" href="core-arch-guide.css">
+</head>
+
+<body>
+
+<h2>Publishing Uniform Resource Locators (URLs)</h2>
+
+by <a href="mailto:jsalz@mit.edu">Jon Salz</a>
+and <a href="mailto:michael@arsdigita.com">Michael Yoon</a>
+on 6 July 2000
+
+<p>
+
+<a href="/doc/">ACS Documentation</a> :
+<a href="">ACS Core Architecture Guide</a> :
+<a href="api-publication">API Publication</a> :
+Publishing URLs
+
+<hr>
+
+<h3>The Big Picture</h3>
+
+The <code>/user-search</code> page is the canonical example of a "URL
+API", in that it behaves like a function: it accepts a defined set of
+inputs; it returns a defined set of outputs; you "invoke" it
+programmatically (by redirecting the browser to its URL).
+
+<p>
+
+Prior to ACS 3.3.1, the only documentation for a URL like
+<code>/user-search</code> would typically reside in comments at the top
+of the corresponding file on the server. The inputs expected by a URL
+would usually be enumerated in a call to
+<code>ad_page_variables</code> or, worse yet, in a comment somewhere
+in the vicinity of a call to
+<code>set_the_usual_form_variables</code>.
+
+<p>
+
+ACS 3.3.1 supersedes this informal combination of page header comments
+and <code>ad_page_variables</code> with the new procedure
+<strong><code>ad_page_contract</code></strong>, which enables us to
+present the definition and documentation of a URL API separately from
+its implementation.
+
+<h3>How to Use <code>ad_page_contract</code></h3>
+
+The syntax for calling <code>ad_page_contract</code> is:
+
+<blockquote><pre>
+<strong>ad_page_contract</strong> <em>doc-string</em> <em>arg-list</em> 
+</pre></blockquote>
+
+<code>ad_page_contract</code> should be called at the top of every
+Tcl page, in place of a header comment and a call to
+<code>ad_page_variables</code>.
+
+<p>
+
+The <code><em>arg-list</em></code> argument enumerates the variables
+that the page expects to be included in the form data set. Like
+<code>ad_page_variables</code>, <code>ad_page_contract</code> sets the
+specified arguments as variables in the context of the Tcl page.
+
+<p>
+
+In addition to a name, each entry in the
+<code><em>arg-list</em></code> can have a <strong>default
+value</strong>, specified using the same syntax as <code>proc</code>:
+a two-element list where the first element is the argument name and
+the second argument is the default value.
+
+<h4>Argument Validation</h4>
+
+Unlike <code>ad_page_variables</code> (which only ensures that all
+expected inputs are supplied), <code>ad_page_contract</code> actually
+validates page input values. Validation rules are specified by
+following the argument name with a colon and then one or more of the
+following <strong>flags</strong> (separated by commas if more than
+one):
+
+<p>
+
+<ul type=disc>
+
+<li><strong><code>optional</code></strong>: the argument doesn't need
+to be provided; if it's not, the variable for that argument simply
+won't be set in the context of the Tcl page.
+
+<p>
+
+<li><strong><code>integer</code></strong>: the argument must be an
+integer (<code>ad_page_contract</code> will present an error message
+to the user if not). This flag, like the next, is intended to prevent
+clients from <a href="security-sql-smuggling">smuggling SQL</a>
+through page arguments.
+
+<li><strong><code>naturalnum</code></strong>:
+    Pluggable filter, installed by default, that makes sure the value is a natural number, i.e.
+    non-decimal numbers >= 0.
+<p>
+    <li><strong><code>nohtml</code></strong>:
+    Pluggable filter, installed by default, that disallows any and all html.
+<p>    
+    <li><strong><code>html</code></strong>
+    Pluggable filter, installed by default, that disallows any registered "naughty" HTML flags.
+    Naughty HTML tags are registered in the <code>[ns/server/servername/acs/antispam]</code> section
+    of the ACS parameters file and processed with <a href="/api-doc/proc-view?proc=ad_check_for_naughty_html">ad_check_for_naughty_html</a>.  
+    The purpose of screening naughty html is to prevent users from uploading
+    HTML with tags that hijack page formatting.
+<p>    
+    <li><strong><code>allhtml</code></strong>:
+    Pluggable filter, installed by default, that allows any and all html.  Use of this filter
+    is not recommended, except for cases when the HTML will not be presented to the user or there is some
+    other reason for overriding the site-wide control over naughty html.
+<p>    
+    <li><strong><code>tmpfile</code></strong>:
+    Checks to see if the path and file specified by tmpfile are allowed on this system.
+
+    
+<p>
+
+<li><strong><code>sql_identifier</code></strong>: the argument must be
+a SQL identifier (i.e., <code>[string is wordchar
+$the_query_var]</code> must return true).
+
+<p>
+
+<li><strong><code>trim</code></strong>: the argument will be [string
+trim]'ed.
+
+<p>
+
+<li><strong><code>multiple</code></strong>: the argument may be
+specified zero or more times in the form data set, and the variable
+will be set to a list of all those values, or an empty list if none
+are provided. This is analogous to the <code>-multiple-list</code>
+flag to <code>ad_page_variables</code>, and is useful for handling the
+input generated by <code>&lt;select multiple&gt;</code> and
+<code>&lt;input type=checkbox&gt;</code> tags.
+
+<p>
+
+For instance, if <code>user_id:multiple</code> is specified in the
+contract, and the query string is
+
+<blockquote><pre>
+?user_id=1&user_id=2&user_id=3
+</pre></blockquote>
+
+then <code>$user_id</code> will be set to <code>[list 1 2 3]</code>.
+
+<p>
+
+<li><strong><code>array</code></strong>: the argument may be specified
+zero or more times in the form data set, with variables names whose
+suffixes follow this convention: <code>_0</code>, <code>_1</code>,
+<code>_2</code>, <code>_3</code>, ... The variable is set to a list of
+all those values, or an empty list if none are specified.
+
+<p>
+
+For instance, if <code>user_id:array</code> is specified in the
+contract, and the query string is
+
+<blockquote><pre>
+?user_id.owner=3&user_id.maintainer=2&user_id.reviewer=1
+</pre></blockquote>
+
+then the following variables will be set:
+<pre>
+set user_id(owner) 3
+set user_id(maintainer) 2
+set user_id(reviewer) 1
+</pre>
+
+</ul>
+
+<h4>Page Documentation Strings</h4>
+
+Like <code>ad_proc</code> and <code>ad_library</code>,
+<code>ad_page_contract</code> accepts Javadoc-inspired documentation
+strings, i.e., a general description of the page's function, followed
+optionally by a series of named attributes tagged with <code>@</code>
+signs:
+
+<p>
+
+<ul>
+
+<li>zero or more <code><strong>@param</strong></code> tags, one for
+each argument; the format is
+
+<blockquote><pre>
+@param <em>parameter-name</em> <em>description...</em>
+</pre></blockquote>
+
+<p>
+
+<li>zero or more <code><strong>@author</strong></code> tags, one for
+each author; specify the author's name, followed by his or her email
+address in parentheses
+
+<li>one <code><strong>@creation-date</strong></code> tag, indicating
+when the page was first created
+
+<li>one <code><strong>@cvs-id</strong></code> tag containing the
+page's CVS identification string; just use <code>&#36;Id&#36;</code>
+when creating the file, and CVS will substitute an appropriate string
+when you check the file in.
+
+</ul>
+
+These <code>@</code> tags are optional, but highly recommended. (For
+ACS Core Team programmers, they are mandatory.)
+
+</ul>
+
+<h3>Examples</h3>
+
+Here's a simple, hypothetical example of using <code>ad_page_contract</code>:
+
+<blockquote><pre>
+# /www/recipes/one.tcl
+ad_page_contract {
+    Presents one recipe, optionally in a printer-friendly format
+
+    @param recipe_id the ID of the recipe to be presented
+    @param printable_p printer-friendly or not?
+
+    @author Michael Yoon (michael@ardigita.com)
+    @creation-date 1 January 2001
+    @cvs-id &#36;Id&#36;
+} {
+    recipe_id:integer
+    printable_p:integer
+} 
+</pre></blockquote>
+
+<p>
+
+Here's a more sophisticated example from the forthcoming API Browser:
+
+<blockquote><pre>
+# /packages/acs-core/api-doc/www/package-view.tcl
+ad_page_contract {
+    Shows the APIs for a particular package.
+
+    @param version_id the ID of the version whose API to view.
+    @param public_p view only public APIs?
+    @param kind the type of API to view. One of &lt;code&gt;procs_files&lt;/code&gt;,
+        &lt;code&gt;procs&lt;/code&gt;, &lt;code&gt;content&lt;/code&gt;, &lt;code&gt;types&lt;/code&gt;, or
+        &lt;code&gt;graphic-designer&lt;/code&gt;.
+    @param format the format for the documentation. One of &lt;code&gt;html&lt;/code&gt;
+        or &lt;code&gt;xml&lt;/code&gt;.
+
+    @author Jon Salz (jsalz@mit.edu)
+    @creation-date 3 Jul 2000
+    @cvs-id &#36;Id&#36;
+} {
+    version_id:integer
+    public_p:optional
+    kind
+    { format "html" }
+} 
+</pre></blockquote>
+
+By convention, <code>ad_page_contract</code> is preceded by a comment
+line containing the file's path. The comment is on the first line of
+the file, and the contract starts on the second.
+
+<h3>Future Improvements</h3>
+
+We plan to integrate <code>ad_page_contract</code> with the next
+iteration of the Document Builder API. It will then support explicit
+specification of what type of content (e.g.,
+<code>html-content-pane</code>) the page returns, which the Request
+Process can use for document transformation (e.g., master template
+wrapping, WAP presentation) and template writers can use to determine
+what document properties (i.e., variables) are available for each URL.
+
+<hr>
+
+<a href="mailto:jsalz@mit.edu">
+<address>jsalz@mit.edu</address>
+</a>
+
+</body>
+</html>

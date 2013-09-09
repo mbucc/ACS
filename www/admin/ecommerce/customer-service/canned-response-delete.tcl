@@ -1,17 +1,27 @@
-# $Id: canned-response-delete.tcl,v 3.0 2000/02/06 03:17:34 ron Exp $
-set_form_variables
-# response_id
+# canned-response-delete.tcl
+
+ad_page_contract {
+    @param response_id
+
+    @author
+    @creation-date
+    @cvs-id canned-response-delete.tcl,v 3.2.2.4 2000/09/22 01:34:51 kevin Exp
+} {
+    response_id
+}
 
 
-set db [ns_db gethandle]
 
-set selection [ns_db 1row $db "select one_line, response_text
+
+
+db_1row get_response_info "select one_line, response_text
 from ec_canned_responses
-where response_id = $response_id"]
+where response_id = :response_id"
 
-set_variables_after_query
 
-ns_return 200 text/html "[ad_admin_header "Confirm Delete"]
+
+
+doc_return  200 text/html "[ad_admin_header "Confirm Delete"]
 
 <h2>Confirm Delete</h2>
 
@@ -25,9 +35,8 @@ Are you sure you want to delete this canned response?
 <p>
 
 <center>
-<a href=\"canned-response-delete-2.tcl?response_id=$response_id\">Yes, get rid of it</a>
+<a href=\"canned-response-delete-2?response_id=$response_id\">Yes, get rid of it</a>
 </center>
-
 
 [ad_admin_footer]
 "

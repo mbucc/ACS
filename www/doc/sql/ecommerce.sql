@@ -71,7 +71,7 @@ insert into ec_templates (
 	template_id, template_name, template,
 	last_modified, last_modifying_user, modified_ip_address
 	) values (
-	1,'Default', '<head>' || CHR(10) || '<title><%= $product_name %></title>' || CHR(10) || '</head>' || CHR(10) || '<body bgcolor=white text=black>' || CHR(10) || CHR(10) || '<h2><%= $product_name %></h2>' || CHR(10)  || CHR(10) || '<table width=100%>' || CHR(10) || '<tr>' || CHR(10) || '<td>' || CHR(10) || ' <table>' || CHR(10) || ' <tr>' || CHR(10) || ' <td><%= [ec_linked_thumbnail_if_it_exists $dirname] %></td>' || CHR(10) || ' <td>' || CHR(10) || ' <b><%= $one_line_description %></b>' || CHR(10) || ' <br>' || CHR(10) || ' <%= [ec_price_line $db $product_id $user_id $offer_code] %>' || CHR(10) || ' </td>' || CHR(10) || ' </tr>' || CHR(10) || ' </table>' || CHR(10) || '</td>' || CHR(10) || '<td align=center>' || CHR(10) || '<%= [ec_add_to_cart_link $db $product_id] %>' || CHR(10) || '</td>' || CHR(10) || '</tr>' || CHR(10) || '</table>' || CHR(10) || CHR(10) || '<p>' || CHR(10) || '<%= $detailed_description %>' || CHR(10) || CHR(10) || '<%= [ec_display_product_purchase_combinations $db $product_id] %>' || CHR(10) || CHR(10) || '<%= [ec_product_links_if_they_exist $db $product_id] %>' || CHR(10) || CHR(10) || '<%= [ec_professional_reviews_if_they_exist $db $product_id] %>' || CHR(10) || CHR(10) || '<%= [ec_customer_comments $db $product_id $comments_sort_by] %>' || CHR(10) || CHR(10) || '<p>' || CHR(10) || CHR(10) || '<%= [ec_mailing_list_link_for_a_product $db $product_id] %>' || CHR(10) || CHR(10) || '<%= [ec_footer $db] %>' || CHR(10) || '</body>' || CHR(10) || '</html>',
+	1,'Default', '<head>' || CHR(10) || '<title><%= $product_name %></title>' || CHR(10) || '</head>' || CHR(10) || '<body bgcolor=white text=black>' || CHR(10) || CHR(10) || '<h2><%= $product_name %></h2>' || CHR(10)  || CHR(10) || '<table width=100%>' || CHR(10) || '<tr>' || CHR(10) || '<td>' || CHR(10) || ' <table>' || CHR(10) || ' <tr>' || CHR(10) || ' <td><%= [ec_linked_thumbnail_if_it_exists $dirname] %></td>' || CHR(10) || ' <td>' || CHR(10) || ' <b><%= $one_line_description %></b>' || CHR(10) || ' <br>' || CHR(10) || ' <%= [ec_price_line $product_id $user_id $offer_code] %>' || CHR(10) || ' </td>' || CHR(10) || ' </tr>' || CHR(10) || ' </table>' || CHR(10) || '</td>' || CHR(10) || '<td align=center>' || CHR(10) || '<%= [ec_add_to_cart_link $product_id] %>' || CHR(10) || '</td>' || CHR(10) || '</tr>' || CHR(10) || '</table>' || CHR(10) || CHR(10) || '<p>' || CHR(10) || '<%= $detailed_description %>' || CHR(10) || CHR(10) || '<%= [ec_display_product_purchase_combinations $product_id] %>' || CHR(10) || CHR(10) || '<%= [ec_product_links_if_they_exist $product_id] %>' || CHR(10) || CHR(10) || '<%= [ec_professional_reviews_if_they_exist $product_id] %>' || CHR(10) || CHR(10) || '<%= [ec_customer_comments $product_id $comments_sort_by] %>' || CHR(10) || CHR(10) || '<p>' || CHR(10) || CHR(10) || '<%= [ec_mailing_list_link_for_a_product $product_id] %>' || CHR(10) || CHR(10) || '<%= [ec_footer] %>' || CHR(10) || '</body>' || CHR(10) || '</html>',
 	sysdate,
 	1, 'none');
 
@@ -251,6 +251,8 @@ create table ec_products (
 	-- classes are charged a different price, it should be
 	-- specified in ec_product_user_class_prices
 	price			number,
+	-- for stuff that can't be shipped like services
+	no_shipping_avail_p	char(1) default 'f' check(no_shipping_avail_p in ('t', 'f')),
 	-- leave this blank if shipping is calculated using
 	-- one of the more complicated methods available
 	shipping		number,
@@ -288,6 +290,8 @@ create table ec_products (
 	color_list		varchar(4000),
 	size_list		varchar(4000),
 	style_list		varchar(4000),
+	-- email this list on purchase
+	email_on_purchase_list	varchar(4000),
 	-- the user ID and IP address of the creator of the product
 	last_modified		date not null,
 	last_modifying_user	not null references users,
@@ -1182,7 +1186,8 @@ create table ec_orders (
 	user_id			references users,
 	user_session_id		references ec_user_sessions,
 	order_state	varchar(50) default 'in_basket' not null,
-	shipping_method	varchar(20),	-- express or standard
+	tax_exempt_p		char(1) default 'f' check(tax_exempt_p in ('t', 'f')),
+	shipping_method	varchar(20),	-- express or standard or pickup or 'no shipping'
 	shipping_address	integer references ec_addresses(address_id),
 	-- store credit card info in a different table
 	creditcard_id	integer references ec_creditcards(creditcard_id),
@@ -1253,6 +1258,8 @@ create table ec_shipments (
 	actual_arrival_date	date,
 	-- arbitrary info from carrier, e.g., 'Joe Smith signed for it'
 	actual_arrival_detail	varchar(4000),
+	-- for things that aren't really shipped like services
+	shippable_p             char(1) default 't' check(shippable_p in ('t', 'f')),
 	last_modified		date,
 	last_modifying_user	integer,
 	modified_ip_address	varchar(20)

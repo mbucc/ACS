@@ -1,15 +1,19 @@
-# $Id: search-engine-one.tcl,v 3.0 2000/02/06 03:27:54 ron Exp $
-set_the_usual_form_variables
+# /www/admin/referer/search-engine-one.tcl
+#
 
-# search_engine_name 
+ad_page_contract {
+    @cvs-id search-engine-one.tcl,v 3.3.2.5 2000/09/22 01:36:00 kevin Exp
+    @param search_engine
+} {
+    search_engine_name:notnull
+}
 
-ReturnHeaders
 
-ns_write "[ad_admin_header "$search_engine_name"]
+set page_content "[ad_admin_header "$search_engine_name"]
 
 <h2>$search_engine_name Referrals to [ad_system_name]</h2>
 
-[ad_admin_context_bar [list "index.tcl" "Referrals"] [list "search-engines.tcl" "Search Engine Statistics"] "One Search Engine"]
+[ad_admin_context_bar [list "" "Referrals"] [list "search-engines" "Search Engine Statistics"] "One Search Engine"]
 
 <hr>
 
@@ -20,33 +24,31 @@ ns_write "[ad_admin_header "$search_engine_name"]
   <th>Total Referrals
 </tr>
 
-
 "
 
-set db [ns_db gethandle]
-set selection [ns_db select $db "
+
+set sql "
 select 
   to_char(query_date,'YYYY') as query_year, 
   to_char(query_date,'MM') as query_month, 
   count(*) as n_searches
 from query_strings
-where search_engine_name = '$QQsearch_engine_name'
+where search_engine_name = :search_engine_name
 group by to_char(query_date,'YYYY'), to_char(query_date,'MM')
-order by query_year, query_month"]
+order by query_year, query_month"
 
 set table_rows ""
 
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+db_foreach referer_search_engine_one $sql {
     append table_rows "
 <tr>
   <td>$query_month/$query_year
-  <td align=right><a href=\"search-engine-one-one-month.tcl?[export_url_vars search_engine_name query_year query_month]\">$n_searches</a>
+  <td align=right><a href=\"search-engine-one-one-month?[export_url_vars search_engine_name query_year query_month]\">$n_searches</a>
 </tr>
 "
 }
 
-ns_write "
+append page_content "
 $table_rows
 
 </table>
@@ -56,7 +58,7 @@ $table_rows
 
 Note: Referrals from public search engines are identified by patterns recorded in the
 <code>referer_log_glob_patterns</code> table, maintained at 
-<a href=\"/admin/referer/mapping.tcl\">/admin/referer/mapping.tcl</a>.  The statistics 
+<a href=\"/admin/referer/mapping\">/admin/referer/mapping</a>.  The statistics 
 on these pages do not include searches done by users locally (i.e., with tools running
 on this server).
 
@@ -64,3 +66,7 @@ on this server).
 
 [ad_admin_footer]
 "
+
+
+
+doc_return  200 text/html $page_content

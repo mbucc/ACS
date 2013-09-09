@@ -1,17 +1,35 @@
-# $Id: member-remove-2.tcl,v 3.0.4.1 2000/04/28 15:08:42 carsten Exp $
-set_the_usual_form_variables
-# category_id, subcategory_id, subsubcategory_id, user_id
+# member-remove-2.tcl
 
-set db [ns_db gethandle]
+ad_page_contract { 
+    @param category_id
+    @param subcategory_id
+    @param subsubcategory_id
+    @param user_id
 
-if { ![empty_string_p $subsubcategory_id] } {
-    ns_db dml $db "delete from ec_cat_mailing_lists where user_id=$user_id and subsubcategory_id=$subsubcategory_id"
-} elseif { ![empty_string_p $subcategory_id] } {
-    ns_db dml $db "delete from ec_cat_mailing_lists where user_id=$user_id and subcategory_id=$subcategory_id and subsubcategory_id is null"
-} elseif { ![empty_string_p $category_id] } {
-    ns_db dml $db "delete from ec_cat_mailing_lists where user_id=$user_id and category_id=$category_id and subcategory_id is null"
-} else {
-    ns_db dml $db "delete from ec_cat_mailing_lists where user_id=$user_id and category_id is null"
+    @author
+    @creation-date
+    @cvs-id member-remove-2.tcl,v 3.1.6.2 2000/07/22 07:57:31 ron Exp
+} {
+    category_id
+    subcategory_id:optional
+    subsubcategory_id:optional
+    user_id
+
 }
 
+
+
+if { ![empty_string_p $subsubcategory_id] } {
+    db_dml delete_from_mailing_lists "delete from ec_cat_mailing_lists where user_id=:user_id and subsubcategory_id=:subsubcategory_id"
+} elseif { ![empty_string_p $subcategory_id] } {
+    db_dml delete_from_mailing_lists_2 "delete from ec_cat_mailing_lists where user_id=:user_id and subcategory_id=:subcategory_id and subsubcategory_id is null"
+} elseif { ![empty_string_p $category_id] } {
+    db_dml delete_from_mailing-lists_by_category "delete from ec_cat_mailing_lists where user_id=:user_id and category_id=:category_id and subcategory_id is null"
+} else {
+    db_dml delete_just_from_category "delete from ec_cat_mailing_lists where user_id=:user_id and category_id is null"
+}
+db_release_unused_handles
+
 ad_returnredirect "one.tcl?[export_url_vars category_id subcategory_id subsubcategory_id]"
+
+

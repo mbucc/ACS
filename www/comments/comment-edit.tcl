@@ -1,33 +1,45 @@
-# $Id: comment-edit.tcl,v 3.0 2000/02/06 03:37:14 ron Exp $
-#
-# /comments/comment-edit.tcl
-# 
-# by teadams@mit.edu in mid-1998
-#
-# actually updates the comments table (comments on static pages)
-#
+
+ad_page_contract {
+    actually updates the comments table (comments on static pages)
+    
+    @author teadams@mit.edu
+    @creation-date mid-1998
+    @param page_id
+    @param message
+    @param comment_type
+    @param comment_id
+    @param rating
+    @param html_p
+    @cvs-id comment-edit.tcl,v 3.0.12.7 2000/10/05 19:49:27 sklein Exp
+} {
+    page_id:naturalnum,notnull
+    message:html
+    comment_type
+    comment_id:naturalnum
+    {rating 0}
+    {html_p "f"}
+}
 
 if {[ad_read_only_p]} {
     ad_return_read_only_maintenance_message
     return
 }
 
-
-set_the_usual_form_variables
-
-# page_id, message, comment_type, comment_id
-# maybe rating, maybe html_p
-
-if { [info exists html_p] && $html_p == "t" && ![empty_string_p [ad_check_for_naughty_html $message]] } {
+if { $html_p == "t" && ![empty_string_p [ad_check_for_naughty_html $message]] } {
     ad_return_complaint 1 "<li>[ad_check_for_naughty_html $message]\n"
     return
 }
 
 # get the user_id
 set user_id [ad_verify_and_get_user_id]
-set db [ns_db gethandle]
 
-if [catch { ns_ora clob_dml $db "update  comments set  message = empty_clob(), rating='[export_var rating]', posting_time = SYSDATE, html_p='[export_var html_p]' where comment_id = $comment_id  and user_id=$user_id returning message into :1" "$message"} errmsg] {
+
+if { [catch { 
+    db_dml coment_edit_update "update  comments 
+    set  message = empty_clob(), rating='[export_var rating]', posting_time = SYSDATE, 
+    html_p='[export_var html_p]' 
+    where comment_id = $comment_id  and user_id=$user_id 
+    returning message into :1" -clobs [list $message] } errmsg] } {
 	# there was an error with the comment update
 	ad_return_error "Error in updating comment" "
 There was an error in updating your comment in the database.
@@ -46,16 +58,28 @@ You might be able to resubmit your posting five or ten minutes from now."
 # if there is no title, we use the url stub
 # if there is no author, we use the system owner
 
-set selection [ns_db 1row $db "select nvl(page_title,url_stub) as page_title, url_stub,  nvl(email,'[ad_system_owner]') as author_email
+set selection [db_0or1row page_data_get "
+select nvl(page_title,url_stub) as page_title, url_stub,  
+nvl(email,'[ad_system_owner]') as author_email
 from static_pages, users
 where static_pages.original_author = users.user_id (+)
-and page_id = $page_id"]
+and page_id = :page_id"]
 
-set_variables_after_query
+if {$selection == 0} {
+    ad_page_complaint "Invalid page id" "Page id could not be found"
+    db_release_unused_handles
+    return
+}
 
-set selection [ns_db 1row $db "select first_names || ' ' || last_name as name, email from users where user_id = $user_id"]
-set_variables_after_query
-ns_db releasehandle $db
+set selection [db_0or1row user_name_get "
+select first_names || ' ' || last_name as name, email 
+from users where user_id = :user_id"]
+
+if {$selection == 0} {
+    ad_page_complaint "Invalid user id" "User id could not be found"
+    db_release_unused_handles
+    return
+}
 
 switch $comment_type {
 	
@@ -105,7 +129,7 @@ if { [info exists html_p] && $html_p == "t" } {
     set message_for_presentation [util_convert_plaintext_to_html $message]
 }
 
-ns_return 200 text/html "[ad_header "Comment modified"]
+doc_return  200 text/html "[ad_header "Comment modified"]
 
 <h2>Comment modified</h2>
 
@@ -121,9 +145,12 @@ $message_for_presentation
 Return to  <a href=\"$url_stub\">$page_title</a>
 [ad_footer]"
 
-# Send the author email is necessary
+# Send the author email if necessary, sent from the system owner in case of bounces
+set sender_email [ad_system_owner]
 
 if [send_author_comment_p $comment_type "edit"] {
     # send email if necessary    
-    catch { ns_sendmail $author_email $email $subject $email_body }
+    catch { ns_sendmail $author_email $sender_email $subject $email_body }
 }
+
+### EOF

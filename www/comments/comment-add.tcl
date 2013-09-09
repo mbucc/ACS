@@ -1,22 +1,29 @@
-# $Id: comment-add.tcl,v 3.0 2000/02/06 03:37:11 ron Exp $
-#
-# comment-add.tcl
-#
-# by teadams@mit.edu in mid-1998
-#
-# enhanced by philg@mit.edu January 21, 2000
-# to check for naughty HTML
-# 
+# www/comments/comment-add.tcl
+
+ad_page_contract {
+    @author teadams@mit.edu 
+    @creation-date mid-1998
+    @param page_id
+    @param message
+    @param comment_type
+    @param comment_id
+    @param rating
+    @param html_p
+    @cvs-id comment-add.tcl,v 3.2.2.8 2000/10/05 19:49:26 sklein Exp
+} {
+    page_id:naturalnum
+    message:html
+    comment_type
+    comment_id:naturalnum
+    {rating 0}
+    {html_p "f"}
+}
 
 if {[ad_read_only_p]} {
     ad_return_read_only_maintenance_message
     return
 }
 
-set_the_usual_form_variables
-
-# page_id, message, comment_type, page_id, comment_id
-# maybe rating, maybe html_p
 
 if { [info exists html_p] && $html_p == "t" && ![empty_string_p [ad_check_for_naughty_html $message]] } {
     ad_return_complaint 1 "<li>[ad_check_for_naughty_html $message]\n"
@@ -25,17 +32,15 @@ if { [info exists html_p] && $html_p == "t" && ![empty_string_p [ad_check_for_na
 
 set originating_ip [ns_conn peeraddr]
 set user_id [ad_get_user_id]
-
-set db [ns_db gethandle]
-
 set already_submitted_p 0
 
-if [catch { ns_ora clob_dml $db "insert into comments
-(comment_id,page_id, user_id, comment_type, message, rating, originating_ip, posting_time, html_p)
-values ($comment_id,$page_id, $user_id, '$QQcomment_type', empty_clob(), '[export_var rating]', '$originating_ip', SYSDATE, '[export_var html_p]') 
-returning message into :1" $message } errmsg] {
+if { [catch { 
+    db_dml comment_insert "insert into comments
+    (comment_id,page_id, user_id, comment_type, message, rating, originating_ip, posting_time, html_p)
+    values ($comment_id,$page_id, $user_id, '[DoubleApos $comment_type]', empty_clob(), '[export_var rating]', '$originating_ip', SYSDATE, '[export_var html_p]') 
+    returning message into :1" -clobs [list $message] } errmsg] } {
 
-    if { [database_to_tcl_string $db "select count(comment_id) from comments where comment_id = $comment_id"] > 0 } {
+    if { [db_string double_click_check "select count(comment_id) from comments where comment_id = :comment_id" ] > 0 } {
 	# the comment was already there; user must have double clicked
 	set already_submitted_p 1
     } else {
@@ -59,17 +64,27 @@ You might be able to resubmit your posting five or ten minutes from now.
 # if there is no title, we use the url stub
 # if there is no author, we use the system owner
 
-set selection [ns_db 1row $db "select nvl(page_title,url_stub) as page_title, url_stub,  nvl(email,'[ad_system_owner]') as author_email
+set selection [db_0or1row page_data_get "
+select nvl(page_title,url_stub) as page_title, url_stub,  nvl(email,'[ad_system_owner]') as author_email
 from static_pages, users
 where static_pages.original_author = users.user_id (+)
-and page_id = $page_id"]
+and page_id = :page_id"]
 
-set_variables_after_query
+if {$selection == 0} {
+    ad_return_complaint "Invalid page id" "Page id could not be found."
+    db_release_unused_handles
+    return
+}
 
-set selection [ns_db 1row $db "select first_names || ' ' || last_name as name, email from users where user_id = $user_id"]
-set_variables_after_query	    
+set selection [db_0or1row user_name_get "select first_names || ' ' || last_name as name, email from users 
+                       where user_id = :user_id"]
+if {$selection == 0} {
+    ad_return_complaint "Invalid user id" "User id could not be found."
+    db_release_unused_handles
+    return
+}
 
-ns_db releasehandle $db
+db_release_unused_handles
 
 switch $comment_type {
 	
@@ -114,14 +129,14 @@ RATING: $rating
     }
 }
 
-if { [info exists html_p] && $html_p == "t" } {
+if { $html_p == "t" } {
     set message_for_presentation $message
 } else {
     set message_for_presentation [util_convert_plaintext_to_html $message]
 }
 
 
-ns_return 200 text/html "[ad_header "Comment submitted"]
+doc_return  200 text/html "[ad_header "Comment submitted"]
 
 <h2>Comment submitted</h2>
 
@@ -142,7 +157,7 @@ Alternatively, you can attach a
 file to your comment.  This file can be a document, a photograph, or
 anything else on your desktop computer.
 
-<form enctype=multipart/form-data method=POST action=\"upload-attachment.tcl\">
+<form enctype=multipart/form-data method=POST action=\"upload-attachment\">
 [export_form_vars comment_id url_stub]
 <blockquote>
 <table>
@@ -171,9 +186,12 @@ anything else on your desktop computer.
 [ad_footer]"
 
 
-# Send the author email if necessary
+# Send the author email if necessary, sent from the system owner in case of bounces
+set sender_email [ad_system_owner]
 
 if { [send_author_comment_p $comment_type add] && !$already_submitted_p } {
     # send email if necessary    
-    catch { ns_sendmail $author_email $email $subject $email_body }
+    catch { ns_sendmail $author_email $sender_email $subject $email_body }
 }
+
+### EOF

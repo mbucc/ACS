@@ -1,36 +1,46 @@
-# $Id: subscribers-in-class.tcl,v 3.0 2000/02/06 03:25:05 ron Exp $
-set_the_usual_form_variables
+# /www/admin/member-value/subscribers-in-class.tcl
 
-# subscriber_class
+ad_page_contract {
+    List all the subscribers in a class.
+    
+    @param subscriber_class
+    @author mbryzek@arsdigita.com
+    @creation-date Tue Jul 11 20:40:39 2000
+    @cvs-id subscribers-in-class.tcl,v 3.1.6.6 2000/09/22 01:35:32 kevin Exp
 
-ReturnHeaders
+} {
+    subscriber_class:notnull
+}
 
-ns_write "[ad_no_menu_header "$subscriber_class subscribers"]
+set page_content "[ad_admin_header "$subscriber_class subscribers"]
 
 <h2>$subscriber_class subscribers</h2>
 
-in <a href=\"index.tcl\">[ad_system_name]</a>
+[ad_admin_context_bar [list "" "Member Value"] "Subscribers in class"]
 
 <hr>
 
 <ul>
 "
 
-set db [ns_db gethandle]
-
-set selection [ns_db select $db "select u.user_id, u.first_names, u.last_name, u.email
+set sql "select u.user_id, u.first_names, u.last_name, u.email
 from users u, users_payment up
 where u.user_id = up.user_id
-and up.subscriber_class = '$QQsubscriber_class'
-order by upper(u.last_name), upper(u.first_names)"]
+and up.subscriber_class = :subscriber_class
+order by upper(u.last_name), upper(u.first_names)"
 
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
-    ns_write "<li><a href=\"../user-home.tcl?user_id=$user_id\">$first_names $last_name</a> ($email)\n"
+db_foreach mv_user_info_query $sql {
+    append page_content "<li><a href=\"../../shared/community-member?user_id=$user_id\">$first_names $last_name</a> ($email)\n"
+} if_no_rows {
+    append page_content "<li>There's no subscriber in this class."
 }
 
-ns_write "
+db_release_unused_handles
+
+append page_content "
 </ul>
 
-[ad_no_menu_footer]
+[ad_admin_footer]
 "
+
+doc_return  200 text/html $page_content

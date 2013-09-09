@@ -2,7 +2,7 @@
 --
 -- by aure@arsdigita.com, February 2000
 --
--- $Id: pull-down-menus.sql,v 3.1.2.1 2000/03/16 05:35:55 aure Exp $
+-- pull-down-menus.sql,v 3.3 2000/03/21 06:34:53 ron Exp
 
 create sequence pdm_menu_id_sequence;
 

@@ -1,34 +1,48 @@
-# $Id: spam-confirm.tcl,v 3.4.2.2 2000/04/28 15:09:21 carsten Exp $
-# spam-confirm.tcl
-#
-# hqm@arsdigita.com
-#
-# A good thing to do before sending out 100,000 emails:
-# ask user to confirm the outgoing spam before queuing it.
-#
+# www/admin/spam/spam-confirm.tcl
 
-set_the_usual_form_variables
+ad_page_contract {
 
-# spam_id, from_address, subject, 
-# message, (optional) message_html, message_aol
-# maybe send_date
-# 
-# if from_file_p=t, then get message texts from default filesystem location 
-#
-#
-# maybe: users_sql_query     The SQL needed to get the list of target users
-#        users_description   English descritpion of target users
-# or else user_class_id, which can be passed to ad_user_class_query to generate a SQL query.
-#
-# maybe: template_p   If == 't', then run subst on the message subject and body. A scary
-# prospect, but spam can only be created by site admins anyhow)
+ Allow user to confirm the outgoing spam before queuing it for delivery.
+   
+   @param spam_id id of the message
+   @param subject  subject line for header
+   @param from_address  from address for header
+   @param message text of the message
+   @param message_html html version of the message
+   @param message_aol aol_html dialect version of the message
+   @param send_date when to schedule the message for delivery
+   @param from_file_p flag to get message content from filesystem rather than from page vars
+   @param users_sql_query custom SQL query to generate the list of target users
+   @param users_description English description of target list of user
+   @param user_class_id An id of a user-class, mutually exclusive with users_sql_query
+   @param template_p If t, perform Tcl substitution on the message body
 
-set db [ns_db gethandle]
+    @author hqm@arsdigita.com
+    @cvs-id spam-confirm.tcl,v 3.9.2.10 2001/01/12 00:15:16 khy Exp
+} {
+   spam_id:integer,notnull,verify
+   subject
+   from_address
+   message
+   {message_html ""}
+   {message_aol ""}
+   {send_date ""}
+   {from_file_p f}
+   {users_sql_query ""}
+   {users_description ""}
+   {user_class_id:integer ""}
+   {template_p f}
+}
+
+
+
+
+
 
 set admin_user_id [ad_verify_and_get_user_id]
 ad_maybe_redirect_for_registration
 
-if {[info exists from_file_p] && [string compare $from_file_p "t"] == 0} {
+if {[string compare $from_file_p "t"] == 0} {
     set message [get_spam_from_filesystem "plain"]
     set message_html [get_spam_from_filesystem "html"]
     set message_aol [get_spam_from_filesystem "aol"]
@@ -44,15 +58,13 @@ if {[catch {ns_dbformvalue [ns_conn form] send_date datetime send_date} errmsg]}
     append exception_text "<li>Please make sure your date is valid."
 }
 
-
 # Generate the SQL query from the user_class_id, if supplied
-if {[info exists user_class_id] && ![empty_string_p $user_class_id]} {
-    set users_sql_query [ad_user_class_query [ns_getform]]
-    regsub {from users} $users_sql_query {from users_spammable users} users_sql_query
+if {![empty_string_p $user_class_id]} {
+    set arg_set [ad_tcl_vars_to_ns_set user_class_id]
+    set users_sql_query [ad_user_class_query $arg_set]
+    set class_name [db_string user_class_name "select name from user_classes where user_class_id = :user_class_id "]
 
-    set class_name [database_to_tcl_string $db "select name from user_classes where user_class_id = $user_class_id "]
-
-    set sql_description [database_to_tcl_string $db "select sql_description from user_classes where user_class_id = $user_class_id "]
+    set sql_description [db_string user_class_query_description "select sql_description from user_classes where user_class_id = :user_class_id "]
     set users_description "$class_name: $sql_description"
 }
 
@@ -60,7 +72,6 @@ if { ![philg_email_valid_p $from_address] } {
     incr exception_count
     append exception_text "<li>The From address is invalid."
 }
-
 
 if {$exception_count > 0 } {
     ad_return_complaint $exception_count $exception_text
@@ -76,8 +87,6 @@ if {[info exists template_p] && [string match $template_p "t"]} {
     set template_pretty "No" 
 }
 
-ReturnHeaders
-
 append pagebody "[ad_admin_header "Confirm sending spam"]
 
 [ad_admin_context_bar [list "index.tcl" "Spam"] "confirm sending a spam"]
@@ -88,11 +97,8 @@ append pagebody "[ad_admin_header "Confirm sending spam"]
 
 The following spam will be queued for delivery:
 
-
 <p>
 "
-
-
 
 # strips ctrl-m's, makes linebreaks at >= 80 cols when possible, without
 # destroying urls or other long strings
@@ -100,7 +106,10 @@ set message [spam_wrap_text $message 80]
 
 append pagebody "
 
-<form method=POST action=\"/admin/spam/spam.tcl\">
+<form method=POST action=\"/admin/spam/spam\">
+[export_form_vars subject from_address message message_html message_aol send_date from_file_p users_sql_query users_description user_class_id template_p]
+
+[export_form_vars -sign spam_id]
 
 <blockquote>
 <table border=1>
@@ -134,7 +143,6 @@ $message_aol
 </tr>"
 }
 
-
 append pagebody "
 </table>
 
@@ -144,7 +152,6 @@ append pagebody "
 
 </center>
 
-[export_form_vars users_sql_query users_description spam_id from_address subject message message_html message_aol send_date template_p]
 </form>
 <p>
 
@@ -152,12 +159,23 @@ append pagebody "
 <pre>$users_sql_query</pre>
 "
 
-set count_users_query "select count(*) from ($users_sql_query)"
-set total_users [database_to_tcl_string $db $count_users_query]
+set count_users_query "select count(*) from ($users_sql_query)" 
+set total_users [db_string recipient_count $count_users_query]
 
 append pagebody "
 and will send email to $total_users users.
 [ad_admin_footer]"
 
 
-ns_write $pagebody
+
+doc_return  200 text/html $pagebody
+
+
+
+
+
+
+
+
+
+

@@ -1,30 +1,25 @@
 # /file-storage/create-folder-2.tcl
-#
-# created by aure@arsdigita.com, July, 1999
-#
-# modified by randyg@arsdigita.com, January, 2000 to use the
-# general permissions module
-#
-# this file creates a new folder
-#
-# $Id: create-folder-2.tcl,v 3.2.2.2 2000/04/28 15:10:27 carsten Exp $
 
-ad_page_variables {
-    {file_id}
+ad_page_contract {
+    this file creates a new folder
+ 
+    @author aure@arsdigita.com
+    @creation-date July, 1999
+    @cvs-id create-folder-2.tcl,v 3.6.2.4 2001/01/10 18:48:35 khy Exp
+
+    modified by randyg@arsdigita.com, January, 2000 to use the
+    general permissions module
+} {
+    {file_id:integer,notnull,verify}
     {file_title}
     {group_id ""}
-    {parent_id}
+    {parent_id:integer}
     {public_p "f"}
     {return_url}
-    {version_id}
-} 
+    {version_id:integer,notnull,verify}
+}
 
-set user_id [ad_verify_and_get_user_id]
-
-ad_maybe_redirect_for_registration
-
-set db [ns_db gethandle]
-
+set user_id [ad_maybe_redirect_for_registration]
 
 # check the user input first
 
@@ -42,11 +37,10 @@ if {$public_p == "t" && ![ad_parameter PublicDocumentTreeP fs]} {
     incr exception_count
 }
 
-
 if ![empty_string_p $group_id] {
 
-    set check [database_to_tcl_string $db "
-        select ad_group_member_p ($user_id, $group_id) from dual"]
+    set check [db_string group_member_check "
+    select ad_group_member_p (:user_id, :group_id) from dual"] 
 
     if { [string compare $check "f"] == 0 } {
 	append exception_text "<li>You are not a member of this group $group_id\n"
@@ -74,15 +68,15 @@ insert into fs_files (
     public_p, 
     group_id)
 values (
-    $file_id, 
-    '[DoubleApos $file_title]', 
-    $user_id, 
-    [ns_dbquotevalue $parent_id], 
+    :file_id, 
+    :file_title, 
+    :user_id, 
+    :parent_id, 
     't', 
     0, 
     0, 
-    '$public_p', 
-    '[DoubleApos $group_id]')"
+    :public_p, 
+    :group_id)"
 
 # now we want to insert a "dummy" version so that we can also create the permission
 # records
@@ -91,21 +85,23 @@ set version_insert "
     insert into fs_versions
     (version_id, file_id, creation_date, author_id)
     values
-    ($version_id, $file_id, sysdate, $user_id)"
+    (:version_id, :file_id, sysdate, :user_id)"
+ 
+db_transaction {
 
-ns_db dml $db "begin transaction"
-
-if { [ catch { ns_db dml $db $file_insert 
-               ns_db dml $db $version_insert
-               ns_ora exec_plsql $db "begin
- :1 := ad_general_permissions.grant_permission_to_all_users
-        ('read', $version_id, 'FS_VERSIONS');
- :1 := ad_general_permissions.grant_permission_to_all_users
-        ('comment', $version_id, 'FS_VERSIONS');
-end;"
-             } errmsg] } {
+if { [ catch { db_dml file_insert $file_insert
+               db_dml version_insert $version_insert
+               db_with_handle db {
+		   ns_ora exec_plsql $db "begin
+		   :1 := ad_general_permissions.grant_permission_to_all_users
+		   ('read', $version_id, 'FS_VERSIONS');
+		   :1 := ad_general_permissions.grant_permission_to_all_users
+		   ('comment', $version_id, 'FS_VERSIONS');
+		   end;"
+	       }
+	   } errmsg] } {
     # insert failed; let's see if it was because of duplicate submission
-    if { [database_to_tcl_string $db "select count(*) from fs_files where file_id = $file_id"] == 0 } {
+    if { [db_string file_count "select count(*) from fs_files where file_id = :file_id"]  == 0 } {
 	ns_log Error "/file-storage/create-folder-2.tcl choked:  $errmsg"
 	ad_return_error "Insert Failed" "The Database did not like what you 
 	                 typed.  This is probably a bug in our code.  Here's what 
@@ -116,7 +112,7 @@ end;"
         return
     }
 
-    ns_db dml $db "abort transaction"
+    db_abort_transaction
 
     # we don't bother to handle the cases where there is a dupe submission
     # because the user should be thanked or redirected anyway
@@ -124,9 +120,10 @@ end;"
 
 }
 
+fs_order_files
 
-fs_order_files $db
+}
 
-ns_db dml $db "end transaction"
+db_release_unused_handles
 
 ad_returnredirect $return_url

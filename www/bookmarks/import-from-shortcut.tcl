@@ -1,67 +1,48 @@
-# /bookmarks/import-from-shortcut.tcl
-#
-# a utility to grab info from shortcut
-#
-# by aure@arsdigita.com, June 1999
-#
-# $Id: import-from-shortcut.tcl,v 3.0.4.2 2000/04/18 16:35:19 carsten Exp $
-
-ad_page_variables {
-    upload_file
-    return_url
-}
-
-set exception_text ""
-set exception_count 0
-
-if { [empty_string_p $upload_file] } {
-    incr exception_count
-    append exception_text "<li>Please specify the name of the shortcut file."
-}
-
-## return errors
-if { $exception_count> 0 } {
-    ad_return_complaint $exception_count $exception_text
-    return 0
-}
+# /www/bookmarks/import-from-shortcut.tcl
+ad_page_contract {
+    a utility to grab info from shortcut
+    @param upload_file file to be uploaded
+    @param return_url URL for user to return to
+    @author Aurelius Prochazka (aure@arsdigita.com)
+    @creation-date June 1999  
+    @cvs-id import-from-shortcut.tcl,v 3.4.2.9 2000/09/22 01:37:02 kevin Exp
+} {
+    {upload_file:tmpfile}
+    {return_url:trim}
+} 
 
 set user_id [ad_verify_and_get_user_id]
 ad_maybe_redirect_for_registration
 
 set contents [read [open [ns_queryget upload_file.tmpfile r]]]
 
+if [empty_string_p $contents] {
+    ad_return_complaint 1 "You need to specify a file to upload"
+    return
+}
+
 set folder_list 0
 set parent_id 0
 set lines [split $contents "\n"]
 
-set db [ns_db gethandle]
+set bookmark_id [db_string bookmark_id "select bm_bookmark_id_seq.nextval from dual"]
 
-set bookmark_id [database_to_tcl_string $db "
-select bm_bookmark_id_seq.nextval from dual"]
+set directory [db_null]
 
-# release the database handle
-ns_db releasehandle $db 
+if { ![regexp {([^\\]*).url} $upload_file match local_title] } {
+    ad_return_complaint 1 "<li>We had trouble parsing this shortcut to find the url you want in your bookmarks"
+    return
+} 
 
-set local_title $upload_file
-set directory ""
-
-regexp {([^\\]*).url} $upload_file match local_title
 regexp {([^\\]*)\\[^\\]*.url} $upload_file match directory 
 
 foreach line $lines {
-    regexp {URL=([^ ]*)[ ]*} $line match complete_url
-}
-
-if { ![info exists complete_url] } {
-    ad_return_error "No URL Found" \
-	"Could not find a URL in the file you specified.
-	 Please make sure that it is a valid Internet Explorer shortcut file."
-    return
+    regexp {URL=([^ ]*)[ ]*} $line  match complete_url
 }
 
 set title "Choose Folder for \"$local_title\""
 
-ns_return 200 text/html "[ad_header "$title"]
+set page_content "[ad_header "$title"]
 
 <h2>$title</h2>
 
@@ -81,10 +62,9 @@ If this is correct, choose which folder to place the bookmark in:
 <tr>
 <td align=center>
 
-
 [export_form_vars local_title complete_url bookmark_id return_url]
 
-[bm_folder_selection $db $user_id $bookmark_id]
+[bm_folder_selection $user_id $bookmark_id]
 <br>
 <input type=submit value=Submit></form>
 </td>
@@ -92,5 +72,17 @@ If this is correct, choose which folder to place the bookmark in:
 </table>
 </ul>
 
-[bm_footer]
-"
+[bm_footer]"
+
+# release the database handle
+db_release_unused_handles 
+
+# serve the page
+doc_return  200 text/html $page_content
+
+
+
+
+
+
+

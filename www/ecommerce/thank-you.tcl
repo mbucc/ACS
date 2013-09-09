@@ -1,6 +1,13 @@
-# $Id: thank-you.tcl,v 3.0.4.1 2000/04/28 15:10:04 carsten Exp $
-set_form_variables 0
-# possibly usca_p
+#  www/ecommerce/thank-you.tcl
+ad_page_contract {
+    @param usca_p User session begun or not
+
+    @author
+    @creation-date
+    @cvs-id thank-you.tcl,v 3.1.6.6 2000/08/18 21:46:36 stevenp Exp
+} {
+    usca_p:optional
+}
 
 # This is a "thank you for your order" page
 # displays order summary for the most recently confirmed order for this user
@@ -10,30 +17,30 @@ set user_id [ad_verify_and_get_user_id]
 
 if {$user_id == 0} {
     
-    set return_url "[ns_conn url]"
+    set return_url "[ad_conn url]"
 
-    ad_returnredirect "/register.tcl?[export_url_vars return_url]"
+    ad_returnredirect "/register?[export_url_vars return_url]"
     return
 }
 
 # user session tracking
 set user_session_id [ec_get_user_session_id]
 
-set db [ns_db gethandle]
+
 ec_create_new_session_if_necessary
 # type1
 
 ec_log_user_as_user_id_for_this_session
 
 # their most recently confirmed order (or the empty string if there is none)
-set order_id [database_to_tcl_string_or_null $db "select order_id from ec_orders where user_id=$user_id and confirmed_date is not null and order_id=(select max(o2.order_id) from ec_orders o2 where o2.user_id=$user_id and o2.confirmed_date is not null)"]
+set order_id [db_string  get_order_id_info "select order_id from ec_orders where user_id=:user_id and confirmed_date is not null and order_id=(select max(o2.order_id) from ec_orders o2 where o2.user_id=$user_id and o2.confirmed_date is not null)" -default ""]
 
 if { [empty_string_p $order_id] } {
-    ad_returnredirect index.tcl
+    ad_returnredirect index
     return
 }
 
-set order_summary [ec_order_summary_for_customer $db $order_id $user_id]
-
+set order_summary [ec_order_summary_for_customer $order_id $user_id]
+db_release_unused_handles
 ad_return_template
 

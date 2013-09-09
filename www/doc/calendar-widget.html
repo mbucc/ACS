@@ -7,7 +7,7 @@
 
 <h2>Calendar Widget Package</h2>
 
-part of the <a href=index.html>ArsDigita Community System</a> 
+part of the <a href=index>ArsDigita Community System</a> 
 by <a href="http://www.haverkamp.com">Greg Haverkamp</a>
 
 <hr>
@@ -19,14 +19,14 @@ by <a href="http://www.haverkamp.com">Greg Haverkamp</a>
 
 <li>data model:  none
 
-<li>procedures:  all within /tcl/ad-calendar-widget.tcl
+<li>procedures:  all within /tcl/ad-calendar-widget
 
 </ul>
 
 This package helps you display calender-based data.
 It produces both large monthly calendars with daily details and small
 monthly "outline" calendars.  Make sure you update your
-<code>utilities.tcl</code> file 
+<code>utilities</code> file 
 from <a href="http://photo.net/wtr/thebook/utilities.txt">http://photo.net/wtr/thebook/utilities.txt</a>.  This package relies upon the presence
 of <code>ad_proc</code> to give us Common Lisp-style keyword args.
 
@@ -176,7 +176,7 @@ However, you could use "#ffffff" or "#000000", respectively, if you prefer.
   Here is an example from the ACS /bboard system:
     <blockquote>
     <code><pre>
-    &lt;a href=\"threads-one-day.tcl?topic=[ns_urlencode $topic]&julian_date=\$julian_date\"&gt;&lt;font size=-1&gt;\$day_number&lt;/font&gt;&lt;/a&gt;
+    &lt;a href=\"threads-one-day?topic=[ns_urlencode $topic]&julian_date=\$julian_date\"&gt;&lt;font size=-1&gt;\$day_number&lt;/font&gt;&lt;/a&gt;
 
     </pre></code>
     </blockquote>
@@ -237,11 +237,11 @@ However, you could use "#ffffff" or "#000000", respectively, if you prefer.
   bottom of a calendar.  This will be processed by <code>format</code>,
   which will be inserting a string.
   <p>
-  For example, to link to a page called <code>month-show.tcl</code> which
+  For example, to link to a page called <code>month-show</code> which
   expects the variable <code>date</code>, you could use the following:
     <blockquote>
     <code><pre>
-    &lt;a href="month-show.tcl?date=$ansi_date"&gt;Next month&lt;/a&gt;
+    &lt;a href="month-show?date=$ansi_date"&gt;Next month&lt;/a&gt;
     </pre></code>
     </blockquote>
   This will insert a date in ANSI format (first day of next month, e.g.,
@@ -272,7 +272,7 @@ However, you could use "#ffffff" or "#000000", respectively, if you prefer.
 
 <ul>
 <li>Display this month, with details.  Previous and next month links send
-to <code>month-show.tcl</code>.
+to <code>month-show</code>.
   <blockquote>
   Assuming the current month is June 1999, June 10, 1999 will show details.
   June 10, 1999, is Julian date 2451340.
@@ -281,8 +281,8 @@ to <code>month-show.tcl</code>.
   set day_details "&lt;font size=-1&gt;&lt;b&gt;Tasks&lt;/b&gt;&lt;ul&gt;&lt;li&gt;shower&lt;li&gt;shave&lt;/ul&gt;&lt;b&gt;Appointments&lt;/b&gt;&lt;br&gt;- See the Prez&lt;/font&gt;"
   ns_set put $calendar_details "2451340" $day_details
 
-  set next_month_template "(&lt;a href=\"month-show.tcl?date=\$calendar_details\"&gt;next&lt;/a&gt;)"
-  set prev_month_template "(&lt;a href=\"month-show.tcl?date=\$calendar_details\"&gt;prev&lt;/a&gt;)"
+  set next_month_template "(&lt;a href=\"month-show?date=\$calendar_details\"&gt;next&lt;/a&gt;)"
+  set prev_month_template "(&lt;a href=\"month-show?date=\$calendar_details\"&gt;prev&lt;/a&gt;)"
 
   ns_write "[calendar_basic_month -calendar_details $calendar_details -day_number_template $day_number_template -next_month_template $next_month_template -prev_month_template $prev_month_template]"
   </pre></code>

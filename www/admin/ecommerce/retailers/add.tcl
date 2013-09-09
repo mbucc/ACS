@@ -1,7 +1,14 @@
-# $Id: add.tcl,v 3.0 2000/02/06 03:21:17 ron Exp $
-ReturnHeaders
+#  www/admin/ecommerce/retailers/add.tcl
+ad_page_contract {
 
-ns_write "[ad_admin_header "Add a Retailer"]
+  @author
+  @creation-date
+  @cvs-id add.tcl,v 3.1.6.4 2000/09/22 01:34:59 kevin Exp
+} {
+}
+
+
+set page_html "[ad_admin_header "Add a Retailer"]
 
 <h2>Add a Retailer</h2>
 
@@ -11,7 +18,7 @@ ns_write "[ad_admin_header "Add a Retailer"]
 
 <p>
 
-<form method=post action=add-2.tcl>
+<form method=post action=add-2>
 <table>
 <tr>
 <td valign=top>Retailer Name</td>
@@ -61,15 +68,15 @@ ns_write "[ad_admin_header "Add a Retailer"]
 <td valign=top><input type=text name=city size=15>
 "
 
-set db [ns_db gethandle]
 
-ns_write "State [state_widget $db]
+
+append page_html "State [state_widget]
 Zip <input type=text name=zip_code size=5>
 </td>
 </tr>
 <tr>
 <td valign=top>Country</td>
-<td valign=top>[country_widget $db "us" "country_code" ""]</td>
+<td valign=top>[country_widget "us" "country_code" ""]</td>
 </tr>
 <tr>
 <td valign=top>Phone</td>
@@ -89,7 +96,7 @@ Zip <input type=text name=zip_code size=5>
 </tr>
 <tr>
 <td valign=top>Nexus States</td>
-<td valign=top>[ec_multiple_state_widget $db "" nexus_states]</td>
+<td valign=top>[ec_multiple_state_widget "" nexus_states]</td>
 </tr>
 <tr>
 <td valign=top>Financing</td>
@@ -121,3 +128,5 @@ Zip <input type=text name=zip_code size=5>
 </form>
 [ad_admin_footer]
 "
+
+doc_return  200 text/html $page_html

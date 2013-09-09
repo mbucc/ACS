@@ -1,44 +1,23 @@
-# $Id: search-pls-subject.tcl,v 3.0 2000/02/06 03:34:35 ron Exp $
-set_form_variables
-set_form_variables_string_trim_DoubleAposQQ
+# /www/bboard/search-pls-subject.tcl
+ad_page_contract {
+    show search results
 
-# query_string, topic
-
-if { ![info exists query_string] || $query_string == "" } {
-    # probably using MSIE
-    ns_return 200 text/html "[bboard_header "Missing Query"]
-
-<h2>Missing Query</h2>
-
-<hr>
-
-Either you didn't type a query string or you're using a quality Web
-browser like Microsoft Internet Explorer 3.x (which neglects to 
-pass user input up the server).
-
-[bboard_footer]
-"
-    return
+    @cvs-id search-pls-subject.tcl,v 3.2.2.3 2000/09/22 01:36:54 kevin Exp
+} {
+    query_string:notnull
+    topic
+    topic_id:integer
 }
 
-set db [bboard_db_gethandle]
-if { $db == "" } {
-    bboard_return_error_page
-    return
-}
+# -----------------------------------------------------------------------------
 
-
-
+set user_id [ad_verify_and_get_user_id]
 
 # we ask for all the top level messages
 
-ReturnHeaders
 
-ns_write "<html>
-<head>
-<title>Search Results</title>
-</head>
-<body bgcolor=[ad_parameter bgcolor "" "white"] text=[ad_parameter textcolor "" "black"]>
+append page_content "
+[bboard_header "Search Results"]
 
 <b>Messages matching \"$query_string\"</b>
 
@@ -46,26 +25,16 @@ ns_write "<html>
 "
 ad_context_query_string
 
+db_foreach query_results "
+select sort_key,
+       msg_id,
+       one_line
+from   bboard
+where  contains (indexed_stuff, '\$($query_string_for_ctx)', 10) > 0
+and    topic_id = :topic_id
+and    bboard_user_can_view_topic_p(:user_id, :topic_id) = 't'
+order by score(10) desc" {
 
-if [catch {set selection [ns_db select $db "select *
-from bboard
-where contains (indexed_stuff, '\$($query_string_for_ctx)', 10) > 0
-and topic_id = $topic_id
-order by score(10) desc"]} errmsg] {
-
-    ns_write "
-[ad_return_context_error $errmsg]
-[bboard_footer]"
-    return
-
-}
-
-set counter 0
-
-while {[ns_db getrow $db $selection]} {
-    incr counter
-
-    set_variables_after_query
     if { [string first "." $sort_key] == -1 } {
 	# there is no period in the sort key so this is the start of a thread
 	set thread_start_msg_id $sort_key
@@ -73,21 +42,19 @@ while {[ns_db getrow $db $selection]} {
 	# strip off the stuff before the period
 	regexp {(.*)\..*} $sort_key match thread_start_msg_id
     }
-    ns_write "<a target=main href=\"fetch-msg.tcl?msg_id=$msg_id\">$one_line</a> <a target=\"_top\" href=\"main-frame.tcl?[export_url_vars topic topic_id]&feature_msg_id=$msg_id&start_msg_id=$thread_start_msg_id\">(view entire thread)</a>\n"
+    append page_content "<a target=main href=\"fetch-msg?msg_id=$msg_id\">$one_line</a> <a target=\"_top\" href=\"main-frame?[export_url_vars topic topic_id]&feature_msg_id=$msg_id&start_msg_id=$thread_start_msg_id\">(view entire thread)</a>\n"
 }
 
-ns_write "
+append page_content "
 </pre>
-</body>
-</html>
+[bboard_footer]
 "
 
 # let's cut the user free
 
-ns_conn close
+doc_return  200 text/html $page_content
 
 # but we keep the thread alive to log the query
 
-set user_id [ad_get_user_id]
-ad_record_query_string $query_string $db "bboard-$topic" $counter $user_id
+ad_record_query_string $query_string "bboard-$topic" $counter $user_id
 

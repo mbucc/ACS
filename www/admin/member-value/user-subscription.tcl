@@ -1,60 +1,59 @@
-# $Id: user-subscription.tcl,v 3.0 2000/02/06 03:25:10 ron Exp $
-set_the_usual_form_variables
+# /www/admin/member-value/user-subscription.tcl
 
-# note: nobody gets to this page who isn't a site administrator (ensured
-# by a filter in ad-security.tcl)
+ad_page_contract {
+    Form to place the user in a new subscription class.
+    @param user_id
+    @author mbryzek@arsdigita.com
+    @creation-date Tue Jul 11 19:49:48 2000
+    @cvs-id user-subscription.tcl,v 3.2.2.5 2000/09/22 01:35:32 kevin Exp
 
-# user_id
+} {
+   user_id:integer,notnull 
+}
 
-set db [ns_db gethandle]
 
-set selection [ns_db 1row $db "select unique * from users where user_id = $user_id"]
-set_variables_after_query
+db_1row project_user_name_query "select unique first_names, last_name from users where user_id = :user_id" 
 
-ReturnHeaders 
-ns_write "[ad_no_menu_header "Subscription for $first_names $last_name"]
+set page_content "[ad_admin_header "Subscription for $first_names $last_name"]
 
 <h2>Subscription Info</h2>
 
-for <a href=\"../user-home.tcl?user_id=$user_id\">$first_names $last_name</a>
-in <a href=\"../index.tcl\">[ad_system_name]</a>
-<hr>
+[ad_admin_context_bar [list "" "Member Value"] "Subscription info"]
 
+<hr>
 "
 
-set selection [ns_db 0or1row $db "select * from users_payment where user_id = $user_id"]
-
-if { $selection == "" } {
-    ns_write "
-
-<form method=POST action=\"user-subscription-classify.tcl\">
+if {[db_0or1row projects_subscriber_class_query "select subscriber_class from users_payment where user_id = :user_id"] == 0} {
+    append page_content"
+<form method=POST action=\"user-subscription-classify\">
 <input type=hidden name=user_id value=\"$user_id\">
 Place user in a subscription class:
 <select name=subscriber_class>
-[db_html_select_options $db "select subscriber_class from mv_monthly_rates order by rate"]
+[db_html_select_options subscriber_classes_select_options "select subscriber_class from mv_monthly_rates order by rate"]
 </select>
 <input type=submit value=\"Choose\">
 </form>
 "
 } else {
-    set_variables_after_query
-    ns_write "Current subscription class:  <b>$subscriber_class</b>
+    append page_content "Current subscription class:  <b>$subscriber_class</b>
 
 <p>
 
-<form method=POST action=\"user-subscription-classify.tcl\">
+<form method=POST action=\"user-subscription-classify\">
 <input type=hidden name=user_id value=\"$user_id\">
 Place user in a new subscription class:
 <select name=subscriber_class>
-[db_html_select_options $db "select subscriber_class from mv_monthly_rates order by rate" $subscriber_class]
+[db_html_select_options -select_option $subscriber_class selection_option_subscriber_class "select subscriber_class from mv_monthly_rates order by rate"]
 </select>
 <input type=submit value=\"Choose\">
 </form>
 "
 }
 
+db_release_unused_handles
 
-ns_write "
+append page_content "
 </ul>
-[ad_no_menu_footer]
+[ad_admin_footer]
 "
+doc_return  200 text/html $page_content

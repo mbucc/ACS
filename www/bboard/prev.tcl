@@ -1,41 +1,40 @@
-# $Id: prev.tcl,v 3.0.4.1 2000/04/28 15:09:42 carsten Exp $
-set_form_variables_string_trim_DoubleAposQQ
-set_form_variables
+# /www/bboard/prev.tcl
+ad_page_contract {
+    Sends the user to the previous message
 
-# topic_id, msg_id
+    @param topic_id the ID of the topic being read
+    @param msg_id the ID current message
 
-set db [bboard_db_gethandle]
-if { $db == "" } {
-    bboard_return_error_page
-    return
+    @author ?
+    @creation-date ?
+    @cvs-id prev.tcl,v 3.2.6.5 2000/10/27 21:56:53 bcalef Exp
+} {
+    topic_id:integer
+    msg_id
+    topic
 }
 
+# -----------------------------------------------------------------------------
 
-set selection [ns_db select $db "select msg_id, sort_key
+set do_returnredirect 1
+
+db_foreach earlier_messages "
+select msg_id, sort_key
 from bboard 
-where sort_key < (select sort_key from bboard where msg_id = '$msg_id')
-and topic_id = $topic_id
-order by sort_key desc"]
+where sort_key < (select sort_key from bboard where msg_id = :msg_id)
+and topic_id = :topic_id
+order by sort_key desc" {
 
-# get one row
+    # get values for one row
+    # we don't want the rest of the rows
 
-ns_db getrow $db $selection
+    break
 
-set prev_msg_id [ns_set value $selection 0]
-
-# we don't want the rest of the rows
-
-ns_db flush $db
-
-if { $prev_msg_id != "" } {
-
-    ad_returnredirect "fetch-msg.tcl?msg_id=$prev_msg_id"
-
-} else {
+} if_no_rows {
 
     # no msg to return
 
-    ns_return 200 text/html "<html>
+    doc_return  200 text/html "<html>
 <head>
 <title>End of BBoard</title>
 </head>
@@ -43,9 +42,17 @@ if { $prev_msg_id != "" } {
 
 <h3>No Previous Message</h3>
 
-You've read the first message in the  <a target=_top href=\"main-frame.tcl?[export_url_vars topic topic_id]\">$topic</a> BBoard.
+You've read the first message in the  <a target=_top href=\"main-frame?[export_url_vars topic topic_id]\">$topic</a> BBoard.
 
 [bboard_footer]
 "
 
+    set do_returnredirect 0
+    return
+
 }
+
+if { $do_returnredirect } {
+    ad_returnredirect "fetch-msg.tcl?msg_id=$msg_id"
+}
+

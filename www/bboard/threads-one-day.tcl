@@ -1,13 +1,15 @@
-# $Id: threads-one-day.tcl,v 3.0 2000/02/06 03:34:48 ron Exp $
-set_the_usual_form_variables
+# /www/bboard/threads-one-day.tcl
+ad_page_contract {
 
-# topic_id, topic, kickoff_date, maybe julian_date
-
-set db [bboard_db_gethandle]
-if { $db == "" } {
-    bboard_return_error_page
-    return
+    @cvs-id threads-one-day.tcl,v 3.1.2.4 2000/09/22 01:36:56 kevin Exp
+} {
+    topic_id:integer
+    topic
+    kickoff_date:optional
+    julian_date:optional
 }
+
+# -----------------------------------------------------------------------------
 
 if { [bboard_get_topic_info] == -1 } {
     return
@@ -20,9 +22,8 @@ if { [info exists julian_date] && ![empty_string_p $julian_date] } {
 
 set pretty_date [util_AnsiDatetoPrettyDate $kickoff_date]
 
-ReturnHeaders
-
-ns_write "[bboard_header "$topic threads started on $pretty_date"]
+append page_content "
+[bboard_header "$topic threads started on $pretty_date"]
 
 <h2>Threads started on $pretty_date</h2>
 
@@ -36,33 +37,33 @@ Forum:  $topic
 
 "
 
-set approved_clause ""
-set selection [ns_db select $db "select msg_id, one_line, sort_key, email, first_names || ' ' || last_name as name, users.user_id as poster_id
-from bboard, users 
-where topic_id = $topic_id $approved_clause
-and bboard.user_id = users.user_id 
-and refers_to is null
-and trunc(posting_time) = '$kickoff_date'
-order by sort_key"]
+db_foreach messages "
+select msg_id, 
+       one_line, 
+       sort_key, 
+       email, 
+       first_names || ' ' || last_name as name, 
+       users.user_id as poster_id
+from   bboard, 
+       users 
+where  topic_id = :topic_id
+and    bboard.user_id = users.user_id 
+and    refers_to is null
+and    trunc(posting_time) = :kickoff_date
+order by sort_key" {
 
-set items ""
-set n_rows 0
+    append page_content "<li><a href=\"[bboard_msg_url $presentation_type $msg_id $topic]\">$one_line</a> ($name)\n"
 
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
-    incr n_rows 
-    append items "<li><a href=\"[bboard_msg_url $presentation_type $msg_id $topic]\">$one_line</a> ($name)\n"
+} if_no_rows {
+    append page_content "no new threads were started on $pretty_date"
 }
 
-if { $n_rows == 0 } {
-    ns_write "no new threads were started on $pretty_date"
-} else {
-    ns_write $items
-}
-
-ns_write "
+append page_content "
 
 </ul>
 
 [bboard_footer]
 "
+
+
+doc_return  200 text/html $page_content

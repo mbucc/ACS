@@ -7,7 +7,7 @@
 <body bgcolor=#ffffff text=#000000>
 <h2>Static File Support</h2>
 
-part of the <a href="index.html">ArsDigita Community System</a>
+part of the <a href="index">ArsDigita Community System</a>
 by <a href="http://photo.net/philg/">Philip Greenspun</a>
 
 <hr>
@@ -19,8 +19,8 @@ by <a href="http://photo.net/philg/">Philip Greenspun</a>
 
 <li>Site administrator directory:  <a href="/admin/static/">/admin/static/</a>
 
-<li>data model :  within <a href="/doc/sql/display-sql.tcl?url=/doc/sql/community-core.sql">/doc/sql/community-core.sql</a>
-<li>Tcl procs:  /tcl/ad-html.tcl; /tcl/ad-user-content-map.tcl; 
+<li>data model :  within <a href="/doc/sql/display-sql?url=/community-core.sql&package_key=acs-core">/packages/acs-core/community-core.sql</a>
+<li>Tcl procs:  /tcl/ad-html; /tcl/ad-user-content-map; 
 
 </ul>
 
@@ -32,14 +32,14 @@ Is explained fairly thoroughly in Chapter 3 of
 
 <h3>The Medium-size Idea</h3>
 
-Copy all the .html files on the server into an Oracle table.  Give each
-one a unique ID.  Collect comments and related links on each .html
-page.  Display these in-line via the procedures in /tcl/ad-html.tcl
+Copy all the  files on the server into an Oracle table.  Give each
+one a unique ID.  Collect comments and related links on each 
+page.  Display these in-line via the procedures in /tcl/ad-html
 
 <p>
 
-The filter in /tcl/ad-user-content-map.tcl records which users have
-examined which .html files.
+The filter in /tcl/ad-user-content-map records which users have
+examined which  files.
 
 <hr>
 <a href="http://photo.net/philg/"><address>philg@mit.edu</address></a>

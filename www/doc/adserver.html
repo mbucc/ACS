@@ -7,7 +7,7 @@
 <body bgcolor=#ffffff text=#000000>
 <h2>/adserver system</h2>
 
-part of the <a href="index.html">ArsDigita Community System</a>
+part of the <a href="index">ArsDigita Community System</a>
 by <a href="http://photo.net/philg/">Philip Greenspun</a>
 
 <hr>
@@ -15,13 +15,13 @@ by <a href="http://photo.net/philg/">Philip Greenspun</a>
 <ul>
 <li>User-accessible directory:  none 
 <li>Site administrator directory:  <a href="/admin/adserver/">/admin/adserver/</a>
-<li>data model :  <a href="/doc/sql/display-sql.tcl?url=/doc/sql/adserver.sql">/doc/sql/adserver.sql</a>
+<li>data model :  <a href="/doc/sql/display-sql?url=/doc/sql/adserver.sql">/doc/sql/adserver.sql</a>
 
 </ul>
 
 
 Remember that the underlying rationale for the ad server is set forth in
-<a href="http://photo.net/wtr/thebook/community.html">Chapter 3 of "the
+<a href="http://photo.net/wtr/thebook/community">Chapter 3 of "the
 book"</a>.
 
 <P>
@@ -30,8 +30,8 @@ GIF or JPEG files for ads are stored in /ads.   References look like
 
 <blockquote>
 <pre>
-&lt;a href="/adserver/adhref.tcl?adv_key=pfizer"&gt;
-&lt;img src="/adserver/adimg.tcl?adv_key=pfizer"&gt;
+&lt;a href="/adserver/adhref?adv_key=pfizer"&gt;
+&lt;img src="/adserver/adimg?adv_key=pfizer"&gt;
 &lt;/a&gt;
 </pre>
 </blockquote>
@@ -50,7 +50,7 @@ The major feature of the adserver not covered by the book is that there
 is a notion of ad groups.  For example, if there are four ads that you'd
 like a user to see in sequence, you can make them part of a group and
 then make all the pages in a section of a site reference that group.  
-The page need only call <code>adv_ad_from_group</code> with the
+The page need only call <code>ad_get_ad_html</code> with the
 <code>group_key</code> as an argument and it will get back a reference
 to the next appropriate ad from that group.
 

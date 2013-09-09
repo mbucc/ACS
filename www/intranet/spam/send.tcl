@@ -1,12 +1,27 @@
-# $Id: send.tcl,v 1.1.2.2 2000/03/17 08:56:40 mbryzek Exp $
+# /www/intranet/spam/send.tcl
 
-# File: /www/intranet/spam/send.tcl
-# Author: mbryzek@arsdigita.com, Mar 2000
-# Sends email to users specified
+ad_page_contract {
+    Sends email to users specified
 
-set_form_variables 0
-# group_id_list (comma separated list of group_id that users must be in)
-# description (optional - replaces page_title if it's specified)
+    @param group_id_list A list of group_ids to spam.
+    @param description A description of the spam.
+    @param all_or_any Spam to all/any members in group_id_list.
+    @param from_address The from address in the email.
+    @param subject The subject in the email.
+    @param message The message in the email.
+
+    @author mbryzek@arsdigita.com
+    @creation-date Mar 2000
+
+    @cvs-id send.tcl,v 1.7.2.5 2000/08/16 21:25:05 mbryzek Exp
+} {
+    group_id_list:notnull,multiple
+    description:optional
+    {all_or_any all}   
+    from_address:notnull
+    subject:notnull
+    message:notnull
+}
 
 set required_vars [list \
 	[list group_id_list "Missing group id(s)"] \
@@ -21,14 +36,36 @@ if { ![empty_string_p $errors] } {
     return
 }
 
-set db [ns_db gethandle]
+### Create bind variables for every group id in group_id_list
+set bind_vars [ns_set create]
 
-set email_list [database_to_tcl_list $db \
-	"select distinct u.email
-           from users_active u, user_group_map ugm
-          where u.user_id=ugm.user_id [im_spam_multi_group_exists_clause $group_id_list]"]
+set group_id_sql_list [im_append_list_to_ns_set -integer_p t $bind_vars group_id_sql [split $group_id_list ","]]
 
-ns_db releasehandle $db
+if { ![info exists all_or_any] || [string compare $all_or_any "any"] != 0 } {
+    set group_list_clause [im_spam_multi_group_exists_clause $bind_vars $group_id_list] 
+} else {
+    set group_list_clause "and ugm.group_id in ($group_id_sql_list)"
+}
+
+set sql_query \
+"select distinct u.email 
+ from users_active u, user_group_map ugm 
+ where u.user_id=ugm.user_id $group_list_clause"
+
+set email_list [db_list intranet_spam_get_email_list $sql_query -bind $bind_vars]
+
+set sql	"select ug.group_name 
+           from user_groups ug 
+          where ug.group_id in ($group_id_sql_list)"
+
+set group_string ""
+set ctr 0
+db_foreach select_group_names $sql -bind $bind_vars {
+    append group_string "  * $group_name\n"
+    incr ctr
+}
+
+db_release_unused_handles
 
 if { [exists_and_not_null description] } {
     set description_html "<br><b>Description:</b> $description\n"
@@ -36,30 +73,50 @@ if { [exists_and_not_null description] } {
     set description_html ""
 }
 
-set page_title "Sending email"
-set context_bar [ad_context_bar [list "/" Home] [list ../index.tcl "Intranet"] [list index.tcl?[export_ns_set_vars url] "Spam users"] "Sending email"]
 
+# Start streaming out data - we have released the db handle and are going to send email
 
-set page_body "
+set context_bar [ad_context_bar_ws [list index?[export_ns_set_vars url] "Spam users"] "Sending email"]
+ReturnHeaders
+ns_write "
+[im_header]
 $description_html
 
 <p>Sending email
 <ol>
 "
 
-foreach email $email_list {
-    append page_body "  <li> $email"
-    if { [catch {ns_sendmail $email $from_address $subject $message} err_msg] } {
-	append page_body " Error: $err_msg"
-    }
-    append page_body "\n"
+if { $ctr == 1 } {
+    set explanation "This email message was sent to people who are members of $group_name"
+} else {
+    set explanation "
+This email message was sent to people who are members of $all_or_any of the
+following groups:
+
+$group_string
+"
 }
 
-append page_body "</ol>\n"
+append message "
+
+
+---------------------------------------------------------------------------
+$explanation
+---------------------------------------------------------------------------
+"
+
+foreach email $email_list {
+    ns_write "  <li> $email"
+    if { [catch {ns_sendmail $email $from_address $subject $message} err_msg] } {
+	ns_write " Error: $err_msg"
+    }
+    ns_write "\n"
+}
+
+ns_write "</ol>\n"
 
 if { [exists_and_not_null return_url] } {
-    append page_body "<a href=\"$return_url\">Go back to where you were</a>\n"
+    ns_write "<a href=\"$return_url\">Go back to where you were</a>\n"
 }
 
-
-ns_return 200 text/html [ad_partner_return_template]
+ns_write [im_footer]

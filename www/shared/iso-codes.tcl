@@ -1,7 +1,13 @@
-# $Id: iso-codes.tcl,v 3.1 2000/02/29 04:38:57 jsc Exp $
-ReturnHeaders 
+# iso-codes.tcl
 
-ns_write  "<html>
+ad_page_contract {
+    @author ?
+    @creation-date ?
+    @cvs-id iso-codes.tcl,v 3.2.2.3 2000/09/22 01:39:18 kevin Exp
+} {
+}
+
+append doc_body  "<html>
 <head>
 <title>Complete List of ISO Codes</title>
 </head>
@@ -14,28 +20,19 @@ the \"back\" button on your browser to return to the previous form.
 <hr>
 <table>
 <tr><th align=left>Country Name<th>ISO Code</tr>
-
 "
 
-set db [ns_db gethandle]
+set sql "select * from country_codes order by country_name"
 
-set selection [ns_db select $db "select * from country_codes
-order by country_name"]
-
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
-    ns_write "<tr><td>$country_name<td align=center>$iso</tr>\n"
-
+db_foreach country_list $sql {   
+    append doc_body "<tr><td>$country_name<td align=center>$iso</tr>\n"
 }
 
-
-
-ns_write "
-
+append doc_body "
 </table>
-
 <hr>
-
-
 </body>
 </html>"
+
+db_release_unused_handles
+doc_return 200 text/html $doc_body

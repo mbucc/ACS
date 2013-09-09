@@ -1,35 +1,40 @@
-# $Id: audit.tcl,v 3.0 2000/02/06 03:16:49 ron Exp $
-# Jesse 7/17
-# Displays the audit info for one id in the id_column of a table and its 
-# audit history
+#  /www/admin/ecommerce/audit.tcl
+ad_page_contract {
 
-set_the_usual_form_variables
-# audit_name, audit_id, audit_id_column, return_url, audit_tables, main_tables
+  Displays the audit info for one id in the id_column of a table and its 
+  audit history.
 
-# where audit_tables and main_tables are tcl lists of tables to audit
+  @author Jesse
+  @creation-date 7/17
+  @cvs-id audit.tcl,v 3.0.12.4 2000/08/20 10:59:30 seb Exp
+} {
+  audit_name:html
+  audit_id:sql_identifier,notnull
+  audit_id_column:sql_identifier,notnull
+  return_url:optional
+  audit_tables:notnull
+  main_tables:notnull
+}
 
-set db [ns_db gethandle]
-
-ReturnHeaders
-ns_write "
+doc_body_append "
 [ad_admin_header "[ec_system_name] Audit Trail"]
 <h2>$audit_name</h2>
 
-[ad_admin_context_bar [list index.tcl Ecommerce] "Audit Trail"]
+[ad_admin_context_bar [list index Ecommerce] "Audit Trail"]
 <hr>
 "
 
 set counter 0
 
 foreach main_table $main_tables {
-    ns_write "<h3>$main_table</h3>
+    doc_body_append "<h3>$main_table</h3>
     <blockquote>
 
-    [ad_audit_trail $db $audit_id [lindex $audit_tables $counter] $main_table $audit_id_column]
+    [ad_audit_trail $audit_id [lindex $audit_tables $counter] $main_table $audit_id_column]
 
     </blockquote>
     "
     incr counter
 }
 
-ns_write "[ad_admin_footer]"
+doc_body_append "[ad_admin_footer]"

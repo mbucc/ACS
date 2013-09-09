@@ -1,18 +1,20 @@
-# $Id: delete-bookmark.tcl,v 3.0.4.1 2000/03/17 17:40:38 aure Exp $
-# delete-bookmark.tcl
-#
-# the delete utility of the bookmarks system
-#
-# by dh@arsdigita.com and aure@arsdigita.com
+# /www/bookmarks/delete-bookmark.tcl
 
-set_the_usual_form_variables 
-
-# bookmark_id, return_url
+ad_page_contract {
+    the delete utility of the bookmarks system
+    @param bookmark_id ID of bookmark to be deleted
+    @param return_url URL for user to return to  
+    @author David Hill (dh@arsdigita.com)
+    @author Aurelius Prochazka (aure@arsdigita.com)    
+    @creation-date June 1999  
+    @cvs-id delete-bookmark.tcl,v 3.1.8.7 2000/09/22 01:37:01 kevin Exp
+} {
+    bookmark_id
+    return_url
+} 
 
 set user_id [ad_verify_and_get_user_id]
 ad_maybe_redirect_for_registration
-
-set db [ns_db gethandle]
 
 # start error-checking
 set exception_text ""
@@ -27,9 +29,10 @@ if {(![info exists bookmark_id])||([empty_string_p $bookmark_id])} {
 set  ownership_query "
         select count(*)
         from   bm_list
-        where  owner_id=$user_id
-        and bookmark_id=$bookmark_id"
-set ownership_test [database_to_tcl_string $db $ownership_query]
+        where  owner_id = :user_id
+        and bookmark_id = :bookmark_id"
+
+set ownership_test [db_string ownership $ownership_query]
 
 if {$ownership_test==0} {
     incr exception_count
@@ -42,7 +45,9 @@ if { $exception_count> 0 } {
     return 0
 }
 
-set local_title [database_to_tcl_string $db "select local_title from bm_list where bookmark_id=$bookmark_id"]
+set local_title [db_string local_title "select local_title 
+                                        from   bm_list 
+                                        where  bookmark_id = :bookmark_id"]
 
 set title "Delete \"$local_title\""
 
@@ -53,22 +58,27 @@ set whole_page "
 <hr>
 "
 
-set folder_p [database_to_tcl_string $db "select folder_p from bm_list where bookmark_id = $bookmark_id"]
+set folder_p [db_string unused "select folder_p 
+                                from   bm_list 
+                                where  bookmark_id = :bookmark_id"]
 
 if {$folder_p=="t"} { 
     
     set count_query "
     select count(*)
     from   bm_list
-    connect by prior bookmark_id=parent_id
-    start with parent_id = $bookmark_id
+    connect by prior bookmark_id = parent_id
+    start with parent_id = :bookmark_id
     "
     
-    set number_to_delete [database_to_tcl_string $db $count_query]
+    set number_to_delete [db_string count $count_query]
     
     append whole_page " 
     Removing this folder will result in deleting $number_to_delete subfolders and/or bookmarks. <p>"
 }
+ 
+# release the database handle
+db_release_unused_handles 
 
 append whole_page "Are you sure you want to delete \"$local_title\"?<P>"
 
@@ -83,7 +93,7 @@ append whole_page "
     [bm_footer]
     "
 
-ns_return 200 text/html $whole_page
+doc_return  200 text/html $whole_page
 
 
 

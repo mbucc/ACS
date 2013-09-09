@@ -1,74 +1,76 @@
-# $Id: week.tcl,v 3.1.4.1 2000/03/17 08:22:58 mbryzek Exp $
 # File: /www/intranet/hours/week.tcl
-#
-# Author: mbryzek@arsdigita.com, Jan 2000
-#
-# Shows the hour a specified user spend working over the course of a week
-# 
 
-set_the_usual_form_variables
-# expect: julian_date
-# on_which_table
-# optional: user_id
+ad_page_contract {
+    Shows the hour a specified user spend working over the course of a week
 
-if { ![info exists user_id] } {
+    @param on_which_table table we're viewing hours against
+    @param julian_date day in julian format in the week we're currently viewing. Defaults to sysdate
+    @user_id the user for whom we're viewing hours. Defaults to currently logged in user.
+ 
+    @author Michael Bryzek (mbryzek@arsdigita.com)
+    @creation-date January 2000
+    @cvs-id week.tcl,v 3.7.2.7 2000/09/22 01:38:38 kevin Exp
+   
+} {
+    on_which_table
+    { julian_date "" }
+    { user_id:integer "" }
+}
+
+if { [empty_string_p $user_id] } {
     set user_id [ad_get_user_id]
 }
 
-set db [ns_db gethandle]
 
-set user_name [database_to_tcl_string $db \
-	"select first_names || ' ' || last_name from users where user_id = $user_id"]
+if { [empty_string_p $julian_date] } {
+    set julian_date [db_string sysdate_as_julian \
+	    "select to_char(sysdate,'J') from dual"]
+}
 
-set selection [ns_db 1row $db \
+set user_name [db_string user_name \
+	"select first_names || ' ' || last_name from users where user_id = :user_id"]
+
+db_1row week_select_start_and_end \
 	"select to_char( next_day(
-    	    	    to_date( $julian_date, 'J' )-1, 'sat' ),
+    	    	   to_date( :julian_date, 'J' )-1, 'sat' ),
     	    	  'MM/DD/YYYY' ) AS end_date,
 	        to_char( next_day(
-    	    	    to_date( $julian_date, 'J' )-1, 'sat' )-6,
+    	    	    to_date( :julian_date, 'J' )-1, 'sat' )-6,
     	    	  'MM/DD/YYYY' ) AS start_date
-    	 from dual"]
+    	 from dual"
 
-set_variables_after_query
-
-
-
-set selection [ns_db select $db \
-	"SELECT g.group_id, g.group_name, sum(h.hours) as total
+set sql "SELECT g.group_id, g.group_name, sum(h.hours) as total
     	 FROM im_hours h, user_groups g
     	 WHERE g.group_id = h.on_what_id
-    	   AND h.on_which_table = '$QQon_which_table'
-    	   AND h.day >= trunc( to_date( '$start_date', 'MM/DD/YYYY' ) )
-    	   AND h.day < trunc( to_date( '$end_date', 'MM/DD/YYYY' ) ) + 1
-    	   AND h.user_id=$user_id
-    	 GROUP BY g.group_id, g.group_name"]
+    	   AND h.on_which_table = :on_which_table
+    	   AND h.day >= trunc( to_date( :start_date, 'MM/DD/YYYY' ) )
+    	   AND h.day < trunc( to_date( :end_date, 'MM/DD/YYYY' ) ) + 1
+    	   AND h.user_id=:user_id
+    	 GROUP BY g.group_id, g.group_name"
 
 set items {}
 set grand_total 0
 
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
+db_foreach hour_select $sql {
     set grand_total [expr $grand_total+$total]
-    lappend items [ns_set copy $selection]
+    lappend items [list $group_id $group_name $total]
 }
 
-set selection [ns_db select $db \
-	"SELECT g.group_id, g.group_name, nvl(h.note,'<i>none</i>') as note,
+set sql "SELECT g.group_id, g.group_name, nvl(h.note,'<i>none</i>') as note,
 		TO_CHAR( day, 'Dy, MM/DD/YYYY' ) as nice_day
 	 FROM im_hours h, user_groups g
 	 WHERE g.group_id = h.on_what_id
-     	   AND h.on_which_table = '$QQon_which_table'
-    	   AND h.day >= trunc( to_date( '$start_date', 'MM/DD/YYYY' ) )
-    	   AND h.day < trunc( to_date( '$end_date', 'MM/DD/YYYY' ) ) + 1
-    	   AND user_id=$user_id
-	 ORDER BY lower(g.group_name), day"]
+     	   AND h.on_which_table = :on_which_table
+    	   AND h.day >= trunc( to_date( :start_date, 'MM/DD/YYYY' ) )
+    	   AND h.day < trunc( to_date( :end_date, 'MM/DD/YYYY' ) ) + 1
+    	   AND user_id=:user_id
+	 ORDER BY lower(g.group_name), day"
 
 set last_id -1
 set pcount 0
 set notes "<hr>\n<h2>Daily project notes</h2>\n"
 
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
+db_foreach hours_daily_project_notes $sql {
     if { $last_id != $group_id } {
 	set last_id $group_id
 	if { $pcount > 0 } {
@@ -86,7 +88,7 @@ if { $pcount > 0 } {
     set notes ""
 }
 
-ns_db releasehandle $db
+db_release_unused_handles
 
 set hour_table "No hours for this week"
 
@@ -99,10 +101,12 @@ if {[llength $items] > 0 } {
     </tr>
     "
 
-    foreach selection $items {
-	set_variables_after_query
+    foreach row $items {
+	set group_id [lindex $row 0]
+	set group_name [lindex $row 1]
+	set total [lindex $row 2]
 	append hour_table "<tr bgcolor=\"#efefef\">
-	<td><a href=\"../projects/view.tcl?[export_url_vars group_id on_which_table]\">
+	<td><a href=\"../projects/view?[export_url_vars group_id]\">
 	    $group_name</a></td>
 	<td align=right>[format "%0.02f" $total]</td>
 	<td align=right>[format "%0.02f%%" \
@@ -120,11 +124,12 @@ if {[llength $items] > 0 } {
 }
 
 set page_title "Weekly total by $user_name"
-set context_bar [ad_context_bar [list "/" Home] [list "../index.tcl" Intranet] [list index.tcl?[export_url_vars on_which_table] "Your hours"] "Weekly hours"]
+set context_bar [ad_context_bar_ws [list index?[export_url_vars on_which_table] "Your hours"] "Weekly hours"]
 
 set page_body "
 $hour_table
 $notes
 "
 
-ns_return 200 text/html [ad_partner_return_template]
+doc_return  200 text/html [im_return_template]
+

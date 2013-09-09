@@ -7,28 +7,28 @@
 <body bgcolor=#ffffff text=#000000>
 <h2>Developers Guide</h2>
 
-to the <a href="index.html">ArsDigita Community System</a>
+to the <a href="index">ArsDigita Community System</a>
 by <a href="http://photo.net/philg/">Philip Greenspun</a>
 
 <hr>
 
 This document contains general guidelines for building new ACS pages.
-It should used in conjunction with <a href="procs.tcl">the procedure-by-procedure documentation</a>.
+It should used in conjunction with <a href="procs">the procedure-by-procedure documentation</a>.
 
 
 <h3>Writing a Whole Module</h3>
 
-If you're writing a new module, see the short instructions in <a href="custom.html">/doc/custom.html</a>,
-and a detailed guide in <a href="/doc/writing-a-module.html">/doc/writing-a-module.html</a>.
+If you're writing a new module, see the short instructions in <a href="custom">/doc/custom</a>,
+and a detailed guide in <a href="/doc/writing-a-module">/doc/writing-a-module</a>.
 
 <h3>Documentation</h3>
 
 Every procedure that you expect to be called externally (i.e., by Tcl
 code that doesn't reside in the same file) should be documented with a
 doc string.  Instead of using <code>proc</code>, you should use
-<code>proc_doc</code>.  This results in <a href="procs.tcl">the
+<code>proc_doc</code>.  This results in <a href="procs">the
 procedure-by-procedure documentation</a>.  If you're a new programmer,
-you might want to read the <a href="common-errors.html">common errors
+you might want to read the <a href="common-errors">common errors
 list</a>.
 
 <p>
@@ -95,7 +95,7 @@ If it is a community procedure, name it ad_ and put in somewhere in the
 <p>
 
 If it is a utility procedure, name it util_ and put it in the
-/home/nsadmin/modules/tcl/utilities.tcl file.
+/home/nsadmin/modules/tcl/utilities file.
 
 
 <h3>Naming (files)</h3>
@@ -103,18 +103,18 @@ If it is a utility procedure, name it util_ and put it in the
 In general, we like to name sequences of forms in the following way:
 
 <ul>
-<li>foo.tcl (or foo.adp) -- presents a form to the user
-<li>foo-2.tcl (or foo-2.adp) -- presents a confirmation page to the user 
-<li>foo-3.tcl (or foo-3.adp) -- actually does the database transaction,
+<li>foo (or foo.adp) -- presents a form to the user
+<li>foo-2 (or foo-2.adp) -- presents a confirmation page to the user 
+<li>foo-3 (or foo-3.adp) -- actually does the database transaction,
 may redirect rather than present anything to the user
 </ul>
 
 As far as the "foo" goes (the actual name of the file), we like to use
-object-verb.  So you might have "user-update.tcl" for a form that
+object-verb.  So you might have "user-update" for a form that
 updates a record in the <code>users</code> table.  Try not to be
 redundant with the directory name.  So if you have a bunch of scripts in
 a directory called "users", the script to look at one user would just be
-"one.tcl" rather than "user.tcl".
+"one" rather than "user".
 
 <h3>Naming (columns)</h3>
 
@@ -220,10 +220,10 @@ them click down
 
 </ol>
 
-These sound obvious but most programmers' instincts are to produce .tcl
-pages that behave like static .html files.  For example, in a bond
+These sound obvious but most programmers' instincts are to produce 
+pages that behave like static  files.  For example, in a bond
 trading site the top-level page might offer links to "portfolio,
-trading, and open orders".  This could have been done with a .html file!
+trading, and open orders".  This could have been done with a  file!
 Instead, why not query Oracle to find out the total value of the
 portfolio (show users as much info as possible)?  Or query Oracle to
 find out if there <em>are</em> any open orders; if there are just a few,
@@ -293,7 +293,7 @@ news subsystem for an example.
 
 It is nice to email the host admin if things are wrong, but don't do it
 directly with ns_sendmail; use ad_notify_host_administrator (defined in
-/tcl/ad-monitor.tcl ).  This way, the host admin won't get email more
+/tcl/ad-monitor ).  This way, the host admin won't get email more
 than once every 15 minutes.
 
 <h3>Adding an item when some are present</h3>
@@ -359,7 +359,7 @@ select *
 <h3>Distributing Maintenance</h3>
 
 When distributing maintenance responsibility, use the <a
-href="permissions.html">permissions package</a>.  See the /gc/ module
+href="permissions">permissions package</a>.  See the /gc/ module
 for an example of how this package may be used.
 
 <h3>Auditing</h3>
@@ -391,7 +391,7 @@ audit table whenever the original table is modified.
 The ACS has a number of auditing conventions which you should follow,
 as well as some utility procedures which can be used to display the history
 of all states a table (or set of tables) has been in.  This is documented
-in the <a href="audit.html">Audit Trail Package</a>.
+in the <a href="audit">Audit Trail Package</a>.
 
 <p>
 
@@ -412,8 +412,8 @@ up in the headline (turning it into an HTML table) and also alongside
 lists of stuff.  Procedures that support this are the following:
 
 <ul>
-<li><code><a href="proc-one.tcl?proc_name=ad_decorate_side">ad_decorate_side</a></code> (in /tcl/ad-sidegraphics.tcl) 
-<li><code><a href="proc-one.tcl?proc_name=ad_decorate_top">ad_decorate_top</a></code> (in /tcl/ad-defs.tcl)
+<li><code><a href="proc-one?proc_name=ad_decorate_side">ad_decorate_side</a></code> (in /tcl/ad-sidegraphics) 
+<li><code><a href="proc-one?proc_name=ad_decorate_top">ad_decorate_top</a></code> (in /tcl/ad-defs)
 </ul>
 
 See <a
@@ -686,7 +686,7 @@ powerful <cod>nsv</code> facility, documented in
 <h3>Filters</h3>
 
 Use of <tt>ns_register_filter</tt> is deprecated as of ACS 3.2 - it's been
-replaced with <tt><a href="/doc/proc-one.tcl?proc_name=ad%5fregister%5ffilter">ad_register_filter</a></tt>, a drop-in replacement which supports
+replaced with <tt><a href="/doc/proc-one?proc_name=ad%5fregister%5ffilter">ad_register_filter</a></tt>, a drop-in replacement which supports
 some extra flags. <tt>ad_register_filter</tt>
 provides the following functionality:
 
@@ -694,7 +694,7 @@ provides the following functionality:
   <li><b>Priorities</b> - filters are executed in order of priority (lowest number to highest).
 For instance, the security filter (which must be run before anything else) has a priority of
 1, compared to the default of 10000.
-  <li><b>Monitoring</b> - using <a href="/admin/monitoring/filters.tcl">/admin/monitoring/filters.tcl</a>
+  <li><b>Monitoring</b> - using <a href="/admin/monitoring/filters">/admin/monitoring/filters</a>
 you can see which filters will run for any given request.
   <li><b>Debugging</b> - invocations of the filter can be logged.
   <li><b>Error recovery</b> - if a non-critical filter throws an error, subsequent filters will
@@ -712,11 +712,11 @@ filtering itself (in <tt>ad_handle_filter</tt>).
 <h3>Scheduled Processes</h3>
 
 <tt>ns_schedule_proc</tt> is also deprecated as of ACS 3.2 - use 
-<tt><a href="/doc/proc-one.tcl?proc_name=ad%5fschedule%5fproc">ad_schedule_proc</a></tt> instead. <tt>ad_schedule_proc</tt> is <i>almost</i> a drop-in replacement (the
+<tt><a href="/doc/proc-one?proc_name=ad%5fschedule%5fproc">ad_schedule_proc</a></tt> instead. <tt>ad_schedule_proc</tt> is <i>almost</i> a drop-in replacement (the
 syntax for flags is slightly different, as the <tt>-thread</tt> and <tt>-once</tt> switches
 require argumens -
-see the <a href="/doc/proc-one.tcl?proc_name=ad%5fschedule%5fproc">documentation</a>. Using <tt>ad_schedule_proc</tt> lets you track which scheduled procedures are
-about to be run and when (view <a href="/admin/monitoring/scheduled-procs.tcl">/admin/monitoring/schedule-procs.tcl</a>).
+see the <a href="/doc/proc-one?proc_name=ad%5fschedule%5fproc">documentation</a>. Using <tt>ad_schedule_proc</tt> lets you track which scheduled procedures are
+about to be run and when (view <a href="/admin/monitoring/scheduled-procs">/admin/monitoring/schedule-procs</a>).
 
 <p>You can use Perl to change all your legacy code to use <tt>ad_schedule_proc</tt>:
 

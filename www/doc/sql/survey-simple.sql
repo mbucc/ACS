@@ -6,7 +6,7 @@
 --
 -- by philg@mit.edu and raj@alum.mit.edu on February 9, 2000
 -- 
--- $Id: survey-simple.sql,v 1.5.2.1 2000/03/18 02:01:26 ron Exp $ 
+-- survey-simple.sql,v 1.14 2000/06/17 18:49:35 ron Exp 
 
 -- we expect this to be replaced with a more powerful survey
 -- module, to be developed by buddy@ucla.edu, so we prefix
@@ -20,9 +20,15 @@ create table survsimp_surveys (
 	-- short, non-editable name we can identify this survey by
 	short_name		varchar(20) unique not null,
 	description		varchar(4000) not null,
+        description_html_p      char(1) default 'f'
+                                constraint survsimp_sur_desc_html_p_ck
+                                check(description_html_p in ('t','f')),
 	creation_user		not null references users(user_id),
 	creation_date	      	date default sysdate,
-	enabled_p               char(1) default 'f' check(enabled_p in ('t','f'))
+	enabled_p               char(1) default 'f' check(enabled_p in ('t','f')),
+	-- limit to one response per user
+	single_response_p	char(1) default 'f' check(single_response_p in ('t','f')),
+	single_editable_p	char(1) default 't' check(single_editable_p in ('t','f'))
 );
 
 
@@ -42,7 +48,7 @@ create table survsimp_questions (
 	required_p		char(1) check (required_p in ('t','f')),
 	active_p		char(1) check (active_p in ('t','f')),
 	presentation_type	varchar(20) not null
-				check(presentation_type in ('textbox','textarea','select','radio', 'checkbox', 'date')),
+				check(presentation_type in ('textbox','textarea','select','radio', 'checkbox', 'date', 'upload_file')),
 	-- for text, "small", "medium", "large" sizes
 	-- for textarea, "rows=X cols=X"
 	presentation_options	varchar(50),
@@ -120,6 +126,18 @@ create table survsimp_responses (
 );
 
 
+-- mbryzek: 3/27/2000
+-- Sometimes you release a survey, and then later decide that 
+-- you only want to include one response per user. The following
+-- view includes only the latest response from all users
+create or replace view survsimp_responses_unique as 
+select r1.* from survsimp_responses r1
+where r1.response_id=(select max(r2.response_id) 
+                        from survsimp_responses r2
+                       where r1.survey_id=r2.survey_id
+                         and r1.user_id=r2.user_id);
+
+
 -- this table stores the answers to each question for a survey
 -- we want to be able to hold different data types in one long skinny table 
 -- but we also may want to do averages, etc., so we can't just use CLOBs
@@ -133,10 +151,27 @@ create table survsimp_question_responses (
 	clob_answer		clob,
 	number_answer		number,
 	varchar_answer		varchar(4000),
-	date_answer		date
+	date_answer		date,
+	-- columns useful for attachments, column names
+	-- lifted from file-storage.sql and bboard.sql
+	-- this is where the actual content is stored
+	attachment_answer	blob,
+	-- file name including extension but not path
+	attachment_file_name	varchar(500),
+	attachment_file_type	varchar(100),	-- this is a MIME type (e.g., image/jpeg)
+	attachment_file_extension varchar(50) 	-- e.g., "jpg"
 );
 
+
 create index survsimp_response_index on survsimp_question_responses (response_id, question_id);
+
+
+-- We create a view that selects out only the last response from each
+-- user to give us at most 1 response from all users.
+create or replace view survsimp_question_responses_un as 
+select qr.* 
+  from survsimp_question_responses qr, survsimp_responses_unique r
+ where qr.response_id=r.response_id;
 
 
 begin

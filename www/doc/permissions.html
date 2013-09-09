@@ -7,7 +7,7 @@
 <body bgcolor=#ffffff text=#000000>
 <h2>Permission Package</h2>
 
-part of the <a href="index.html">ArsDigita Community System</a>
+part of the <a href="index">ArsDigita Community System</a>
 by <a href="http://teadams.com">Tracy Adams</a>
 
 <hr>
@@ -16,12 +16,12 @@ by <a href="http://teadams.com">Tracy Adams</a>
 <li>User directory:  none
 <li>Admin directory:  everything is done in the existing user group directory
 <a href="/admin/ug/">/admin/ug/</a> (this package builds on 
-<a href="user-groups.html">user groups</a>)
+<a href="user-groups">user groups</a>)
 
 <li>data model:  subsection within 
-<a href="/doc/sql/display-sql.tcl?url=/doc/sql/user-groups.sql">/doc/sql/user-groups.sql</a>
+<a href="/doc/sql/display-sql?url=/user-groups.sql&package_key=acs-core">/packages/acs-core/user-groups.sql</a>
 
-<li>procedures:  mostly within /tcl/ad-user-groups.tcl
+<li>procedures:  mostly within /tcl/ad-user-groups
 
 </ul>
 
@@ -147,23 +147,23 @@ allowed to enter demographic information.
 <p>
 
 You specify multi-role permissions when you create a group with <a
-href="proc-one.tcl?proc_name=ad_administration_group_add">ad_administration_group_add</a>
+href="proc-one?proc_name=ad_administration_group_add">ad_administration_group_add</a>
 or by toggle the multi-role perms column in
-/admin/ug/group.tcl.  A group of any type, i.e., even one that isn't
+/admin/ug/group.  A group of any type, i.e., even one that isn't
 "administration" can be the basis of a multi-role permission scheme.
 
 <p>
 
-Once multi-role perms are enabled, the /admin/ug/group.tcl page will
+Once multi-role perms are enabled, the /admin/ug/group page will
 sprout some new user interface.  The basic idea is that you add roles
 and actions until you're looking at a matrix of which roles are
 authorized to perform which actions.  You could also fill this matrix
 programmatically by calling the procedures 
  <a
-href="proc-one.tcl?proc_name=ad_administration_group_role_add">ad_administration_group_role_add</a>, 
-<a href="proc-one.tcl?proc_name=ad_administration_group_action_add">ad_administration_group_action_add</a>,
+href="proc-one?proc_name=ad_administration_group_role_add">ad_administration_group_role_add</a>, 
+<a href="proc-one?proc_name=ad_administration_group_action_add">ad_administration_group_action_add</a>,
 <a
-href="proc-one.tcl?proc_name=ad_administration_group_action_role_map">ad_administration_group_action_role_map</a>.
+href="proc-one?proc_name=ad_administration_group_action_role_map">ad_administration_group_action_role_map</a>.
 
 
 <h3>Administration group type procedures</h3>
@@ -172,14 +172,14 @@ Groups of type administration can be identified
 by their module and submodule.
 
 <ul>
-<li> To answer <i>"Is user x allowed to do y?"</i>   <a href="proc-one.tcl?proc_name=ad_permission_p">ad_permission_p</a>
-<li> To see if a user is in the group:  <a href="proc-one.tcl?proc_name=ad_administration_group_member">ad_administration_group_member</a>
-<li> Create a group of type administration: <a href="proc-one.tcl?proc_name=ad_administration_group_add">ad_administration_group_add</a> or the pls-sql procedure administration_group_add
-<li> To grant a user a role in an administration group:  <a href="proc-one.tcl?proc_name=ad_administration_group_user_add">ad_administration_group_user_add</a>
-<li> To add a role to an administration group:  <a href="proc-one.tcl?proc_name=ad_administration_group_role_add">ad_administration_group_role_add</a>
-<li> To add an action to an administration group: <a href="proc-one.tcl?proc_name=ad_administration_group_action_add">ad_administration_group_action_add</a>
-<li> To allow users with a role to execute an action: <a href="proc-one.tcl?proc_name=ad_administration_group_action_role_map">ad_administration_group_action_role_map</a>
-<li> To retrieve a group_id from an adminsitration group's module and submodule:   <a href="proc-one.tcl?proc_name=ad_administration_group_id">ad_administration_group_id</a>
+<li> To answer <i>"Is user x allowed to do y?"</i>   <a href="proc-one?proc_name=ad_permission_p">ad_permission_p</a>
+<li> To see if a user is in the group:  <a href="proc-one?proc_name=ad_administration_group_member">ad_administration_group_member</a>
+<li> Create a group of type administration: <a href="proc-one?proc_name=ad_administration_group_add">ad_administration_group_add</a> or the pls-sql procedure administration_group_add
+<li> To grant a user a role in an administration group:  <a href="proc-one?proc_name=ad_administration_group_user_add">ad_administration_group_user_add</a>
+<li> To add a role to an administration group:  <a href="proc-one?proc_name=ad_administration_group_role_add">ad_administration_group_role_add</a>
+<li> To add an action to an administration group: <a href="proc-one?proc_name=ad_administration_group_action_add">ad_administration_group_action_add</a>
+<li> To allow users with a role to execute an action: <a href="proc-one?proc_name=ad_administration_group_action_role_map">ad_administration_group_action_role_map</a>
+<li> To retrieve a group_id from an adminsitration group's module and submodule:   <a href="proc-one?proc_name=ad_administration_group_id">ad_administration_group_id</a>
 </ul>
 
 <h3>Generic procedures</h3>
@@ -188,21 +188,21 @@ Group_id will identify any group, regardless of type. Both basic and
 multi-role permission schemes will work.
 
 <ul>
-<li> To answer  <i>"Is user x allowed to do y?"</i> <a href="proc-one.tcl?proc_name=ad_permission_p">ad_permission_p</a>
-<li> To see if a user is in the group:   <a href="proc-one.tcl?proc_name=ad_user_group_member">ad_user_group_member</a>
-<li> To answer <i>"Is the user an administrator of this group?"</i>  <a href="proc-one.tcl?proc_name=ad_user_group_authorized_admin">ad_user_group_authorized_admin</a>
+<li> To answer  <i>"Is user x allowed to do y?"</i> <a href="proc-one?proc_name=ad_permission_p">ad_permission_p</a>
+<li> To see if a user is in the group:   <a href="proc-one?proc_name=ad_user_group_member">ad_user_group_member</a>
+<li> To answer <i>"Is the user an administrator of this group?"</i>  <a href="proc-one?proc_name=ad_user_group_authorized_admin">ad_user_group_authorized_admin</a>
 
 <li> To answer <i>"Is the user an administrator of this group? (or a
 site-wide administrator with uber-user privileges)"</i>  
-<a href="proc-one.tcl?proc_name=ad_user_group_authorized_admin_or_site_admin">ad_user_group_authorized_admin_or_site_admin</a>
+<a href="proc-one?proc_name=ad_user_group_authorized_admin_or_site_admin">ad_user_group_authorized_admin_or_site_admin</a>
 
 
-<li> To retrieve a group_id from an adminsitration group's module and submodule:   <a href="proc-one.tcl?proc_name=ad_administration_group_id">ad_administration_group_id</a>
-<li> To add an user group: <a href="proc-one.tcl?proc_name=ad_user_group_add">ad_user_group_add</a> 
-<li> To grant a user a role:  <a href="proc-one.tcl?proc_name=ad_user_group_user_add">ad_user_group_user_add</a>
-<li> To add a role:  <a href="proc-one.tcl?proc_name=ad_user_group_role_add">ad_user_group_role_add</a>
-<li> To add an action: <a href="proc-one.tcl?proc_name=ad_user_group_action_add">ad_user_group_action_add</a>
-<li> To allow users with a role to execute an action: <a href="proc-one.tcl?proc_name=ad_user_group_action_role_map">ad_user_group_action_role_map</a>
+<li> To retrieve a group_id from an adminsitration group's module and submodule:   <a href="proc-one?proc_name=ad_administration_group_id">ad_administration_group_id</a>
+<li> To add an user group: <a href="proc-one?proc_name=ad_user_group_add">ad_user_group_add</a> 
+<li> To grant a user a role:  <a href="proc-one?proc_name=ad_user_group_user_add">ad_user_group_user_add</a>
+<li> To add a role:  <a href="proc-one?proc_name=ad_user_group_role_add">ad_user_group_role_add</a>
+<li> To add an action: <a href="proc-one?proc_name=ad_user_group_action_add">ad_user_group_action_add</a>
+<li> To allow users with a role to execute an action: <a href="proc-one?proc_name=ad_user_group_action_role_map">ad_user_group_action_role_map</a>
 </ul>
 
 <hr>

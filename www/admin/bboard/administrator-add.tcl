@@ -1,10 +1,20 @@
-# $Id: administrator-add.tcl,v 3.0.4.1 2000/04/28 15:08:24 carsten Exp $
-set_the_usual_form_variables
+# /www/admin/bboard/administrator-add.tcl
+ad_page_contract {
+    Adds an adminstrator to a bboard topic
 
-# topic, topic_id, user_id_from_search
+    @param topic the name of the bboard topic
+    @param topic_id the ID of the bboard topic
+    @param user_id_from_search the ID of the user to add
 
-set db [ns_db gethandle]
+    @cvs-id administrator-add.tcl,v 3.1.6.4 2000/07/22 00:00:15 kevin Exp
+} {
+    topic
+    topic_id:integer,notnull
+    user_id_from_search:integer,notnull
+}
 
-ad_administration_group_user_add $db $user_id_from_search "administrator" "bboard" $topic_id
+# -----------------------------------------------------------------------------
+
+ad_administration_group_user_add $user_id_from_search "administrator" "bboard" $topic_id
 
 ad_returnredirect "topic-administrators.tcl?[export_url_vars topic topic_id]"

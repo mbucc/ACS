@@ -1,4 +1,14 @@
-# $Id: sample-questions.tcl,v 3.0 2000/02/06 03:34:30 ron Exp $
+# /www/bboards/sample-questions.tcl
+ad_page_contract {
+    Some stuff for people who can't figure out their own questions
+    to ask
+
+    @cvs-id sample-questions.tcl,v 3.0.12.3 2000/09/22 01:36:54 kevin Exp
+} {
+    topic:notnull
+}
+
+
 set edf_management_blather {<h3>Sample Questions to Ask Companies About Pollution Prevention</h3>
 
 Pollution prevention means not creating waste in the first place and
@@ -53,21 +63,10 @@ event from happening again?
 
 }
 
-set_the_usual_form_variables
-
-# topic required
-
-set db [bboard_db_gethandle]
-if { $db == "" } {
-    bboard_return_error_page
-    return
-}
-
 bboard_get_topic_info
 
-ReturnHeaders
-
-ns_write "[bboard_header "Sample Questions"]
+doc_return  200 text/html "
+[bboard_header "Sample Questions"]
 
 <h2>Sample Questions</h2>
 

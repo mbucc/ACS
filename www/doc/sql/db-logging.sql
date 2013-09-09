@@ -8,7 +8,7 @@
 --
 -- Author: michael@arsdigita.com, 2000-02-17
 --
--- $Id: db-logging.sql,v 3.1 2000/03/11 09:26:37 michael Exp $
+-- db-logging.sql,v 3.1 2000/03/11 09:26:37 michael Exp
 --
 
 create table ad_db_log_messages (

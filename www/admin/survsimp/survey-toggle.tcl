@@ -1,17 +1,19 @@
-#
-# /admin/survsimp/survey-toggle.tcl
-#
-# by raj@alum.mit.edu, February 9, 2000
-#
-# toggle(enable/disable) a single survey
-# 
+# /www/admin/survsimp/survey-toggle.tcl
+ad_page_contract {
+    Survey,-toggle.tcl will toggle (ie - enable or disable) a single survey.
 
-ad_page_variables {
-    survey_id 
+    @param survey_id   survey we're toggling
+    @param enabled_p   flag describing original state of survey
+    @param target      URL where we will be redirected to after toggling
+
+    @author raj@alum.mit.edu
+    @date   February 9, 2000
+    @cvs-id survey-toggle.tcl,v 1.8.2.6 2000/07/21 03:58:10 ron Exp
+} {
+    survey_id:integer
     enabled_p
+    {target "index.tcl"}
 }
-
-set db [ns_db gethandle]
 
 if {$enabled_p == "f"} {
     set enabled_p "t"
@@ -19,11 +21,10 @@ if {$enabled_p == "f"} {
     set enabled_p "f"
 }
 
-ns_db dml $db "
-    update survsimp_surveys 
-    set enabled_p = '$enabled_p' 
-    where survey_id = $survey_id"
+db_dml survey_active_toggle "update survsimp_surveys 
+    set enabled_p = :enabled_p 
+    where survey_id = :survey_id"
 
-ns_db releasehandle $db
+db_release_unused_handles
+ad_returnredirect "$target"
 
-ad_returnredirect ""

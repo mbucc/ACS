@@ -1,13 +1,19 @@
-# $Id: address-add.tcl,v 3.0 2000/02/06 03:18:52 ron Exp $
-set_the_usual_form_variables
-# order_id
+#  www/admin/ecommerce/orders/address-add.tcl
+ad_page_contract {
+  New shipping address.
 
-ReturnHeaders
-ns_write "[ad_admin_header "New Shipping Address"]
+  @author Eve Andersson (eveander@arsdigita.com)
+  @creation-date Summer 1999
+  @cvs-id address-add.tcl,v 3.1.6.4 2000/08/16 16:28:51 seb Exp
+} {
+  order_id:integer,notnull
+}
+
+doc_body_append "[ad_admin_header "New Shipping Address"]
 
 <h2>New Shipping Address</h2>
 
-[ad_admin_context_bar [list "../" "Ecommerce"] [list "index.tcl" "Orders"] [list "one.tcl?[export_url_vars order_id]" "One Order"] "New Shipping Address"]
+[ad_admin_context_bar [list "../" "Ecommerce"] [list "index" "Orders"] [list "one?[export_url_vars order_id]" "One Order"] "New Shipping Address"]
 
 <hr>
 Please enter a new domestic address or a new international address.  All future shipments for this order will go to this address.
@@ -16,17 +22,17 @@ Please enter a new domestic address or a new international address.  All future 
 New domestic address:
 "
 
-set db [ns_db gethandle]
-set user_name [database_to_tcl_string $db "select first_names || ' ' || last_name from users, ec_orders where ec_orders.user_id=users.user_id and order_id=$order_id"]
 
-ns_write "
+set user_name [db_string user_name_select "select first_names || ' ' || last_name from users, ec_orders where ec_orders.user_id=users.user_id and order_id=:order_id"]
+
+doc_body_append "
 <blockquote>
-<form method=post action=address-add-2.tcl>
+<form method=post action=address-add-2>
 [export_form_vars order_id]
 <table>
 <tr>
  <td>Name</td>
- <td><input type=text name=attn size=30 value=\"[philg_quote_double_quotes $user_name]\"></td>
+ <td><input type=text name=attn size=30 value=\"[ad_quotehtml $user_name]\"></td>
 </tr>
 <tr>
  <td>Address</td>
@@ -38,7 +44,7 @@ ns_write "
 </tr>
 <tr>
  <td>City</font></td>
- <td><input type=text name=city size=20> &nbsp;State [state_widget $db]</td>
+ <td><input type=text name=city size=20> &nbsp;State [state_widget]</td>
 </tr>
 <tr>
  <td>Zip</td>
@@ -59,13 +65,13 @@ ns_write "
 <p>
 New international address:
 <p>
-<form method=post action=address-add-2.tcl>
+<form method=post action=address-add-2>
 [export_form_vars order_id]
 <blockquote>
 <table>
 <tr>
  <td>Name</td>
- <td><input type=text name=attn size=30 value=\"[philg_quote_double_quotes $user_name]\"></td>
+ <td><input type=text name=attn size=30 value=\"[ad_quotehtml $user_name]\"></td>
 </tr>
 <tr>
  <td>Address</td>
@@ -89,7 +95,7 @@ New international address:
 </tr>
 <tr>
  <td>Country</td>
- <td>[ec_country_widget $db ""]</td>
+ <td>[ec_country_widget]</td>
 </tr>
 <tr>
  <td>Phone</td>
@@ -105,3 +111,5 @@ New international address:
 
 [ad_admin_footer]
 "
+
+

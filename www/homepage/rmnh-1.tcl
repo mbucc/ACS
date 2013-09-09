@@ -1,32 +1,17 @@
-# $Id: rmnh-1.tcl,v 3.0.4.1 2000/04/28 15:11:03 carsten Exp $
 # File:     /homepage/rmnh-1.tcl
-# Date:     Thu Jan 27 02:21:55 EST 2000
-# Location: 42°21'N 71°04'W
-# Location: 80 PROSPECT ST CAMBRIDGE MA 02139 USA
-# Author:   mobin@mit.edu (Usman Y. Mobin)
-# Purpose:  Page to delete a neighborhood
 
-set_the_usual_form_variables
-# neighborhood_node, dir_node
+ad_page_contract {
+    Page to delete a neighborhood.
 
-# --------------------------- initialErrorCheck codeBlock ----
+    @param neighborhood_node System variable to get us back where we started
+    @param dir_node Node to delete
 
-set exception_count 0
-set exception_text ""
-
-if { ![info exists dir_node] || [empty_string_p $dir_node] } {
-    ad_return_error "Neighborhood Target Node for deletion Missing."
-    return
-}
-
-if { ![info exists neighborhood_node] || [empty_string_p $neighborhood_node] } {
-    ad_return_error "Neighborhood Node Information Missing"
-    return
-}
-
-if {$exception_count > 0} { 
-    ad_return_complaint $exception_count $exception_text
-    return
+    @author Usman Y. Mobin (mobin@mit.edu)
+    @creation-date Thu Jan 27 02:21:55 EST 2000
+    @cvs-id rmnh-1.tcl,v 3.2.2.10 2000/07/21 04:00:46 ron Exp
+} {
+    neighborhood_node:notnull,naturalnum
+    dir_node:notnull,naturalnum
 }
 
 # ------------------------------ initialization codeBlock ----
@@ -43,34 +28,25 @@ if { $user_id == 0 } {
 
 # ------------------------ initialDatabaseQuery codeBlock ----
 
-# The database handle (a thoroughly useless comment)
-set db [ns_db gethandle]
-
 # Checking for site-wide administration status
-set admin_p [ad_administrator_p $db $user_id]
-
-# Checking for site-wide administration status
-set admin_p [ad_administrator_p $db $user_id]
+set admin_p [ad_administrator_p $user_id]
 
 if {$admin_p == 0} {
-    ad_returnredirect "dialog-class.tcl?title=Access Management&text=Unable to delete the neighborhood you requested.<br>Insufficient permission to perform requested database access in DeleteNeighborhood.&btn1=Okay&btn1target=neighborhoods.tcl&btn1keyvalpairs=neighborhood_node $neighborhood_node"
+    ad_returnredirect "dialog-class?title=Access Management&text=Unable to delete the neighborhood you requested.<br>Insufficient permission to perform requested database access in DeleteNeighborhood.&btn1=Okay&btn1target=neighborhoods&btn1keyvalpairs=neighborhood_node $neighborhood_node"
     return
     
 }
 
-set dml_sql "
+set delete_sql "
 delete from users_neighborhoods
-where neighborhood_id=$dir_node
+where neighborhood_id=:dir_node
 "
 
-ns_db dml $db $dml_sql
+db_dml delete_neighborhood $delete_sql
 
 # And off with the handle!
-ns_db releasehandle $db
+db_release_unused_handles
 
 # And let's go back to the main maintenance page
-ad_returnredirect neighborhoods.tcl?neighborhood_node=$neighborhood_node
-
-
-
+ad_returnredirect neighborhoods?neighborhood_node=$neighborhood_node
 

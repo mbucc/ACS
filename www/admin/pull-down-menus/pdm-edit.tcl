@@ -1,26 +1,43 @@
-# admin/pdm/pdm-edit.tcl
-#
-# Author: aure@caltech.edu, Feb 2000
-# 
-# Page to add a new pdm to the system
-#
-# $Id: pdm-edit.tcl,v 1.1.2.1 2000/03/16 05:33:10 aure Exp $
-# -----------------------------------------------------------------------------
+# /www/admin/pull-down-menus/pdm-edit.tcl
+ad_page_contract {
 
-ad_page_variables {menu_id}
+  Page to edit layout properties of one menu group.
 
-set db [ns_db gethandle]
+  @param menu_id menu which we're editing
+
+  @author aure@caltech.edu
+  @creation-date Feb 2000
+  @cvs-id pdm-edit.tcl,v 1.3.2.6 2000/09/22 01:35:58 kevin Exp
+
+} {
+
+  menu_id:integer
+
+}
+
+
+
 
 # get the next available menu_id to pass to the processing form
 # for double click protection
 
-set selection [ns_db 0or1row $db "
-    select *
+db_1row menu_properties {
+    select
+      default_p, orientation, menu_key,
+      x_offset, y_offset, element_height, element_width,
+      main_menu_font_style, sub_menu_font_style, sub_sub_menu_font_style,
+      main_menu_bg_img_url, main_menu_bg_color,
+      main_menu_hl_img_url, main_menu_hl_color,
+      sub_menu_bg_img_url, sub_menu_bg_color,
+      sub_menu_hl_img_url, sub_menu_hl_color,
+      sub_sub_menu_bg_img_url, sub_sub_menu_bg_color,
+      sub_sub_menu_hl_img_url, sub_sub_menu_hl_color
     from pdm_menus
-    where menu_id = $menu_id"]
-set_variables_after_query
+    where menu_id = :menu_id
+}
 
-ns_db releasehandle $db
+
+db_release_unused_handles
 
 if {$default_p == "t"} {
     set default_question [export_form_vars default_p]
@@ -43,7 +60,7 @@ if {$orientation == "horizontal"} {
 
 set title "Edit Pull-Down Menu: $menu_key"
 
-ns_return 200 text/html "
+doc_return  200 text/html "
 [ad_header_with_extra_stuff $title [ad_pdm $menu_key 5 5] [ad_pdm_spacer $menu_key]]
 
 <h2>$title</h2>
@@ -58,7 +75,7 @@ ns_return 200 text/html "
 <table>
  <tr>
   <th align=right>Name:</th>
-  <td colspan=2><input type=text name=menu_key value=\"$menu_key\" size=20></td>
+  <td colspan=2><input type=text name=menu_key value=\"[ad_quotehtml $menu_key]\" size=20></td>
  </tr>
 
  $default_question
@@ -144,6 +161,4 @@ ns_return 200 text/html "
 </form>
 
 [ad_admin_footer]"
-
-
 

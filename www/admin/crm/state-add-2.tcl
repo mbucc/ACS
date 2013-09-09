@@ -1,19 +1,32 @@
-# $Id: state-add-2.tcl,v 3.0.4.1 2000/04/28 15:08:31 carsten Exp $
-set_the_usual_form_variables
-# state_name, description
+# /www/admin/crm/state-add-2.tcl
 
-set db [ns_db gethandle]
-
-with_catch errmsg {
-    ns_db dml $db "insert into crm_states (state_name, description) values ('$QQstate_name', '$QQdescription')"
+ad_page_contract {
+    @param state_name
+    @param description
+    @author Jin Choi(jsc@arsdigita.com)
+    @cvs-id state-add-2.tcl,v 3.2.2.10 2000/09/22 01:34:38 kevin Exp
 } {
-    ad_return_warning "Error Creating CRM State" "There was a database error encountered while creating your new customer state. Most likely, there already exists a state of the same name. The Oracle error message was:
-<pre>
-$errmsg
-</pre>
-[ad_admin_footer]"
-    return
+    state_name:notnull,trim
+    description:notnull
+} 
+
+db_dml crm_state_insert "insert into crm_states (state_name, description) 
+  select :state_name, :description from dual
+  where not exists (select 1 from crm_states where state_name = :state_name)"
+
+set insert_succ_p [db_string crm_state_insert_check "select count(*) from crm_states where state_name = :state_name and description = :description"]
+
+db_release_unused_handles
+
+if { $insert_succ_p } {
+    ad_returnredirect "index"
+} else {
+    doc_return  200 text/html "[ad_header "State not added"]
+  <h2>State not added</h2>
+    [ad_admin_context_bar [list "/admin/crm" CRM] "Add a State"]
+    <hr>
+    <p> We are sorry. The state <i>$state_name</i> could not be added because a state of the same
+    name exists already.
+    
+    [ad_footer]"
 }
-
-
-ad_returnredirect "index.tcl"

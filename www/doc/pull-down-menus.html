@@ -1,6 +1,6 @@
 <html>
 <!--AD_DND-->
-<!--$Id: pull-down-menus.html,v 3.1.2.2 2000/03/16 05:36:27 aure Exp $-->
+<!--pull-down-menus.html,v 3.6 2000/06/17 18:49:10 ron Exp-->
 
 <head>
 <title>Pull Down Menu System</title>
@@ -9,7 +9,7 @@
 <body bgcolor=#ffffff text=#000000>
 <h2>Pull Down Menu System</h2>
 
-part of the <a href="index.html">ArsDigita Community System</a>
+part of the <a href="index">ArsDigita Community System</a>
 by <a href="http://aure.com/">Aurelius Prochazka</a>
 
 <hr>
@@ -19,7 +19,7 @@ by <a href="http://aure.com/">Aurelius Prochazka</a>
 <li> Adminstration directory: <a href="/admin/pull-down-menus/">/admin/pull-down-menus/</a> (must use https://)
 <li> Utility Directory: /pull-down-menus/
 <li> data model: <a href="/doc/sql/pull-down-menus.sql">/doc/sql/pull-down-menus.sql</a>
-<li> procedures: /tcl/pull-down-menu-defs.tcl
+<li> procedures: /tcl/pull-down-menu-defs
 </ul>
 
 <h3> The Big Picture </h3>
@@ -29,7 +29,7 @@ information architecture for a web site.  It is one of the things that
 we usually have to write from scratch for each site we create using
 the ArsDigita Community System (ACS).  As of February, 2000 the ACS
 provides only two navigation tools, <a
-href=content-sections.html>content sections</a> and context bars.  <p>
+href=content-sections>content sections</a> and context bars.  <p>
 With this module you can define two traditional site navigation
 methods - the top navbar (e.g. <a
 href=http://ibm.com/>http://ibm.com/</a> or <a
@@ -111,14 +111,19 @@ create table pdm_menu_items (
 
 <h3> Limitations and known bugs</h3>
 
-Not currently compatible with versions of Netscape 3.0 or Internet Explorer 3.0 (or earlier).
+The main bugs are that the sidebar is lacking compared to the horizontal menu and that the output is not compatible with versions of Netscape 3.0 or Internet Explorer 3.0 (or earlier).
 <p>
 Netscape does not correctly place form elements on layers.  THe best way to deal with this problem is to try to place the pull-down in a place where it won't interact much with forms.   For instance, the menu bar could be at the top of a header image and only ever overlay the header.
-
+<p>
+If a top-level menu item has no children, a javascript error will occur on mouse-over.   
 <h3> Future enhancements</h3>
 
-Need to improve the side bar version and user and programming documentation.
-
+Need to improve the side bar version and user and programming documentation.  There has also been the following suggestions:
+<ul>
+<li> Allow menu items to be nested deeper (the current limit is 2 deep).
+<li> Instead of a mouse-over, make the menus drop down on mouse-click.
+</ul>
+which are being looked into.
 <hr>
 <a href="mailto:aure@arsdigita.com"><address>aure@arsdigita.com</address></a>
 </body>

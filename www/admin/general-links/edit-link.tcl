@@ -1,11 +1,19 @@
 # File: /admin/general-links/edit-link.tcl
-# Date: 2/01/2000
-# Author: tzumainn@arsdigita.com 
-#
-# Purpose: 
-# Step 1 of 2 in editing a link
-#
-# $Id: edit-link.tcl,v 3.0 2000/02/06 03:23:43 ron Exp $
+
+ad_page_contract {
+    Step 1 of 2 in editing a link
+
+    @param link_id The ID of the link to edit
+    @param return_url Where to go when finished editing
+
+    @author Tzu-Mainn Chen (tzumainn@arsdigita.com)
+    @creation-date 2/01/2000
+    @cvs-id edit-link.tcl,v 3.2.2.6 2000/09/22 01:35:25 kevin Exp
+} {
+    link_id:notnull,naturalnum
+    {return_url "index"}
+}
+
 #--------------------------------------------------------
 
 if {[ad_read_only_p]} {
@@ -15,31 +23,22 @@ if {[ad_read_only_p]} {
 
 set admin_id [ad_maybe_redirect_for_registration]
 
-ad_page_variables {link_id {return_url "index.tcl"}}
-
-set db [ns_db gethandle]
-
-set selection [ns_db 0or1row $db "select url, link_title, link_description, approved_p
+if {![db_0or1row select_one_link_info "select url, link_title, link_description, approved_p
 from general_links
-where link_id = $link_id"]
-
-
-if { $selection == "" } {
+where link_id = :link_id"]} {
    ad_return_error "Can't find link" "Can't find link $link_id"
    return
 }
 
-set_variables_after_query
+set category_select [ad_categorization_widget -which_table "general_links" -what_id $link_id]
 
-set category_select [ad_categorization_widget -db $db -which_table "general_links" -what_id $link_id]
-
-ns_db releasehandle $db
+db_release_unused_handles
 
 if {[empty_string_p $url]} {
     set url "http://"
 }
 
-set body "[ad_header "Edit Link" ]
+set page_content "[ad_header "Edit Link" ]
 
 <h2>Edit Link</h2>
 
@@ -48,7 +47,7 @@ set body "[ad_header "Edit Link" ]
 <hr>
 
 <blockquote>
-<form action=edit-link-2.tcl method=post>
+<form action=edit-link-2 method=post>
 
 <table>
 
@@ -69,9 +68,9 @@ set body "[ad_header "Edit Link" ]
 "
 
 if {[regexp {option} $category_select match] == 0} {
-    append body "<input type=hidden name=category_id_list value=\"\">"
+    append page_content "<input type=hidden name=category_id_list value=\"\">"
 } else {
-    append body "
+    append page_content "
     <tr>
     <th align=left valign=top>Associated Categories</th>
     <td valign=top>$category_select</td>
@@ -79,7 +78,7 @@ if {[regexp {option} $category_select match] == 0} {
 "
 }
 
-append body "
+append page_content "
 <tr>
 <th align=left>Approval status</th>
 <td align=left><select name=approved_p>
@@ -100,5 +99,5 @@ append body "
 "
 #-- serve the page ------------
 
-ns_return 200 text/html $body
+doc_return  200 text/html $page_content
 

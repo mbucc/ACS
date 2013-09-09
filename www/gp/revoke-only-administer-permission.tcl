@@ -1,28 +1,27 @@
-#
 # /www/gp/confirm-revoke.tcl
 #
-# created by michael@arsdigita.com, 2000-03-23
-#
-# Confirmation page to present before revoking a permission
-# for a given row in the database.
-#
-# $Id: revoke-only-administer-permission.tcl,v 1.1.2.1 2000/03/23 18:44:31 michael Exp $
-#
 
-ad_page_variables {
-    on_what_id
-    on_which_table
-    object_name
-    permission_id
-    return_url
+ad_page_contract {
+    @author michael@arsdigita.com
+    @creation-date 2000-03-23
+    @cvs-id revoke-only-administer-permission.tcl,v 3.1.8.4 2000/07/21 04:00:13 ron Exp
+
+    Confirmation page to present before revoking a permission
+    for a given row in the database.
+} {
+    on_what_id:integer,notnull
+    on_which_table:notnull
+    object_name:notnull
+    permission_id:integer,notnull
+    return_url:notnull
 }
+
 
 set user_id [ad_verify_and_get_user_id]
 
-set db [ns_db gethandle]
 
-ad_require_permission $db $user_id "administer" $on_what_id $on_which_table
+ad_require_permission $user_id "administer" $on_what_id $on_which_table
 
-ns_db releasehandle $db
+db_release_unused_handles
 
 ad_return_template

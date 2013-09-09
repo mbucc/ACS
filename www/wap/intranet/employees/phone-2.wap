@@ -1,0 +1,90 @@
+# /www/wap/intranet/employees/phone-2.wap
+
+ad_page_contract {
+    Submit Target for phone.wap. Does a phone book search
+  
+    @param tosearch What field to search
+    @param firstfew
+    @param user_id optional
+    @creation-date Wed May 24 03:44:53 2000
+    @author Andrew Grumet (aegrumet@arsdigita.com)
+    @cvs_id phone-2.wap,v 1.2.2.3 2000/07/24 14:23:32 aegrumet Exp
+} {
+    {tosearch last_name}
+    firstfew
+    user_id:integer,optional
+}
+
+if [empty_string_p $firstfew] {
+    wml_return_complaint "No string found."
+    return 
+}
+
+if { !( ([string compare $tosearch first_names] == 0) || \
+	([string compare $tosearch email] == 0) || \
+	([string compare $tosearch last_name] == 0) ) } {
+    set tosearch last_name
+}
+
+# this computes some SQL dynamically, but the checks above on tosearch
+# should make it safe. someone please check this
+
+if [info exists user_id]  {
+    set extra_sql "and u.user_id = :user_id"
+} else {
+    set sql_sets [util_numeric_to_sql_sets $firstfew]
+    set extra_sql {}
+    if [llength $sql_sets] {
+	set char_i 1
+	foreach one_set $sql_sets {
+	    append extra_sql \
+		    "and lower(substr(u.$tosearch,$char_i,1)) in $one_set\n"
+	    incr char_i
+	}
+    }
+} 
+
+set employee_info [db_list_of_lists wap_phone_2_employee_info_list "
+ 	select u.first_names||' '||u.last_name as name,
+                c.home_phone, c.work_phone, c.cell_phone
+           from users_active u, users_contact c
+          where u.user_id=c.user_id(+) 
+            and ad_group_member_p ( u.user_id, [im_employee_group_id] ) = 't'
+            $extra_sql"]
+
+db_release_unused_handles
+
+if { [llength $employee_info] == 0 } {
+    wml_return "<wml>[wml_templated_home_link][wml_simple_card -back_link "No match found."]</wml>"
+    return
+}
+
+if { [llength $employee_info] > 10 } {
+    wml_return "<wml>[wml_templated_home_link][wml_simple_card -back_link "Over 10 matches found.  Try narrowing your search."]</wml>"
+    return
+}
+
+if { [llength $employee_info] == 1 } {
+    wml_return "<wml>[wml_templated_home_link][wml_one_employee_card [lindex $employee_info 0]]</wml>"
+    return
+}
+
+# between one and ten matches were found.  Upload all cards and let them
+# select one.
+
+set i 0
+set main_list [list]
+foreach employee $employee_info {
+    set name [lindex $employee 0]
+    set card_id "card$i"
+    lappend main_list [list "#$card_id" $name]
+    append employee_wml [wml_one_employee_card $employee $card_id]
+    incr i
+}
+wml_return "<wml>
+[wml_templated_home_link]
+[wml_simple_card [wml_select_widget -onpick main $main_list]]
+$employee_wml
+</wml>"
+
+

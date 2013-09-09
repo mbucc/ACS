@@ -1,37 +1,33 @@
 # /faq/admin/delete-2.tcl
 #
-# Deletes a q/a from the faq table
-#
-# by dh@arsdigita.com, created on 12/19/99
-#
-# $Id: delete-2.tcl,v 3.0.4.2 2000/04/28 15:10:25 carsten Exp $
-#
-# Note: if page is accessed through /groups pages then group_id and group_vars_set are already set up in 
-#       the environment by the ug_serve_section. group_vars_set contains group related variables (group_id, 
-#       group_name, group_short_name, group_admin_email, group_public_url, group_admin_url, group_public_root_url,
-#       group_admin_root_url, group_type_url_p, group_context_bar_list and group_navbar_list)
 
-ad_page_variables {entry_id faq_id}
+ad_page_contract {
+    Deletes a q/a from the faq table
 
-set_the_usual_form_variables 0
-# maybe scope, maybe scope related variables (group_id)
+    @author dh@arsdigita.com
+    @creation-date 12/19/99
+    @creation-id delete-2.tcl,v 3.3.2.7 2000/07/23 20:15:42 luke Exp
+
+    Note: if page is accessed through /groups pages then group_id and group_vars_set are already set up in 
+    the environment by the ug_serve_section. group_vars_set contains group related variables (group_id, 
+    group_name, group_short_name, group_admin_email, group_public_url, group_admin_url, group_public_root_url,
+    group_admin_root_url, group_type_url_p, group_context_bar_list and group_navbar_list)
+} {
+    entry_id:integer,notnull
+    faq_id:integer,notnull
+    scope:optional
+    group_id:integer,optional
+}
+
 
 ad_scope_error_check
-set db [ns_db gethandle]
-faq_admin_authorize $db $faq_id
 
-ns_db dml $db "delete from faq_q_and_a where entry_id = $entry_id"
-
-ns_db releasehandle $db
-
-ad_returnredirect "one?[export_url_scope_vars faq_id]"
+faq_admin_authorize $faq_id
 
 
+db_dml faq_delete "delete from faq_q_and_a where entry_id = :entry_id"
 
+db_release_unused_handles
 
-
-
-
-
-
+ad_returnredirect "one?[export_url_vars faq_id]"
 

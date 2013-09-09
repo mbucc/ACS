@@ -7,7 +7,7 @@
 <body bgcolor=#ffffff text=#000000>
 <h2>Upgrading an ACS installation to AOLserver 3.0</h2>
 
-part of the <a href="index.html">ArsDigita Community System</a>
+part of the <a href="index">ArsDigita Community System</a>
 by <a href="mailto:markd@arsdigita.com">Mark Dalrymple</a>
 
 <hr>
@@ -22,21 +22,21 @@ installation or reimplemented them from scratch.
 
 <p>
 
-You'll need to have <a href=???>000-aolserver-3-specific.tcl</a> in your
+You'll need to have <a href=???>000-aolserver-3-specific</a> in your
 tcl library, which is in <code>/tcl</code> in a typical ACS installation.
 
 <p>
 
 You'll also need to have the newer 2.0 or later version of the ArsDigita
-<a href="http://arsdigita.com/free-tools/oracle-driver.html">Oracle Driver</a>
+<a href="http://arsdigita.com/free-tools/oracle-driver">Oracle Driver</a>
 
 <p>
 
 Tcl page support is also needed.  You can either pick up 
 <a href="http://www.dqd.com/~mayoff/aolserver/">Rob Mayoff's
 Tcl page module</a>, which is a C-based add-on which includes caching
-of tcl pages, or the original <a href=???>file.tcl</a>.
-<i>??? Maybe just include file.tcl's guts in 000-aolserver-3-specific.tcl ???</i>
+of tcl pages, or the original <a href=???>file</a>.
+<i>??? Maybe just include file's guts in 000-aolserver-3-specific ???</i>
 
 </blockquote>
 
@@ -65,7 +65,7 @@ the same server name, they'll end up trying to kill each other.
 
 To make ns_register_adptag work (which includes things like
 <code>&lt;codeexample&gt;</code> defined in
-<code>teaching-defs.tcl</code>) you'll need to have this configuration
+<code>teaching-defs</code>) you'll need to have this configuration
 file entry:
 
 <blockquote><pre>

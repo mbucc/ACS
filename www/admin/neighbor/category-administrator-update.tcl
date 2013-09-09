@@ -1,31 +1,33 @@
-# $Id: category-administrator-update.tcl,v 3.0 2000/02/06 03:25:53 ron Exp $
-set_form_variables 0
+# /www/admin/neighbor/category-administrator-update.tcl
+ad_page_contract {
+    Edits the administrator of a given category.
 
-# category_id 
+    @author Philip Greenspun (philg@mit.edu)
+    @creation-date 1 January 1996
+    @cvs-id category-administrator-update.tcl,v 3.3.2.3 2000/09/22 01:35:41 kevin Exp
+    @param category_id the ID of the category whose administrator should be changed
+} {
+    category_id:notnull,integer
+}
 
-set db [ns_db gethandle]
-
-
-set selection [ns_db 1row $db "select n_to_n_primary_categories.*,
-users.email from n_to_n_primary_categories, users
-where category_id = $category_id
-and users.user_id(+) = n_to_n_primary_categories.primary_maintainer_id"] 
-set_variables_after_query
+db_1row select_category "
+  select n_to_n_primary_categories.*,
+         users.email 
+    from n_to_n_primary_categories, users
+   where category_id = :category_id
+     and users.user_id(+) = n_to_n_primary_categories.primary_maintainer_id"
 set action "Edit  $primary_category administrator"
 
-
-ReturnHeaders
-
-ns_write "[neighbor_header "$action"]
+set page_content "[neighbor_header "$action"]
 
 <h2>$action</h2>
 
-[ad_admin_context_bar [list "index.tcl" "Neighbor to Neighbor"] [list "category.tcl?[export_url_vars category_id]" "One Category"] "Update Administrator"]
+[ad_admin_context_bar [list "" "Neighbor to Neighbor"] [list "category?[export_url_vars category_id]" "One Category"] "Update Administrator"]
 
 <hr>
 
-<form action=\"/user-search.tcl\" method=post>
-<input type=hidden name=target value=\"/admin/neighbor/category-administrator-update-2.tcl\">
+<form action=\"/user-search\" method=post>
+<input type=hidden name=target value=\"/admin/neighbor/category-administrator-update-2\">
 <input type=hidden name=passthrough value=\"category_id\">
 <input type=hidden name=custom_title value=\"Choose a Member to select as an Administrator\">
 
@@ -45,3 +47,6 @@ Search for a user to be primary administrator of this domain by<br>
 </form>
 [neighbor_footer]
 "
+
+db_release_unused_handles
+doc_return 200 text/html $page_content

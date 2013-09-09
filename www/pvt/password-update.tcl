@@ -1,14 +1,19 @@
-# $Id: password-update.tcl,v 3.0 2000/02/06 03:53:36 ron Exp $
+ad_page_contract {
+    Let's the user change his/her password.  Asks
+    for old password, new password, and confirmation.
+
+    @cvs-id password-update.tcl,v 3.1.6.6 2000/09/22 01:39:11 kevin Exp
+} {} 
+
+
+    
 set user_id [ad_verify_and_get_user_id]
+set bind_vars [ad_tcl_vars_to_ns_set user_id]
 
-set db [ns_db gethandle]
+db_1row pvt_password_update_user_information "select first_names, 
+last_name, email, url from users where user_id=:user_id" -bind $bind_vars
 
-set selection [ns_db 1row $db "select first_names, last_name, email, url from users where user_id=$user_id"]
-set_variables_after_query
-
-ReturnHeaders 
-
-ns_write "
+doc_return  200 text/html "
 [ad_header "Update Password"]
 
 <h2>Update Password</h2>
@@ -17,7 +22,7 @@ for $first_names $last_name in [ad_site_home_link]
 
 <hr>
 
-<form method=POST action=\"password-update-2.tcl\">
+<form method=POST action=\"password-update-2\">
 
 <table>
 <tr>

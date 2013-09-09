@@ -1,17 +1,22 @@
-# $Id: data-block-waits.tcl,v 3.0 2000/02/06 03:25:27 ron Exp $
-set db [cassandracle_gethandle]
+# /admin/monitoring/cassandracle/performance/data-block-waits.tcl
+
+ad_page_contract {
+    Displays cumulative Data Block Waits since database startup.
+    @cvs-id data-block-waits.tcl,v 3.0.12.5 2000/09/22 01:35:36 kevin Exp
+} {
+}
 
 set the_query "select
-  A.Value, B.Count from V\$PARAMETER A, V\$WAITSTAT B
+  A.Value as writers, B.Count as waits 
+from V\$PARAMETER A, V\$WAITSTAT B
 where 
   (A.Name = 'db_writers' or A.Name = 'dbwr_io_slaves')
   and B.Class = 'data block'"
 
-set wait_info [database_1row_to_tcl_list $db $the_query]
+db_1row mon_data_block_waits $the_query
 
-ReturnHeaders
-ns_write "
 
+set page_content "
 [ad_admin_header "Data Block Waits"]
 
 <h2>Data Block Waits</h2>
@@ -23,10 +28,10 @@ ns_write "
 <blockquote>
 
 <table cellpadding=4>
-<tr><th>Number of DBWR process</th><th>Cumulative Data Block Waits</th></tr>
+<tr><th>Number of DBWR processes</th><th>Cumulative Data Block Waits</th></tr>
 <tr>
-  <td align=right>[lindex $wait_info 0]</td>
-  <td align=right>[lindex $wait_info 1]</td>
+  <td align=right>$writers</td>
+  <td align=right>$waits</td>
 </tr>
 </table>
 
@@ -45,3 +50,6 @@ $the_query
 
 [ad_admin_footer]
 "
+
+
+doc_return  200 text/html $page_content

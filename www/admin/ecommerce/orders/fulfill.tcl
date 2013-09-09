@@ -1,40 +1,46 @@
-# $Id: fulfill.tcl,v 3.0.4.1 2000/04/28 15:08:44 carsten Exp $
-set_the_usual_form_variables
-# order_id
+# /www/admin/ecommerce/orders/fulfill.tcl
+ad_page_contract {
+  Fulfill an order.
 
-# the customer service rep must be logged on
-set customer_service_rep [ad_get_user_id]
-
-if {$customer_service_rep == 0} {
-    set return_url "[ns_conn url]?[export_entire_form_as_url_vars]"
-    ad_returnredirect "/register.tcl?[export_url_vars return_url]"
-    return
+  @author Eve Andersson (eveander@arsdigita.com)
+  @creation-date Summer 1999
+  @cvs-id fulfill.tcl,v 3.3.6.3 2000/08/16 18:49:05 seb Exp
+} {
+  order_id:integer,notnull
 }
 
-set db [ns_db gethandle]
-set user_id [database_to_tcl_string $db "select user_id from ec_orders where order_id=$order_id"]
+ad_maybe_redirect_for_registration
 
-ReturnHeaders
-ns_write "<head>
+set user_id [db_string user_id_select "select user_id from ec_orders where order_id=:order_id"]
+
+doc_body_append "<head>
 <title>Order Fulfillment</title>
 </head>
 <body bgcolor=white text=black>
 
 <h2>Order Fulfillment</h2>
 
-[ad_admin_context_bar [list "../" "Ecommerce"] [list "index.tcl" "Orders"] [list "fulfillment.tcl" "Fulfillment"] "One Order"]
+[ad_admin_context_bar [list "../" "Ecommerce"] [list "index" "Orders"] [list "fulfillment" "Fulfillment"] "One Order"]
 
 <hr>
 
-<form name=fulfillment_form method=post action=fulfill-2.tcl>
+<form name=fulfillment_form method=post action=fulfill-2>
 [export_form_vars order_id]
+"
 
-Check off the shipped items:
+set shipping_method [db_string shipping_method_select "select shipping_method from ec_orders where order_id=:order_id"]
+
+doc_body_append "
+[ec_decode $shipping_method "no shipping" "Check off the items that have been fulfilled" "Check off the shipped items"]:
+
 <blockquote>
-[ec_items_for_fulfillment_or_return $db $order_id "t"]
+[ec_items_for_fulfillment_or_return $order_id "t"]
 </blockquote>
+"
 
-<p>
+if { $shipping_method != "no shipping" } {
+
+    doc_body_append "<p>
 <br>
 Enter the following if relevant:
 
@@ -42,11 +48,11 @@ Enter the following if relevant:
 <table>
 <tr>
 <td>Shipment date (required):</td>
-<td>[ad_dateentrywidget shipment_date] [ec_timeentrywidget shipment_date "[ns_localsqltimestamp]"]</td>
+<td>[ad_dateentrywidget shipment_date] [ec_timeentrywidget shipment_time]</td>
 </tr>
 <tr>
 <td>Expected arrival date:</td>
-<td>[ad_dateentrywidget expected_arrival_date ""] [ec_timeentrywidget expected_arrival_date ""]</td>
+<td>[ad_dateentrywidget expected_arrival_date ""] [ec_timeentrywidget expected_arrival_time ""]</td>
 </tr>
 <tr>
 <td>Carrier</td>
@@ -71,8 +77,15 @@ Other:
 </tr>
 </table>
 </blockquote>
+"
+} else {
+    doc_body_append "Fulfillment date (required):
+[ad_dateentrywidget shipment_date] [ec_timeentrywidget shipment_time]
+<p>
+"
+}
 
-<center>
+doc_body_append "<center>
 <input type=submit value=\"Continue\">
 </center>
 

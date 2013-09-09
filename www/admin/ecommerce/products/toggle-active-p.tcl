@@ -1,26 +1,26 @@
-# $Id: toggle-active-p.tcl,v 3.0.4.1 2000/04/28 15:08:54 carsten Exp $
-set_the_usual_form_variables
+#  www/admin/ecommerce/products/toggle-active-p.tcl
+ad_page_contract {
 
-# product_id 
-
-# we need them to be logged in
-set user_id [ad_verify_and_get_user_id]
-
-if {$user_id == 0} {
-    
-    set return_url "[ns_conn url]?[export_entire_form_as_url_vars]"
-
-    ad_returnredirect "/register.tcl?[export_url_vars return_url]"
-    return
+  @author Eve Andersson (eveander@arsdigita.com)
+  @creation-date Summer 1999
+  @cvs-id toggle-active-p.tcl,v 3.1.6.2 2000/07/22 07:57:46 ron Exp
+} {
+  product_id:integer,notnull
 }
 
-set db [ns_db gethandle]
+# we need them to be logged in
+ad_maybe_redirect_for_registration
+set user_id [ad_get_user_id]
 
-ns_db dml $db "update ec_products 
+set peeraddr [ns_conn peeraddr]
+
+db_dml toggle_active_p_update "
+update ec_products 
 set active_p = logical_negation(active_p),
     last_modified = sysdate, 
-    last_modifying_user = $user_id,
-     modified_ip_address = '[DoubleApos [ns_conn peeraddr]]' 
-where product_id = $product_id"
+    last_modifying_user = :user_id,
+    modified_ip_address = :peeraddr
+where product_id = :product_id
+"
 
 ad_returnredirect "one.tcl?[export_url_vars product_id]"

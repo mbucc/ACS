@@ -1,31 +1,39 @@
 # /www/download/admin/download-add-version.tcl
-#
-# Date:     01/04/2000
-# Author :  ahmeds@mit.edu
-# Purpose:  adds new downloadable file version
-#
-# $Id: download-add-version.tcl,v 3.0.6.2 2000/05/18 00:05:15 ron Exp $
-# -----------------------------------------------------------------------------
+ad_page_contract {
+    adds a new downloadable file version
 
-set_the_usual_form_variables 0
-# maybe scope, maybe scope related variables (group_id)
+    @param download_id the file we are adding a version to
+    @param scope
+    @param group_id
+
+    @author ahmeds@mit.edu
+    @creation-date 4 Jan 2000
+    @cvs-id download-add-version.tcl,v 3.9.2.6 2000/09/24 22:37:14 kevin Exp
+} {
+    download_id:integer,notnull
+    scope:optional
+    group_id:optional,integer
+}
+
+# -----------------------------------------------------------------------------
 
 ad_scope_error_check
 
-set db [ns_db gethandle]
-ad_scope_authorize $db $scope admin group_admin none
 
-set download_name [database_to_tcl_string $db \
-	"select download_name from downloads where download_id = $download_id"]
+ad_scope_authorize $scope admin group_admin none
+
+db_1row download_name "
+select download_name from downloads 
+where download_id = :download_id"
 
 set html "
-<form enctype=multipart/form-data method=post action=download-add-version-2.tcl>
+<form enctype=multipart/form-data method=post action=download-add-version-2>
 
 [export_form_scope_vars download_id]
 
 <input type=hidden 
        name=version_id 
-       value=\"[database_to_tcl_string $db "select download_version_id_sequence.nextval from dual"]\">
+       value=\"[db_string next_version_id "select download_version_id_sequence.nextval from dual"]\">
 
 <p>
 
@@ -99,15 +107,15 @@ set html "
 
 set page_title "Upload"
 
-ns_return 200 text/html "
-[ad_scope_header $page_title $db]
+doc_return 200 text/html "
+[ad_scope_header $page_title]
 
 <h2>$page_title</h2>
 
 [ad_scope_context_bar_ws \
-	[list "index.tcl?[export_url_scope_vars]" "Download"] \
-	[list "/download/admin" "Admin"] \
-	[list "download-view.tcl?[export_url_scope_vars download_id]" "$download_name"] \
+	[list "/download/index?[export_url_scope_vars]" "Download"] \
+	[list "/download/admin/index?[export_url_scope_vars]" "Admin"] \
+	[list "download-view?[export_url_scope_vars download_id]" "$download_name"] \
 	$page_title]
 
 <hr>

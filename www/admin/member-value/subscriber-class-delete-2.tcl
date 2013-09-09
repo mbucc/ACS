@@ -1,17 +1,24 @@
-# $Id: subscriber-class-delete-2.tcl,v 3.0 2000/02/06 03:25:00 ron Exp $
-set_the_usual_form_variables
+# /www/admin/member-value/subscriber-class-delete-2.tcl
 
-# subscriber_class, new_subscriber_class
+ad_page_contract {
+    Delete a subscriber class and move all its users to another subscriber class.
+    @param subscriber_class the subscriber class to delete
+    @param new_subscriber_class the subscriber for the users in the old subscriber class to move to
+    @author mbryzek@arsdigita.com
+    @creation-date Tue Jul 11 20:52:42 2000
+    @cvs-id subscriber-class-delete-2.tcl,v 3.2.2.6 2000/09/22 01:35:32 kevin Exp
 
-set db [ns_db gethandle]
+} {
+    subscriber_class:notnull
+    new_subscriber_class:notnull
+}
 
-ReturnHeaders
 
-ns_write "[ad_no_menu_header "Deleting $subscriber_class"]
+set page_content "[ad_admin_header "Deleting $subscriber_class"]
 
 <h2>Deleting $subscriber_class</h2>
 
-from <a href=\"index.tcl\">[ad_system_name]</a>
+[ad_admin_context_bar [list "" "Member Value"] "Deleting Subscriber Class"]
 
 <hr>
 
@@ -19,18 +26,21 @@ Moving all the old subscribers to $new_subscriber_class ...
 
 "
 
-ns_db dml $db "begin transaction"
+db_transaction {
 
+db_dml mv_update_subscriber_class "update users_payment set subscriber_class = :new_subscriber_class where subscriber_class = :subscriber_class" 
 
-ns_db dml $db "update users_payment set subscriber_class = '$QQnew_subscriber_class' where subscriber_class = '$QQsubscriber_class'"
+append page_content " .. done. <p> Now deleting the subscriber class from mv_monthly_rates... " 
 
-ns_write " .. done.  Now deleting the subscriber class from mv_monthly_rates... " 
+db_dml mv_delete_subscriber_class "delete from mv_monthly_rates where subscriber_class = :subscriber_class" 
+}
 
-ns_db dml $db "delete from mv_monthly_rates where subscriber_class = '$QQsubscriber_class'"
+db_release_unused_handles
 
-ns_db dml $db "end transaction"
+append page_content " ... done.
 
-ns_write " ... done.
-
-[ad_no_menu_footer]
+[ad_admin_footer]
 "
+
+doc_return  200 text/html $page_content
+

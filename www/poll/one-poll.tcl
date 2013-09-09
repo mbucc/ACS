@@ -1,16 +1,21 @@
-# $Id: one-poll.tcl,v 3.0 2000/02/06 03:52:37 ron Exp $
-# one-poll.tcl -- display one poll.
+# one-poll.tcl
 
-set_the_usual_form_variables
-# expects poll_id
+ad_page_contract {
+    Display one poll.
+
+    @param poll_id the ID of the poll
+    
+    @cvs-id one-poll.tcl,v 3.2.2.4 2000/07/21 04:03:17 ron Exp
+} {
+    poll_id:naturalnum,notnull
+}
 
 
 set header_image [ad_parameter IndexPageDecoration polls]
 set context_bar [ ad_context_bar_ws_or_index [list "/poll" "Polls"] "One Poll"]
 
-
 # throw an error if this isn't an integer
-validate_integer "poll_id" $poll_id
+
 set info [util_memoize "poll_info_internal $poll_id"]
 
 set poll_name [lindex $info 0]
@@ -27,7 +32,6 @@ if { $active_p == "f" } {
     return
 }
 
-
 # if registration required, see if they've already voted and
 # disallow.
 # if registration isn't required, don't bother (why restrict
@@ -39,15 +43,15 @@ if { $require_registration_p == "t" } {
    ad_maybe_redirect_for_registration
 }
 
-
 set form_html "
 [export_form_vars poll_id]
 "
 
 # get a list with the labels and choice id's
 
-validate_integer "poll_id" $poll_id
 set choices [util_memoize "poll_labels_internal $poll_id"]
 
 ad_return_template
+
+
 

@@ -1,35 +1,38 @@
-# $Id: describe-table.tcl,v 3.0 2000/02/06 03:25:23 ron Exp $
-# called from ../users/one-user-specific-objects.tcl
+# /admin/monitoring/cassandracle/objects/describe-table.tcl
 
-set_form_variables
+ad_page_contract {
+    Displays info about objects of a particular type owned by a particular user.
+    Called from ../users/one-user-specific-objects.tcl
+
+    @cvs-id describe-table.tcl,v 3.2.2.5 2000/09/22 01:35:35 kevin Exp
+} {
+    object_name
+}
+
+
 
 # check arguments -----------------------------------------------------
 
 # it is not clear to me whey we have one object_name argument here
-# of the format OWBER.TABLE_NAME that needs to be parsed, rather than 
+# of the format OWNER.TABLE_NAME that needs to be parsed, rather than 
 # two seperate arguments?
 
-# $object_type   REQUIRED ARGUMENT
-if { ![info exists object_name] } {
-    ns_returnerror 500 "Missing \$object_name (format: OWBER.TABLE_NAME)"
-    return
-}
+# $object_name   REQUIRED ARGUMENT
 set object_info [split $object_name .]
 set owner [lindex $object_info 0]
 set object_name [lindex $object_info 1]
 
-
 # check parameter to see if we want to display SQL as comments
-# actually harcoded now during development, but will use ns_info later
+# actually hardcoded now during development, but will use ns_info later
 
 set show_sql_p "t"
 
 # arguments OK, get database handle, start building page ----------------------------------------
 
 set page_name "Description of table $owner.$object_name"
-ReturnHeaders
-set db [cassandracle_gethandle]
-ns_write "
+
+
+set page_content "
 
 [ad_admin_header "$page_name"]
 
@@ -39,10 +42,9 @@ ns_write "
 
 <!-- version 1.1, 1999-12-08, Dave Abercrombie, abe@arsdigita.com -->
 <hr>
+<a NAME=\"columns\"></a>
 "
 
-
-ns_write "<a NAME=\"columns\"></a>\n"
 # tabular display of column names, datatypes, etc -------------------------------
 # the main table that displays column datatype information
 # also shows foreign keys and primary keys. The foreign
@@ -56,7 +58,6 @@ ns_write "<a NAME=\"columns\"></a>\n"
 # query easier to maintain, and the subqueries can be snagged
 # from the browser 'view source' and run as standalone
 # queries for testing, etc. 
-
 
 # build the foreign key subquery, display as comment, then use below
 set fk_subquery "
@@ -76,8 +77,8 @@ set fk_subquery "
           dba_constraints chld_tbl
      where
           -- start with child table name and owner
-          chld_tbl.owner = '$owner'
-     and  chld_tbl.table_name = '$object_name'
+          chld_tbl.owner = :owner
+     and  chld_tbl.table_name = :object_name
           -- get only foreign key constraints for child table
      and  chld_tbl.constraint_type = 'R'
           -- get column names for each constraint
@@ -85,16 +86,16 @@ set fk_subquery "
           -- join child FK constraint to parent PK constraint
      and  chld_tbl.r_constraint_name = prnt_tbl.constraint_name
           -- The remaining two criteria help performance.
-          -- Our test case runs in 0.10 second with BOTH criteria: we
+          -- Our test case runs in 0.10 second with BOTH criteria. we
           -- gave up after 20 seconds without prnt_tbl criterion, and
           -- it took about six seconds without chld_tbl criterion.
           -- Our use of these critera limits our display to foreign keys 
           -- and parents that have the same owner as the child table.
-     and  prnt_tbl.owner = '$owner'
-     and  chld_col.owner = '$owner'
+     and  prnt_tbl.owner = :owner
+     and  chld_col.owner = :owner
 "
 if { [string compare $show_sql_p "t" ]==0 } {
-    ns_write "<!-- $fk_subquery -->\n"
+    append page_content "<!-- $fk_subquery -->\n"
 }
 
 set pk_subquery "
@@ -111,17 +112,17 @@ set pk_subquery "
           dba_constraints  dc1
      where
           -- select constraints for this table
-          dc1.owner='$owner' 
-     and  dc1.table_name = '$object_name'
+          dc1.owner = :owner
+     and  dc1.table_name = :object_name
           -- limit to only primary key constraints
      and  dc1.constraint_type = 'P'
           -- link to dba_cons_columns to get column names
      and  dc1.constraint_name = dcc1.constraint_name
           -- specify owner for preformance (takes 5 seconds without)
-     and  dcc1.owner = '$owner'
+     and  dcc1.owner = :owner
 "
 if { [string compare $show_sql_p "t" ]==0 } {
-    ns_write "<!-- $pk_subquery -->\n"
+    append page_content "<!-- $pk_subquery -->\n"
 }
 
 set ak_constraint_subquery "
@@ -138,17 +139,17 @@ set ak_constraint_subquery "
           dba_constraints  dc2
      where
           -- select constraints for this table
-          dc2.owner='$owner' 
-     and  dc2.table_name = '$object_name'
+          dc2.owner = :owner
+     and  dc2.table_name = :object_name
           -- limit to only unique constraints
      and  dc2.constraint_type = 'U'
           -- link to dba_cons_columns to get column names
      and  dc2.constraint_name = dcc2.constraint_name
           -- specify owner for preformance (takes 5 seconds without)
-     and  dcc2.owner = '$owner'
+     and  dcc2.owner = :owner
 "
 if { [string compare $show_sql_p "t" ]==0 } {
-    ns_write "<!-- $ak_constraint_subquery -->\n"
+    append page_content "<!-- $ak_constraint_subquery -->\n"
 }
 
 set ak_index_subquery "
@@ -166,13 +167,13 @@ set ak_index_subquery "
      where
           -- select indexes for this table
           di.owner='ACS'
-     and  di.table_name = '$object_name'
+     and  di.table_name = :object_name
           -- limit to only unique indexes
      and  di.uniqueness = 'UNIQUE'
           -- link to dba_ind_columns to get column names
      and  di.index_name = dic.index_name
           -- specify owner for preformance (takes 5 seconds without)
-     and  dic.table_owner = '$owner'
+     and  dic.table_owner = :owner
           -- but we do not want primary key index constraints
      and not exists
          (select
@@ -184,15 +185,14 @@ set ak_index_subquery "
                dc3.constraint_name =  di.index_name
                -- the following are redundant, but help performance
                -- select constraints for this table
-          and  dc3.owner='$owner'
-          and  dc3.table_name = '$object_name'
+          and  dc3.owner = :owner
+          and  dc3.table_name = :object_name
                -- limit to only primary key constraints
           and  dc3.constraint_type = 'P')
 "
 if { [string compare $show_sql_p "t" ]==0 } {
-    ns_write "<!-- $ak_index_subquery -->\n"
+    append page_content "<!-- $ak_index_subquery -->\n"
 }
-
 
 # build the SQL and write out as comment
 set main_query "
@@ -217,8 +217,8 @@ from
      ($ak_constraint_subquery) akc,
      ($ak_index_subquery) aki
 where
-     dtc.owner='$owner' 
-and  dtc.table_name='$object_name'
+     dtc.owner = :owner
+and  dtc.table_name= :object_name
 and  dtc.table_name = pk.table_name(+)
 and  dtc.column_name = pk.column_name(+)
 and  dtc.table_name = fk.child_table_name(+)
@@ -231,11 +231,8 @@ order by
      dtc.column_id
 "
 if { [string compare $show_sql_p "t" ]==0 } {
-    ns_write "<!-- $main_query -->\n"
+    append page_content "<!-- $main_query -->\n"
 }
-
-
-
 
 # specify output columns       1             2          3       4     5     6       7
 set description_columns [list "Column Name" "Datatype" "NULL?" "PK?" "FK?" "AK(c)?" "AK(i)?"]
@@ -245,15 +242,14 @@ foreach column_heading $description_columns {
 }
 
 # begin main table
-ns_write "
+append page_content "
 <table border=1>
 <tr>$column_html</tr>
 "
 
-# run query (already have db handle) and output rows
-set selection [ns_db select $db $main_query]
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+# run query and output rows
+
+db_foreach mon_table_describe $main_query {
     
     # start row
     set row_html "<tr>\n"
@@ -284,7 +280,7 @@ while { [ns_db getrow $db $selection] } {
     if { [string compare $fk_display_flag ""]==0 } {
 	set fk_display_flag "&nbsp;"
     } else {
-	set fk_display_flag "<a href=\"./describe-table.tcl?object_name=$owner.$parent_table_name\">$fk_display_flag</a>"
+	set fk_display_flag "<a href=\"./describe-table?object_name=$owner.$parent_table_name\">$fk_display_flag</a>"
     }
     append row_html "   <td>$fk_display_flag</td>\n"
 
@@ -304,16 +300,16 @@ while { [ns_db getrow $db $selection] } {
     append row_html "</tr>\n"
 
     # write row
-    ns_write "$row_html"
+    append page_content $row_html
 }
 
 # close up table 
-ns_write "</table>\n"
+append page_content "</table>
+<a NAME=\"comments\"></a>
+<hr>
+"
 
-
-ns_write "<a NAME=\"comments\"></a>\n"
 # display comments on tables and columns, if any exist -------------------------------
-ns_write "<hr>"
 
 # we do two seperate queries: one for the table (0 or 1)
 # and one for the columns (0, 1, or many)
@@ -327,24 +323,21 @@ select
 from
      DBA_TAB_COMMENTS dtc
 where
-     dtc.owner='$owner' 
-and  dtc.table_name='$object_name'
+     dtc.owner = :owner
+and  dtc.table_name= :object_name
 and  dtc.comments is not null
 "
 if { [string compare $show_sql_p "t" ]==0 } {
-    ns_write "<!-- $table_comment_query -->\n"
+    append page_content "<!-- $table_comment_query -->\n"
 }
 
 # run query (already have db handle) and row 
 # if it exists as a paragraph of plain text
 # (hmmm... one could probably put some strange HTML
 # in the comment that could be good or bad!)
-set selection [ns_db 0or1row $db $table_comment_query]
-if {[string compare $selection ""]!=0 } {
-    set_variables_after_query
-    ns_write "<p>$table_comment</p>"
+db_foreach mon_table_comments $table_comment_query {
+    append page_content "<p>$table_comment</p>"
 }
-
 
 set column_comment_query "
 -- /objects/describe-table.tcl
@@ -363,46 +356,39 @@ where
 and  dcc.table_name = dtc.table_name
 and  dcc.column_name = dtc.column_name
      -- specify table to dcc
-and  dcc.owner='$owner'
-and  dcc.table_name='$object_name'
+and  dcc.owner= :owner
+and  dcc.table_name= :object_name
      -- specify table to dtc
      -- this is obviuosly redundant (given the join),
      -- but it helps performance on these Oracle 
      -- data dictionary views
-and  dtc.owner='$owner'
-and  dtc.table_name='$object_name'
+and  dtc.owner=:owner
+and  dtc.table_name=:object_name
      -- make sure there really is a comment
 and  dcc.comments is not null
 order by 
      dtc.column_id
 "
 if { [string compare $show_sql_p "t" ]==0 } {
-    ns_write "<!-- $column_comment_query -->\n"
+    append page_content "<!-- $column_comment_query -->\n"
 }
 
-
-# run query (already have db handle) 
-# and output rows as emphasized text (not table)
-set selection [ns_db select $db $column_comment_query]
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
-    ns_write "<p><em>$column_name:</em> $column_comment<p>"
+# run query and output rows as emphasized text (not table)
+db_foreach mon_column_comments $column_comment_query {
+    append page_content "<p><em>$column_name:</em> $column_comment<p>"
 }
 
-
-ns_write "
-<p><a href=\"add-comments.tcl?object_name=$owner.$object_name\">Add or update</a> comments on this table or its columns</p>
+append page_content "
+<p><a href=\"add-comments?object_name=$owner.$object_name\">Add or update</a> comments on this table or its columns</p>
 " 
 
-
-ns_write "<a NAME=\"child_tables\"></a>\n"
+append page_content "<a NAME=\"child_tables\"></a>\n"
 # display child tables, if any exist -------------------------------
-ns_write "<hr>"
+append page_content "<hr>"
 
 # it would be nice to do this as a CONNECT BY query to get all children, 
 # but dba_constraints is a view, and you will get a ORA-01437 error.
 # it might be possible to wrte some procedure or use a tmp table, but later...
-
 
 # build the SQL and write out as comment
 set child_query "
@@ -416,8 +402,8 @@ from
      dba_constraints c2
 where 
      -- specify parent table
-     c1.table_name = '$object_name'
-and  c1.owner = '$owner'
+     c1.table_name = :object_name
+and  c1.owner = :owner
      -- get primary key of this table (parent)
 and  c1.constraint_type = 'P'
      -- get foreign key constraints in children 
@@ -426,13 +412,13 @@ and  c2.constraint_type = 'R'
 and  c2.r_constraint_name = c1.constraint_name
      -- redundantly specifying this owner
      -- speeds up query by a factor of 30 or so
-and  c2.owner = '$owner'
+and  c2.owner = :owner
 order by
      c2.table_name
 "
 
 if { [string compare $show_sql_p "t" ]==0 } {
-    ns_write "<!-- $child_query -->\n"
+    append page_content "<!-- $child_query -->\n"
 }
 
 # I do not want to show an empty table,
@@ -441,9 +427,8 @@ if { [string compare $show_sql_p "t" ]==0 } {
 set at_least_one_row_already_retrieved "f"
 
 # run query (already have db handle) 
-set selection [ns_db select $db $child_query]
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+
+db_foreach mon_child_tables $child_query {
 
     if { [string compare $at_least_one_row_already_retrieved "f"]==0 } {
 
@@ -453,7 +438,7 @@ while { [ns_db getrow $db $selection] } {
 	set at_least_one_row_already_retrieved "t"
 
 	# table title
-	ns_write "<p>This table has the following child tables.</p>"
+	append page_content "<p>This table has the following child tables.</p>"
 
 	# specify output columns       1             2          
 	set description_columns [list "Child Table" "Constraint" ]
@@ -463,16 +448,16 @@ while { [ns_db getrow $db $selection] } {
 	}
 
 	# begin main table
-	ns_write "
+	append page_content "
 	<table border=1>
 	<tr>$column_html</tr>
 	"
     # end of first row tricks
     }
 
-    ns_write "
+    append page_content "
     <tr>
-       <td><a href=\"./describe-table.tcl?object_name=$owner.$child\">$child</a></td>
+       <td><a href=\"./describe-table?object_name=$owner.$child\">$child</a></td>
        <td>$fk</td>
     </tr>
     "
@@ -480,22 +465,18 @@ while { [ns_db getrow $db $selection] } {
 
 # close up table if present, otherwise indicate that there were none
 if { [string compare $at_least_one_row_already_retrieved "t"]==0 } {
-    ns_write "</table><p></p>\n"
+    append page_content "</table><p></p>\n"
 } else {
-    ns_write "<p>This table has no child tables.</p>"
+    append page_content "<p>This table has no child tables.</p>"
 }
 
-
-
-ns_write "<a NAME=\"constraints\"></a>\n"
+append page_content "<a NAME=\"constraints\"></a>\n"
 # display constraints, if any exist -------------------------------------------
-ns_write "<hr>"
+append page_content "<hr>"
 
 # build the SQL and write out as comment
 set constraint_query "
 -- /objects/describe-table.tcl
--- get constraints
--- http://oradoc.photo.net/ora81/DOC/server.815/a67790/ch2.htm#1175
 -- I include all dba_constraint columns, but comment out those which I do not need
 select
      dc.constraint_name,
@@ -529,17 +510,17 @@ from
      -- by the same owner as the child table
      (select table_name, constraint_name 
       from dba_constraints 
-      where owner = '$owner') dc2,
+      where owner = :owner) dc2,
      (select column_name, constraint_name 
       from dba_cons_columns 
-      where owner = '$owner' 
-      and table_name = '$object_name') dcc
+      where owner = :owner 
+      and table_name = :object_name) dcc
 where
      -- join dc and dcc
      dc.constraint_name = dcc.constraint_name
      -- user (Tcl) specifies table and owner
-and  dc.owner = '$owner'
-and  dc.table_name = '$object_name'
+and  dc.owner = :owner
+and  dc.table_name = :object_name
      -- obviously need outer join here since most
      -- constraints are NOT foreign keys
 and  dc.r_constraint_name = dc2.constraint_name (+)
@@ -549,7 +530,7 @@ order by
 "
 
 if { [string compare $show_sql_p "t" ]==0 } {
-    ns_write "<!-- $constraint_query -->\n"
+    append page_content "<!-- $constraint_query -->\n"
 }
 
 # I do not want to show an empty table,
@@ -558,9 +539,7 @@ if { [string compare $show_sql_p "t" ]==0 } {
 set at_least_one_row_already_retrieved "f"
 
 # run query (already have db handle)
-set selection [ns_db select $db $constraint_query]
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+db_foreach mon_constraints $constraint_query {
 
     if { [string compare $at_least_one_row_already_retrieved "f"]==0 } {
 
@@ -570,8 +549,7 @@ while { [ns_db getrow $db $selection] } {
         set at_least_one_row_already_retrieved "t"
 
         # table title
-        ns_write "<p>This table has the following constraints</p>"
-
+        append page_content "<p>This table has the following constraints</p>"
 
         # specify output columns       1            2        3      4           5        6             7        8          9
         set description_columns [list "Constraint" "Column" "Type" "Condition" "Parent" "Delete Rule" "Status" "Validity" "Changed" ]
@@ -581,7 +559,7 @@ while { [ns_db getrow $db $selection] } {
         }
 
         # begin main table
-        ns_write "
+        append page_content "
         <table border=1>
         <tr>$column_html</tr>
         "
@@ -614,7 +592,7 @@ while { [ns_db getrow $db $selection] } {
     if { [empty_string_p $r_table_name] } {
 	set r_table_name "&nbsp;"
     } else {
-	set r_table_name "<a href=\"./describe-table.tcl?object_name=$r_owner.$r_table_name\">[string tolower $r_table_name]</a>"
+	set r_table_name "<a href=\"./describe-table?object_name=$r_owner.$r_table_name\">[string tolower $r_table_name]</a>"
     }
     append row_html "   <td>$r_table_name</td>\n"
 
@@ -644,21 +622,22 @@ while { [ns_db getrow $db $selection] } {
     append row_html "</tr>\n"
 
     # write row
-    ns_write "$row_html"
+    append page_content "$row_html"
 }
-
 
 # close up table if present, otherwise indicate that there were none
 if { [string compare $at_least_one_row_already_retrieved "t"]==0 } {
-    ns_write "</table><p></p>\n"
+    append page_content "</table><p></p>\n"
 } else {
-    ns_write "<p>This table has no constraints! Why?.</p>"
+    append page_content "<p>This table has no constraints! Why?.</p>"
 }
 
-ns_write "
-<p>See <a href=\"../users/one-user-constraints.tcl?owner=$owner\">other constraints</a> for this user.</p>\n"
+append page_content "
+<p>See <a href=\"../users/one-user-constraints?owner=$owner\">other constraints</a> for this user.</p>\n"
 
-
-ns_write "
+append page_content "
 [ad_admin_footer]
 "
+
+
+doc_return  200 text/html $page_content

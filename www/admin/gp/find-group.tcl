@@ -1,14 +1,13 @@
-#
-# admin/gp/find-group.tcl
-# mark@ciccarello.com
-# February, 2000
-#
+ad_page_contract {
+    Finds a user group on which to set permissions.
 
-set_the_usual_form_variables
-
-#
-# expects: table_name, row_id
-#
+    @author mark@ciccarello.com
+    @creation-date February 2000
+    @cvs-id find-group.tcl,v 3.3.2.3 2000/07/21 03:57:24 ron Exp
+} {
+    table_name:notnull
+    row_id:notnull
+}
 
 ReturnHeaders
 
@@ -20,34 +19,17 @@ set html "[ad_admin_header  "General Permissions Administration" ]
 Please select a user group on which to set permissions:<p>
 "
 
-set db [ns_db gethandle]
-
-set selection [ns_db select $db "
-    select
-        group_name,
-        group_id
-    from
-        user_groups
-    order by
-        group_name
-"]
 
 
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
-    append html "<a href=\"one-group.tcl?[export_url_vars group_id table_name row_id]\">$group_name</a><br>"
+db_foreach group_select "select group_name, group_id
+                         from user_groups
+                         order by group_name" {
+     append html "<a href=\"one-group?[export_url_vars group_id table_name row_id]\">$group_name</a><br>"
 }
-
-ns_db releasehandle $db
+			 
+db_release_unused_handles
 
 append html [ad_admin_footer]
 
 ns_write $html
-
-
-
-
-
-
-
 

@@ -1,10 +1,15 @@
-# $Id: index.tcl,v 3.0 2000/02/06 03:37:35 ron Exp $
-# /curriculum/index.tcl
-#
-# by philg@mit.edu on October 6, 1999
-#
-# explains to the user why the publisher has established
-# a curriculum and offers links to all the elements
+# /www/curriculum/index.tcl
+
+ad_page_contract {
+    explains to the user why the publisher has established
+    a curriculum and offers links to all the elements
+    /curriculum/index.tcl
+    
+    @author Philip Greenspun (philg@mit.edu)
+    @creation-date October 6, 1999
+    @cvs-id index.tcl,v 3.2.2.5 2000/09/22 01:37:18 kevin Exp
+    
+} {}
 
 if { [ad_get_user_id] != 0 } {
     set new_cookie [curriculum_sync]
@@ -15,9 +20,12 @@ if { [ad_get_user_id] != 0 } {
 
 # don't cache this page in case user is coming back here to check
 # progress bar 
-ReturnHeadersNoCache
 
-ns_write "[ad_header "Curriculum" ]
+ns_set put [ns_conn outputheaders] "Pragma" "no-cache"
+
+#ReturnHeadersNoCache
+
+set body "[ad_header "Curriculum" ]
 
 <h2>Curriculum</h2>
 
@@ -32,29 +40,27 @@ to improve their skills ought to read the following items:
 
 "
 
-set db [ns_db gethandle]
 
-set selection [ns_db select $db "select curriculum_element_id, one_line_description, full_description
-from curriculum
-order by element_index"] 
+
+#set selection [ns_db select $db ] 
 
 set counter 0
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+db_foreach get_curric_info "select curriculum_element_id, one_line_description, full_description from curriculum order by element_index" {
+
     incr counter
-    append items "<li><a href=\"clickthrough.tcl?[export_url_vars curriculum_element_id]\">$one_line_description</a>\n"
+    append items "<li><a href=\"clickthrough?[export_url_vars curriculum_element_id]\">$one_line_description</a>\n"
     if ![empty_string_p $full_description] {
 	append items "<blockquote><font size=-1>$full_description</font></blockquote>\n"
     }
 }
 
 if { $counter == 0 } {
-    ns_write "<li>There are no curriculum elements in the database right now.<p>"
+    append body "<li>There are no curriculum elements in the database right now.<p>"
 } else {
-    ns_write $items
+    append body  $items
 }
 
-ns_write "
+append body "
 
 </ol>
 
@@ -69,11 +75,14 @@ computer, your progress won't be recorded unless you've logged in.
 Options:
 
 <ul>
-<li><a href=\"start-over.tcl\">start over</a> (erase history)
+<li><a href=\"start-over\">start over</a> (erase history)
 
 </ul>
 
 <p>
 
-
 [ad_footer]"
+
+
+
+doc_return  200 text/html $body

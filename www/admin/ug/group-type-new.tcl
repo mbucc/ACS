@@ -1,16 +1,19 @@
-# $Id: group-type-new.tcl,v 3.0 2000/02/06 03:29:26 ron Exp $
 # File:     /admin/ug/group-type-new.tcl
-# Date:     22/12/99
-# Contact:  tarik@arsdigita.com
-# Purpose:  adding new user group
+ad_page_contract { 
+    @cvs-id group-type-new.tcl,v 3.1.6.4 2000/09/22 01:36:15 kevin Exp
+    @creation-date 22/12/99
+    @author tarik@arsdigita.com
+    This page is used for adding new user group.
+} { 
+}
 
-ns_return 200 text/html "
+doc_return  200 text/html "
 [ad_admin_header "Define Group Type"]
 <h2>Define Group Type</h2>
-[ad_admin_context_bar [list "index.tcl" "User Groups"] "New Group Type"]
+[ad_admin_context_bar [list "index" "User Groups"] "New Group Type"]
 <hr>
 
-<form method=post action=group-type-new-2.tcl>
+<form method=post action=group-type-new-2>
 <table>
 
 <tr>
@@ -57,3 +60,5 @@ ns_return 200 text/html "
 </center>
 [ad_admin_footer]
 "
+
+

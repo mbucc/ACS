@@ -1,25 +1,36 @@
-# $Id: remove-adv-from-group.tcl,v 3.0 2000/02/06 02:46:10 ron Exp $
-set_the_usual_form_variables
+# /www/admin/adserver/remove-adv-from-group.tcl
 
-# group_key, adv_key
+ad_page_contract {
+    @param group_key:notnull
+    @param adv_key:notnull
 
-set db [ns_db gethandle]
+    @author modified 07/13/200 by mchu@arsdigita.com
+    @cvs-id remove-adv-from-group.tcl,v 3.1.6.5 2000/11/20 23:55:20 ron Exp
+} {
+    group_key:notnull
+    adv_key:notnull
+}
 
-ns_return 200 text/html "[ad_admin_header "Confirm removal of $adv_key"]
+set pretty_name [db_string pretty_name "
+select pretty_name
+from   adv_groups
+where  group_key = :group_key"]
+
+doc_return 200 text/html "
+[ad_admin_header "Confirm removal of $adv_key"]
 
 <h2>Confirm</h2>
 
-the removal of <a href=\"one-adv.tcl?[export_url_vars adv_key]\">$adv_key</a> 
-from <a href=\"one-adv-group.tcl?[export_url_vars group_key]\">$group_key</a>
+[ad_admin_context_bar [list "" "AdServer"] "confirm removal from group"]
 
 <hr>
 
-This won't remove the ad from the system.  You're only deleting the
-association between the group $group_key ([database_to_tcl_string $db "select pretty_name from adv_groups where group_key = '$QQgroup_key'"]) and this ad. 
+<p>This won't remove the ad from the system.  You're only deleting the 
+association between the group $group_key ($pretty_name) and this ad.  
 
 <p>
 
-<form method=get action=\"remove-adv-from-group-2.tcl\">
+<form method=get action=\"remove-adv-from-group-2\">
 
 [export_form_vars group_key adv_key]
 
@@ -30,3 +41,5 @@ association between the group $group_key ([database_to_tcl_string $db "select pr
 
 [ad_admin_footer]
 "
+
+

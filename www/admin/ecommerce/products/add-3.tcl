@@ -1,35 +1,67 @@
-# $Id: add-3.tcl,v 3.1 2000/03/07 04:11:14 eveander Exp $
-set_the_usual_form_variables
+# /www/admin/ecommerce/products/add-3.tcl
+ad_page_contract {
+
+  Add a product.
+
+  @author eveander@arsdigita.com
+  @creation-date Summer 1999
+  @cvs-id add-3.tcl,v 3.4.2.7 2001/01/12 18:47:36 khy Exp
+
+} {
+
+  product_id:integer,notnull,verify
+  product_name:notnull
+  sku
+  one_line_description
+  detailed_description
+  color_list
+  size_list
+  style_list
+  email_on_purchase_list
+  search_keywords
+  url
+  price
+  no_shipping_avail_p
+  present_p
+  shipping
+  shipping_additional
+  weight
+  stock_status
+  user_class_prices:array,optional
+  available_date
+  upload_file:optional
+  upload_file.tmpfile:optional
+  linked_thumbnail:html
+  dirname
+  template_id:integer
+  category_id_list
+  subcategory_id_list
+  subsubcategory_id_list
+  ec_custom_fields:array,optional
+}
+
+# set_the_usual_form_variables
 # product_name, sku, one_line_description, color_list, size_list, style_list,
-# detailed_description, search_keywords, url, price, 
-# present_p, available_date, shipping, shipping_additional, weight,
+# email_on_purchase_list, detailed_description, search_keywords, url, price, 
+# no_shipping_avail_p, present_p, available_date, shipping, shipping_additional, weight,
 # product_id, linked_thumbnail, dirname, stock_status, template_id
 # and all active custom fields (except ones that are boolean and weren't filled in)
 # and price$user_class_id for all the user classes
 # category_id_list, subcategory_id_list, subsubcategory_id_list
 
-set form [ns_getform]
-set form_size [ns_set size $form]
-set form_counter 0
-
-
-ReturnHeaders
-ns_write "[ad_admin_header "Confirm New Product"]
+doc_body_append "[ad_admin_header "Confirm New Product"]
 
 <h2>Confirm New Product</h2>
 
-[ad_admin_context_bar [list "../" "Ecommerce"] [list "index.tcl" "Products"] "Add Product"]
+[ad_admin_context_bar [list "../" "Ecommerce"] [list "index" "Products"] "Add Product"]
 
 <hr>
 <h3>Please confirm that the information below is correct:</h3>
 "
-
 set currency [ad_parameter Currency ecommerce]
 set multiple_retailers_p [ad_parameter MultipleRetailersPerProductP ecommerce]
 
-set db [ns_db gethandle]
-
-ns_write "<form method=post action=add-4.tcl>
+doc_body_append "<form method=post action=add-4>
 <center>
 <input type=submit value=\"Confirm\">
 </center>
@@ -57,28 +89,28 @@ $sku
 Categorization:
 </td>
 <td>
-[ec_category_subcategory_and_subsubcategory_display $db $category_id_list $subcategory_id_list $subsubcategory_id_list]
+[ec_category_subcategory_and_subsubcategory_display $category_id_list $subcategory_id_list $subsubcategory_id_list]
 </td>
 </tr>
 "
 if { !$multiple_retailers_p } {
-    ns_write "<tr>
+    doc_body_append "<tr>
     <td>
     Stock Status:
     </td>
     <td>
     "
     if { ![empty_string_p $stock_status] } {
-	ns_write [ad_parameter "StockMessage[string toupper $stock_status]" ecommerce]
+	doc_body_append [ad_parameter "StockMessage[string toupper $stock_status]" ecommerce]
     } else {
-	ns_write [ec_message_if_null $stock_status]
+	doc_body_append [ec_message_if_null $stock_status]
     }
 
-    ns_write "</td>
+    doc_body_append "</td>
     </tr>
     "
 }
-ns_write "<tr>
+doc_body_append "<tr>
 <td>
 One-Line Description:
 </td>
@@ -128,6 +160,14 @@ Style Choices:
 </tr>
 <tr>
 <td>
+Email On Purchase:
+</td>
+<td>
+[ec_message_if_null $email_on_purchase_list]
+</td>
+</tr>
+<tr>
+<td>
 URL:
 </td>
 <td>
@@ -136,7 +176,7 @@ URL:
 </tr>
 "
 if { !$multiple_retailers_p } {
-    ns_write "<tr>
+    doc_body_append "<tr>
     <td>
     Regular Price:
     </td>
@@ -146,7 +186,15 @@ if { !$multiple_retailers_p } {
     </tr>
     "
 }
-ns_write "<tr>
+doc_body_append "<tr>
+<td>
+Is this product shippable?
+</td>
+<td>
+[ec_message_if_null [ec_PrettyBoolean [ec_decode $no_shipping_avail_p "t" "f" "f" "t"]]]
+</td>
+</tr>
+<tr>
 <td>
 Display this product when user does a search?
 </td>
@@ -156,7 +204,7 @@ Display this product when user does a search?
 </tr>
 "
 if { !$multiple_retailers_p } {
-    ns_write "<tr>
+    doc_body_append "<tr>
     <td>
     Shipping Price
     </td>
@@ -174,7 +222,7 @@ if { !$multiple_retailers_p } {
     </tr>
     "
 }
-ns_write "<tr>
+doc_body_append "<tr>
 <td>
 Weight
 </td>
@@ -184,75 +232,79 @@ Weight
 </tr>
 "
 if { !$multiple_retailers_p } {
-    set selection [ns_db select $db "select user_class_id, user_class_name from ec_user_classes order by user_class_name"]
-    
-    while { [ns_db getrow $db $selection] } {
-	set_variables_after_query
-	if { [info exists price$user_class_id] } {
-	    ns_write "
-	    <tr>
-	    <td>
-	    $user_class_name Price:
-	</td>
-	    <td>
-	    [ec_message_if_null [ec_pretty_price [set price$user_class_id] $currency]]
-	    </td>
-	    </tr>
-	    "
-	}
+  db_foreach user_class_select "select user_class_id, user_class_name from ec_user_classes order by user_class_name" {
+    if { [info exists user_class_prices($user_class_id)] } {
+      doc_body_append "
+      <tr>
+      <td>
+      $user_class_name Price:
+      </td>
+      <td>
+      [ec_message_if_null [ec_pretty_price [set user_class_prices($user_class_id)] $currency]]
+      </td>
+      </tr>
+      "
     }
+  }
 }
 
-set selection [ns_db select $db "select field_identifier, field_name, column_type from ec_custom_product_fields where active_p = 't'"]
-
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
-    if { [info exists $field_identifier] } {
-	ns_write "
-	<tr>
-	<td>
-	$field_name
-	</td>
-	<td>
-	"
-	if { $column_type == "char(1)" } {
-	    ns_write "[ec_message_if_null [ec_PrettyBoolean [set $field_identifier]]]\n"
-	} elseif { $column_type == "date" } {
-	    ns_write "[ec_message_if_null [util_AnsiDatetoPrettyDate [set $field_identifier]]]\n"
-	} else {
-	    ns_write "[ec_display_as_html [ec_message_if_null [set $field_identifier]]]\n"
-	}
-	ns_write "</td>
-	</tr>
-	"
+db_foreach custom_fields_select {
+  select field_identifier, field_name, column_type
+  from ec_custom_product_fields
+  where active_p = 't'
+} {
+  if { [info exists ec_custom_fields($field_identifier)] } {
+    doc_body_append "
+    <tr>
+    <td>
+    $field_name
+    </td>
+    <td>
+    "
+    if { $column_type == "char(1)" } {
+      doc_body_append "[ec_message_if_null [ec_PrettyBoolean $ec_custom_fields($field_identifier)]]\n"
+    } elseif { $column_type == "date" } {
+      doc_body_append "[ec_message_if_null [util_AnsiDatetoPrettyDate $ec_custom_fields($field_identifier)]]\n"
+    } else {
+      doc_body_append "[ec_display_as_html [ec_message_if_null $ec_custom_fields($field_identifier)]]\n"
     }
+    doc_body_append "</td>
+    </tr>
+    "
+  }
 }
 
-ns_write "<tr>
+doc_body_append "<tr>
 <td>
 Template
 </td>
 <td>
-[ec_message_if_null [database_to_tcl_string_or_null $db "select template_name from ec_templates where template_id='$template_id'"]]
+[ec_message_if_null [db_string template_name_select "select template_name from ec_templates where template_id=:template_id" -default "" ]]
 </td>
 </tr>
 </table>
 </blockquote>
 <p>
-[export_form_vars product_name sku category_id_list subcategory_id_list subsubcategory_id_list one_line_description detailed_description color_list size_list style_list search_keywords url price present_p available_date shipping shipping_additional weight template_id product_id dirname stock_status]
+[export_form_vars product_name sku category_id_list subcategory_id_list subsubcategory_id_list one_line_description detailed_description color_list size_list style_list email_on_purchase_list search_keywords url price no_shipping_avail_p present_p available_date shipping shipping_additional weight template_id dirname stock_status]
+[export_form_vars -sign product_id]
 "
 
 # also need to export custom field values
-set additional_variables_to_export [database_to_tcl_list $db "select field_identifier from ec_custom_product_fields where active_p='t'"]
-
-eval "ns_write \"\[export_form_vars $additional_variables_to_export\]\n\""
-
-# and export each price$user_class_id
-foreach user_class_id [database_to_tcl_list $db "select user_class_id from ec_user_classes"] {
-    ns_write "[export_form_vars "price$user_class_id"]\n"
+db_foreach custom_fields_select {
+  select field_identifier 
+  from ec_custom_product_fields 
+  where active_p='t'
+} {
+    if { [info exists ec_custom_fields($field_identifier)] } {
+      doc_body_append "<input type=hidden name=\"ec_custom_fields.$field_identifier\" value=\"[ad_quotehtml $ec_custom_fields($field_identifier)]\">\n"
+    }
 }
 
-ns_write "<center>
+foreach user_class_id [db_list user_class_select "select user_class_id from ec_user_classes"] {
+  doc_body_append "<input type=hidden name=\"user_class_prices.$user_class_id\" value=\"$user_class_prices($user_class_id)\">"
+}
+
+doc_body_append "<center>
 <input type=submit value=\"Confirm\">
 </center>
 </form>

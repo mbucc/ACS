@@ -1,7 +1,15 @@
-# $Id: index.tcl,v 3.0 2000/02/06 03:27:39 ron Exp $
-ReturnHeaders
+# /www/admin/referer/index.tcl
+ad_page_contract {
 
-ns_write "[ad_admin_header "Referrals to [ad_system_name]"]
+    Provides an interface to the referer system that lets admins select which referrals to view.
+
+    @author Philip Greenspun (philg@mit.edu)
+    @creation-date 4 Jul 1998
+    @cvs-id index.tcl,v 3.3.2.5 2000/09/22 01:35:59 kevin Exp
+
+}
+
+set page_content "[ad_admin_header "Referrals to [ad_system_name]"]
 
 <h2>Referrals to [ad_system_name]</h2>
 
@@ -11,23 +19,22 @@ ns_write "[ad_admin_header "Referrals to [ad_system_name]"]
 
 <ul>
 
-<form method=GET action=\"main-report.tcl\">
+<form method=GET action=\"main-report\">
 <li>last 
 <select name=n_days>
 [ad_generic_optionlist [concat [day_list] [list "all"]] [concat [day_list] [list "all"]] 7]
 </select> days <input type=submit value=\"Go\">
 </form>
 
-
 <p>
 
-<li><a href=\"search-engines.tcl\">from search engines</a>
+<li><a href=\"search-engines\">from search engines</a>
 
 </ul>
 
 <h4> Advanced </h4>
 <ul>
-<li> <a href =\"mapping.tcl\">URL lumping patterns</a>
+<li> <a href =\"mapping\">URL lumping patterns</a>
 </ul>
 
 <blockquote>
@@ -38,3 +45,5 @@ useful in the case of referrals from search engines.</i>
 
 [ad_admin_footer]
 "
+
+doc_return  200 text/html $page_content

@@ -1,14 +1,18 @@
-# $Id: add-alert.tcl,v 3.1.2.1 2000/04/28 15:10:29 carsten Exp $
+# /www/gc/add-alert-2.tcl
+ad_page_contract {
+    get the user's Id and send user to registration if necessary
+
+    @author xxx
+    @date unknown
+    @cvs-id add-alert.tcl,v 3.4.2.4 2000/09/22 01:37:50 kevin Exp
+} {
+    domain_id:integer
+}
+
 if {[ad_read_only_p]} {
     ad_return_read_only_maintenance_message
     return
 }
-
-set_the_usual_form_variables
-
-# domain_id
-
-#get the user's Id and send user to registration if necessary
 
 #check for the user cookie
 set user_id [ad_get_user_id]
@@ -17,16 +21,9 @@ if {$user_id == 0} {
     ad_returnredirect /register/index.tcl?return_url=[ns_urlencode /gc/add-alert.tcl?domain_id=[ns_urlencode $domain_id]]
 }
 
+db_1row gc_query_for_domain_info [gc_query_for_domain_info $domain_id]
 
-
-set db [gc_db_gethandle]
-
-set selection [ns_db 1row $db [gc_query_for_domain_info $domain_id]]
-set_variables_after_query
-
-ReturnHeaders
-
-ns_write "[gc_header "Add Alert"]
+set page_content "[gc_header "Add Alert"]
 
 [ad_decorate_top "<h2>Add an Alert</h2>
 
@@ -36,13 +33,13 @@ ns_write "[gc_header "Add Alert"]
 <hr>
 
 If you're too busy to come to them, 
-<a href=\"domain-top.tcl?domain_id=[ns_urlencode $domain_id]\">$full_noun</a>
+<a href=\"domain-top?domain_id=[ns_urlencode $domain_id]\">$full_noun</a>
 will come to you.  By filling out this form, you can
 get an email notification of new ads that fit your interests.
 
 <p>
 
-<form method=POST action=\"add-alert-2.tcl\">
+<form method=POST action=\"add-alert-2\">
 <input name=domain_id type=hidden value=\"$domain_id\">
 
 Step 1: decide how often you'd like to have your mailbox
@@ -92,8 +89,12 @@ browse the full text.\]
 <h3>Edit Previous Alerts</h3>
 
 Found your dream?  Going on vacation?  You can put your alerts
-on hold with <a href=\"edit-alerts.tcl\">the edit alert page</a>.
-
+on hold with <a href=\"edit-alerts\">the edit alert page</a>.
 
 [gc_footer $maintainer_email]
 "
+
+
+
+doc_return  200 text/html $page_content
+

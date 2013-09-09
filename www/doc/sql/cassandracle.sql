@@ -19,7 +19,7 @@
 -- 1) Log into Oracle via sqlplus
 -- 2) connect internal 
 -- 3) load the sql commands below
--- 4) grant role on username
+-- 4) grant role to username
 
 
 create role ad_cassandracle;

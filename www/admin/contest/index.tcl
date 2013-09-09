@@ -1,12 +1,15 @@
-# $Id: index.tcl,v 3.2 2000/03/10 20:57:32 markd Exp $
-ReturnHeaders
+# /admin/contest/index.tcl
 
-ns_write "[ad_admin_header "All [ad_system_name] Contests"]
+ad_page_contract {
+    @cvs-id index.tcl,v 3.4.2.3 2000/09/22 01:34:36 kevin Exp
+} {
+}
+
+set html "[ad_admin_header "All [ad_system_name] Contests"]
 
 <h2>Contests</h2>
 
 [ad_admin_context_bar "Contests"]
-
 
 <hr>
 
@@ -14,26 +17,23 @@ ns_write "[ad_admin_header "All [ad_system_name] Contests"]
 <ul>
 "
 
-set db [ns_db gethandle]
-
-set selection [ns_db select $db "select domain_id, domain, pretty_name, home_url
+set sql "select domain_id, pretty_name, home_url
 from contest_domains
 where sysdate between start_date and end_date
-order by upper(pretty_name)"]
+order by upper(pretty_name)"
 
 set counter 0
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
+db_foreach contest_domains $sql {
     incr counter
-    ns_write "<li>$pretty_name : <a href=\"$home_url\">home URL</a> | <a href=\"/contest/entry-form.tcl?[export_url_vars domain_id]\">generated entry form</a> |
-<a href=\"manage-domain.tcl?[export_url_vars domain_id]\">management page</a>"
+    append html "<li>$pretty_name : <a href=\"$home_url\">home URL</a> | <a href=\"/contest/entry-form?[export_url_vars domain_id]\">generated entry form</a> |
+<a href=\"manage-domain?[export_url_vars domain_id]\">management page</a>"
 }
 
 if { $counter == 0 } {
-    ns_write "there are no live contests at present"
+    append html "there are no live contests at present"
 }
 
-ns_write "
+append html "
 </ul>
 
 <h3>Inactive Contests</h3>
@@ -41,26 +41,27 @@ ns_write "
 <ul>
 "
 
-set selection [ns_db select $db "select domain_id, domain, pretty_name, home_url
+set sql "select domain_id, pretty_name, home_url
 from contest_domains
 where sysdate not between start_date and end_date
-order by upper(pretty_name)"]
+order by upper(pretty_name)"
 
 set counter 0
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
+db_foreach contests $sql {
     incr counter
-    ns_write "<li>$pretty_name : <a href=\"$home_url\">home URL</a> | <a href=\"/contest/entry-form.tcl?[export_url_vars domain_id]\">generated entry form</a> |
-<a href=\"manage-domain.tcl?[export_url_vars domain_id]\">management page</a>"
+    append html "<li>$pretty_name : <a href=\"$home_url\">home URL</a> | <a href=\"/contest/entry-form?[export_url_vars domain_id]\">generated entry form</a> |
+<a href=\"manage-domain?[export_url_vars domain_id]\">management page</a>"
 }
 
-
-ns_write "
+append html "
 
 <p>
-<li><a href=\"add-domain-choose-maintainer.adp\">add a contest</a>
+<li><a href=\"add-domain-choose-maintainer\">add a contest</a>
 
 </ul>
 
 [ad_admin_footer]
 "
+
+db_release_unused_handles
+doc_return 200 text/html $html

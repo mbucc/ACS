@@ -1,28 +1,34 @@
 # /www/download/admin/download-edit.tcl
-#
-# Date:     01/04/2000
-# Author :  ahmeds@mit.edu
-# Purpose:  edits downloadable file iformation
-#
-# $Id: download-edit.tcl,v 3.1.6.2 2000/05/18 00:05:16 ron Exp $
+ad_page_contract {
+    Edits information for a downloadable file.
+
+    @param download_id the ID of the file to edit
+    @param scope the scope
+    @param group_id
+
+    @author ahmeds@mit.edu
+    @creation-date 4 Jan 2000
+    @cvs-id download-edit.tcl,v 3.9.2.6 2000/09/24 22:37:15 kevin Exp
+} {
+    download_id:integer,notnull
+    scope:optional
+    group_id:optional,integer
+}
+
 # -----------------------------------------------------------------------------
 
-set_the_usual_form_variables
-# maybe scope, maybe scope related variables (user_id, group_id)
-# download_id
-
 ad_scope_error_check
-set db [ns_db gethandle]
-ad_scope_authorize $db $scope admin group_admin none
-set user_id [download_admin_authorize $db $download_id]
 
-if {[catch {set selection [ns_db 1row $db "
+ad_scope_authorize $scope admin group_admin none
+set user_id [download_admin_authorize $download_id]
+
+if {![db_0or1row download_info "
 select download_name, 
        directory_name, 
        description, 
        html_p
 from   downloads 
-where  download_id = $download_id"]} errmsg]} {
+where  download_id = :download_id"]} {
     
     ad_scope_return_error \
 	    "Error in finding the data" \
@@ -33,26 +39,26 @@ where  download_id = $download_id"]} errmsg]} {
     <pre>
     $errmsg
     </pre>
-    </blockquote>" $db
+    </blockquote>"
     return
 }
 
-set_variables_after_query
-
 # -----------------------------------------------------------------------------
 
-ns_return 200 text/html "
-[ad_scope_header "Edit the entry for $download_name" $db]
-[ad_scope_page_title "Edit the entry for $download_name" $db]
+
+
+doc_return 200 text/html "
+[ad_scope_header "Edit the entry for $download_name"]
+[ad_scope_page_title "Edit the entry for $download_name"]
 [ad_scope_context_bar_ws \
-	[list "/download/" "Download"] \
-	[list "/download/admin/" "Admin"] \
-	[list "download-view.tcl?[export_url_scope_vars download_id]" "$download_name"] \
+	[list "/download/index?[export_url_scope_vars]" "Download"] \
+	[list "/download/admin/index?[export_url_scope_vars]" "Admin"] \
+	[list "download-view?[export_url_scope_vars download_id]" "$download_name"] \
 	"Edit"]
 
 <hr>
 
-<form method=POST action=download-edit-2.tcl>
+<form method=POST action=download-edit-2>
 
 [export_form_scope_vars download_id]
 

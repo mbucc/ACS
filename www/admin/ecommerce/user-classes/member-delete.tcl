@@ -1,10 +1,21 @@
-# $Id: member-delete.tcl,v 3.1 2000/03/10 01:26:41 eveander Exp $
-set_the_usual_form_variables
-# user_class_id, user_class_name, user_id
+#  www/admin/ecommerce/user-classes/member-delete.tcl
+ad_page_contract {
+    @param user_class_id
+    @param user_class_name
+    @param user_id
+  @author
+  @creation-date
+  @cvs-id member-delete.tcl,v 3.2.6.4 2000/09/22 01:35:06 kevin Exp
+} {
+    user_class_id:naturalnum
+    user_class_name
+    user_id:naturalnum
+}
 
-ReturnHeaders
 
-ns_write "[ad_admin_header "Remove Member from $user_class_name"]
+
+
+set page_html "[ad_admin_header "Remove Member from $user_class_name"]
 
 <h2>Remove Member from $user_class_name</h2>
 
@@ -15,7 +26,7 @@ ns_write "[ad_admin_header "Remove Member from $user_class_name"]
 Please confirm that you wish to remove this member from $user_class_name.
 
 <center>
-<form method=post action=member-delete-2.tcl>
+<form method=post action=member-delete-2>
 [export_form_vars user_class_id user_class_name user_id]
 <input type=submit value=\"Confirm\">
 </form>
@@ -23,3 +34,5 @@ Please confirm that you wish to remove this member from $user_class_name.
 
 [ad_admin_footer]
 "
+
+doc_return  200 text/html $page_html

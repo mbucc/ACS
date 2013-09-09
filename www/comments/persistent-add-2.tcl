@@ -1,16 +1,17 @@
-# $Id: persistent-add-2.tcl,v 3.0 2000/02/06 03:37:19 ron Exp $
-#
-# /comments/persistent-add-2.tcl
-#
-# written in mid-1998 by teadams@mit.edu
-#
-# enhanced January 21, 2000 by philg@mit.edu 
-# to check for naughty HTML 
-#
-
-set_form_variables
-
-# page_id, message, comment_type,  html_p
+ad_page_contract {
+    @author teadams@mit.edu
+    @creation-date mid-1998
+    @param page_id
+    @param message
+    @param comment_type
+    @param html_p
+    @cvs-id persistent-add-2.tcl,v 3.2.2.6 2000/09/22 01:37:17 kevin Exp
+} {
+    {page_id:naturalnum,notnull}
+    message:html
+    comment_type
+    html_p
+}
 
 # check for bad input
 if { ![info exists message] || [empty_string_p $message] } {
@@ -23,12 +24,18 @@ if { $html_p == "t" && ![empty_string_p [ad_check_for_naughty_html $message]] } 
     return
 }
 
-set db [ns_db gethandle]
 
-set selection [ns_db 1row $db "select nvl(page_title,url_stub) as page_title, url_stub
+
+set selection [db_0or1row comments_persistent_add_2_page_data_get "
+select nvl(page_title,url_stub) as page_title, url_stub
 from static_pages
-where page_id = $page_id"]
-set_variables_after_query
+where page_id = :page_id"]
+
+if {$selection == 0} {
+    ad_return_complaint "Invalid page id" "Page id could not found"
+    db_release_unused_handles
+    return
+}
 
 set whole_page ""
 
@@ -62,10 +69,10 @@ should have selected \"HTML\" rather than \"Plain Text\".  Use your
 browser's Back button to return to the submission form. "
 }
 
-set comment_id [database_to_tcl_string $db "select
+set comment_id [db_string comments_persistent_add_comment_id_get "select
 comment_id_sequence.nextval from dual"]
 
-append whole_page "<form action=comment-add.tcl method=post>
+append whole_page "<form action=comment-add method=post>
 [export_form_vars message comment_type page_id comment_id html_p]
 <center>
 <input type=submit name=submit value=\"Proceed\">
@@ -75,6 +82,15 @@ append whole_page "<form action=comment-add.tcl method=post>
 [ad_footer]
 "
 
-ns_db releasehandle $db
+doc_return  200 text/html $whole_page
 
-ns_return 200 text/html $whole_page
+
+
+
+
+
+
+
+
+
+

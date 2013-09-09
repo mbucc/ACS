@@ -1,21 +1,18 @@
-# $Id: reviews.tcl,v 3.0 2000/02/06 03:20:52 ron Exp $
-# reviews.tcl
-#
-# by eveander@arsdigita.com June 1999
-#
-# summarize professional reviews of one product and let site owner
-# add a new review
+#  www/admin/ecommerce/products/reviews.tcl
+ad_page_contract {
+  Summarize professional reviews of one product and let site owner
+  add a new review.
 
-set_the_usual_form_variables
-
-# product_id
+  @author eveander@arsdigita.com
+  @creation-date June 1999
+  @cvs-id reviews.tcl,v 3.2.2.3 2000/08/18 20:23:47 stevenp Exp
+} {
+  product_id:integer,notnull
+}
 
 set product_name [ec_product_name $product_id]
 
-
-ReturnHeaders
-
-ns_write "[ad_admin_header "Professional Reviews of $product_name"]
+doc_body_append "[ad_admin_header "Professional Reviews of $product_name"]
 
 <h2>Professional Reviews</h2>
 
@@ -31,35 +28,32 @@ ns_write "[ad_admin_header "Professional Reviews of $product_name"]
 <ul>
 "
 
-set db [ns_db gethandle]
-
-set selection [ns_db select $db "select review_id, author_name, publication, review_date, display_p
-from ec_product_reviews
-where product_id=$product_id"]
-
 set review_counter 0
-while { [ns_db getrow $db $selection] } {
+db_foreach product_reviews_select "
+select review_id, author_name, publication, review_date, display_p
+from ec_product_reviews
+where product_id=:product_id
+" {
     incr review_counter
-    set_variables_after_query
-    ns_write "<li><a href=\"review.tcl?[export_url_vars review_id]\">[ec_product_review_summary $author_name $publication $review_date]</a>
+    doc_body_append "<li><a href=\"review?[export_url_vars review_id]\">[ec_product_review_summary $author_name $publication $review_date]</a>
     "
     if { $display_p != "t" } {
-	ns_write " (this will not be displayed on the site)"
+	doc_body_append " (this will not be displayed on the site)"
     }
 }
 
 if { $review_counter == 0 } {
-    ns_write "There are no current reviews.\n"
+    doc_body_append "There are no current reviews.\n"
 }
 
-ns_write "</ul>
+doc_body_append "</ul>
 
 <p>
 
 <h3>Add a Review</h3>
 
 <blockquote>
-<form method=post action=review-add.tcl>
+<form method=post action=review-add>
 [export_form_vars product_id]
 
 <table cellspacing=10>

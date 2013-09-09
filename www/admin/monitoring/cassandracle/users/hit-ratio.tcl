@@ -1,7 +1,13 @@
-# $Id: hit-ratio.tcl,v 3.0 2000/02/06 03:25:33 ron Exp $
-ReturnHeaders
+# /admin/monitoring/cassandracle/users/hit-ratio.tcl
 
-ns_write "
+ad_page_contract {
+    Display constraints that have been defined by one user
+
+    @cvs-id hit-ratio.tcl,v 3.1.2.5 2000/09/22 01:35:38 kevin Exp
+} {
+}
+
+set page_content "
 
 [ad_admin_header "Hit ratio"]
 
@@ -16,12 +22,11 @@ the block cache in the SGA (RAM).  The number of physical reads shows
 the times that Oracle had to go to disk to get table information.  Hit
 ratio should be at least 98% for anything except a data warehouse.
 
-
 <blockquote>
 <table>
 <tr><th>Username</th><th>Consistent Gets</th><th>Block Gets</th><th>Physical Reads</th><th>Hit Ratio</th></tr>
 "
-set db [ns_db gethandle]
+
 
 set the_query "
 select 
@@ -31,16 +36,16 @@ from
 where
   V\$SESSION.SID = V\$SESS_IO.SID and (Consistent_gets + block_gets > 0) and Username is not null"
 
-set object_ownership_info [database_to_tcl_list_list $db $the_query]
+set object_ownership_info [db_list_of_lists mon_hit_ratio $the_query]
 
 if {[llength $object_ownership_info]==0} {
-    ns_write "<tr><td>No objects found!</td></tr>"
+    append page_content "<tr><td>No objects found!</td></tr>"
 } else {
     foreach row $object_ownership_info {
-	ns_write "<tr><td>[lindex $row 0]</td><td align=right>[lindex $row 1]</td><td align=right>[lindex $row 2]</td><td align=right>[lindex $row 3]</td><td align=right>[format %4.2f [expr 100*(double([lindex $row 1]+[lindex $row 2]-[lindex $row 3])/double([lindex $row 1]+[lindex $row 2]))]]%</td></tr>\n"
+	append page_content "<tr><td>[lindex $row 0]</td><td align=right>[lindex $row 1]</td><td align=right>[lindex $row 2]</td><td align=right>[lindex $row 3]</td><td align=right>[format %4.2f [expr 100*(double([lindex $row 1]+[lindex $row 2]-[lindex $row 3])/double([lindex $row 1]+[lindex $row 2]))]]%</td></tr>\n"
     }
 }
-ns_write "</table>
+append page_content "</table>
 
 </blockquote>
 
@@ -49,15 +54,13 @@ ns_write "</table>
 The SQL:
 
 <pre>
-select 
-  username, consistent_gets, block_gets, physical_reads 
-from 
-  V\$SESSION, V\$SESS_IO 
-where
-  V\$SESSION.SID = V\$SESS_IO.SID and (Consistent_gets + block_gets > 0) and Username is not null
+$the_query
 </pre>
 
 [annotated_archive_reference 38]
 
 [ad_admin_footer]
 "
+
+
+doc_return  200 text/html $page_content

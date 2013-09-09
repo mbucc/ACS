@@ -1,23 +1,18 @@
-# Preview a template
-#
-# Author: ron@arsdigita.com, December 1999
-#
-# $Id: template-preview.tcl,v 3.0.4.2 2000/03/17 23:55:48 tzumainn Exp $
-# -----------------------------------------------------------------------------
+# /www/admin/press/template-preview.tcl
 
-ad_page_variables {
+ad_page_contract {
+
+    Preview a template
+
+    @author  Ron Henderson (ron@arsdigita.com)
+    @created December 1999
+    @cvs-id  template-preview.tcl,v 3.1.8.6 2001/01/11 23:17:18 khy Exp
+} {
     {target}
-    {template_id "null"}
-    {template_name}
-    {template_adp}
+    {template_id:integer,verify}
+    {template_name:trim}
+    {template_adp:trim,allhtml}
 }
-
-set db [ns_db gethandle]
-
-# Pre-processing
-
-set template_name [string trim $template_name]
-set template_adp  [string trim $template_adp]
 
 # Build a preview of the template
 
@@ -55,10 +50,15 @@ if {[string length $template_adp] > 4000} {
 
 # Check for name conflicts
 
-if {0 != [database_to_tcl_string $db "
-select count(*) from   press_templates 
-where  template_id  <> $template_id
-and    template_name = '[DoubleApos $template_name]'"]} {
+if [empty_string_p $template_id] {
+    set template_id [db_null]
+}
+
+if {0 != [db_string template_name_check "
+select count(*) 
+from   press_templates 
+where  template_id  <> :template_id
+and    template_name = :template_name"]} {
     incr error_count
     append error_list "<li>Your template name conflicts with an existing template\n"
 }
@@ -70,12 +70,12 @@ if {$error_count > 0} {
 
 # Done with the database
 
-ns_db releasehandle $db
+db_release_unused_handles
 
 # -----------------------------------------------------------------------------
 # Ship it out
 
-ns_return 200 text/html "
+doc_return  200 text/html "
 [ad_admin_header "Preview"]
 
 <h2>Preview</h2>
@@ -92,7 +92,8 @@ $preview
 <br>
 
 <form method=post action=$target>
-[export_form_vars template_id template_name template_adp]
+[export_form_vars template_name template_adp]
+[export_form_vars -sign template_id]
 <center><input type=submit value=Submit></center>
 </form>
 </blockquote>

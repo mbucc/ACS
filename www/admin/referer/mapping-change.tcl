@@ -1,32 +1,33 @@
-# $Id: mapping-change.tcl,v 3.0 2000/02/06 03:27:46 ron Exp $
-set_the_usual_form_variables
+# /www/admin/referer/mapping-change.tcl
+#
 
-# glob_pattern
+ad_page_contract {
 
-ReturnHeaders
+    @cvs-id mapping-change.tcl,v 3.2.2.6 2000/09/22 01:35:59 kevin Exp
+    @param glob_pattern
+} {
+    glob_pattern:notnull
+}
 
-set db [ns_db gethandle]
+db_1row referer_glob_pattern_properties "select canonical_foreign_url, search_engine_name, search_engine_regexp from referer_log_glob_patterns where glob_pattern = :glob_pattern"
+db_release_unused_handles
 
-set selection [ns_db 1row $db "select canonical_foreign_url, search_engine_name, search_engine_regexp from referer_log_glob_patterns where glob_pattern = '$QQglob_pattern'"]
-set_variables_after_query
-
-ns_write "[ad_admin_header "Edit Lumping Pattern"]
+set page_content "[ad_admin_header "Edit Lumping Pattern"]
 
 <h2>Edit a Lumping Pattern</h2>
 
-in the <a href=\"report.tcl\">referral tracking section</a> 
+in the <a href=\"report\">referral tracking section</a> 
 of <a href=\"/admin/\">[ad_system_name] administration</a>
 
 <hr>
 
-<form action=mapping-change-2.tcl method=post>
+<form action=mapping-change-2 method=post>
 [export_form_vars glob_pattern]
 
 Referer headers matching the pattern: (Example: http://www.altavista.com*) <br> 
 <input type=text name=new_glob_pattern size=70 maxlength=250 value=\"[philg_quote_double_quotes $glob_pattern]\">
 
 <p>
-
 
 will be lumped together in reports under the URL: (Example: http://www.altavista.com) <br>
 <input type=text name=canonical_foreign_url size=70 maxlength=250 value=\"[philg_quote_double_quotes $canonical_foreign_url]\">
@@ -44,7 +45,6 @@ Name of search engine: <br>
 
 Tcl Regular Expression to pull out query string:
 <input type=text name=search_engine_regexp size=40 maxlength=200 value=\"[philg_quote_double_quotes $search_engine_regexp]\"><br>
-
 
 <p>
 
@@ -94,3 +94,6 @@ q=(\[^& \]+)
 [ad_admin_footer]
 "
 
+
+
+doc_return  200 text/html $page_content

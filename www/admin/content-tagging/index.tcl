@@ -1,9 +1,16 @@
-# $Id: index.tcl,v 3.0 2000/02/06 03:15:27 ron Exp $
-ReturnHeaders
+# File: /www/admin/content-tagging/index.tcl
+ad_page_contract {
+    Displays the Content Tagging Package Page
+    
+    @param none
+    @author unknown
+    @cvs-id index.tcl,v 3.2.2.5 2000/09/22 01:34:35 kevin Exp
+} {
+}
 
 set title "Content Tagging"
 
-ns_write "[ad_admin_header "$title Package"]
+set page_content "[ad_admin_header "$title Package"]
 
 <h2>$title Package</h2>
 
@@ -11,14 +18,14 @@ ns_write "[ad_admin_header "$title Package"]
 
 <hr>
 
-Documentation:  <a href=\"/doc/content-tagging.html\">/doc/content-tagging.html</a>
+Documentation:  <a href=\"/doc/content-tagging\">/doc/content-tagging.html</a>
 
 <h3>Dictionary</h3>
 
 <ul>
-<li><a href=\"all.tcl\">all of the words</a>
+<li><a href=\"all\">all of the words</a>
 
-<form action=lookup.tcl>
+<form action=lookup>
 <li>word to look up:
 <input type=text size=20 name=word>
 <input type=submit value=Submit>
@@ -26,7 +33,7 @@ Documentation:  <a href=\"/doc/content-tagging.html\">/doc/content-tagging.html<
 
 </ul>
 
-<form action=add.tcl>
+<form action=add>
 Enter words(s) to add to the tagged dictionary:<br>
 <textarea name=words rows=4 cols=60></textarea>
 <center>
@@ -42,13 +49,12 @@ Enter words(s) to add to the tagged dictionary:<br>
 <h3>Historical Naughtiness</h3>
 
 <ul>
-<li><a href=\"by-user.tcl\">by user</a>
+<li><a href=\"by-user\">by user</a>
 </ul>
 
 <h3>Test</h3>
 
-
-<form action=test.tcl>
+<form action=test>
 Phrase to test:
 <br>
 <textarea name=testarea rows=8 cols=60>
@@ -64,3 +70,6 @@ Phrase to test:
 
 [ad_admin_footer]
 "
+
+doc_return  200 text/html $page_content
+

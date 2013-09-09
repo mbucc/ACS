@@ -1,17 +1,18 @@
-# $Id: set-view.tcl,v 3.0 2000/02/06 03:47:14 ron Exp $
 # File:     /homepage/set-view.tcl
-# Date:     Sat Jan 22 23:03:44 EST 2000
-# Location: 42Å∞21'N 71Å∞04'W
-# Location: 80 PROSPECT ST CAMBRIDGE MA 02139 USA
-# Author:   mobin@mit.edu (Usman Y. Mobin)
-# Purpose:  Sets a cookie to determine user's preferred view
 
-set_form_variables
-# view, filesystem_node
+ad_page_contract {
+    Sets a cookie to determine user's preferred view (in index view).
 
-ns_write "HTTP/1.0 302 FOUND
-MIME-Version: 1.0
-Content-Type: text/html
-Set-Cookie: homepage_view=$view; path=/; expires=05-Mar-2079 05:45:00 GMT
-Location: index.tcl?filesystem_node=$filesystem_node
-"
+    @param view Which view to use in looking at homepage files (normal or tree)
+    @param filesystem_node Used to determine a return location
+
+    @author Usman Y. Mobin (mobin@mit.edu)
+    @creation-date Sat Jan 22 23:03:44 EST 2000
+    @cvs-id set-view.tcl,v 3.0.12.4 2000/07/21 04:00:46 ron Exp
+} {
+    view:notnull,trim
+    filesystem_node:notnull,naturalnum
+}
+
+ad_set_cookie -replace t homepage_view $view
+ad_returnredirect index?filesystem_node=$filesystem_node

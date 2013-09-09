@@ -1,37 +1,45 @@
-# $Id: partner-view.tcl,v 3.0 2000/02/06 03:26:52 ron Exp $
-set_the_usual_form_variables
-# partner_id
+# /www/admin/partner/partner-view.tcl
 
-set db [ns_db gethandle]
+ad_page_contract {
+    Displays all the information about one partner
 
-set return_url "partner-view.tcl?[export_url_vars partner_id]"
+    @param partner_id ID of partner we're viewing
 
-set selection [ns_db 0or1row $db \
-	"select * from ad_partner where partner_id=$partner_id"]
+    @author mbryzek@arsdigita.com
+    @creation-date 10/1999
 
-if { [empty_string_p $selection] } {
+    @cvs-id partner-view.tcl,v 3.2.2.3 2000/09/22 01:35:46 kevin Exp
+} {
+    partner_id:integer,notnull
+}
+
+set return_url "partner-view?[export_url_vars partner_id]"
+
+if { ![db_0or1row partner_from_id \
+	"select partner_name, partner_cookie, default_font_face, default_font_color, 
+                title_font_face, title_font_color, group_id
+           from ad_partner 
+          where partner_id=:partner_id"] } {
     ad_partner_return_error "Partner doesn't exist" \
 	    "There is no partner with a partner_id of $partner_id"
     return
 }
 
-set_variables_after_query
-
 set page_title $partner_name
-set context_bar [ad_context_bar_ws [list "index.tcl" "Partner manager"] "One partner"]
+set context_bar [ad_context_bar_ws [list "index" "Partner manager"] "One partner"]
 
 set url_string ""
-set selection [ns_db select $db "select distinct url_stub, url_id
-		                 from ad_partner_url
-                                 where partner_id='$QQpartner_id'
-                                 order by upper(url_stub)"]
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+set sql "select distinct url_stub, url_id
+	   from ad_partner_url
+          where partner_id=:partner_id
+          order by upper(url_stub)"
+
+db_foreach partner_by_url $sql {
     append url_string "  <LI>$url_stub | 
-<a href=\"partner-url.tcl?[export_url_vars url_id]\">View</a> | 
-<a href=\"partner-url-ae.tcl?[export_url_vars url_id]\">Edit</a> | 
-<a href=\"partner-url-delete.tcl?[export_url_vars url_id]\">Delete</a> |
-<a href=\"partner-url-sample.tcl?[export_url_vars url_id]\">Preview</a>
+<a href=\"partner-url?[export_url_vars url_id]\">View</a> | 
+<a href=\"partner-url-ae?[export_url_vars url_id]\">Edit</a> | 
+<a href=\"partner-url-delete?[export_url_vars url_id]\">Delete</a> |
+<a href=\"partner-url-sample?[export_url_vars url_id]\">Preview</a>
 "
 } 
 
@@ -45,21 +53,21 @@ append page_body "
 <UL>
  $url_string
 <P>
-  <LI><a href=\"partner-url-ae.tcl?[export_url_vars partner_id]\">Add a url</a>
+  <LI><a href=\"partner-url-ae?[export_url_vars partner_id]\">Add a url</a>
 </UL>
 <p> 
 
-<b>Variables | <a href=\"partner-ae.tcl?[export_url_vars partner_id return_url]\">Edit</A></b>
+<b>Variables | <a href=\"partner-ae?[export_url_vars partner_id return_url]\">Edit</A></b>
 <UL> 
 "
 
 if { ![empty_string_p $group_id] } {
-    set user_groups_name [database_to_tcl_string $db \
-	    "select group_name from user_groups where group_id=$group_id"]
+    set user_groups_name [db_string partner_user_group_name \
+	    "select group_name from user_groups where group_id=:group_id"]
 } else {
     set user_groups_name ""
 }
-set partner_vars [ad_partner_list_all_vars]       
+set partner_vars [ad_partner_list_all_vars] 
 
 foreach pair $partner_vars {
     set variable [lindex $pair 0]
@@ -72,4 +80,5 @@ append page_body "
 </ul>
 "
 
-ns_return 200 text/html [ad_partner_return_template]
+# ad_partner_return_template releases the db handles
+doc_return  200 text/html [ad_partner_return_template]

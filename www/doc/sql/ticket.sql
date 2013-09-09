@@ -140,6 +140,11 @@ create table ticket_domains (
 );
 
 
+
+-- This is the table which maps strings to projects and domains. The mapping_key
+-- can be a module_key (references acs_modules table) so that we can log
+-- tickets for a particular module.
+
 create table ticket_domain_project_map (
         project_id      integer not null references ticket_projects,
         domain_id       integer not null references ticket_domains,
@@ -148,6 +153,7 @@ create table ticket_domain_project_map (
         -- The group from which assignments are made.
         -- typically the same as owning group on feature area
         assignment_group_id references user_groups,
+	mapping_key	varchar(200) unique,
         primary key (project_id, domain_id)
 );
 
@@ -461,11 +467,11 @@ create table ticket_issue_notifications (
 -- show errors
 
 
-create or replace function ticket_one_if_high_priority (priority IN varchar, status IN varchar)
+create or replace function ticket_one_if_high_priority (priority IN integer, status IN varchar)
 return integer
 is
 BEGIN
-  IF ((priority = 'High') AND (status <> 'Closed') AND (status <> 'Defer')) THEN
+  IF ((priority = 1) AND (status <> 'closed') AND (status <> 'deferred')) THEN
     return 1;
   ELSE 
     return 0;   
@@ -478,7 +484,7 @@ create or replace function ticket_one_if_blocker (severity IN varchar, status IN
 return integer
 is
 BEGIN
-  IF ((severity = 'SHOW') AND (status <> 'Closed') AND (status <> 'Defer')) THEN
+  IF ((severity = 'showstopper') AND (status <> 'closed') AND (status <> 'deferred')) THEN
     return 1;
   ELSE 
     return 0;   
@@ -641,3 +647,4 @@ where tp.project_id = ti.project_id
               from user_group_map 
               where group_id = td.group_id 
                 and user_id = u.user_id));
+

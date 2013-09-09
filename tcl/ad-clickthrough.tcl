@@ -1,13 +1,18 @@
-# $Id: ad-clickthrough.tcl,v 3.0.4.1 2000/04/28 15:08:08 carsten Exp $
-# ad-clickthrough.tcl, copyright 1997 Philip Greenspun (philg@mit.edu)
-#
-# part of the ArsDigita Community System
-# documented in /doc/clickthrough.tcl
+# tcl/ad-clickthrough.tcl
 
-# fixed by philg@mit.edu on November 24, 1999 to protect against
-# inserting multiple rows on the first insert of the day
+ad_library {
+    logs clickthroughs from this site to foreign sites
 
-# logs clickthroughs from this site to foreign sites
+    @author Philip Greenspun (philg@mit.edu)
+    @creation-date 1997 
+    @cvs-id ad-clickthrough.tcl,v 3.3.2.2 2000/07/22 09:01:07 ron Exp
+
+    part of the ArsDigita Community System
+    documented in /doc/clickthrough.tcl
+
+    fixed by philg@mit.edu on November 24, 1999 to protect against
+    inserting multiple rows on the first insert of the day
+}
 
 # usage: drop something that looks like this into your static .html
 # files 
@@ -31,7 +36,7 @@
 
 # we register the entire hierarchy to this one function
 
-ns_register_proc GET /ct click
+ad_register_proc GET /ct click
 
 # we provide this here for legacy users of philg's standalone clickthrough
 # system (e.g., the old http://photo.net/photo/ site).  These sites had
@@ -68,39 +73,41 @@ This request looked like
     ad_returnredirect $foreign_url
     # user is off our hands now; time to log
     # we regexp'd sucessfull
-    if { [catch { set db [ns_db gethandle -timeout -1 log] } errmsg] || [empty_string_p $db] } {
-	# the non-blocking call to gethandle raised a Tcl error; this
-	# means a db conn isn't free right this moment, so let's just
-	# return
-	ns_log Notice "Db handle wasn't available in click"
-	return
-    }
+#      if { [catch { set db [ns_db gethandle -timeout -1 log] } errmsg] || [empty_string_p $db] } {
+#  	# the non-blocking call to gethandle raised a Tcl error; this
+#  	# means a db conn isn't free right this moment, so let's just
+#  	# return
+#  	ns_log Notice "Db handle wasn't available in click"
+#  	return
+#      }
     # we connected to the database successfully
+
     set update_sql "update clickthrough_log set click_count = click_count + 1 
-where local_url = '[DoubleApos $local_url]' 
-and foreign_url = '[DoubleApos $foreign_url]'
+where local_url = :local_url 
+and foreign_url = :foreign_url
 and trunc(entry_date) = trunc(sysdate)"
-    ns_db dml $db $update_sql
-    set n_rows [ns_ora resultrows $db]
+
+    db_dml update $update_sql -bind [ad_tcl_vars_to_ns_set local_url foreign_url]
+    set n_rows [db_resultrows]
     if { $n_rows == 0 } {
 	# there wasn't already a row there
 	# let's insert one (but only one; in the very rare case that another thread is executing
 	# this same code, we don't want to be left with two rows in the database for the same
 	# tuple)
-	set insert_sql "insert into clickthrough_log ( local_url, foreign_url, entry_date, click_count)
-select '[DoubleApos $local_url]', '[DoubleApos $foreign_url]', trunc(sysdate), 1
-from dual
-where 0 = (select count(*)
-           from clickthrough_log
-           where local_url = '[DoubleApos $local_url]' 
-           and foreign_url = '[DoubleApos $foreign_url]'
-           and trunc(entry_date) = trunc(sysdate))"
 
-        if [catch { ns_db dml $db $insert_sql } errmsg] {
+	set insert_sql "insert into clickthrough_log ( local_url, foreign_url, entry_date, click_count)
+            select :local_url, :foreign_url, trunc(sysdate), 1
+            from dual
+            where 0 = (select count(*)
+                       from clickthrough_log
+                       where local_url = :local_url 
+                       and foreign_url = :foreign_url
+                       and trunc(entry_date) = trunc(sysdate))"
+
+        if [catch { db_dml insert $insert_sql -bind [ad_tcl_vars_to_ns_set local_url foreign_url]} errmsg] {
 	    ns_log Notice "Clickthrough insert failed:  $errmsg"
 	}
     }
-    ns_db releasehandle $db
+    db_release_unused_handles
 }
-
 

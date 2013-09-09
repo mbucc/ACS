@@ -1,0 +1,128 @@
+<form>
+
+  <name status="required"></name>
+  <title status="required"></title>
+
+  <action status="required"></action>
+  <method status="optional" default="post"></method>
+  <submit status="optional" default="Submit"></submit>
+  <multikey status="optional"></multikey>
+  <dbaction status="optional"></dbaction>
+  <validate status="optional" default="same"></validate>
+  <substitute status="optional"></substitute>
+
+  <attribute status="optional">
+    <name status="required"></name>
+  </attribute>
+
+  <author status="required"></author>
+  <comment status="required"></comment>
+
+  <process status="optional">
+
+  <src status="optional"></src>
+
+  <statuscheck status="optional">
+    <name status="required"></name>
+    <code status="required"></code>
+    <comment status="required"></comment>
+  </statuscheck>
+
+  <datasource status="optional">
+
+    <src status="optional"></src>
+
+    <depends status="optional"></depends>
+    <noprefix status="optional"></noprefix>
+    <cache status="optional"></cache>
+    <datatype status="optional" default="text"></datatype>
+    <maxrows status="optional" default="10000"></maxrows>
+    <startrow status="optional" default="1"></startrow>
+    <name status="required"></name>
+    <type status="optional"></type>
+    <structure status="optional" default="onevalue">
+      <options>onevalue onerow onelist multirow multilist</options>
+    </structure>
+    <condition status="optional" validate="false"></condition>
+    <comment status="optional"></comment>
+    <devnote status="optional"></devnote>
+
+    <variable status="optional">
+
+      <name status="required"></name>
+      <comment status="required"></comment>
+
+    </variable>
+
+  </datasource>
+
+  </process>
+
+  <elements status="optional">
+
+  <src status="optional"></src>
+
+  <element status="optional">
+
+    <src status="optional"></src>
+
+    <name status="required"></name>
+    <label status="optional"></label>
+    <status status="optional" default="required"></status>
+    <help status="optional" default=" "></help>
+
+    <attribute status="optional">
+      <name status="required"></name>
+    </attribute>
+
+    <comment status="optional"></comment>
+
+    <widget status="optional" default="text"></widget>
+    <width status="optional" default="24"></width>
+    <height status="optional"></height>
+    <datatype status="optional" default="text"></datatype>
+
+    <options status="optional">
+      <null status="optional"></null>
+      <method status="required"></method>
+      <cache status="optional"></cache>
+      <option status="optional">
+        <value status="required"></value>
+      </option>
+    </options>
+
+    <defaults status="optional">
+      <method status="required"></method>
+      <cache status="optional"></cache>
+    </defaults>
+
+    <validate status="optional">
+      <condition status="required"></condition>
+      <message status="required"></message>
+    </validate>
+
+    <datamap status="optional">
+
+      <key status="optional"></key>
+      <count status="optional" default="one"></count>
+      <table status="required"></table>
+      <column status="optional"></column>
+      <type status="optional"></type>
+
+    </datamap>
+
+  </element>
+
+  </elements>
+
+  <preprocess status="optional">
+    <code status="optional"></code>
+    <comment status="optional"></comment>
+  </preprocess>
+
+  <postprocess status="optional">
+    <code status="optional"></code>
+    <comment status="optional"></comment>
+  </postprocess>
+  
+</form>

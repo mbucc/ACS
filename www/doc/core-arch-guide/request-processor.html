@@ -1,0 +1,394 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+
+<head>
+<title>ACS Request Processor</title>
+<link rel="stylesheet" type="text/css" href="core-arch-guide.css">
+</head>
+
+<body>
+
+<h2>ACS Request Processor</h2>
+
+by <a href="mailto:jsalz@mit.edu">Jon Salz</a>
+
+<p>
+
+<a href="/doc/">ACS Documentation</a> :
+<a href="">ACS Core Architecture Guide</a> :
+ACS Request Processor
+
+<hr>
+
+<ul>
+<li>Tcl procedures: /packages/acs-core/request-processor-procs.tcl
+</ul>
+
+This document describes the request processor, a series of Tcl procedures
+which handles every single HTTP request made to an AOLserver running ACS.
+
+<h3>The Big Picture</h3>
+
+In the early days of the Web, before the dawn of database-driven, dynamic
+content, web servers maintained a very straightforward mapping between URLs
+and files. In response to a request for a particular URL, servers just
+prepended a document root path like <code>/web/arsdigita/www</code> to the URL,
+serving up the file named by that path.
+
+<p>
+This is no longer the case: the process of responding to a request involves
+many more steps than simply resolving a path and delivering a file. Serving an
+ACS page involves (at the very least) reading security information from HTTP cookies, extracting
+subcommunity information from the URL, calling filters and
+registered procedures, invoking the abstract URL system to determine
+which file to serve, and then actually serving the file.
+
+<p>
+The traditional way to realize this process was to register a plethora of filters and
+procedures, but there were several problems with this approach:
+
+<ul>
+
+<li>It was difficult to deliver files which didn't physically live
+underneath the page root (in the <code>/www</code> directory), as in
+the case of pages associated with packages.
+
+<li>It was difficult to control the order in which filters were
+executed.
+
+<li>It was difficult to determine which code was executed for requests
+to which URLs.
+
+<li>If something broke, it was difficult to determine which filter was
+causing the problem.
+
+<li>Scoped requests needed to be handled specially, with
+<code>ns_register_proc</code>s for each possible URL prefix
+(<code>/groups</code>, <code>/<i>some-group-type</i></code>,
+<code>/<i>some-group-name</i></code>, etc.).
+
+<li>Filters and registered procedures were strictly URL-based, so they
+broke under scoping, e.g. a procedure registered for
+<code>/download/files/</code> wouldn't work for requests under
+<code>/groups/<i>some-group-name</i>/download/files/62/smug.jpg</code>.
+
+</ul>
+
+To solve this problem, in ACS 3.3 we introduced a unified
+<b>request processor</b> implementing the series of actions above. It is written
+purely in Tcl as a single procedure (not a mess of <code>ns_register_filter</code>s and
+<code>ns_register_proc</code>s), allowing us a great deal of control over exactly what
+happens when we deliver a response to an HTTP request. We also introduced new APIs,
+<code>ad_register_filter</code> and <code>ad_register_proc</code>, analogous to existing
+AOLserver APIs (<code>ns_register_filter</code> and <code>ns_register_proc</code>) but tightly
+integrated into the request processor.
+
+<h3>Steps in the Pipeline</h3>
+
+The request processor is registered with AOLserver as a <code>preauth</code> filter.
+In fact, it is the <i>only</i> filter ever registered with AOLserver. We've killed off
+<code>ns_register_filter</code> and <code>ns_register_proc</code> - see
+the <a name="#api">API</a> below. It contains the following steps:
+
+<ol>
+
+<li>
+<b>Global initialization.</b> Initialize the <code>ad_conn</code> global variable,
+which contains information about the connection (see
+<a href="#ad_conn"><code>ad_conn</code></a> below).
+</p>
+
+<li>
+<b>Library reloading.</b> If the package manager
+has been instructed to reload any <code>*-procs.tcl</code> files,
+source them.
+Also examine any files registered to be watched (via the package manager);
+if any have been changed, source them as well.
+</p>
+
+<li>
+<b>Developer support.</b> Call the hook to the
+<a href="/doc/developer-support">developer support</a> subsystem,
+if it exists, to save information about the active connection.
+</p>
+
+<li>
+<b>Host header checking.</b> Check the HTTP <code>Host</code> header to make
+sure it's what we expect it to be. If the <code>Host</code> header is present
+but differs from the canonical server name (as reported by <code>ns_info
+location</code>), issue an HTTP redirect using the the correct, canonical
+server name.
+
+<p>For instance, if someone accesses the URL
+<code>http://arsdigita.com/pages/customers</code>, we redirect them to
+<code>http://www.arsdigita.com/pages/customers</code> since the canonical
+host name for the server is <code>www.arsdigita.com</code>, not
+<code>arsdigita.com</code>.
+</p>
+
+<li>
+<b>Security handling.</b> Examine the security cookies, <code>ad_browser_id</code>
+and <code>ad_session_id</code>. If either is is invalid or not present at all,
+issue a cookie and note information about the new browser or session in the
+database.
+</p>
+
+<li>
+<b>Examine the URL for subcommunity information.</b> If the URL belongs to
+a subcommunity (e.g. <code>/groups/Boston/address-book/</code> belongs to
+the Boston subcommunity), strip the subcommunity information from the URL
+and save it in the environment to be later accessed by <code>ad_conn</code>.
+
+<p>This is <i>not</i> implemented in ACS 3.3.</p>
+
+<li>
+<b>Invoke applicable filters registered with <code>ad_register_filter</code>.</b> Use
+the URL <i>with subcommunity stripped</i> as the string to be matched against
+patterns passed to <code>ad_register_filter</code>, e.g. if a
+filter is registered on <code>/download/files/</code>, it will be applied
+on URLs like <code>/groups/Boston/download/files/*</code> since we stripped
+<code>/groups/Boston</code> from the URL in the step above.
+</p>
+
+<li>
+<b>If an applicable procedure has been registered with <code>ad_register_proc</code></b>,
+invoke it. As in the previous step, match using the URL <i>minus
+subcommunity information</i>. If such a procedure is found, the process
+terminates here.
+</p>
+
+<li>
+<b>Resolve the URL to a file in the filesystem, again ignoring subcommunity
+information.</b> 
+
+<p>First resolve the path:</p>
+
+<ol type="a">
+
+<li>If a prefix of the URL has been registered with
+<code>rp_register_directory_map</code>, map to the associated directory
+in the filesystem. For example, if we've called
+
+<blockquote><pre>
+rp_register_directory_map "apm" "acs-core" "apm-docs"
+</pre></blockquote>
+
+then all requests under the <code>/apm</code> URL stub are mapped to
+the <code>acs-core</code> package directory <code>apm-docs/www</code>,
+and all requests under <code>/admin/apm</code> are mapped to the
+<code>acs-core</code> package directory <code>apm-docs/admin-www</code>.
+</p>
+
+<li>If a prefix of the URL corresponds to a package key registered
+with the package manager, then map to the <code>www</code> or
+<code>admin-www</code> directory in that package. For example, if
+there's a package named <code>address-book</code>, then
+requests under <code>/address-book</code> are mapped to the
+<code>/packages/address-book/www</code> directory, and requests under
+<code>/admin/address-book</code> are mapped to
+<code>/packages/address-book/admin-www</code>.
+</p>
+
+<li>Otherwise, just prepend the document root (usually something like
+<code>/web/arsdigita/www</code>) to the URL, just like AOLserver
+always used to do.
+</p>
+
+</ol>
+
+<p>Now check to see if the path refers to a directory without a trailing
+slash, e.g. a request to <code>http://www.arsdigita.com/address-book</code>.
+If this is the case, issue a redirect to the directory with the trailing
+slash, e.g. <code>http://www.arsdigita.com/address-book/</code>. This is
+necessary so the browser will properly resolve relative HREFs.
+
+<p>Next determine which particular file to serve. If our file name is
+<code>filename</code>, check to see if any files exist which are named
+<code>filename.*</code>, i.e. we try automatically adding an extension to the
+file name. If the URL ends in a trailing slash, then no file name is provided
+so we look for an <code>index.*</code> file instead.
+Give precedence to particular extensions in the order specified
+by the <code>ExtensionPrecedence</code> parameter, e.g. in general
+prefer to serve <code>.tcl</code> files rather than <code>.adp</code>
+files.
+</p>
+
+<li><b>Call the appropriate handler for the file type.</b>
+</p>
+
+<ol type="a">
+
+<li>
+If it's a TCL (<code>.tcl</code>) file, source it;
+if it's an ADP (<code>.adp</code>) file, parse it.
+In either case, if the script or ADP built a document using the
+<a href="documents">documents API</a>, invoke the document handler
+to route the document to the appropriate master template.
+</p>
+
+<li>
+If it's an HTML file, use <code>ad_serve_html</code> to serve it,
+including a comment link as appropriate.
+</p>
+
+<li>
+If it's a file with some extension registered with
+<code>rp_register_extension_handler</code>, use that handler to serve
+the file. For example, if I call
+
+<blockquote><pre>
+rp_register_extension_handler jsp jsp_handler
+</pre></blockquote>
+
+then if the file is a JSP (<code>.jsp</code>) file, the <code>jsp_handler</code>
+routine will be called and expected to return a page.
+</p>
+
+<li>
+If it's some form of static content (like a GIF, or JPEG, or anything
+else besides the file types listed above), just serve the file verbatim,
+guessing the MIME type from the suffix.
+
+</ol>
+
+</ol>
+
+<b>The request processor always returns
+<code>filter_return</code></b>, i.e.  it is always solely responsible
+for returning a page. Essentially it commandeers the entire AOLserver
+page delivery process. 
+
+<p>
+
+The exception is that you can specifically instruct the request
+processor to leave certain URLs alone and return
+<code>filter_ok</code> instead, by adding parameters of the form
+<code>LeaveAloneUrl=/cgi-bin/*</code> to the
+<code>[ns/server/yourservername/acs/request-processor]</code> section
+of your server <code>.ini</code> file. Add more
+<code>LeaveAloneUrl=</code> lines for more url patterns. The patterns
+use glob matching (Tcl syntax is <code>string match $pattern $actual_url</code>).
+
+
+
+<h3>API</h3>
+
+As of ACS 3.3, <b><code>ns_register_filter</code> and <code>ns_register_proc</code> are
+dead</b> - trying to use them causes an error. Instead of these two procedures, you'll need
+to use <code>ad_register_filter</code> and <code>ad_register_proc</code>, drop-in
+replacements which provide the same functionality but are integrated into the request
+processor.
+
+<dl>
+<dt>
+<code><b>ad_register_filter</b> <i>when method URLpattern script</i> [ <i>args ...</i> ]<br>
+<b>ad_register_proc</b> [ -noinherit <i>f</i> ] <i>method URL procname</i> [ <i>args ...</i> ]</code>
+
+<dd>
+Drop-in replacements for the obsoleted routines
+<code>ns_register_filter</code> and <code>ns_register_proc</code>.
+See the AOLserver
+documentation for syntax.
+</p>
+
+<dt>
+<code><b><a name=ad_conn>ad_conn</a></b> <i>which</i></code>
+
+<dd>
+Returns information about the current connection (analagous to
+<code>ns_conn</code>). Allowed values for <i>which</i> are:
+</p>
+
+<ul type=disc>
+
+<li><b><code>url</code></b>: same as <code>ns_conn url</code>.
+(In future versions of ACS with subcommunity support,
+this will return the portion of the URL after any subcommunity
+information. For instance, for a URL request to
+<code>/groups/Boston/address-book/</code>, it would return
+<code>/address-book/</code>.)
+</p>
+
+<li><b><code>canonical_url</code></b>: returns a URL, <i>minus extension</i>,
+which is consistent
+no matter what URL is used to access a resource. For instance, if any
+of the following URLs are used to access the address book:
+Boston office:
+
+<blockquote><pre>
+/address-book/
+/address-book/index
+/address-book/index.tcl
+</pre></blockquote>
+
+then the canonical URL for each might be
+
+<blockquote><pre>/address-book/index</pre></blockquote>
+
+This URL is useful whenever a consistent, unique identifier for a resource is
+necessary, e.g. storing URLs for general comments.
+
+</p>
+
+<li><b><code>full_url</code></b>: similar to <code>ad_conn canonical_url</code>,
+except that the extension of the file is included. For instance, in the case of
+the example above, <code>ad_conn full_url</code> would return
+
+<blockquote><pre>/address-book/index.tcl</pre></blockquote>
+
+<li><b><code>file</code></b>: returns the absolute path in the filesystem
+of the file which is being delivered. If the request does not correspond
+to a file (e.g. is a registered filter or procedure), returns an empty string.
+</p>
+
+<li><b><code>extension</code></b>: returns the extension of the file
+which is being delivered (equivalent to <code>[file extension [ad_conn file]]</code>).
+If the request does not correspond to a file (e.g. is a registered filter or procedure),
+returns an empty string.
+</p>
+
+<li><b><code>browser_id</code></b>: returns the client's browser ID
+(see the document <a href="security-sessions">security and session-tracking</a>).
+</p>
+
+<li><b><code>session_id</code></b>: returns the client's session ID
+(see the document <a href="security-sessions">security and session-tracking</a>).
+</p>
+
+</ul>
+
+These values are set in the request-processor. Some values are
+not available at various points in the page-serving process; for instance,
+<tt>ad_conn file</tt> is not available in
+preauth/postauth filters since path resolution is not performed
+until after filters are invoked.
+
+</dl>
+
+<h3>Parameters</h3>
+
+<blockquote>
+<pre>
+[ns/server/yourservername/request-processor]
+; Log lots of timestamped debugging messages?
+DebugP=0
+; URL sections exempt from Host header checks and security/session handling.
+; (can specify an arbitrary number).
+SystemURLSection=SYSTEM
+; URLs that the request-processor should simply pass on to AOLserver to handle
+; good candidates for these are URLs handled by nscgi.so or nsphp.so
+;LeaveAloneUrl=/cgi-bin/*
+;LeaveAloneUrl=/php/*
+</pre>
+</blockquote>
+
+<h3>Future Improvements</h3>
+
+<p>Integration with subcommunities.
+
+<hr>
+
+<a href="mailto:jsalz@mit.edu"><address>jsalz@mit.edu</address></a>
+
+</body>
+</html>

@@ -1,35 +1,45 @@
-# $Id: ae.tcl,v 3.2.2.3 2000/03/17 08:23:00 mbryzek Exp $
-# File: /www/intranet/offices/ae.tcl
-#
-# Author: mbryzek@arsdigita.com, Jan 2000
-# 
-# Adds/edits office information
-#
+# /www/intranet/offices/ae.tcl
 
-set user_id [ad_verify_and_get_user_id]
-ad_maybe_redirect_for_registration
+ad_page_contract {
+    Adds/edits office information
 
-set_form_variables 0
-# group_id (if we're editing)
-# return_url (optional)
+    @param group_id The group_id of the office.
+    @param return_url The url to go to.
 
+    @author mbryzek@arsdigita.com
+    @creation-date Jan 2000
 
-set db [ns_db gethandle]
+    @cvs-id ae.tcl,v 3.14.2.7 2001/01/12 08:27:58 khy Exp
+} {
+    group_id:optional,integer
+    return_url:optional
+}
+
+set user_id [ad_maybe_redirect_for_registration]
+
 if { [exists_and_not_null group_id] } {
     set caller_group_id $group_id
-    set selection [ns_db 1row $db \
-	    "select g.group_name, g.short_name, o.*
-               from im_offices o, user_groups g
-              where g.group_id=$caller_group_id
-                and g.group_id=o.group_id(+)"]
-    set_variables_after_query
+    set sql_query "
+             select 
+                  g.group_name, 
+                  g.short_name, 
+                  o.public_p,
+                  o.facility_id
+             from 
+                  im_offices o, 
+                  user_groups g
+             where 
+                  g.group_id=:caller_group_id
+                  and g.group_id=o.group_id(+)"
+    db_1row intranet_office_get_group_info $sql_query
     set page_title "Edit office"
-    set context_bar [ad_context_bar [list "/" Home] [list "../" "Intranet"] [list index.tcl "Offices"] [list "view.tcl?group_id=$caller_group_id" "One office"] $page_title]
+    set context_bar [ad_context_bar_ws [list ./ "Offices"] [list "view?group_id=$caller_group_id" "One office"] $page_title]
 
 } else {
     set page_title "Add office"
-    set context_bar [ad_context_bar [list "/" Home] [list "../" "Intranet"] [list index.tcl "Offices"] $page_title]
-    set caller_group_id [database_to_tcl_string $db "select user_group_sequence.nextval from dual"]
+    set context_bar [ad_context_bar_ws [list ./ "Offices"] $page_title]
+    set public_p f
+    set caller_group_id [db_string intranet_offices_get_user_group_seq_id "select user_group_sequence.nextval from dual"]
  
     # Information about the user creating this office
     set "dp_ug.user_groups.creation_ip_address" [ns_conn peeraddr]
@@ -37,10 +47,27 @@ if { [exists_and_not_null group_id] } {
 
 }
 
+#
+# get a list of the available facilities
+#
+set facility_options ""
+set sql_query "select facility_id as fid, facility_name from im_facilities"
+
+db_foreach intranet_offices_get_facility_id_name $sql_query {
+    append facility_options "<option value=$fid"
+    if { [info exists facility_id] && $facility_id == $fid } {
+        append facility_options " selected"
+    }
+    append facility_options ">$facility_name</option>"   
+}
+
+db_release_unused_handles
+
+set group_id $caller_group_id
 
 set page_body "
-<form method=post action=ae-2.tcl>
-<input type=hidden name=group_id value=$caller_group_id>
+<form method=post action=ae-2>
+[export_form_vars -sign group_id]
 [export_form_vars return_url dp_ug.user_groups.creation_ip_address dp_ug.user_groups.creation_user]
 
 <table border=0 cellpadding=3 cellspacing=0 border=0>
@@ -53,76 +80,37 @@ set page_body "
 <TR>
 <TD ALIGN=RIGHT>Office short name:</TD>
 <TD><INPUT NAME=short_name SIZE=30 [export_form_value short_name] MAXLENGTH=100>
-  <br><font size=-1>To be used for email aliases/nice urls</font></TD>
+  <font size=-1>(To be used for email aliases/nice urls)</font></TD>
+
 </TR>
-
-<TR><TD COLSPAN=2><BR></TD></TR>
-
 <TR>
-<TD ALIGN=RIGHT>Phone:</TD>
-<TD><INPUT NAME=dp.im_offices.phone.phone [export_form_value phone] SIZE=14 MAXLENGTH=50></TD>
-</TR>
-
-<TR>
-<TD ALIGN=RIGHT>Fax:</TD>
-<TD><INPUT NAME=dp.im_offices.fax.phone [export_form_value fax] SIZE=14 MAXLENGTH=50></TD>
-</TR>
-
-<TR><TD COLSPAN=2><BR></TD></TR>
-
-<TR>
-<TD VALIGN=TOP ALIGN=RIGHT>Address:</TD>
-<TD><INPUT NAME=dp.im_offices.address_line1 [export_form_value address_line1]  SIZE=30 MAXLENGTH=80></TD>
-</TR>
-
-<TR>
-<TD VALIGN=TOP ALIGN=RIGHT></TD>
-<TD><INPUT NAME=dp.im_offices.address_line2 [export_form_value address_line2] SIZE=30 MAXLENGTH=80></TD>
-</TR>
-
-<TR>
-<TD VALIGN=TOP ALIGN=RIGHT>City:</TD>
-<TD><INPUT NAME=dp.im_offices.address_city [export_form_value address_city] SIZE=30 MAXLENGTH=80></TD>
-</TR>
-
-<TR>
-<TD VALIGN=TOP ALIGN=RIGHT>State:</TD>
-<TD>
-[state_widget $db [value_if_exists address_state] "dp.im_offices.address_state"]
+<TD ALIGN=RIGHT>Facility:</TD>
+<TD><SELECT NAME=dp.im_offices.facility_id [export_form_value facility_id]>
+<option value=\"\"> -- Please select --
+$facility_options
+</SELECT>
+(<a href=../facilities/ae?return_url=[ad_urlencode [im_url_with_query]]>add a facility</a>)
 </TD>
 </TR>
 
-<TR>
-<TD VALIGN=TOP ALIGN=RIGHT>Zip:</TD>
-<TD><INPUT NAME=dp.im_offices.address_postal_code [export_form_value address_postal_code] SIZE=10 MAXLENGTH=80></TD>
-</TR>
 
 </TABLE>
 
-<H4>Landlord information</H4>
+<h4>Should this office's information be public?</h4>
 
 <BLOCKQUOTE>
-<TEXTAREA NAME=dp.im_offices.landlord COLS=60 ROWS=4 WRAP=SOFT>[philg_quote_double_quotes [value_if_exists landlord]]</TEXTAREA>
+<input type=radio name=dp.im_offices.public_p value=t[util_decode $public_p "t" " checked" ""]> Yes &nbsp;&nbsp;
+<input type=radio name=dp.im_offices.public_p value=f[util_decode $public_p "f" " checked" ""]> No
 </BLOCKQUOTE>
-
-<H4>Security information</H4>
-
-<BLOCKQUOTE>
-<TEXTAREA NAME=dp.im_offices.security COLS=60 ROWS=4 WRAP=SOFT>[philg_quote_double_quotes [value_if_exists security]]</TEXTAREA>
-</BLOCKQUOTE>
-
-<H4>Other information</H4>
-
-<BLOCKQUOTE>
-<TEXTAREA NAME=dp.im_offices.note COLS=60 ROWS=4 WRAP=SOFT>[philg_quote_double_quotes [value_if_exists note]]</TEXTAREA>
-</BLOCKQUOTE>
-
-<P>
 
 <p><center><input type=submit value=\"$page_title\"></center>
 </form>
 "
 
-ns_db releasehandle $db
+doc_return  200 text/html [im_return_template]
 
-ns_return 200 text/html [ad_partner_return_template]
+
+
+
+
+

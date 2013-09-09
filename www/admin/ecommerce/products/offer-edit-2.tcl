@@ -1,8 +1,26 @@
-# $Id: offer-edit-2.tcl,v 3.0 2000/02/06 03:20:25 ron Exp $
-set_the_usual_form_variables
-# offer_id, product_id, product_name, retailer_id, price, shipping, stock_status, old_retailer_id, offer_begins, offer_ends
-# special_offer_p, special_offer_html
-# and possibly shipping_unavailable_p
+#  www/admin/ecommerce/products/offer-edit-2.tcl
+ad_page_contract {
+  Edit an offer.
+
+  @author Eve Andersson (eveander@arsdigita.com)
+  @creation-date Summer 1999
+  @cvs-id offer-edit-2.tcl,v 3.2.2.3 2000/08/18 20:23:46 stevenp Exp
+} {
+  offer_id:integer,notnull
+  product_id:integer,notnull
+  retailer_id:integer,notnull
+  price
+  shipping
+  stock_status
+  old_retailer_id:integer,notnull
+  offer_begins:array,date
+  offer_ends:array,date
+  special_offer_p
+  special_offer_html:html
+  shipping_unavailable_p:optional
+}
+
+set product_name [ec_product_name $product_id]
 
 set exception_count 0
 set exception_text ""
@@ -37,24 +55,19 @@ if { ![info exists shipping_unavailable_p] && [empty_string_p $shipping] } {
     append exception_text "<li>You have specified that only Pick Up is available, therefore you must leave the shipping price blank.\n"
 }
 
-# deal w/dates
-set form [ns_getform]
-if [catch  { ns_dbformvalue $form offer_begins date offer_begins} errmsg ] {
-    incr exception_count
-    append exception_text "<li>The date that the offer begins was specified in the wrong format.  It should be in the format Month DD YYYY.\n"
-} elseif { [string length [set ColValue.offer%5fbegins.year]] < 4 } {
-    incr exception_count
-    append exception_text "<li>The year that the offer begins needs to contain 4 digits.\n"
+page_validation {
+  # ec_date_widget_validate offer_begins
+} {
+  # ec_date_widget_validate offer_ends
 }
 
+set offer_begins_text [ec_date_text offer_begins]
+set offer_ends_text [ec_date_text offer_ends]
 
-if [catch  { ns_dbformvalue $form offer_ends date offer_ends} errmsg ] {
-    incr exception_count
-    append exception_text "<li>The date that the offer expires was specified in the wrong format.  It should be in the format Month DD YYYY.\n"
-} elseif { [string length [set ColValue.offer%5fends.year]] < 4 } {
-    incr exception_count
-    append exception_text "<li>The year that the offer expires needs to contain 4 digits.\n"
-}
+unset offer_begins offer_ends
+
+set offer_begins $offer_begins_text
+set offer_ends $offer_ends_text
 
 if { [info exists offer_begins] && [empty_string_p $offer_begins] } {
     incr exception_count
@@ -71,24 +84,23 @@ if { $exception_count > 0 } {
     return
 }
 
-
 # add some times to the dates, so that it starts at the beginning
 # of the first day and ends at the end of the last day
 set offer_begins "$offer_begins 00:00:00"
 set offer_ends "$offer_ends 23:59:59"
-set to_date_offer_begins "to_date('$offer_begins','YYYY-MM-DD HH24:MI:SS')"
-set to_date_offer_ends "to_date('$offer_ends','YYYY-MM-DD HH24:MI:SS')"
+set to_date_offer_begins "to_date(:offer_begins,'YYYY-MM-DD HH24:MI:SS')"
+set to_date_offer_ends "to_date(:offer_ends,'YYYY-MM-DD HH24:MI:SS')"
 
 # see if a non-deleted offer for this product and retailer whose
 # dates of validity overlap this offer is already in ec_offers, in which
 # case they can't add this new offer
 
-set db [ns_db gethandle]
+
 #
-if { [database_to_tcl_string $db "select count(*) from ec_offers
-where product_id=$product_id
-and retailer_id=$retailer_id
-and offer_id != $offer_id
+if { [db_string duplicate_offer_select "select count(*) from ec_offers
+where product_id=:product_id
+and retailer_id=:retailer_id
+and offer_id != :offer_id
 and deleted_p='f'
 and (($to_date_offer_begins >= offer_begins and $to_date_offer_begins <= offer_ends) or ($to_date_offer_ends >= offer_begins and $to_date_offer_ends <= offer_ends) or ($to_date_offer_begins <= offer_ends and $to_date_offer_ends >= offer_ends))
 "] > 0 } {
@@ -97,9 +109,7 @@ and (($to_date_offer_begins >= offer_begins and $to_date_offer_begins <= offer_e
     return
 }
 
-
-ReturnHeaders
-ns_write "[ad_admin_header "Confirm Retailer Offer on $product_name"]
+doc_body_append "[ad_admin_header "Confirm Retailer Offer on $product_name"]
 
 <h2>Confirm Retailer Offer on $product_name</h2>
 
@@ -110,10 +120,10 @@ ns_write "[ad_admin_header "Confirm Retailer Offer on $product_name"]
 
 set currency [ad_parameter Currency ecommerce]
 
-ns_write "<table>
+doc_body_append "<table>
 <tr>
 <td>Retailer:</td>
-<td>[database_to_tcl_string $db "select retailer_name || ' (' || city || ', ' || usps_abbrev || ')' as retailer_name_to_print from ec_retailers where retailer_id=$retailer_id"]</td>
+<td>[db_string retailer_name_select "select retailer_name || ' (' || city || ', ' || usps_abbrev || ')' as retailer_name_to_print from ec_retailers where retailer_id=:retailer_id"]</td>
 </tr>
 <tr>
 <td>Price:</td>
@@ -123,22 +133,22 @@ ns_write "<table>
 <td>Shipping:</td>
 "
 if { [info exists shipping_unavailable_p] } {
-    ns_write "<td>Pick Up</td>\n"
+    doc_body_append "<td>Pick Up</td>\n"
 } else {
-    ns_write "<td>[ec_pretty_price $shipping $currency]</td>\n"
+    doc_body_append "<td>[ec_pretty_price $shipping $currency]</td>\n"
 }
 
-ns_write "</tr>
+doc_body_append "</tr>
 <tr>
 <td>Stock Status:</td>
 <td>
 "    
 if { ![empty_string_p $stock_status] } {
-    ns_write [ad_parameter "StockMessage[string toupper $stock_status]" ecommerce]
+    doc_body_append [ad_parameter "StockMessage[string toupper $stock_status]" ecommerce]
 } else {
-    ns_write [ec_message_if_null $stock_status]
+    doc_body_append [ec_message_if_null $stock_status]
 }
-ns_write "</td>
+doc_body_append "</td>
 </tr>
 <tr>
 <td>Offer Begins</td>
@@ -151,14 +161,13 @@ ns_write "</td>
 "
 
 if { $special_offer_p == "t" } {
-    ns_write "<tr><td>Special Offer:</td><td>$special_offer_html</td></tr>\n"
+    doc_body_append "<tr><td>Special Offer:</td><td>$special_offer_html</td></tr>\n"
 }
 
+doc_body_append "</table>
 
-ns_write "</table>
-
-<form method=post action=offer-edit-3.tcl>
-[export_form_vars offer_id product_id product_name retailer_id price shipping stock_status old_retailer_id offer_begins offer_ends special_offer_p special_offer_html shipping_unavailable_p]
+<form method=post action=offer-edit-3>
+[export_form_vars offer_id product_id retailer_id price shipping stock_status old_retailer_id offer_begins offer_ends special_offer_p special_offer_html shipping_unavailable_p]
 <center>
 <input type=submit value=\"Confirm\">
 </center>

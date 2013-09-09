@@ -6,19 +6,16 @@
 <body bgcolor=#ffffff text=#000000>
 <h2>Intranet Module</h2>
 
-part of the <a href="index.html">ArsDigita Community System</a><Br>
-by <a href="http://teadams.com">Tracy Adams</a>,
-<a href="http://photo.net/philg/">Philip Greenspun</a>,
-<A HREF=mailto:dvr@arsdigita.com>David Rodriguez</A>,
-and <A HREF=mailto:mbryzek@arsdigita.com>Michael Bryzek</a>
+part of the <a href="index">ArsDigita Community System</a><Br>
+by a lot of people at ArsDigita and maintained by <a href=mailto:mbryzek@arsdigita.com>Michael Bryzek</a>.
 
 <hr>
 <ul>
 <li>User directory:  <a href="/intranet">/intranet</a>
-<li>Admin directory: <a href="/intranet/employees/admin/">/intranet/employees/admin/</a>
+<li>Admin directory: <a href="/intranet/employees/admin/">/intranet/employees/admin/</a> and <a href="/admin/intranet">/admin/intranet</a>
 <li>data model:  
-<a href="/doc/sql/display-sql.tcl?url=/doc/sql/intranet.sql">/doc/sql/intranet.sql</a>
-<li>procedures:   /tcl/intranet-defs.tcl
+<a href="/doc/sql/display-sql?url=/doc/sql/intranet.sql">/doc/sql/intranet.sql</a>
+<li>procedures:  /tcl/intranet-defs and /tcl/intranet-status-report-defs
 </ul>
 
 <h3>The Big Picture</h3>
@@ -60,8 +57,8 @@ organization.
 
 What kinds of organizations can get the most out of this toolkit?  Ones
 just like ArsDigita, of course!  We built this for ourselves.  ArsDigita
-has three offices (Boston, San Francisco, Los Angeles), 30 busy
-highly-paid people (July 1999), and rapid growth (revenue doubling every
+currently (May 2000) has approximately ten offices, 140 busy 
+highly-paid people, and rapid growth (revenue doubling every
 six months).  Coincidentally, it also works great for groups within
 larger companies.  Consider Jane Manager at Hewlett-Packard who is
 forming a team to build a new product.  Within a couple of weeks, she
@@ -102,9 +99,11 @@ The intranet makes it easy to spam the entire company, a specific office, or emp
 working on a given project. 
 
 <h4>Daily Status Report</h4>
+
 The intranet supports a daily status report that is sent to every employee 
 in the company, on a nightly basis. Any module in the acs can add something
 to this status report by:
+
 <ol>
   <li> Creating a procedure that generates the content to include in the 
        status report. This procedure takes 4 arguments: database handle (db), 
@@ -124,18 +123,37 @@ proc im_news_status {db {coverage ""} {report_date ""} {purpose ""} } {
     } else {
 	set report_date "'$report_date'"
     }
-    set since_when [database_to_tcl_string $db "select to_date($report_date, 'YYYY-MM-DD') - $coverage from dual"]
-    return [news_new_stuff $db $since_when "f" $purpose]
+    set since_when [db_string unused "select to_date($report_date, 'YYYY-MM-DD') - $coverage from dual"]
+    return [news_new_stuff $since_when "f" $purpose]
 }
 </pre>
 
-  <p><li> Adding the name of the procedure to a shared global: <br><b>Example:</b><br>
-<pre>
-ns_share im_status_report_section_list
+  <p><li> Use <code>im_add_to_status_report</code> to register the
+name of the procedure and caching information with the intranet status
+report:
 
-if { ![info exists im_status_report_section_list] || [lsearch -glob "$im_status_report_section_list" "im_news_status" ] == -1 } {
-    lappend im_status_report_section_list [list "News" im_news_status]
+<pre>
+
+proc_doc im_add_to_status_report { title proc_name { cache_p "f" } } {
+    Adds proc_name to the list of procs needed to generete the
+    status_report. If cache_p is t, then we cache the result to reuse
+    later (like when we're sending the status report to all employees). 
+    You want to cache all information that does not depend on the
+    current user id.
+} {
+    ns_share im_status_report_section_list
+    
+    if { ![info exists im_status_report_section_list] || \
+	    [lsearch -glob $im_status_report_section_list $proc_name] == -1 } {
+	lappend im_status_report_section_list [list $title $proc_name $cache_p]
+    }
+
 }
+
+# Register the procedure im_news_status with the intranet status report. We can cache
+# this information because it does not change based on the user id
+im_add_to_status_report "News" im_news_status t
+
 </pre>
 </ol>
 
@@ -147,8 +165,44 @@ The parameters/ad.ini file
 <blockquote>
 <pre><code>
 [ns/server/yourservername/acs/intranet]
-IntranetName=yourdomain Network
-IntranetEnabledP=0
+; Log email sent to groups as correspondance and enable auto-emailing of
+; these correspondance to members of the group
+LogEmailToGroupsP=1
+; Use the intranet filters to restrict access to all bboard topic with a group_id
+EnableIntranetBBoardSecurityFiltersP=1
+; Set to 1 if you want to automatically redirect users to enter project reports
+ForceUsersToEnterProjectReportsP=0
+; If you want users to automatically be redirected to log their hours
+; if they haven't, set this flag to 1
+ForceUsersToLogHoursP=1
+; How many results/rows do we show on a page before splitting up into 
+; previous/next links?
+NumberResultsPerPage=50
+; On pages with dimensional sliders, having too many categories leads to 
+; messy navigation. How many text characters do we allow before switching 
+; from text links to a select bar?
+LengthBeforeSelectBar=50
+; If you want to include a default graphic in your
+; intranet header, put the path to that graphic here 
+DefaultGraphic=
+; If you would like to track projects with a
+; survey in the survey module, put the project
+; type and its paired survey
+ProjectReportTypeSurveyNamePair=Client - full service,project_report
+;You may send email notifications of payment
+; changes to members of a specified group
+BillingGroupShortName=receivable
+IntranetName=aD Intranet
+IntranetEnabledP=1
+; If you want to restrict access to the /shared/community-member
+; page to users of the intranet only, set KeepSharedInfoPrivate to 1
+KeepSharedInfoPrivate=1
+; Should we enable bboard with the intranet pages? The BBoard
+; module must be scoped or be altered to have a groud_id column first
+BBoardEnabledP=1
+; do we serve the generated /intranet/index page or something 
+; else from the file system?
+SpecialIndexPage=
 DisplayVacationsOnCalendar=1
 ; the unit of measurement for entering salaries (month or year)
 SalaryPeriodInput=year
@@ -158,7 +212,7 @@ SalaryPeriodDisplay=year
 FeeTypes="setup" "monthly development" "monthly hosting" "hourly" "stock"
 ; Do we want to track hours?
 TrackHours=1
-; what's the url stub? i.e. http://yourdomain.com<stub>
+; what's the url stub? i.e. http://www.yourdomain.com<stub>
 IntranetUrlStub=/intranet
 ; Group Types
 IntranetGroupType=intranet
@@ -168,83 +222,410 @@ CustomerGroupShortName=customer
 PartnerGroupShortName=partner
 ProcedureGroupShortName=procedure
 EmployeeGroupShortName=employee
+TeamGroupShortName=team
 AuthorizedUsersGroupShortName=authorized_users
+CustomerPortalName=Customer Portals
 ; What color do we put in the header row of tables?
 TableColorHeader=#e6e6e6
 ; What color do we put in the odd numbered rows of tables?
 TableColorOdd=#f4f4f4
 ; What color do we put in the even numbered rows of tables?
 TableColorEven=#ffffff
+CommentApprovalPolicy=open
+; If we want to include people who are delinquent with project 
+; reports in our status-report, what user_class_id do we use?
+; Leave blank to skip this part of the status report
+UserClassStatusReportID=
 </code></pre>
 </blockquote>
 
-<h4>Groups</h4>
-The intranet is a group_type, and each category of users is its own user_group
-of type intranet. Within each group, you can have subgroups if there is a need.
-One example is offices. There is a user group named Offices, and each office is
-a subgroup of the Office group. In this way, we can keep the large number of 
-objects organized in a hierarchical way. 
 
+<h4>Categories of users</h4>
 
-<h4>Employees</h4>
-
-Employees or key members of the company are users of the 
-ArsDigita Community System. Every employee is a member of the
-employees user_groups. Detailed contact information is 
-stored for users to provide a company directory. 
-The <TT>im_employee_info</TT> table holds information
-like the employee's salary and Social Security number.
-<p>
-Note that Authorized Users are similar to employees, but are granted fewer 
-permissions.
-
-
-<H4>Offices</H4>
-
-There is a user group named Offices, and each office is a subgroup. Employees
-of a particular belong to one of the subgroups. Additional office information 
-is stored in the im_offices table.
-
-<h4>Projects</h4>
-<p>
-Typical projects are 
+There are several different categories of users in intranet-enabled
+acs installations:
+ 
 <ul>
-<li> A  client project (iMedix.com)
-<li> A module (Project Tracker Module)
-<li> An initiative (convert company structure from LLC to SCorp)
+
+  <li> Normal users: Those who register on the site but are not
+  authorized for intranet access
+
+  <p><li> Customers: Users who belong to customers are given access to
+  certain parts of the intranet, including the list of employees
+  working with them and status reports posted for their projects.
+
+  <p><li> Employees: Employees gain full access to all intranet pages
+  and information (except for pages reserved for administrators)
+
+  <p><li> Authorized users: These users have the same level of access
+  as Employees, but are simply categorized differently. This allows us
+  to give employee-level access to any user and still maintain a
+  consistent view of all the employees in the company.
+
+  <p><li> Intranet administrators: Intranet uber-users who can
+  see/change anything in the intranet. Note that site-wide
+  administrators can also access anything that an Intranet
+  administrator can.
+
 </ul>
 
-The <code>im_projects</code> table stores the main project information.
 
-Each project is itself a user group, and people who are working on the project 
-belong to the project user group. Additionally, projects can have multiple states,
-e.g. open/closed, which are stored in the <code>im_project_status</code> table, as
-well as types, e.g. client/toolkit, which are stored in the <code>im_project_types</code> table.
+<h4>User Groups</h4>
+
+The intranet module defines several standard user groups which can be
+used to model your organization.  The intranet is a group_type, and
+each category of users is its own user_group of type intranet. Within
+each group, you can have subgroups if there is a need.  One example is
+offices. There is a user group named Offices, and each office is a
+subgroup of the Office group. This way, we can keep the large number
+of objects organized in a hierarchical way.
+
 <p>
-The projects are integrated with the ticket tracker. The idea here is to use 
-projects in the intranet as a way of managing information about the projects - 
-employee allocations, payments, people involved, etc. - and use the ticket
-tracker to actually manage work on the project.
+
+Intranet administrators belong to the "Intranet Administrators"
+subgroup of the standard ACS Administration group. All other intranet
+groups have a group_type of intranet. The following groups are
+automatically created:
+
+<ul>
+  
+  <li> Projects: Every project in the intranet is a subgroup of the
+  projects groups
+
+  <li> Customers: Every customer in the intranet is a subgroup of the
+  projects groups. Users who work for a customer belong to one
+  subgroup.
+
+  <li> Partners: Every partner in the intranet is a subgroup of this group. 
+
+  <li> Employees: Users become employees by joining this group. 
+
+  <li> Offices: Each office is a subgroup of this group. 
+
+  <li> Procedures: Each procedure that employees create is a subgroup
+  of the procedures user_group.
+ 
+</ul>
+
+
+<h4>Top-level pages /intranet</h4>
+
+Top-level files include the employee's workspace and pages  that are commonly reused by intranet submodules. This includes: 
+<ul>
+  <li> Adding users to intranet groups
+  <li> Searching for users using intranet permissions
+</ul>
+
+The following parameters can be used to modify the general behavior of the intranet module:
+<ul>
+
+  <li> SpecialIndexPage: Changes the default intranet workspace page from
+  /intranet/index to whatever file you would like.
+
+  <p>
+
+  <li> IntranetEnabledP: Global parameter thats tells us that the
+  intranet is enabled. Currently, this changes the default user
+  workspace for authorized users of the intranet to /intranet/, adds
+  intranet-specific information to the community-member page, and
+  displays vacations on the calendar. Non authorized users can still
+  see public information about all other users in the system.
+
+</ul> 
+
+
+<p><b>Categories in the intranet</b><p>
+
+The intranet module uses the categories table, originally created for
+<a href=user-profiling> user profiling</a>, to categorize attributes
+of the various intranet objects.  For instance, the list of possible
+job titles that an employee may have will vary between different
+organizations.  Each job title is an entry in the categories table
+with category_type='Intranet Job Title'.  The /admin/intranet page
+lists each of the intranet categories, and allows maintenance of their
+possible values. This flexibility allows the intranet data model to
+adapt to your company's standard practices and workflow.
+
+
+<h4>Employees /intranet/employees</h4>
+
+The employees section of the intranet is used to manage the employees
+in the company. Employees can search for others in the company, can
+spam all company employees, can download AIM lists to load into
+instant messenger, and can view a dynamically generated company org
+chart. Employees can also be categorized/seen by office or team.
+
 <p>
-Users can record time spent on each project or deadline. All these hours
-are recorded in the im_hours table.
+
+Every employee is a member of the employees user_group. Detailed
+contact information is stored for users in order to provide a company
+directory.  The <TT>im_employee_info</TT> table holds information like
+the employee's salary and Social Security number.  When a new person
+is hired, you can add them to the employees group by choosing "Add an
+employee" from the intranet admin screen.  This gives them access to
+the intranet portal.
+
+<p><b>Making the recruiting process visible</b><p>
+
+The <code>im_employee_pipeline</code> table allows recruiters to keep
+track of applicants, interviews, and hiring status.  From the employee
+administration page, summaries of current candidates as well as
+employee referrals are available.
+
+<p><b>Work absences /intranet/absences</b>
+
+Users record their work absences (e.g. vacations, travel, personal
+time-off) providing a central resource to see where all employees
+are. Users can describe why they are taking time off and list
+emergency contact information.
 
 
-<h4>Customers</h4>
 
-All customers are user groups, and the <code>im_customers</code> table store 
-additional information about each customer. Like projects, customers have 
-multiple states, stored in the <code>im_customer_status</code> table.
+<h4>Employee administration /intranet/employees/admin</h4>
 
-<h4>Partners</h4>
+Employee administration consists of:
 
-All partners are user groups, and the <code>im_partners</code> table store 
-additional information about each partner. Like projects, partners have 
-multiple states, stored in the <code>im_partner_status</code> table, and multiple
-types, stored in the im_partner_types table.
+<ul>
+  <li> Adding new employees
+  <li> Adding new intranet administrators
+  <li> Assigning users to various groups (e.g. offices, teams, projects, etc.)
+  <li> Entering HR information (e.g. start date, salary, experience, etc.)
+  <li> Managing the employee pipeline 
+  <li> Managing employee referrals
+  <li> Managing termination by recording termination dates and removing terminated employees from all intranet groups.
+</ul>
 
 
+<h4>Customers /intranet/customers</h4>
+
+Customers in the intranet maintain basic information, such as the type
+of customer, and are associated with address books and projects. From
+the customers page, you can also see everyone who works with that
+customer. We also store all correspondance with the customer through
+the <a href=general-comments>general comments</a> module. Like
+projects, customers can be categorized into types or states, stored in
+the <code>categories</code> table.
+
+<p>
+
+The intranet module also provides easy integration with the bboard
+module to create and link bboard topics to each customer. Note that
+you should probably enable the EnableIntranetBBoardSecurityFiltersP=1
+parameter to register a filter that prevents unauthorized access to
+the intranet bboards.
+
+<p>
+
+Employees who work for a given customer can be automatically
+redirected to a Customer Portal (identified by the CustomerPortalName
+parameter)
+
+<h4>Projects /intranet/projects</h4>
+
+
+The projects module is probably the most useful place for
+employees. Typical projects include
+
+<ul>
+  <li> A  client project (iMedix.com)
+  <li> A module (Project Tracker Module)
+  <li> An initiative (convert company structure from LLC to SCorp)
+</ul>
+
+Each project maintains basic information about the project (a
+description, the project lead, the supervisor, etc.), tracks project
+reports (in the form of <a href=general-comments>general comments</a>
+and/or <a href=survey-simple>surveys</a>), and basic categorization to
+help you organize the lists of projects. We also track project
+payments and allocations over time. Projects can also be categorized
+by type (e.g. client/internal) or state (e.g. open/closed).
+
+
+<p> 
+
+We currently support one level of subprojects allowing users to break
+up a large project if needed. Each intranet project can be associated
+with a ticket tracker project. The idea here is to use projects in the
+intranet as a way of managing information about the projects -
+employee allocations, payments, people involved, etc. - and use the
+ticket tracker to actually manage work on the project.
+
+
+<p><b>Project reports</b><p>
+The intranet module currently supports two types of reports:
+
+<ul>
+  <li> General comments - the default report that simple associated
+  general comments with each project. Each project maintains a flag
+  telling us whether or not a project report is required for that
+  project.
+
+  <p><li> Surveys - Surveys can be created as an enhanced project
+  report. You can associate a type of project with a survey by adding
+  a parameter similar to this one (you can have as many as you like!):
+
+    <ul>
+      <li> ProjectReportTypeSurveyNamePair=Client - full service,project_report
+    </ul>
+
+  This associates the survey named "project_report" as the report to
+  use for all projects of type "Client - full service"
+ 
+</ul>
+
+If set, the ForceUsersToEnterProjectReportsP parameter will
+automatically redirects users who are late with a project report to
+the forms they need to fill in. If desired, this feature can be
+enabled to intrusively remind employees to fill out late reports.
+
+<p><b>Tracking Hours</b><p>
+
+All hours logged on any project are records in the im_hours table
+using the generic on_which_table and on_what_id structure. This allows
+us to extend hour tracking in the future to the <a href=ticket>ticket
+tracker</a> or other tools that employees use throughout the work day,
+recording hours in the same table and thus simplifying hour
+reporting. Note that the TrackHours parameter should be enabled to
+prompt users to log their hours.
+
+<p>
+
+If set, the ForceUsersToLogHoursP parameter will automatically
+redirect users to the log hours screen for yesterday if they have not
+logged their hours in the past day.
+
+
+<h4>Facilities</h4>
+
+Facilities represent physical locations including offices and company
+homes, such as extravigant Cape Cod beach houses. Each facility stores
+basic information, including its location, directions, and primary
+contact.
+
+<p>
+
+An office is fundamentally a business unit to which employees are assigned.
+The main difference between an office and any other user group is that an
+office is associated with a particular facility.
+
+<p>
+
+Company houses are another special type of facility, containing rooms
+and beds that can be reserved.  Most company house serves a particular
+office location, providing temporary accomodations for visiting
+ArsDigitans.  Some company houses, such as special retreat facilities,
+however, aren't associated with any particular office.
+
+<h4>Partners /intranet/partners</h4>
+
+Company partners, such as strategic consultants, graphics design
+firms, etc., are each subgroups of the Partners user group. Partners
+are similar to customers in that they have their own address books,
+correspondance history, and list of employees engaged with the partner.
+Partners can also be categorized through the categories table.
+
+
+<h4>Allocations /intranet/allocations</h4>
+
+You can use allocations to assign a percentage of an employee's time
+to a specific project. This helps you to keep track of what each
+employee is working on and to ensure that all employees are properly
+allocated.
+
+
+<h4>Email</h4>
+
+You can set up qmail on your box to receive emails sent to your server
+and automatically log them with a corresponding project, customer,
+partner, or random user group. The idea is to send mail to the
+user_groups.short_name@somedomain, and associate the emails with the
+user_groups. This works because the short_name is unique.  Here's how
+it works (very briefly):
+
+<ol>
+  <li> Point a domain (like intranet.arsdigita.com) to the box running your intranet
+  <li> Install qmail and pipe all mail to intranet.arsdigita.com to a perl script that stuffs the mail into your database. The <a href=http://software.arsdigita.com/bin>perl scripts</a> to do this come with acs.
+  <li> Use these "aliases": (the actual processing is handled through <a href=http://software.arsdigita.com/tcl/email-handler-sweeper-procs>email-handler-sweeper-procs</a>)
+  <ul>
+    Assume the short_name for our user_group is toolkit
+    <li> toolkit@intranet.arsdigita.com to simply log the email as a correspondance
+    <li> toolkit-employees@intranet.arsdigita.com to log the email as a correspondance and to forward it to all employees associated with the user group
+    <li> toolkit-customers@intranet.arsdigita.com to log the email as a correspondance and to forward it to all customers associated with the user group
+    <li> toolkit-all@intranet.arsdigita.com to log the email as a correspondance and to forward it to everyone associated with the user group
+  </ul>
+  <li> Finally, be sure to set the LogEmailToGroupsP parameter to tell the email-handler to process the group-based email!
+</ol>
+
+<p>
+In the future, we'd like to create mailing lists for the groups and
+aliases rather than use ns_sendmail for all members of the group.
+
+<h4>Procedures</h4> 
+
+The <code>im_procedures</code> table can be used to record
+company procedures and the people certified to do them.  Anyone can
+add a procedure, and they're allowed to pick the first person
+certified for that procedure.  Anyone certified in procedure X can
+certify anyone else to do that procedure.  (That person can also add
+restrictions like <i>only certified on HPUX</i>) Certified users
+should record times they supervised a non-certified user doing a
+procedure, so we can use rules like <i>A user can be certified after
+completing the procedure 5 times under the supervision of a certified
+user</i>. Each procedure is a subgroup of the Procedures user group.
+
+
+<h4>Processes</h4>
+
+Process and process tracking is vital to make sure that
+a company runs well-oiled.  For each process, we need
+to record the process details, which department is involved,
+and the primary owner.   The primary owner is in charge
+of auditing the process periodically to make sure the description
+is correct and that the process is happening as planned.
+
+<blockquote>
+<pre>
+create table im_processes  (
+    im_process_id       integer primary key,
+    -- name of the basic process
+    process_name        varchar(100) not null,
+    -- department that runs this process
+    department_id       integer references categories(category_id),
+    description         clob,
+    primary_owner_id    integer references users(user_id)
+    -- processes should be audited by the primary owner
+    -- we record when this process was last audited
+    last_audit          date,
+    -- when will we check on the health of this process?
+    next_audit		date
+);
+
+</pre>
+</blockquote>
+
+Simple processes might only involved the owners.  
+For those that involved more people, we keep track of this users involved in
+this process and their role using the standard user group
+tables. 
+<P>
+For example, take a process "hiring pipeline".
+Roles would be
+<ul>
+<li>Supervisor
+<li>Scheduling and administration
+<li>Phone Interviews
+<li>Technical Interviews
+<li>Reference Checks
+</ul>
+
+<h4>Reports /intranet/reports</h4>
+
+General reports about the intranet broken down by office, team, data quality, employee information, etc.
+
+
+<p>
 <hr>
 <a href="mailto:mbryzek@arsdigita.com"><address>mbryzek@arsdigita.com</address></a>
 </body>
 </html>
+

@@ -1,11 +1,15 @@
 # File: /admin/general-links/check-all-links.tcl
-# Date: 2/01/2000
-# Author: tzumainn@arsdigita.com 
-#
-# Purpose: 
-#  Checks all links for live/dead status and meta tags
-#
-# $Id: check-all-links.tcl,v 3.0 2000/02/06 03:23:34 ron Exp $
+
+ad_page_contract {
+    Checks all links for live/dead status and meta tags
+    <code>ns_write</code> is used here because of the <code>ns_httpget</code> calls needed for link checking.
+
+    @author Tzu-Mainn Chen (tzumainn@arsdigita.com)
+    @creation-date 2/01/2000
+    @cvs-id check-all-links.tcl,v 3.1.6.4 2000/07/21 03:57:21 ron Exp
+} {
+}
+
 #--------------------------------------------------------
 
 if {[ad_read_only_p]} {
@@ -26,36 +30,33 @@ ad_return_top_of_page "[ad_header "Check All Links" ]
 <ul>
 "
 
-set return_url "check-all-links.tcl"
-set db [ns_db gethandle]
+set return_url "check-all-links"
 
-set link_info_list [database_to_tcl_list_list $db "select link_id, url from general_links order by url"]
+
+set link_info_list [db_list_of_lists select_link_info_list "select link_id, url from general_links order by url"]
 
 foreach link_info $link_info_list {
 
     set link_id [lindex $link_info 0]
     set url [lindex $link_info 1]
 
-    set check_p [ad_general_link_check $db $link_id]
+    set check_p [ad_general_link_check $link_id]
 
     if { $check_p == 1 } {
 	ns_write "<li><a href=\"$url\">$url</a> is <b>live</b>"
 	
     } else {
-	set last_live_date [database_to_tcl_string_or_null $db "select last_live_date from general_links where link_id = $link_id"]
-	if [empty_string_p $last_live_date] {
-	    set last_live_date "N/A"
-	}
+	set last_live_date [db_string select_last_live_date {select last_live_date from general_links where link_id = :link_id} -default "N/A"]
 
 	ns_write "
 	<li><a href=\"$url\">$url</a> is <b>unreachable</b> - $check_p
 	<br>Last Live Date: <b>$last_live_date</b>
 	"
     }
-    ns_write " - <a href=\"edit-link.tcl?[export_url_vars link_id return_url]\"</a>edit link</a> | <a href=\"delete-link.tcl?[export_url_vars link_id return_url]\"</a>delete link</a><p>"
+    ns_write " - <a href=\"edit-link?[export_url_vars link_id return_url]\"</a>edit link</a> | <a href=\"delete-link?[export_url_vars link_id return_url]\"</a>delete link</a><p>"
 }
 
-ns_db releasehandle $db
+db_release_unused_handles
 
 ns_write "
 </ul>

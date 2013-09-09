@@ -1,36 +1,38 @@
-# /admin/pull-down-menus/item-add.tcl
-#
-# Author: aure@caltech.edu
-#
-# Add an item to the menu
-#
-# $Id: item-add.tcl,v 1.1.2.1 2000/03/16 05:33:07 aure Exp $
-# -----------------------------------------------------------------------------
+# /www/admin/pull-down-menus/item-add.tcl
+ad_page_contract {
 
-ad_page_variables {
-    {menu_id}
+  Add an item to the menu.
+
+  @param menu_id Which menu this item will be added to.
+  @param parent_key Determines this item's position in menu hierarchy.
+
+  @author aure@caltech.edu
+  @cvs-id item-add.tcl,v 1.2.8.5 2000/09/22 01:35:53 kevin Exp
+} {
+
+    menu_id:integer,notnull
     {parent_key ""}
+
 }
 
-set db [ns_db gethandle]
 
 if [empty_string_p $parent_key] {
     set parent_label "Top"
 } else {
-    set parent_label [database_to_tcl_string $db "
+    set parent_label [db_string get_parent_label "
     select label as parent_label
     from   pdm_menu_items
-    where  menu_id = $menu_id
-    and    sort_key  = '$parent_key'"]
+    where  menu_id = :menu_id
+    and    sort_key  = :parent_key" ]
 }
 
 set title "Add Item"
 
-ns_db releasehandle $db
+db_release_unused_handles
 
 # -----------------------------------------------------------------------------
 
-ns_return 200 text/html "[ad_header_with_extra_stuff $title]
+doc_return  200 text/html "[ad_header_with_extra_stuff $title]
 
 <h2>Add Item Under $parent_label</h2>
 

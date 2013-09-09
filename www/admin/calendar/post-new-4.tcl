@@ -1,22 +1,39 @@
-# $Id: post-new-4.tcl,v 3.0.4.1 2000/04/28 15:08:27 carsten Exp $
-# 
-# actually do the insert into the calendar table
+ad_page_contract {
+    Inserts into the calendar table
+    
+    @author ???
+    @creation-date 09/22/2000
+    @cvs-id post-new-4.tcl,v 3.3.2.4 2001/01/10 16:32:01 khy Exp
+} {
+    calendar_id:naturalnum,notnull,verify
+    category:notnull
+    title:notnull
+    body:allhthml
+    html_p:notnull
+    approved_p:notnull
+    event_url
+    event_email
+    country_code
+    usps_abbrev
+    zip_code
+}
+
 
 if {[ad_read_only_p]} {
     ad_return_read_only_maintenance_message
     return
 }
 
-set user_id [ad_get_user_id]
+# set_the_usual_form_variables
+
+# calendar_id, title, body, AOLserver ns_db magic vars that can be 
+# kludged together to form release_date and expiration_date
+
+set user_id [ad_verify_and_get_user_id]
 if { $user_id == 0 } {
     ad_returnredirect "/register/index.tcl"
     return
 }
-
-set_the_usual_form_variables
-
-# calendar_id, title, body, AOLserver ns_db magic vars that can be 
-# kludged together to form release_date and expiration_date
 
 set creation_ip_address [ns_conn peeraddr]
 
@@ -29,11 +46,11 @@ if [catch  { ns_dbformvalue [ns_conn form] start_date date start_date
     append exception_text "<li>Please make sure your dates are valid."
 } else {
 
-    set db [ns_db gethandle]
+    
     # we assume that the event ends at the very end of the end_date
     # we have to do the bogus 1000* and then rounding because of Stupid Oracle
     # driver truncation errors (doesn't like big fractions)
-    set expire_laterthan_future_p [database_to_tcl_string $db "select round(1000*(to_date('$end_date  11:59:59', 'YYYY-MM-DD HH24:MI:SS')  - to_date('$start_date', 'YYYY-MM-DD')))  from dual"]
+    set expire_laterthan_future_p [db_string unused "select round(1000*(to_date('$end_date  11:59:59', 'YYYY-MM-DD HH24:MI:SS')  - to_date('$start_date', 'YYYY-MM-DD')))  from dual"]
     if {$expire_laterthan_future_p <= 0} {
 	incr exception_count
 	append exception_text "<li>Please make sure the end date is later than the start date."
@@ -71,24 +88,51 @@ if {$exception_count > 0} {
     return
 }
 
+
+
 set approved_p "t"
 
-if [catch { ns_db dml $db "insert into calendar
-(calendar_id, category, title, body, html_p, approved_p, 
-start_date, end_date, 
-creation_date, expiration_date,
-creation_user, creation_ip_address,
-event_url, event_email, 
-country_code, usps_abbrev, zip_code)
-values
-($calendar_id, '$QQcategory', '$QQtitle', '$QQbody', '$html_p', '$approved_p', 
-'$start_date', to_date('$end_date  11:59:59', 'YYYY-MM-DD HH24:MI:SS'), 
-sysdate, to_date('$end_date  11:59:59', 'YYYY-MM-DD HH24:MI:SS')+[ad_parameter DaysFromEndToExpiration calendar 3],
-$user_id, '$creation_ip_address',
-[ns_dbquotevalue $event_url text],[ns_dbquotevalue $event_email text],
-[ns_dbquotevalue $country_code text],[ns_dbquotevalue $usps_abbrev text],[ns_dbquotevalue $zip_code text])" } errmsg] {
+if [catch { 
+    db_dml unused "
+	insert into calendar (
+	    calendar_id		,  
+	    category		, 
+	    title		, 
+	    body		, 
+	    html_p		, 
+	    approved_p		, 
+	    start_date		, 
+	    end_date		, 
+	    creation_date	, 
+	    expiration_date	,
+	    creation_user	, 
+	    creation_ip_address	,
+	    event_url		, 
+	    event_email		, 
+	    country_code	, 
+	    usps_abbrev		, 
+	    zip_code 
+	) values (
+	    :calendar_id	,
+	    :category		, 
+	    :title		, 
+	    :body		, 
+	    :html_p		,   
+	    :approved_p		, 
+	    :start_date		, 
+	    to_date('end_date  11:59:59', 'YYYY-MM-DD HH24:MI:SS'), 
+	    sysdate		, 
+	    to_date('$end_date  11:59:59', 'YYYY-MM-DD HH24:MI:SS')+[ad_parameter DaysFromEndToExpiration calendar 3],
+	    :user_id		,
+	    :creation_ip_address,
+	    :event_url		,
+	    :event_email	,
+	    :country_code	, 
+	    :usps_abbrev text	, 
+	    :zip_code) 
+    } errmsg] {
     # insert failed; let's see if it was because of duplicate submission
-    if {[database_to_tcl_string $db "select count(*) from calendar where calendar_id = $calendar_id"] == 0 } {
+    if {[db_string unused "select count(*) from calendar where calendar_id = :calendar_id"] == 0 } {
 	ns_log Error "/calendar/post-new-3.tcl choked:  $errmsg"
 	ad_return_error "Insert Failed" "The Database did not like what you typed.  This is probably a bug in our code.  Here's what the database said:
 <blockquote>
@@ -106,11 +150,11 @@ $errmsg
 if { [ad_parameter ApprovalPolicy calendar] == "open"} {
     ad_returnredirect "index.tcl"
 } else {
-    ns_return 200 text/html "[ad_admin_header "Thank you"]
+    doc_return  200 text/html "[ad_admin_header "Thank you"]
 
 <h2>Thank you</h2>
 
-for your submission to <a href=\"index.tcl\">[ad_parameter SystemName calendar "Calendar"]</a>
+for your submission to <a href=\"index\">[ad_parameter SystemName calendar "Calendar"]</a>
 
 <hr>
 

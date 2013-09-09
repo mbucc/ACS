@@ -1,23 +1,27 @@
-# /admin/pull-down-menus/pdm-delete.tcl
-#
-# Author: aure@arsdigita.com, Feb 2000
-#
-# $Id: pdm-delete.tcl,v 1.2.2.1 2000/03/16 05:33:09 aure Exp $
-# -----------------------------------------------------------------------------
+# /www/admin/pull-down-menus/pdm-delete.tcl
+ad_page_contract {
 
-ad_page_variables {menu_id}
+  Displays confirmation page for deletion of entire menu group.
 
-set db [ns_db gethandle]
+  @param menu_id Menu id we're about to delete.
+  @author aure@arsdigita.com
+  @creation-date Feb 2000
+  @cvs-id pdm-delete.tcl,v 1.4.2.5 2000/09/22 01:35:57 kevin Exp
 
-set selection [ns_db 0or1row $db "
+} {
+
+  menu_id:integer,notnull
+
+}
+
+db_1row menu_properties "
     select   menu_key, default_p, count(item_id) as number_to_delete
     from     pdm_menu_items i, pdm_menus n 
-    where    n.menu_id = $menu_id
+    where    n.menu_id = :menu_id
     and      n.menu_id = i.menu_id(+)
-    group by menu_key, default_p"]
-set_variables_after_query
+    group by menu_key, default_p" 
 
-ns_db releasehandle $db
+db_release_unused_handles
 
 # Make sure they're not trying to delete the default!
 
@@ -27,15 +31,13 @@ if {$default_p == "t"} {
     return
 }
 
-
 if {$menu_key == "admin"} {
     ad_return_complaint 1 "<li>You cannot delete the admin
     menu. Rename this menu if you want to delete it."
     return
 }
 
-
-ns_return 200 text/html "
+doc_return  200 text/html "
 [ad_header_with_extra_stuff "Delete Pull-Down Menu: $menu_key" [ad_pdm $menu_key 5 5] [ad_pdm_spacer $menu_key]]
 
 <h2>Delete Pull-Down Menu: $menu_key</h2>

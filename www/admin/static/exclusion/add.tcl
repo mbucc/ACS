@@ -1,13 +1,13 @@
-# $Id: add.tcl,v 3.0 2000/02/06 03:30:40 ron Exp $
-#
-# /admin/static/exclusion/add.tcl
-#
-# by philg@mit.edu on November 6, 1999
-#
-# form to add an index exclusion pattern for static pages on a site
-# (takes no action)
+ad_page_contract {
+    Form to add an index exclusion pattern for static pages on a site
+    (takes no action).
 
-ns_return 200 text/html "[ad_admin_header "Add an Exclusion Pattern"]
+    @author philg@mit.edu 
+    @creation-date November 6, 1999
+    @cvs-id add.tcl,v 3.2.2.3 2000/09/22 01:36:10 kevin Exp
+} 
+
+doc_return  200 text/html "[ad_admin_header "Add an Exclusion Pattern"]
 
 <h2>Add an Exclusion Pattern</h2>
 
@@ -15,8 +15,7 @@ ns_return 200 text/html "[ad_admin_header "Add an Exclusion Pattern"]
 
 <hr>
 
-
-<form method=POST action=\"add-2.tcl\">
+<form method=POST action=\"add-2\">
 <blockquote>
 <table>
 <tr>

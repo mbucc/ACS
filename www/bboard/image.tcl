@@ -1,12 +1,21 @@
-# $Id: image.tcl,v 3.0 2000/02/06 03:33:54 ron Exp $
-set_the_usual_form_variables
+# /www/bboard/image.tcl
+ad_page_contract {
+    Serves a file associated with a bboard post
 
-# bboard_upload_id
+    @param bboard_upload_id the ID of the file
 
-set db [ns_db gethandle]
+    @cvs-id image.tcl,v 3.1.2.4 2000/09/22 01:36:50 kevin Exp
+} {
+    bboard_upload_id:integer
+}
 
-set filename [database_to_tcl_string $db "select filename_stub from bboard_uploaded_files where bboard_upload_id=$bboard_upload_id"]
+# -----------------------------------------------------------------------------
+
+
+set filename [db_string filename "
+select filename_stub from bboard_uploaded_files 
+where bboard_upload_id=:bboard_upload_id"]
 
 set filename [bboard_file_path]/$filename
 
-ns_returnfile 200 [ns_guesstype $filename] $filename
+ad_returnfile 200 [ns_guesstype $filename] $filename

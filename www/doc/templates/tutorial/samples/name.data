@@ -1,0 +1,37 @@
+<template>
+
+  <name>lesson2</name>
+  <title>Template Two</title>
+  <author>karlg@arsdigita.com</author>
+  <comment>This is a sample template specification.</comment>
+
+  <process>
+
+  <datasource>
+
+    <name>user_id</name>
+    <type>param</type>
+    <comment>The unique ID number of a user.</comment>
+
+  </datasource>
+
+  <datasource>
+
+    <name>first_name</name>
+    <type>query</type>
+    <structure>onevalue</structure>
+    <condition>
+	select 
+	  first_name
+	from 
+	  ad_template_sample_users 
+	where 
+	  user_id = ${user_id}
+    </condition>
+    <comment>The user's first name</comment>
+
+  </datasource>
+
+  </process>
+
+</template>

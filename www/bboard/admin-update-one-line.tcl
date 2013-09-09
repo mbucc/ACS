@@ -1,26 +1,31 @@
-# $Id: admin-update-one-line.tcl,v 3.0.4.1 2000/04/28 15:09:41 carsten Exp $
-set_form_variables
-set_form_variables_string_trim_DoubleAposQQ
+# /www/bboard/admin-update-one-line.tcl
+ad_page_contract {
+    changes the subject line for a message
 
-# msg_id is the key, one_line
+    @cvs-id admin-update-one-line.tcl,v 3.1.6.3 2000/07/21 03:58:39 ron Exp
+} {
+    msg_id:notnull
+    oneline:notnull
+}
 
-set db [bboard_db_gethandle]
+# -----------------------------------------------------------------------------
 
-set topic_id [database_to_tcl_string $db "select unique topic_id from bboard where msg_id = '$msg_id'"]
+db_1row topic_id "
+select unique topic_id from bboard where msg_id = :msg_id"
 
 bboard_get_topic_info
 
-
- 
 if  {[bboard_get_topic_info] == -1} {
-    return}
+    return
+}
 
 if {[bboard_admin_authorization] == -1} {
-	return}
-
+    return
+}
 
 # we're authorized 
 
-ns_db dml $db "update bboard set one_line = '$QQone_line' where msg_id = '$msg_id'"
+db_dml bboard_update "
+update bboard set one_line = :one_line where msg_id = :msg_id"
 
 ad_returnredirect "admin-q-and-a-fetch-msg.tcl?msg_id=$msg_id"

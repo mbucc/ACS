@@ -1,7 +1,18 @@
-# $Id: ed-com-response.tcl,v 3.0 2000/02/06 03:33:50 ron Exp $
-set_form_variables
+# /www/bboard/ed-com-response.tcl
+ad_page_contract {
+    Views responses to editorial commentary
 
-# msg_id is the key
+    @param msg_id the ID of the bboard message
+    @param viewing_msg_id
+
+    @cvs-id ed-com-response.tcl,v 3.1.6.6 2000/10/25 19:19:47 kevin Exp
+} {
+    msg_id:notnull
+    {viewing_msg_id ""}
+}
+
+# -----------------------------------------------------------------------------
+
 # make a copy because it is going to get overwritten by 
 # some subsequent queries
 
@@ -10,36 +21,32 @@ set_form_variables
 
 # we are going to get responses to this message
 set this_msg_id $msg_id
-set db [ns_db gethandle]
 
-if ![info exists viewing_msg_id] {
-    set viewing_msg_id ""
+page_validation {
+    if {! [db_0or1row msg_info "
+    select bboard.one_line, bboard.topic_id
+    from   bboard
+    where  msg_id = :msg_id"] } {
+
+	# message was probably deleted
+	error "Couldn't find message $msg_id.  Probably it was deleted by the forum maintainer."
+    }
 }
 
-set selection [ns_db 0or1row $db "select bboard.one_line, bboard.topic
-from bboard
-where msg_id = '$msg_id'"]
-
-if { $selection == "" } {
-    # message was probably deleted
-    ns_return 200 text/html "Couldn't find message $msg_id.  Probably it was deleted by the forum maintainer."
-    return
-}
-
-set_variables_after_query
 set this_one_line $one_line
 
 # now variable $topic is defined
-set QQtopic [DoubleApos $topic]
+
 if {[bboard_get_topic_info] == -1} {
     return
 }
 
 
 # number of responses to the original editorial
-
-set num_responses [database_to_tcl_string $db "select count(*) from bboard 
-where sort_key like '$msg_id%'"]
+set msg_id_base "$msg_id%"
+set num_responses [db_string num_responses "
+select count(*) from bboard 
+where sort_key like :msg_id_base"]
 
 
 set max_expand_response_num 3
@@ -49,19 +56,18 @@ set max_expand_response_num 3
 set change_view ""
 
 if { $viewing_msg_id == "all" && $num_responses > $max_expand_response_num } {
-    set change_view "<a href=\"ed-com-response.tcl?msg_id=$this_msg_id\">Contract responses</a><p>"
+    set change_view "<a href=\"ed-com-response?msg_id=$this_msg_id\">Contract responses</a><p>"
 } elseif {$num_responses > $max_expand_response_num} {
-    set change_view "<a href=\"ed-com-response.tcl?msg_id=$this_msg_id&viewing_msg_id=all\">Expand all responses</a><p>"
+    set change_view "<a href=\"ed-com-response?msg_id=$this_msg_id&viewing_msg_id=all\">Expand all responses</a><p>"
 }
 
-ReturnHeaders
-
-ns_write "[bboard_header "Commentary on $one_line"]
+append page_content "
+[bboard_header "Commentary on $one_line"]
 <table width=95% cellpadding=0 border=0 cellspacing=0> 
   <tr>
      <td>
         <h3>Commentary</h3>
-        on <a href=\"ed-com-msg.tcl?msg_id=$msg_id\">$one_line</a> in <a href=\"q-and-a.tcl?[export_url_vars topic topic_id]\">$topic</a>
+        on <a href=\"ed-com-msg?[export_url_vars msg_id topic]\">$one_line</a> in <a href=\"q-and-a?[export_url_vars topic topic_id]\">$topic</a>
      </td>
      <td width=40% align=right>$change_view
      </td>
@@ -75,21 +81,23 @@ ns_write "[bboard_header "Commentary on $one_line"]
 
 # get all the info about the responses
 
-set selection [ns_db select $db "select decode(email,'$maintainer_email','f','t') as not_maintainer_p, to_char(posting_time,'Month dd, yyyy') as posting_date, bboard.*, 
-users.user_id as replyer_user_id,
-users.first_names || ' ' || users.last_name as name, users.email 
-from bboard, users
-where users.user_id = bboard.user_id
-and sort_key like '$msg_id%'
-and msg_id <> '$msg_id'
-order by not_maintainer_p, sort_key"]
-
 # flag to determine if the output should be in a list or not
 
 set list_output_p ""
 
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
+db_foreach replies "
+select decode(email,'$maintainer_email','f','t') as not_maintainer_p, 
+       to_char(posting_time,'Month dd, yyyy') as posting_date, 
+       bboard.*, 
+       users.user_id as replyer_user_id,
+       users.first_names || ' ' || users.last_name as name, 
+       users.email 
+from   bboard, users
+where  users.user_id = bboard.user_id
+and    sort_key like :msg_id_base
+and    msg_id <> :msg_id
+order by not_maintainer_p, sort_key" {
+
 
     # if there are 3 or less responses or viewing_msg_id is all, print the full text
     if { $num_responses <= $max_expand_response_num  || $viewing_msg_id == "all"} {
@@ -116,17 +124,17 @@ while {[ns_db getrow $db $selection]} {
 	set this_response "<li>"
 	if { $one_line != $this_one_line && $one_line != "Response to $this_one_line" } {
 	    # new subject
-	    append this_response "<a href=\"ed-com-response.tcl?viewing_msg_id=$msg_id&msg_id=$this_msg_id\">$one_line</a> "
+	    append this_response "<a href=\"ed-com-response?viewing_msg_id=$msg_id&msg_id=$this_msg_id\">$one_line</a> "
 	} else {
-	    append this_response "<a href=\"ed-com-response.tcl?viewing_msg_id=$msg_id&msg_id=$this_msg_id\">Contribution</a> "
+	    append this_response "<a href=\"ed-com-response?viewing_msg_id=$msg_id&msg_id=$this_msg_id\">Contribution</a> "
 	}
 
-	append this_response " by <a href=\"contributions.tcl?user_id=$replyer_user_id\">$name</a> ($posting_date). <br>"
+	append this_response " by <a href=\"contributions?user_id=$replyer_user_id\">$name</a> ($posting_date). <br>"
 	append responses $this_response
     } else {
 	# viewing_msg_id = msg_id, so print the whole response
 	set this_response "<p>"
-	set contributed_by "Contributed by <a href=\"contributions.tcl?user_id=$replyer_user_id\">$name</a> on $posting_date."
+	set contributed_by "Contributed by <a href=\"contributions?user_id=$replyer_user_id\">$name</a> on $posting_date."
 
 
 	if { $one_line != $this_one_line && $one_line != "Response to $this_one_line" } {
@@ -146,20 +154,23 @@ while {[ns_db getrow $db $selection]} {
 if { [info exists responses] } {
     # there were some
     if {$list_output_p == "t" } {
-	ns_write "<h3>Responses</h3>
+	append page_content "<h3>Responses</h3>
 <ul>
 $responses 
 </ul>
 <p>"
    } else {
- 	ns_write "<h3>Contributions</h3>
+       append page_content "<h3>Contributions</h3>
 $responses 
 <p>"
    }
 }
 
-ns_write "
-<a href=\"q-and-a-post-reply-form.tcl?refers_to=$this_msg_id\">Respond to \"$this_one_line\"</a> 
+append page_content "
+<a href=\"q-and-a-post-reply-form?refers_to=$this_msg_id\">Respond to \"$this_one_line\"</a> 
 
 [bboard_footer]
 "
+
+
+doc_return  200 text/html $page_content

@@ -1,15 +1,23 @@
-# $Id: toggle-approved-p.tcl,v 3.0.4.1 2000/04/28 15:09:04 carsten Exp $
-set_form_variables
+# www/admin/general-comments/toggle-approved-p.tcl
 
-# comment_id  maybe return_url
+ad_page_contract {
+    Toggles the approval state of a comment.
 
-if {![info exists return_url]} {
-    set return_url "index.tcl"
+    @cvs-id  toggle-approved-p.tcl,v 3.1.6.3 2000/07/29 22:41:46 pihman Exp
+    @param comment_id The comment to approve/unapprove
+    @param return_url The page to return to after toggling approval
+
+} {
+    comment_id:integer
+    {return_url index.tcl}
 }
 
-set db [ns_db gethandle]
 
-ns_db dml $db "update general_comments set approved_p = logical_negation(approved_p) where comment_id = $comment_id"
+db_dml general_comments_toggle_approval_state \
+	"update general_comments 
+         set approved_p = logical_negation(approved_p) 
+         where comment_id = :comment_id"
+db_release_unused_handles
 
 ad_returnredirect $return_url
 

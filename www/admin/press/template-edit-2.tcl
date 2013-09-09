@@ -1,25 +1,25 @@
-# Update a template
-#
-# Author: ron@arsdigita.com, December 1999
-#
-# $Id: template-edit-2.tcl,v 3.0.4.2 2000/04/28 15:09:17 carsten Exp $
-# -----------------------------------------------------------------------------
+# /www/admin/press/template-edit-2.tcl
 
-ad_page_variables {
-    {template_id}
-    {template_name}
-    {template_adp}
+ad_page_contract {
+
+    Update a template
+
+    @author  Ron Henderson (ron@arsdigita.com)
+    @created December 1999
+    @cvs-id  template-edit-2.tcl,v 3.2.6.4 2000/07/23 11:42:13 ron Exp
+} {
+    {template_id:integer}
+    {template_name:trim}
+    {template_adp:trim,allhtml}
 }
 
-set db [ns_db gethandle]
-
-ns_db dml $db "
+db_dml press_templates_update "
 update press_templates
-set    template_name = '$template_name',
-       template_adp  = '$template_adp'
-where  template_id   =  $template_id"
+set    template_name = :template_name,
+       template_adp  = :template_adp
+where  template_id   = :template_id"
 
-ns_db releasehandle $db
+db_release_unused_handles
 
 # Redirect back to the templates page
 

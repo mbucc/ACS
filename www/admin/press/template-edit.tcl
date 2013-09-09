@@ -1,24 +1,25 @@
-# Edit a template
-#
-# Author: ron@arsdigita.com, December 1999
-#
-# $Id: template-edit.tcl,v 3.0.4.1 2000/03/15 20:40:59 aure Exp $
-# -----------------------------------------------------------------------------
+# /www/admin/press/template-edit.tcl
 
-ad_page_variables {template_id}
+ad_page_contract {
 
+    Edit a template
+
+    @author  Ron Henderson (ron@arsdigita.com)
+    @created December 1999
+    @cvs-id  template-edit.tcl,v 3.2.2.4 2000/09/22 01:35:51 kevin Exp
+} {
+    {template_id:integer}
+}
 
 # Get the template information from the database
 
-set db [ns_db gethandle]
-
-set selection [ns_db 1row $db "
-select template_name, template_adp
+db_1row template_info "
+select template_name, 
+       template_adp
 from   press_templates
-where  template_id=$template_id"]
-set_variables_after_query
+where  template_id = :template_id"
 
-ns_db releasehandle $db
+db_release_unused_handles
 
 # Note that template_id = 1 is special - it's the site-wide default
 # template. Administrators can edit this template but they cannot
@@ -62,7 +63,7 @@ append template_form "
 # -----------------------------------------------------------------------------
 # Ship out the form
 
-ns_return 200 text/html "
+doc_return  200 text/html "
 [ad_admin_header "Edit a Template"]
 
 <h2>Edit a Template</h2>
@@ -74,6 +75,4 @@ ns_return 200 text/html "
 $template_form
 
 [ad_admin_footer]"
-
-
 

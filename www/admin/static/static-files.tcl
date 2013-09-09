@@ -1,12 +1,20 @@
-# $Id: static-files.tcl,v 3.0 2000/02/06 03:30:27 ron Exp $
-set db [ns_db gethandle]
+# /www/admin/static/static-files.tcl
 
-set selection [ns_db select $db "select url_stub from static_pages order by url_stub"]
+ad_page_contract {
+
+    @author mbryzek@arsdigita.com
+    @creation-date Jul 8 2000
+
+    @cvs-id static-files.tcl,v 3.1.2.5 2000/09/22 01:36:09 kevin Exp
+} {
+
+}
 
 
-ReturnHeaders
+set sql_query "select url_stub from static_pages order by url_stub"
 
-ns_write "<HTML>
+
+set page_body "<HTML>
 <HEAD>
 <SCRIPT LANGUAGE=\"JavaScript1.2\" SRC=\"resize.js\"></SCRIPT>
 <SCRIPT LANGUAGE=\"JavaScript1.2\" SRC=\"list.js\"></SCRIPT>
@@ -30,11 +38,11 @@ ns_set put $seen "" "root"
 set dir_counter 0
 set file_counter 0
 
-while { [ns_db getrow $db $selection] } {
+db_foreach static_loop $sql_query {
     if { $dir_counter == 30 } {
 	break
     }
-    set_variables_after_query
+
     set path_elements [split $url_stub "/"]
 
     # For each of the directory elements, if we haven't seen it before,
@@ -48,21 +56,21 @@ while { [ns_db getrow $db $selection] } {
 	    set varname "dir[incr dir_counter]"
 	    ns_set put $seen $newpath $varname
 	    
-	    ns_write "var $varname = new List(false, width, height);\n";
-	    ns_write "${varname}.setFont(\"<FONT FACE='Arial,Helvetica' SIZE=-1'><B>\",\"</B></FONT>\");\n"
+	    append page_body "var $varname = new List(false, width, height);\n";
+	    append page_body "${varname}.setFont(\"<FONT FACE='Arial,Helvetica' SIZE=-1'><B>\",\"</B></FONT>\");\n"
 
 	    set parentvar [ns_set get $seen $curpath]
-	    ns_write "${parentvar}.addList($varname, \"$dir\");\n";
+	    append page_body "${parentvar}.addList($varname, \"$dir\");\n";
 	}
 	set curpath $newpath
     }
 
     set file [lindex $path_elements $n]
     set parentvar [ns_set get $seen $curpath]
-    ns_write "${parentvar}.addItem(\"$file\");\n"
+    append page_body "${parentvar}.addItem(\"$file\");\n"
 }
 
-ns_write "root.build(width/8,40);
+append page_body "root.build(width/8,40);
 \}
 </SCRIPT>
 <STYLE TYPE=\"text/css\">
@@ -71,21 +79,46 @@ ns_write "root.build(width/8,40);
 <STYLE TYPE=\"text/css\">
 "
 for { set i 0 } { $i < $dir_counter } { incr i } {
-    ns_write "\#lItem$i { position:absolute; }\n";
+    append page_body "\#lItem$i { position:absolute; }\n";
 }
 
-ns_write "
+append page_body "
 </STYLE>
 </HEAD>
 <BODY onLoad=\"init();\">
 <DIV ID=\"spacer\"></DIV>
 "
 
-
 for { set i 0 } { $i < $dir_counter } { incr i } {
-    ns_write "<DIV ID=\"lItem$i\" NAME=\"lItem$i\"></DIV>\n"
+    append page_body "<DIV ID=\"lItem$i\" NAME=\"lItem$i\"></DIV>\n"
 }
 
-ns_write "</BODY>
+append page_body "</BODY>
 </HTML>
 "
+
+
+
+doc_return  200 text/html $page_body
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

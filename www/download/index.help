@@ -1,4 +1,4 @@
-<!-- $Id: index.help,v 3.0.6.1 2000/04/12 09:00:37 ron Exp $ -->
+<!-- index.help,v 3.1 2000/04/12 11:25:23 ron Exp -->
 
 <%= [ad_scope_page_top "Help for Download Main Page" "Download Main Page" "Help"] %>
 

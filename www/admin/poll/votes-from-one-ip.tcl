@@ -1,31 +1,30 @@
-# $Id: votes-from-one-ip.tcl,v 3.0 2000/02/06 03:27:09 ron Exp $
-# votes-from-one-ip.tcl 
-#
-# by philg@mit.edu on October 25, 1999
-#
-# shows the admin what has been happening from one IP address
+# /admin/poll/votes-from-one-ip.tcl 
 
-set_the_usual_form_variables
+ad_page_contract {
+    Shows the admin what has been happening from one IP address.
 
-# poll_id, ip_address
+    @param poll_id the ID of the poll
+    @param ip_address the IP address to lookup
 
-set db [ns_db gethandle]
+    @author Philip Greenspun (philg@mit.edu)
+    @creation-date October 25, 1999
+    @cvs-id votes-from-one-ip.tcl,v 3.2.2.5 2000/09/22 01:35:49 kevin Exp
+} {
+    poll_id:notnull,naturalnum
+    ip_address:notnull
+}
 
-set selection [ns_db 1row $db "
+db_1row get_poll_info "
 select name, description, start_date, end_date, require_registration_p
   from polls
- where poll_id = $poll_id
-"]
+ where poll_id = :poll_id
+"
 
-set_variables_after_query
-
-ReturnHeaders
-
-ns_write "[ad_admin_header "Votes from $ip_address"]
+set page_html "[ad_admin_header "Votes from $ip_address"]
 
 <h2>Votes from $ip_address</h2>
 
-[ad_admin_context_bar [list "/admin/poll" Polls] [list "one-poll.tcl?[export_url_vars poll_id]" "One"] [list "integrity-stats.tcl?[export_url_vars poll_id]" "Integrity Statistics"] "One IP Address"]
+[ad_admin_context_bar [list "/admin/poll" Polls] [list "one-poll?[export_url_vars poll_id]" "One"] [list "integrity-stats?[export_url_vars poll_id]" "Integrity Statistics"] "One IP Address"]
 
 <hr>
 
@@ -39,7 +38,7 @@ with_catch errmsg {
     set hostname $ip_address
 }
 
-ns_write "$hostname
+append page_html "$hostname
 
 (if this is just the number again, that means the hostname could not
 be found.)
@@ -50,7 +49,8 @@ be found.)
 
 "
 
-set selection [ns_db select $db "select 
+set items ""
+db_foreach poll_choices_by_ip  "select 
   pc.label, 
   to_char(puc.choice_date,'YYYY-MM-DD HH24:MI:SS') as choice_time,
   puc.user_id,
@@ -59,25 +59,26 @@ set selection [ns_db select $db "select
 from poll_choices pc, poll_user_choices puc, users
 where puc.user_id = users.user_id(+)
 and pc.choice_id = puc.choice_id
-and pc.poll_id = $poll_id
-and puc.ip_address = '$ip_address'
-order by puc.choice_date"]
+and pc.poll_id = :poll_id
+and puc.ip_address = :ip_address
+order by puc.choice_date" {
 
-set items ""
 
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
     append items "<li>$choice_time:  $label"
     if [empty_string_p $user_id] {
 	append items "--anonymous"
     } else {
-	append items "--<a href=\"/admin/users/one.tcl?user_id=$user_id\">$first_names $last_name</a>"
+	append items "--<a href=\"/admin/users/one?user_id=$user_id\">$first_names $last_name</a>"
     }
 }
 
-ns_write "$items
+db_release_unused_handles
+
+append page_html "$items
 
 </ul>
 
 [ad_admin_footer]
 "
+
+doc_return  200 text/html $page_html

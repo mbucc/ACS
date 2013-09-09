@@ -1,55 +1,49 @@
-#
 # /portals/admin/manage-portal.tcl
-#
-# GUI that facilitates page layout
-#
-# by aure@arsdigita.com and dh@arsdigita.com
-#
-# Last modified: 10/8/1999
-#
-# $Id: manage-portal.tcl,v 3.0.4.1 2000/03/17 18:08:10 aure Exp $
-#
 
-#ad_page_variables {group_id}
-set_the_usual_form_variables
-# group_id 
+ad_page_contract {
+    GUI that facilitates page layout
 
-set db [ns_db gethandle]
+    @author Aurelius Prochazka (aure@arsdigita.com)
+    @author David Hill (dh@arsdigita.com)
+    @creation-date 10/8/1999
+    @cvs-id manage-portal.tcl,v 3.3.2.7 2000/09/22 01:39:04 kevin Exp
+} {
+    {group_id:naturalnum}
+}
 
 # ---------------------------------------
 # verify user
 
 set user_id [ad_verify_and_get_user_id]
-portal_check_administrator_maybe_redirect $db $user_id $group_id 
+portal_check_administrator_maybe_redirect $user_id $group_id 
 
 #----------------------------------------
 
-
 # set up group specific name
-set group_name [portal_group_name $db $group_id]
+set group_name [portal_group_name $group_id]
+set short_name [portal_short_name $group_id]
 
 set title "[ad_parameter SystemName portals] Administration for $group_name"
-
 
 # Get generic display information
 portal_display_info
 
 # get number of existing pages +1
-set max_page [database_to_tcl_string $db "
+set max_page [db_string portals_admin_manage_portal_get_max_page "
     select max(page_number)+1 from portal_pages
-    where  group_id = $group_id"]
+    where  group_id = :group_id"]
 
 if {[empty_string_p $max_page]} {
     set max_page 1
 }
 
-set total [database_to_tcl_string $db "select count(*) from portal_tables"]
+set total [db_string portals_admin_manage_portal_get_portal_table_count "select count(*) from portal_tables"]
 
 set page_content "
 <html>
 <head>
 <title>Personalize Page Layout</title>
-<script src=../manage-portal-js.tcl?[export_url_vars max_page group_id total]></script>
+<script src=../manage-portal-js?[export_url_vars max_page group_id total]></script>
 </head>
 $body_tag $font_tag
 <h2>[ad_parameter SystemName portals] Administration for $group_name</h2>
@@ -60,7 +54,6 @@ $body_tag $font_tag
 <input type=hidden name=\"hiddennames\" value=\"\">
 <table width=100% border=0 cellpadding=0 cellspacing=0><tr><td>This page enables you to manage current <br>content, you may <a href=create-table?[export_url_vars group_id]>create a new table</a>.</td><td valign=bottom align=right>Click here when completed: <input type=submit value=\" FINISHED \" onClick=\"return doSub();\">
 </td></tr></table><p>"
-
 
 set n_longest 30
 
@@ -83,23 +76,22 @@ while {$x <= $total} {
 
 for {set current_page 1} {$current_page <= $max_page} {incr current_page} {
 
-    set selection [ns_db select $db  "
+    set sql "
     select    table_name, page_number, page_side, map.table_id, page_name
     from      portal_table_page_map map, portal_tables p_t, portal_pages p_p
-    where     group_id = $group_id
+    where     group_id = :group_id
     and       map.page_id = p_p.page_id
     and       map.table_id = p_t.table_id
-    and       page_number = $current_page
-    order by  page_side, sort_key"]
+    and       page_number = :current_page
+    order by  page_side, sort_key"
 
     set left_select ""
     set right_select ""
     set page_name ""
 
-    while { [ns_db getrow $db $selection] } {
-	set_variables_after_query
+    db_foreach portals_admin_manage_portal_get_page_info $sql {
 
-	set table_name [string range [string toupper [portal_adp_parse $table_name $db]] 0 31]
+	set table_name [string range [string toupper [portal_adp_parse $table_name]] 0 31]
 
 	if {$page_side == "l"} {
 	    append left_select "<option value=\"$table_id\">$table_name</option>\n"
@@ -107,7 +99,7 @@ for {set current_page 1} {$current_page <= $max_page} {incr current_page} {
 	    append right_select "<option value=\"$table_id\">$table_name</option>\n"
 	}
     }
-    regsub -all { } [string tolower $group_name] {-} lower_group_name
+    set lower_group_name [ns_urlencode [string tolower $short_name]]
 
     if {$current_page != $max_page} {
 	set right_link "<td align=right>(<a target=_new href=/portals/$lower_group_name-$current_page.ptl>current version</a>)</td>"
@@ -175,12 +167,12 @@ for {set current_page 1} {$current_page <= $max_page} {incr current_page} {
 }
 
 # a list of all tables in the portals you don't already have
-set selection [ns_db select $db "
+set sql "
     select   table_name, pt.table_id 
     from     portal_tables pt
     where    pt.table_id not in (select map.table_id from portal_table_page_map map, portal_pages pp
-                                 where  pp.group_id = $group_id and map.page_id = pp.page_id)
-    order by table_name"]
+                                 where  pp.group_id = :group_id and map.page_id = pp.page_id)
+    order by table_name"
     
 append page_content "
 	<table width=100% bgcolor=#0000 border=0 cellpadding=0 cellspacing=1><tr><td>
@@ -198,10 +190,9 @@ append page_content "
 	           </tr>
 	        </table></td>
 <td valign=top><font face=courier size=-1><select name=new size=5>"
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+db_foreach portals_admin_manage_portal_list_tables_not_available $sql {
 
-    set table_name [string toupper [portal_adp_parse $table_name $db]]
+    set table_name [string toupper [portal_adp_parse $table_name]]
 
     append page_content "<option value=$table_id>$table_name</option>\n "
 }
@@ -229,7 +220,10 @@ Key:<td valign=top align=right>Click here when completed: <input type=submit val
 <br><img src=../pics/left width=18 height=15 border=0> - Move item from the right side of the page to the left
 <br><img src=../pics/down width=18 height=15 border=0> - Move item down (to next page if it is already at the bottom of the current page)"
 
-ns_return 200 text/html $page_content
+
+doc_return  200 text/html $page_content
+
+
 
 
 

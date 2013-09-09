@@ -1,3 +1,13 @@
+# /tcl/ticket-email.tcl
+ad_library {
+    Ticket tracker procedures that send out email
+
+    @author original author unknown
+    @author Kevin Scaldeferri (kevin@caltech.edu)
+    @cvs-id ticket-email.tcl,v 3.6.2.2 2000/07/18 05:30:55 kevin Exp
+}
+
+
 ###########################################################
 #
 # Set a daemon to nag users who have open tickets which are
@@ -10,32 +20,22 @@ proc notify_overdue_tickets {} {
     set maintainer_email [ad_system_owner]
     set url "[ad_url]/ticket"
 
-
-    set db_pools [ns_db gethandle subquery 2]
-    set db [lindex $db_pools 0]
-    set db2 [lindex $db_pools 1]
-
     set notified_msg_ids {}
 
     # loop over each user who has any assigned tickets, 
     # finding all past-deadline tickets
-    set selection [ns_db select $db "select distinct ua.user_id, ua.email 
-    from users_alertable ua, ticket_issue_assignments, users_preferences
-    where ticket_issue_assignments.user_id = ua.user_id
-    and ua.user_id = users_preferences.user_id
-    and users_preferences.dont_spam_me_p = 'f'
-    and ticket_issue_assignments.active_p = 't'"]
+    db_foreach users_with_overdue_tickets "
+    select distinct ua.user_id, ua.email 
+    from   users_alertable ua, ticket_issue_assignments, users_preferences
+    where  ticket_issue_assignments.user_id = ua.user_id
+    and    ua.user_id = users_preferences.user_id
+    and    users_preferences.dont_spam_me_p = 'f'
+    and    ticket_issue_assignments.active_p = 't'" {
     
-    if {[empty_string_p $selection]} {
-	return
-    }
-
-    while { [ns_db getrow $db $selection] } { 
 	# For each user, find all past-due tickets, and make a summary message
 	set msgs ""
-	set_variables_after_query
-	
-	set sub_selection [ns_db select $db2 "select
+
+	db_foreach overdue_tickets_for_one_user "select
 	ti.msg_id, ti.one_line as summary,
 	to_char(ti.modification_time, 'mm/dd/yy') as modification,
 	to_char(ti.posting_time, 'mm/dd/yy') as creation,
@@ -43,17 +43,17 @@ proc notify_overdue_tickets {} {
 	from ticket_issues ti, ticket_issue_assignments ta 
 	where
 	ti.msg_id = ta.msg_id 
-	and ta.user_id = $user_id
+	and ta.user_id = :user_id
 	and ta.active_p = 't' 
 	and close_date is null
 	and (last_notification is null or (sysdate - last_notification) > 7)
-	and deadline is not null and deadline < sysdate"] 
+	and deadline is not null and deadline < sysdate" {
 	
-	while { [ns_db getrow $db2 $sub_selection] } { 
-	    set_variables_after_subquery
 	    append msgs "Issue #$msg_id $summary\ndeadline was $deadline, created $creation, last modified $modification\n$url/issue-view.tcl?msg_id=$msg_id\n\n"
 	    lappend notified_msg_ids $msg_id
 	}
+
+	ns_set free $bind_vars
     
 	if {$msgs != ""} {
 	    set msgbody "The following issues assigned to you are still open and past their deadline:"
@@ -67,13 +67,22 @@ proc notify_overdue_tickets {} {
 	    ns_log Notice "sending ticket deadline alert email to $user_id $email"
 
 	}
+    } if_no_rows {
+	return
     }
+
     # update timestamp for these messages as having been notified 
     if {[llength $notified_msg_ids] > 0} {
-	ns_db dml $db "update ticket_issues set last_notification = sysdate where msg_id in ([join $notified_msg_ids {,}])"
+	set bind_vars [ns_set create]
+	ns_set update $bind_vars joined_msg_ids [join $notified_msg_ids ","]
+
+	db_dml notification_date_update "
+	update ticket_issues set last_notification = sysdate 
+	where msg_id in (:joined_msg_ids)" -bind $bind_vars
     }
 
 }
+
 
 ################################################################
 # Scan for messages past deadline, and send alerts, once per day
@@ -91,8 +100,7 @@ if {!$overdue_ticket_alerts_installed} {
     ns_schedule_daily -thread 3 30 notify_overdue_tickets
 }
 
-
-proc_doc ticket_email_process {db message} {
+proc_doc ticket_email_process {message} {
     Takes an incoming message and inserts a message into the 
     ticket system and notifies the relevant users.
 } {
@@ -114,12 +122,11 @@ proc_doc ticket_email_process {db message} {
 
     set msgbody        [ns_set iget $parsed_msg "message_body"]
     set from_header    [ns_set iget $parsed_msg "from"]
-    set subject [ns_set iget $parsed_msg "subject"]
+    set subject        [ns_set iget $parsed_msg "subject"]
     set date_header    [ns_set iget $parsed_msg "date"]
     set reply_to       [ns_set iget $parsed_msg "reply-to"]
-    set to_header       [ns_set iget $parsed_msg "to"]
-    set cc_header       [ns_set iget $parsed_msg "cc"]
-
+    set to_header      [ns_set iget $parsed_msg "to"]
+    set cc_header      [ns_set iget $parsed_msg "cc"]
 
     # look for address of form "Reply-To: foo@bar.com" since Reply-To if present is 
     # generally canonical.
@@ -151,25 +158,25 @@ proc_doc ticket_email_process {db message} {
 	return
     }
 
-
     # figure out which ticket to book the comment on.
     set msg_id {} 
     set user_id {} 
 
-    if {[regexp -nocase {ticket-([0-9]+)-([0-9]+)@} $to_addr match msg_id user_id]} { 
-        # if we get anything back the user and msg exist
-        set test [ns_db 0or1row $db "select msg_id from ticket_issues where msg_id = $msg_id"]
-        if {[empty_string_p $test]} { 
+    if {[regexp -nocase {ticket-([0-9]+)-([0-9]+)@} $to_addr match msg_id user_id] 
+    || [regexp -nocase {ticket-([0-9]+)-([0-9]+)@} $cc_header match msg_id user_id] } { 
+    
+	# if we get anything back the user and msg exist
+        if {![db_0or1row msg_id_exists_p "select 1 from ticket_issues where msg_id = :msg_id"]} {
             ns_log Notice "ticket_email_process could not find ticket $msg_id message=|$message|"
             return
         }
-        set selection [ns_db 0or1row $db "select email from users where user_id = $user_id"]
-        if {[empty_string_p $selection]} { 
+
+        if {! [db_0or1row user_id_exists_p "select first_names || ' ' || last_name || ' ' || email as who from users where user_id = :user_id"]} {
             ns_log Notice "ticket_email_process could not find user_id $user_id message=|$message|"
             set user_id {} 
             set who $from_header
         }
-    } else { 
+    } else {  
         set who $from_header
     }
 
@@ -178,11 +185,14 @@ proc_doc ticket_email_process {db message} {
     # We need to have some user_id we can use as the author of the comment
     if {[empty_string_p $user_id]} {
         # We try to look up a user, based on their from address
-	set user_id [database_to_tcl_string_or_null $db "select user_id from users where lower(email) = '[string tolower $from_addr]'"]
-        
+	set bind_vars [ns_set create]
+	ns_set update $bind_vars lowered_address [string tolower $from_addr]
+	set user_id [db_string -default "" find_user_id_from_address "select user_id from users where lower(email) = :lowered_address" -bind $bind_vars]
+        ns_set free $bind_vars
+
         if {[empty_string_p $user_id]} {
             # failing that we put it in as system but include the headers since 
-            set user_id [database_to_tcl_string $db "select system_user_id from dual"]
+            set user_id [db_string get_system_user_id "select system_user_id from dual"]
             
             # Make a cleaner looking mail message, just reconstruct a couple of the headers
             append msgtext "From: <strong>[ns_quotehtml $from_header]</strong><br>"
@@ -213,15 +223,23 @@ proc_doc ticket_email_process {db message} {
 
     append msgtext "<pre>$msgbody</pre>"
 
-    with_transaction $db {
-        set comment_id [database_to_tcl_string $db "select general_comment_id_sequence.nextval from dual"]
-        ad_general_comment_add $db $comment_id {ticket_issues} $msg_id "ticket \#$msg_id" $msgtext $user_id "000.000.000.000" {t} {t} {}
-    } { 
-        ns_log Notice "Insert of comment failed $errmsg"
-    }
+    if {[empty_string_p $msg_id]} { 
+        ns_log Notice "No ticket msg_id found for message:\n-------\n$message\n--------\n"
+
+    } else {
+        # as long as we have a message id we should insert 
+        # the message.
+
+        db_transaction {
+            set comment_id [db_string next_comment_id "select general_comment_id_sequence.nextval from dual"]
+            ad_general_comment_add $comment_id {ticket_issues} $msg_id "ticket \#$msg_id" $msgtext $user_id "000.000.000.000" {t} {t} {}
+        } on_error { 
+            ns_log Notice "Insert of comment failed $errmsg"
+        }
     
-    if {[catch {ticket_notify $db comment $msg_id $subject "Comment from $who\n\n$msgbody" $user_id} errmsg]} { 
-        ns_log notice "Error notifying for Message $message on incoming ticket mail"
+        if {[catch {ticket_notify comment $msg_id $subject "Comment from $who\n\n$msgbody" $user_id} errmsg]} { 
+            ns_log notice "Error notifying for Message:\n$message\n\nincoming ticket mail.  Error:\n$errmsg"
+        }
     }
     
     return {}

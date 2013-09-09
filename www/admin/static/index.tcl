@@ -1,39 +1,50 @@
-# $Id: index.tcl,v 3.0 2000/02/06 03:30:22 ron Exp $
-ReturnHeaders
+# /www/admin/static/index.tcl
 
-ns_write "[ad_admin_header "Static Content"]
+ad_page_contract {
+
+    Static pages admin page
+
+    @author luke@arsdigita.com
+    @creation-date Jul 6 2000
+
+    @cvs-id index.tcl,v 3.2.2.4 2000/09/22 01:36:08 kevin Exp
+} {
+
+}
+
+
+set page_body "[ad_admin_header "Static Content"]
 
 <h2>Static Content</h2>
 
 [ad_admin_context_bar "Static Content"]
 
-
 <hr>
 
-<form method=GET action=\"search.tcl\">
+<form method=GET action=\"search\">
 Search through titles, URLs:  
 <input type=text name=query_string size=30>
 </form>
 
 <ul>
 
-<li><a href=\"static-pages.tcl\">all pages in [ad_system_name]</a>
+<li><a href=\"static-pages\">all pages in [ad_system_name]</a>
 
-<li><a href=\"/admin/comments/by-page.tcl?only_unanswered_questions_p=1\">pages that are raising questions</a>
+<li><a href=\"/admin/comments/by-page?only_unanswered_questions_p=1\">pages that are raising questions</a>
 
 <P>
 
-<li>page view report:  <a href=\"static-usage.tcl?order_by=url\">by URL</a> | <a href=\"static-usage.tcl?order_by=page_views\">by number of views</a>
-<li><a href=\"/admin/comments/by-page.tcl\">page comment report</a>
-<li><a href=\"/admin/links/by-page.tcl\">related link report</a>
+<li>page view report:  <a href=\"static-usage?order_by=url\">by URL</a> | <a href=\"static-usage?order_by=page_views\">by number of views</a>
+<li><a href=\"/admin/comments/by-page\">page comment report</a>
+<li><a href=\"/admin/links/by-page\">related link report</a>
 
 <p>
 
-<li><a href=\"link-check.tcl\">check links embedded in your static HTML files</a> (this is a spider program that will run over all the content in your server's file system)
+<li><a href=\"link-check\">check links embedded in your static HTML files</a> (this is a spider program that will run over all the content in your server's file system)
 
 <p>
 
-<li><a href=\"static-syncer-ns-set.tcl\">sync database with file system</a>
+<li><a href=\"static-syncer-ns-set\">sync database with file system</a>
 </ul>
 
 <h3>Index Exclusion</h3>
@@ -45,44 +56,38 @@ entering patterns that match the URL or page title of a static page.
 
 "
 
-set db [ns_db gethandle]
-set selection [ns_db select $db "select * 
-from static_page_index_exclusion
-order by upper(pattern)"]
+
+set sql_query "select exclusion_pattern_id, pattern
+ from static_page_index_exclusion order by upper(pattern)"
 
 set items ""
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
-    append items "<li><a href=\"exclusion/one-pattern.tcl?[export_url_vars exclusion_pattern_id]\"><code>$pattern</code></a>\n"
+
+db_foreach get_items_loop $sql_query {
+    append items "<li><a href=\"exclusion/one-pattern?[export_url_vars exclusion_pattern_id]\"><code>$pattern</code></a>\n"
 }
 
-
-ns_write "$items
-
-<p>
-
-<li><a href=\"exclusion/add.tcl\">Add a pattern</a>
+append page_body "$items
 
 <p>
 
-<li><a href=\"exclusion/exclude.tcl\">Run all patterns</a>
+<li><a href=\"exclusion/add\">Add a pattern</a>
 
+<p>
+
+<li><a href=\"exclusion/exclude\">Run all patterns</a>
 
 </ul>
 
 "
 
-
-
-
-set selection [ns_db 1row $db "select 
+db_1row get_num_pages "select 
   to_char(count(*),'999G999G999G999G999') as n_pages,
   to_char(sum(decode(index_p,'t',1,0)),'999G999G999G999G999') as n_indexed_pages,
   to_char(sum(dbms_lob.getlength(page_body)),'999G999G999G999G999') as n_bytes
-from static_pages"]
-set_variables_after_query
+from static_pages"
 
-ns_write " 
+
+append page_body "
 
 <h3>Statistics</h3>
 
@@ -104,3 +109,8 @@ the new page.
 
 [ad_admin_footer]
 "
+
+
+
+doc_return  200 text/html $page_body
+

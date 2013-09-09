@@ -1,29 +1,31 @@
-# $Id: transition-edit.tcl,v 3.0.4.1 2000/04/28 15:08:32 carsten Exp $
-set user_id [ad_verify_and_get_user_id]
-if { $user_id == 0 } {
-    ad_returnredirect "/register/index.tcl?return_url=[ns_urlencode [ns_conn url]]"
-    return
+# /www/admin/crm/transition-edit.tcl
+
+ad_page_contract {
+    Edit page for crm transition
+    @param state_name
+    @param next_state
+    @author Jin Choi(jsc@arsdigita.com)
+    @cvs-id  transition-edit.tcl,v 3.3.2.6 2000/09/22 01:34:38 kevin Exp
+} {
+    state_name
+    next_state
 }
 
+set user_id [ad_maybe_redirect_for_registration]
 
-set_the_usual_form_variables
-# state_name, next_state
-
-set db [ns_db gethandle]
-
-set transition_condition [database_to_tcl_string $db "select transition_condition
+set transition_condition [db_string crm_state_transition "select transition_condition
 from crm_state_transitions
-where state_name = '$QQstate_name'
-and next_state = '$QQnext_state'"]
+where state_name = :state_name
+and next_state = :next_state"]
 
-ReturnHeaders
 
-ns_write "[ad_admin_header "Edit State Transition"]
+
+doc_return  200 text/html "[ad_admin_header "Edit State Transition"]
 <h2>Edit State Transition</h2>
 [ad_admin_context_bar [list "/admin/crm" CRM] "Edit State Transition"]
 <hr>
 
-<form action=\"transition-edit-2.tcl\" method=POST>
+<form action=\"transition-edit-2\" method=POST>
 [export_form_vars state_name next_state]
 <table border=0>
 <tr><th>From <td>$state_name</tr>
@@ -40,8 +42,3 @@ where crm_state = <i>from_state</i><br> and (<br>
 
 [ad_admin_footer]
 "
-
-
-
-
-

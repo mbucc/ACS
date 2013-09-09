@@ -1,10 +1,24 @@
-# $Id: active-toggle.tcl,v 3.0.4.1 2000/04/28 15:08:37 carsten Exp $
-set_the_usual_form_variables
-# table_name, primary_key_name, primary_key_value, active_p
+# active-toggle.tcl
 
-set db [ns_db gethandle]
-ns_db dml $db "update $table_name
-set active_p='$active_p'
-where $primary_key_name='$QQ$primary_key_value'"
+ad_page_contract { 
+    @param table_name
+    @param primary_key_name
+    @param primary_key_value
+    @param active_p
+    @author
+    @creation-date
+    @cvs-id active-toggle.tcl,v 3.1.6.3 2000/07/21 03:56:49 ron Exp
+} {
+    table_name
+    primary_key_name
+    primary_key_value
+    active_p
 
+}
+
+
+db_dml update_customer_service_table "update $table_name
+set active_p=:active_p
+where $primary_key_name=:primary_key_value"
+db_release_unused_handles
 ad_returnredirect picklists.tcl

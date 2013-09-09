@@ -1,16 +1,29 @@
-# $Id: toggle-approved-p.tcl,v 3.0.4.1 2000/04/28 15:08:27 carsten Exp $
-# File:     admin/calendar/post-edit.tcl
-# Date:     1998-11-18
-# Contact:  philg@mit.edu, ahmeds@arsdigita.com
-# Purpose:  calendar item approval toggle page
+# www/calendar/admin/toggle-approved-p.tcl
+ad_page_contract {
+    This page is called from admin/calendar/item.tcl
+    and simply changes the approval flag for the item
 
-set_form_variables 0
+    Number of dml: 1
 
-# calendar_id
+    @author Philip Greenspun (philg@mit.edu)
+    @author Sarah Ahmed (ahmeds@arsdigita.com)
+    @creation-date 1998-11-18
+    @cvs-id toggle-approved-p.tcl,v 3.1.6.4 2000/07/21 03:56:17 ron Exp
+    
+} {
+    calendar_id:naturalnum
+}
 
-set db [ns_db gethandle]
+## Notice the lack of security features, error handling, etc. on this 
+## three-line standalone proc.
+## The genius of this module continues to inspire me. -MJS 7/20
 
-ns_db dml $db "update calendar set approved_p = logical_negation(approved_p) where calendar_id = $calendar_id"
+db_dml toggle "update calendar 
+set approved_p = logical_negation(approved_p) 
+where calendar_id = :calendar_id"
+
+db_release_unused_handles
 
 ad_returnredirect "item.tcl?calendar_id=$calendar_id"
 
+## END FILE toggle-approved-p.tcl

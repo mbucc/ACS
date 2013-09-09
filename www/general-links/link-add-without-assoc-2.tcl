@@ -1,22 +1,29 @@
 # File: /general-links/link-add-without-assoc-2.tcl
-# Date: 2/01/2000
-# Author: tzumainn@arsdigita.com 
-#
-# Purpose: 
-#  Step 2 of 4 in adding link WITHOUT association
-#
-# $Id: link-add-without-assoc-2.tcl,v 3.0 2000/02/06 03:44:21 ron Exp $
-#--------------------------------------------------------
+
+ad_page_contract {
+    Step 2 of 4 in adding link WITHOUT association.
+    @param return_url the URL to go back to
+    @param link_title the title of the URL
+    @param url the URL to link
+    
+    @author tzumainn@arsdigita.com 
+    @creation-date 1 February 2000
+    @cvs-id link-add-without-assoc-2.tcl,v 3.2.2.6 2001/01/10 21:07:36 khy Exp
+
+} {
+    return_url:notnull
+    {link_title ""} 
+    url:notnull
+}
 
 if {[ad_read_only_p]} {
     ad_return_read_only_maintenance_message
     return
 }
 
-ad_page_variables {return_url {link_title ""} url}
 
 page_validation {
-    if {[empty_string_p $url] || $url == "http://"} {
+    if { $url == "http://"} {
 	error "You did not enter a URL.  Examples of valid URLs include:
 	<ul>
 	<li> http://arsdigita.com
@@ -37,13 +44,12 @@ if {[empty_string_p $link_title]} {
     }
 }
 
-set db [ns_db gethandle]
 
-set link_id [database_to_tcl_string $db "select general_link_id_sequence.nextval from dual"]
+set link_id [db_string select_next_link_id "select general_link_id_sequence.nextval from dual"]
 
-set category_select [ad_categorization_widget -db $db -which_table "general_links" -what_id $link_id]
+set category_select [ad_categorization_widget -which_table "general_links" -what_id $link_id]
 
-ns_db releasehandle $db
+db_release_unused_handles
 
 set whole_page "
 [ad_header "Add \"$link_title\" (Step 2 of 3)"]
@@ -55,9 +61,9 @@ set whole_page "
 <hr>
 
 <blockquote>
-<form action=link-add-without-assoc-3.tcl method=post>
-[export_form_vars return_url link_id url]
-
+<form action=link-add-without-assoc-3 method=post>
+[export_form_vars return_url url]
+[export_form_vars -sign link_id]
 <table>
 
 <tr>
@@ -99,6 +105,5 @@ append whole_page "
 [ad_footer]
 "
 
-ns_return 200 text/html $whole_page
-
+doc_return  200 text/html $whole_page
 

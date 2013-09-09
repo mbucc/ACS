@@ -1,13 +1,16 @@
-# $Id: ad-intermedia-text.tcl,v 3.0 2000/02/06 03:12:28 ron Exp $
-# ad-intermedia-text.tcl
-# 
-# procs useful system-wide in conjunction with Oracle's Intermedia full-text
-# indexer (an Oracle 8.1.5 feature)
-#
-# by philg@mit.edu July 25, 1999
-#
+# /tcl/ad-intermedia-text.tcl
 
-proc_doc ad_intermedia_text_searching_hints {} {Returns an HTML fragment explaining to end-users how to use Intermedia's bizarro query language; this is basically annotation duct-tape on top of interMedia's fundamental flaws (it should really work like PLS or AltaVista or whatever)} {
+ad_library {
+
+    procs useful system-wide in conjunction with Oracle's Intermedia full-text
+    indexer (an Oracle 8.1.5 feature)
+    
+    @creation-date July 25, 1999
+    @author Philip (philg@mit.edu)
+    @cvs-id ad-intermedia-text.tcl,v 3.1.2.1 2000/07/15 10:00:47 avni Exp
+}
+
+ad_proc ad_intermedia_text_searching_hints {} {Returns an HTML fragment explaining to end-users how to use Intermedia's bizarro query language; this is basically annotation duct-tape on top of interMedia's fundamental flaws (it should really work like PLS or AltaVista or whatever)} {
     return {
 
 By default, Oracle interMedia uses exact phrase matching.  Thus, the more
@@ -51,9 +54,7 @@ has many misspellings).  The exclamation point is the soundex character
     }
 }
 
-
-
-proc_doc ad_clean_query_for_intermedia {query_string} {Cleans up user input into a form suitable for feeding to interMedia. Tries to turn user input into a simple AND query.} {
+ad_proc ad_clean_query_for_intermedia {query_string} {Cleans up user input into a form suitable for feeding to interMedia. Tries to turn user input into a simple AND query.} {
     # Replace all ConText search operators with space. 
     regsub -all {[,&]+} $query_string { } query_string 
 
@@ -63,3 +64,4 @@ proc_doc ad_clean_query_for_intermedia {query_string} {Cleans up user input into
     # Separate all words with "&" to get an AND query. 
     return [join $query_string "&"] 
 } 
+

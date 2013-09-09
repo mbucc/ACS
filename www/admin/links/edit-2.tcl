@@ -1,69 +1,74 @@
-# $Id: edit-2.tcl,v 3.0 2000/02/06 03:24:37 ron Exp $
+# /admin/links/edit-2.tcl
+
+ad_page_contract {
+    Step 2 in editing a link
+
+    @param page_id The ID of the page the link came from
+    @param old_url The old URL of the link
+    @param link_description The new description of the link
+    @param link_title The new title of the link
+    @param contact_p Whether or not to contact the user if the link goes bad
+    @param url The new URL of the link
+    @param link_user_id The ID of the original creator of the link
+
+    @author Original Author Unknown
+    @creation-date Original Date Unknown
+    @cvs-id edit-2.tcl,v 3.2.2.6 2000/09/22 01:35:30 kevin Exp
+} {
+    page_id:notnull,naturalnum
+    old_url:notnull
+    link_description:notnull
+    link_title:notnull
+    contact_p:notnull
+    url:notnull
+    link_user_id:notnull,naturalnum
+}
+
 if {[ad_read_only_p]} {
     ad_return_read_only_maintenance_message
     return
 }
 
-set_the_usual_form_variables
-
-# page_id, submit, old_url
-# maybe link_description, link_title,  contact_p, url, link_user_id
-
-
-set db [ns_db gethandle]
 set user_id [ad_verify_and_get_user_id]
 
-set selection [ns_db 1row $db "select page_title, url_stub 
+db_1row select_page_info "select page_title, url_stub 
 from static_pages
-where page_id = $page_id"]
-set_variables_after_query
+where page_id = :page_id"
 
 # check for valid data
 
 set exception_count 0
 set exception_text ""
 
-if { [info exists url] && [string match $url "http://"] ==  1 } {
+if { [string match $url "http://"] ==  1 } {
     # the user left the default hint for the url
     incr exception_count
     append exception_text "<li>Please type in a URL."
 }
 
-if { ![info exists url] || [empty_string_p $url]  } {
-    incr exception_count
-    append exception_text "<li>Please type in a URL."
-}
-
-if {[info exists url] && ![empty_string_p $url] && ![philg_url_valid_p $url] } {
+if {![philg_url_valid_p $url] } {
     # there is a URL but it doesn't match our REGEXP
     incr exception_count
     append exception_text "<li>You URL doesn't have the correct form.  A valid URL would be something like \"http://photo.net/philg/\"."
 }
 
-if { ![info exists link_description] || [empty_string_p $link_description] } {
-    incr exception_count
-    append exception_text "<li> Please type in a description of your link."
-}
-
-if { [info exists link_description] && ([string length $link_description] > 4000) } {
+if { [string length $link_description] > 4000 } {
     incr exception_count
     append exception_text "<li>Please limit your link description to 4000 characters."
 }
 
-if { ![info exists link_title] || [empty_string_p $link_title] } {
-    incr exception_count
-    append exception_text "<li>Please type in a title for your linked page."
-}
-
-if { [database_to_tcl_string $db "select count(url) 
+set sql_url "[string tolower $url]"
+if { [db_string select_url_exists "select count(url) 
 from links 
-where page_id = $page_id
-and lower(url)='[string tolower $QQurl]' 
-and user_id <> $link_user_id"] > 0  } {
+where page_id = :page_id
+and lower(url)=:sql_url
+and user_id <> :link_user_id"] > 0  } {
     # another user has submitted this link
     incr exception_count
     append exception_text "<li>$url was already submitted as a related link to this page by another user."
 }
+
+db_release_unused_handles
 
 if {$exception_count > 0} {
     ad_return_complaint $exception_count $exception_text
@@ -72,7 +77,7 @@ if {$exception_count > 0} {
 
 # data are valid, move on
 
-ns_return 200 text/html "[ad_admin_header "Confirm link from <i>$url_stub</i>" ]
+set page_content "[ad_admin_header "Confirm link from <i>$url_stub</i>" ]
 
 <h2>Confirm link</h2>
 
@@ -94,7 +99,7 @@ correct it.  Otherwise, press \"Proceed\".
 
 <p>
 
-<form action=edit-3.tcl method=post>
+<form action=edit-3 method=post>
 [export_form_vars page_id url_stub link_title link_description url contact_p old_url]
 <center>
 <input type=submit name=submit value=\"Proceed\">
@@ -102,3 +107,5 @@ correct it.  Otherwise, press \"Proceed\".
 </form>
 [ad_admin_footer]
 "
+
+doc_return  200 text/html $page_content

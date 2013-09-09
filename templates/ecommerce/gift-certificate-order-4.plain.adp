@@ -6,7 +6,7 @@
 
 <blockquote>
 
-<form method=post action="gift-certificate-finalize-order.tcl">
+<form method=post action="gift-certificate-finalize-order">
 <%= $hidden_form_variables %>
 <b>Push Submit to send us your order!</b>
 <input type=submit value="Submit">

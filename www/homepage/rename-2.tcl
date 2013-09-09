@@ -1,86 +1,60 @@
-# $Id: rename-2.tcl,v 3.0.4.1 2000/04/28 15:11:03 carsten Exp $
-# File:     /homepage/rename-2.tcl
-# Date:     Wed Jan 19 02:21:25 EST 2000
-# Location: 42Å∞21'N 71Å∞04'W
-# Location: 80 PROSPECT ST CAMBRIDGE MA 02139 USA
-# Author:   mobin@mit.edu (Usman Y. Mobin)
-# Purpose:  Page to rename a file
+# /homepage/rename-2.tcl
 
-set_the_usual_form_variables
-# filesystem_node, rename_node, new_name, new_desc
+ad_page_contract {
+    Update the name and description of a file according to user's submission.
+
+    @param filesystem_node The top directory the file will be renamed in.
+    @param rename_node The file to rename.
+    @param new_name The new name for the file.
+    @param new_desc The new description for the file.
+
+    @creation-date Jan 14 18:48:26 EST 2000
+    @author mobin@mit.edu
+    @cvs-id rename-2.tcl,v 3.2.2.5 2000/07/21 22:05:55 mdetting Exp
+
+} {
+    filesystem_node:notnull,naturalnum
+    rename_node:notnull,naturalnum
+    new_name:notnull
+    new_desc:notnull
+}
 
 # --------------------------- initialErrorCheck codeBlock ----
-
-set exception_count 0
-set exception_text ""
-
-if { ![info exists rename_node] || [empty_string_p $rename_node] } {
-    ad_return_error "FileSystem Target Node for rename Missing."
-    return
-}
-
-if { ![info exists filesystem_node] || [empty_string_p $filesystem_node] } {
-    ad_return_error "FileSystem Node Information Missing"
-    return
-}
-
-if { ![info exists new_name] || [empty_string_p $new_name] } {
-    ad_returnredirect "dialog-class.tcl?title=Filesystem Management&text=Unable to rename the requested file.<br>New name not provided.&btn1=Okay&btn1target=index.tcl&btn1keyvalpairs=filesystem_node $filesystem_node"
-    return
-}
+#  if { ![exists_and_not_null new_name] } {
+#      ad_returnredirect "dialog-class?title=Filesystem Management&text=Unable to rename the requested file.<br>New name not provided.&btn1=Okay&btn1target=index&btn1keyvalpairs=filesystem_node $filesystem_node"
+#      return
+#  }
 
 if {[regexp {.*/.*} $new_name match]} {
-    ad_returnredirect "dialog-class.tcl?title=Filesystem Management&text=Unable to rename the requested file.<br>This operation is not for moving files.&btn1=Okay&btn1target=index.tcl&btn1keyvalpairs=filesystem_node $filesystem_node"
+    ad_returnredirect "dialog-class?title=Filesystem Management&text=Unable to rename the requested file.<br>This operation is not for moving files.&btn1=Okay&btn1target=index&btn1keyvalpairs=filesystem_node $filesystem_node"
     return
 }
 
 if {[regexp {.*\.\..*} $new_name match]} {
-    ad_returnredirect "dialog-class.tcl?title=Filesystem Management&text=Unable to rename the requested file.<br>This operation is not for moving files.&btn1=Okay&btn1target=index.tcl&btn1keyvalpairs=filesystem_node $filesystem_node"
-    return
-}
-
-if {$exception_count > 0} { 
-    ad_return_complaint $exception_count $exception_text
+    ad_returnredirect "dialog-class?title=Filesystem Management&text=Unable to rename the requested file.<br>This operation is not for moving files.&btn1=Okay&btn1target=index&btn1keyvalpairs=filesystem_node $filesystem_node"
     return
 }
 
 # ------------------------------ initialization codeBlock ----
 
-# First, we need to get the user_id
-set user_id [ad_verify_and_get_user_id]
-
-# If the user is not registered, we need to redirect him for
-# registration
-if { $user_id == 0 } {
-    ad_redirect_for_registration
-    return
-}
+set user_id [ad_maybe_redirect_for_registration]
 
 # ------------------------ initialDatabaseQuery codeBlock ----
 
-# The database handle (a thoroughly useless comment)
-set db [ns_db gethandle]
-
 # Checking for site-wide administration status
-set admin_p [ad_administrator_p $db $user_id]
+set admin_p [ad_administrator_p $user_id]
 
 # This query will return the quota of the user
-set sql "
-select filename as old_name,
-hp_true_filename($filesystem_node) as dir_name
-from users_files, dual
-where file_id=$rename_node
-"
+db_1row misc_info {
+    select filename as old_name,
+    hp_true_filename(:filesystem_node) as dir_name
+    from users_files, dual
+    where file_id=:rename_node
+}
 
-# Extract results from the query
-set selection [ns_db 1row $db $sql]
-
-# This will  assign the  variables their appropriate values 
-# based on the query.
-set_variables_after_query
-
-set access_denied_p [database_to_tcl_string $db "
-select hp_access_denied_p($rename_node,$user_id) from dual"]
+set access_denied_p [db_string access_denied_p {
+    select hp_access_denied_p(:rename_node,:user_id) from dual
+}]
 
 # Check to see whether the user is the owner of the filesystem node
 # for which access is requested.
@@ -90,12 +64,11 @@ if {$access_denied_p} {
     return
 }
 
-
 set old_full_name "[ad_parameter ContentRoot users]$dir_name/$old_name"
 set new_full_name "[ad_parameter ContentRoot users]$dir_name/$new_name"
 
 if {[file exists $new_full_name] && $old_name != $new_name} {
-    ad_returnredirect "dialog-class.tcl?title=Filesystem Management&text=A file with the name `$new_name'<br>already exists in the current directory.&btn1=Okay&btn1target=index.tcl&btn1keyvalpairs=filesystem_node $filesystem_node"
+    ad_returnredirect "dialog-class?title=Filesystem Management&text=A file with the name `$new_name'<br>already exists in the current directory.&btn1=Okay&btn1target=index&btn1keyvalpairs=filesystem_node $filesystem_node"
     return    
 }
 
@@ -106,25 +79,18 @@ if [catch {ns_rename "$old_full_name" "$new_full_name"} errmsg] {
     ad_return_complaint 1 $exception_text
     return
 } else {
-    set dml_sql "
-    update users_files
-    set filename='$QQnew_name',
-    file_pretty_name='$QQnew_desc'
-    where file_id=$rename_node
-    "
-    ns_db dml $db $dml_sql
+    db_dml file_rename {
+	update users_files
+	set filename=:new_name,
+	file_pretty_name=:new_desc
+	where file_id=:rename_node
+    }
 }
 
 # And off with the handle!
-ns_db releasehandle $db
+db_release_unused_handles
 
 # And let's go back to the main maintenance page
-ad_returnredirect index.tcl?filesystem_node=$filesystem_node
-
-
-
-
-
-
+ad_returnredirect index?filesystem_node=$filesystem_node
 
 

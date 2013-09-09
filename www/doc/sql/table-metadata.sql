@@ -6,7 +6,7 @@
 --
 -- Author: markc@arsdigita.com, March 2000
 -- 
--- $Id: table-metadata.sql,v 3.1 2000/03/12 00:09:03 markc Exp $
+-- table-metadata.sql,v 3.1 2000/03/12 00:09:03 markc Exp
 --
 
 create table general_table_metadata (

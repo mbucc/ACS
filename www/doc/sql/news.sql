@@ -6,7 +6,7 @@
 -- Author: Jesse Koontz, jkoontz@arsdigita.com March 8, 2000
 --         Philip Greenspun, philg@mit.edu
 --
--- $Id: news.sql,v 3.3.2.1 2000/03/16 22:01:57 jkoontz Exp $
+-- news.sql,v 3.4 2000/03/16 22:04:52 jkoontz Exp
 
 create sequence newsgroup_id_sequence start with 4;
 

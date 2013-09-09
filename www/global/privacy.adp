@@ -1,4 +1,15 @@
-<%= [ad_header "Privacy Policy"] %>
+<%= [ad_header "Privacy Policy"]  %>
+
+<%
+ad_page_contract {
+	@author ?
+	@creation-date ?
+	@cvs-id privacy.adp,v 3.0.12.3 2000/09/08 19:03:33 kevin Exp
+} {
+
+}
+
+%>
 
 <h2>Privacy Policy</h2>
 

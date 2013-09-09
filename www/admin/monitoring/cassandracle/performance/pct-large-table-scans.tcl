@@ -1,18 +1,25 @@
-# $Id: pct-large-table-scans.tcl,v 3.0 2000/02/06 03:25:30 ron Exp $
-set db [ns_db gethandle]
+# /admin/monitoring/cassandracle/performance/pct-large-table-scans.tcl
+
+ad_page_contract {
+    Displays 1) percentage of large table scans, and 
+    2) recent database queries that have resulted in more than 100 disk reads.
+    This can help identify queries that are causing performance problems.
+
+    @cvs-id pct-large-table-scans.tcl,v 3.1.2.6 2000/09/22 01:35:37 kevin Exp
+} {
+}
 
 set the_query "
 select 
-  A.Value, B.Value 
+  A.Value as large_scans, B.Value as small_scans
 from 
   V\$SYSSTAT A, V\$SYSSTAT B 
 where 
   A.Name = 'table scans (long tables)' and B.Name = 'table scans (short tables)'"
 
-set scan_info [database_1row_to_tcl_list $db $the_query]
+db_1row mon_table_scan_count $the_query
 
-ReturnHeaders
-ns_write "
+set page_content "
 
 [ad_admin_header "Table Scans"]
 
@@ -28,15 +35,13 @@ are written in such a way to take advantage of the indicies.
 
 <p>
 
-
-
 <blockquote>
 <table cellpadding=4>
 <tr><th># Large Table Scans</th><th># Small Table Scans</th><th>% Large Scans</th></tr>
 <tr>
-   <td align=right>[lindex $scan_info 0]</td>
-   <td align=right>[lindex $scan_info 1]</td>
-   <td align=right>[format %4.2f [expr 100*(double([lindex $scan_info 0])/double([lindex $scan_info 0]+[lindex $scan_info 1]))]]</td>
+   <td align=right>$large_scans</td>
+   <td align=right>$small_scans</td>
+   <td align=right>[format %4.2f [expr 100*(double($large_scans)/double($large_scans+$small_scans))]]</td>
 </tr>
 </table>
 
@@ -65,11 +70,9 @@ where
 and
   parsing_user_id = au.user_id"
 
-set selection [ns_db select $db $disk_read_query]
+db_foreach mon_disk_reads $disk_read_query {
 
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
-    ns_write "
+    append page_content "
 <tr>
   <td align=right>$username (id $parsing_user_id)</td>
   <td align=right>$disk_reads</td>
@@ -82,7 +85,7 @@ while { [ns_db getrow $db $selection] } {
 "
 }
 
-ns_write "
+append page_content "
 </table>
 </blockquote>
 
@@ -95,3 +98,6 @@ $disk_read_query
 
 [ad_admin_footer]
 "
+
+
+doc_return  200 text/html $page_content

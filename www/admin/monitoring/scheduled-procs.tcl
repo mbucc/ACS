@@ -1,10 +1,14 @@
-# File:        scheduled-procs.tcl
-# Author:      Jon Salz <jsalz@mit.edu>
-# Description: Displays a list of scheduled procedures.
+# /admin/monitoring/scheduled-procs.tcl
 
-ReturnHeaders
+ad_page_contract {
+    Displays a list of scheduled procedures.
 
-ns_write "[ad_admin_header "Scheduled Procedures"]
+    @author Jon Salz (jsalz@mit.edu)
+    @cvs-id scheduled-procs.tcl,v 3.2.10.3 2000/09/22 01:35:33 kevin Exp
+} {
+}
+
+set page_content "[ad_admin_header "Scheduled Procedures"]
 
 <form>
 
@@ -63,22 +67,24 @@ foreach proc_info [lsort -command ad_scheduled_procs_compare [nsv_get ad_procs .
     set next_run [ns_fmttime [expr { $time + $interval }] $time_fmt]
     set next_run_in "[expr { $time + $interval - [ns_time] }] s"
 
-    ns_write "<tr>"
+    append page_content "<tr>"
     foreach name { proc args } {
-	ns_write "<td bgcolor=$bgcolor>[set $name]</td>"
+	append page_content "<td bgcolor=$bgcolor>[set $name]</td>"
     }
-    ns_write "<td bgcolor=$bgcolor align=right>$count</td>"
+    append page_content "<td bgcolor=$bgcolor align=right>$count</td>"
     foreach name { last_run next_run } {
-	ns_write "<td bgcolor=$bgcolor>[set $name]</td>"
+	append page_content "<td bgcolor=$bgcolor>[set $name]</td>"
     }
-    ns_write "<td bgcolor=$bgcolor align=right>$next_run_in</td>"
+    append page_content "<td bgcolor=$bgcolor align=right>$next_run_in</td>"
     foreach name { thread once debug } {
-	ns_write "<td bgcolor=$bgcolor>[set $name]</td>"
+	append page_content "<td bgcolor=$bgcolor>[set $name]</td>"
     }
-    ns_write "</tr>\n"
+    append page_content "</tr>\n"
 }
 
-ns_write "</table>
+append page_content "</table>
 
 [ad_admin_footer]
 "
+
+doc_return  200 text/html $page_content

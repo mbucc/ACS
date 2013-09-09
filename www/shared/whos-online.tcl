@@ -1,27 +1,27 @@
-# $Id: whos-online.tcl,v 3.0 2000/02/06 03:54:37 ron Exp $
+# whos-online.tcl
+
+ad_page_contract {    
+    @cvs-id whos-online.tcl,v 3.2.2.5 2000/09/22 01:39:18 kevin Exp
+} {
+}
+
 set connected_user_id [ad_verify_and_get_user_id]
 
-set db [ns_db gethandle]
-
-set selection [ns_db select $db "select user_id, first_names, last_name, email
+set sql "select user_id, first_names, last_name, email
 from users
 where last_visit > sysdate - [ad_parameter LastVisitUpdateInterval "" 600]/86400
-order by upper(last_name), upper(first_names), upper(email)"]
-
+order by upper(last_name), upper(first_names), upper(email)"
 
 set users ""
 
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+db_foreach user_list $sql {
     if { $connected_user_id != 0 } {
-	append users "<li><a href=\"/shared/community-member.tcl?user_id=$user_id\">$first_names $last_name</a> ($email)\n"
+	append users "<li><a href=\"/shared/community-member?user_id=$user_id\">$first_names $last_name</a> ($email)\n"
     } else {
 	# random tourist, let's not show email address
-	append users "<li><a href=\"/shared/community-member.tcl?user_id=$user_id\">$first_names $last_name</a>\n"
+	append users "<li><a href=\"/shared/community-member?user_id=$user_id\">$first_names $last_name</a>\n"
     }
 }
-
-ns_db releasehandle $db
 
 if ![ad_parameter EnabledP chat 0] {
     set chat_link ""
@@ -30,7 +30,7 @@ if ![ad_parameter EnabledP chat 0] {
 <a href=\"/chat/\">[chat_system_name]</a>."
 }
 
-ns_return 200 text/html "[ad_header "Who's Online?"]
+doc_return  200 text/html "[ad_header "Who's Online?"]
 
 [ad_decorate_top "<h2>Who's Online?</h2>
 

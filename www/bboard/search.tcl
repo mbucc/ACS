@@ -1,11 +1,21 @@
-# $Id: search.tcl,v 3.0 2000/02/06 03:34:39 ron Exp $
-# this is for the whole frame
+# /www/bboard/search.tcl
+ad_page_contract {
+    Searches the bboards for query_string
 
-set_form_variables
+    @param query_string the string being searched on
+    @param topic the name of the bboard topic
+    @param topic_id the ID of the bboard topic
 
-# query_string, topic
+    @cvs-id search.tcl,v 3.1.2.3 2000/09/22 01:36:55 kevin Exp
+} {
+    query_string
+    topic
+    topic_id
+}
 
-ns_return 200 text/html "
+# -----------------------------------------------------------------------------
+
+doc_return  200 text/html "
 
 <HTML><BASE F0NTSIZE=3>
 
@@ -33,12 +43,10 @@ browser.
 
 Perhaps you should consider running Netscape 2.0 or later?
 
-
 </BODY></HTML>
 
 </NOFRAME>
 
 </FRAMESET>
-
 
 "

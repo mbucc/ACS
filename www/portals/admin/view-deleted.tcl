@@ -1,20 +1,18 @@
-#
 # /portals/admin/view-deleted.tcl
-#
-# Page that displays the names of deleted tables
-#
-# by aure@arsdigita.com and dh@arsdigita.com
-#
-# Last modified: 10/8/1999
-#
-# $Id: view-deleted.tcl,v 3.0.4.1 2000/03/17 18:08:12 aure Exp $
-#
 
-set db [ns_db gethandle]
+ad_page_contract {
+    Page that displays the names of deleted tables
+
+    @author aure@arsdigita.com and dh@arsdigita.com
+    @creation-date 10/8/1999
+    @cvs-id view-deleted.tcl,v 3.2.2.7 2000/09/22 01:39:05 kevin Exp
+} {
+
+}
 
 # verify the user
 set user_id [ad_verify_and_get_user_id]
-portal_check_administrator_maybe_redirect $db $user_id "" index-manager
+portal_check_administrator_maybe_redirect $user_id "" index-manager
 
 # Get generic display information
 portal_display_info
@@ -28,7 +26,7 @@ set sql_query "
     order by table_name"
  
 
-set table_list [database_to_tcl_list_list $db $sql_query]
+set table_list [db_list_of_lists portals_admin_view_delete_list_delete_tables $sql_query]
 
 set counter 0
 set table_table "" 
@@ -39,8 +37,8 @@ foreach table_pair $table_list {
 
     append table_table "
         <tr>
-        $normal_td[string toupper [portal_adp_parse $table_name $db]] &nbsp;</td>
-        <td><a href=restore?[export_url_vars table_id]>View versions</a></td> 
+        $normal_td[string toupper [portal_adp_parse $table_name]] &nbsp;</td>
+        <td><a href=restore?[export_url_vars table_id]>View versions</a>
         </tr>"
     incr counter
 }
@@ -71,9 +69,8 @@ $end_table
 
 [portal_admin_footer]"
 
-ns_return 200 text/html $page_content
 
-
+doc_return  200 text/html $page_content
 
 
 

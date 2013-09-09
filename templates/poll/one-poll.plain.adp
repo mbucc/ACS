@@ -1,4 +1,4 @@
-<% # Supplied variables: poll_name, poll_description, choices, form_html, context_bar %>
+<% # Supplied variables: poll_id poll_name, poll_description, choices, form_html, context_bar %>
 
 <%= [ad_header $page_title] %>
 

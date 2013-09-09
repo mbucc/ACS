@@ -1,50 +1,60 @@
-# $Id: delete-adv-2.tcl,v 3.0 2000/02/06 02:46:09 ron Exp $
-set_the_usual_form_variables
+# /www/admin/adserver/delete-adv-2.tcl
 
-# adv_key
+ad_page_contract {
+    @param adv_key:notnull
+    @author modified 07/13/200 by mchu@arsdigita.com
+    @cvs-id delete-adv-2.tcl,v 3.1.6.5 2000/11/20 23:55:17 ron Exp
+} {
+    adv_key:notnull
+}
 
-set db [ns_db gethandle]
-
-ReturnHeaders 
-
-ns_write "[ad_admin_header "Deleting $adv_key"]
+set page_content "[ad_admin_header "Deleting $adv_key"]
 
 <h2>Deleting $adv_key</h2>
 
-a rarely used part of <a href=\"index.tcl\">AdServer Administration</a>
+a rarely used part of <a href=\"index\">AdServer Administration</a>
 
 <hr>
 
 <ul>
 "
 
-ns_db dml $db "begin transaction"
+db_transaction {
 
-ns_db dml $db "delete from adv_log where adv_key = '$QQadv_key'"
+    db_dml adv_delete_query_1 "delete from adv_log where adv_key = :adv_key"
 
-ns_write "<li>Deleted [ns_ora resultrows $db] rows from adv_log.\n"
+    append page_content "<li>Deleted [db_resultrows] rows from adv_log.\n"
 
-ns_db dml $db "delete from adv_user_map where adv_key = '$QQadv_key'"
+    db_dml adv_delete_query_2 "delete from adv_user_map where adv_key = :adv_key"
+    
+    append page_content "<li>Deleted [db_resultrows] rows from adv_user_map.\n"
+    
+    db_dml adv_delete_query_3 "delete from adv_categories where adv_key = :adv_key"
+    
+    append page_content "<li>Deleted [db_resultrows] rows from adv_categories.\n"
+    
+    db_dml adv_delete_query_4 "delete from adv_group_map where adv_key = :adv_key"
+    
+    append page_content "<li>Deleted [db_resultrows] rows from adv_group_map.\n"
+    
+    db_dml adv_delete_query_5 "delete from advs where adv_key = :adv_key"
+    
+    append page_content "<li>Deleted the ad itself from advs.\n"   
+}
 
-ns_write "<li>Deleted [ns_ora resultrows $db] rows from adv_user_map.\n"
+db_release_unused_handles
 
-ns_db dml $db "delete from adv_categories where adv_key = '$QQadv_key'"
-
-ns_write "<li>Deleted [ns_ora resultrows $db] rows from adv_categories.\n"
-
-ns_db dml $db "delete from adv_group_map where adv_key = '$QQadv_key'"
-
-ns_write "<li>Deleted [ns_ora resultrows $db] rows from adv_group_map.\n"
-
-ns_db dml $db "delete from advs where adv_key = '$QQadv_key'"
-
-ns_write "<li>Deleted the ad itself from advs.\n"
-
-ns_db dml $db "end transaction"
-
-ns_write "</ul>
+append page_content "</ul>
 
 Transaction complete.
 
+<p><a href=\"\">Return to adserver administration</a></p>
+
 [ad_admin_footer]
 "
+
+doc_return 200 text/html $page_content
+
+
+
+

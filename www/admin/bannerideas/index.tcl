@@ -1,7 +1,18 @@
-# $Id: index.tcl,v 3.0 2000/02/06 02:48:25 ron Exp $
-ReturnHeaders
+# /www/admin/bannerideas/index.tcl
 
-ns_write "[ad_admin_header "Banner Ideas" ]
+ad_page_contract {
+    Shows a list of banner ideas. It can't show the picture because it
+    is usually an absolute URL and this page is accessed through HTTPS.
+
+    @author xxx
+    @date unknown
+    @cvs-id index.tcl,v 3.2.2.4 2000/09/22 01:34:20 kevin Exp
+} {
+
+}
+
+
+set page_content "[ad_admin_header "Banner Ideas" ]
 
 <h2>Banner Ideas</h2>
 
@@ -9,45 +20,38 @@ ns_write "[ad_admin_header "Banner Ideas" ]
 
 <hr>
 
-Documentation:  <a href=\"/doc/bannerideas.html\">/doc/bannerideas.html</a>.
+Documentation:  <a href=\"/doc/bannerideas\">/doc/bannerideas.html</a>.
 
 <h3>Banner ideas</h3>
-
 
 <ul>
 "
 
-set db [banner_ideas_gethandle]
-set sql_query  "select idea_id, intro, more_url, picture_html, clickthroughs
-from bannerideas
-order by idea_id"
-set selection [ns_db select $db $sql_query] 
-
-set counter 0
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
-    incr counter
+db_foreach banneridea_list_admin_query {
+    select idea_id, intro, more_url, picture_html, clickthroughs
+    from bannerideas
+    order by idea_id
+} {
     # can't show the picture because it is usually absolute URLs
     # and we're probably on HTTPS right now
-    ns_write "<li>$intro &nbsp; &nbsp; 
-...
-<br>
-<a href=\"$more_url\">more</a> ($clickthroughs clicks so far to $more_url) | 
-<a href=\"banner-edit.tcl?[export_url_vars  idea_id]\">Edit</a>
-<p>
-"
-
+    append page_content "<li>$intro &nbsp; &nbsp; 
+    ...
+    <br>
+    <a href=\"$more_url\">more</a> ($clickthroughs clicks so far to $more_url) | 
+    <a href=\"banner-edit?[export_url_vars  idea_id]\">Edit</a>
+    <p>
+    "
+} if_no_rows {
+    append page_content "<li>there are no ideas in the database right now"
 }
 
-if { $counter == 0 } {
-    ns_write "<li>there are no ideas in the database right now"
-}
+append page_content "<p>
 
-ns_write "<p>
-
-<li><a href=\"banner-add.tcl\">Add a banner idea</a>
+<li><a href=\"banner-add\">Add a banner idea</a>
 </ul>
 
 [ad_admin_footer]
 "
 
+
+doc_return  200 text/html $page_content

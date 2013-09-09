@@ -1,33 +1,36 @@
-# $Id: index.tcl,v 3.2 2000/03/04 23:08:18 aure Exp $
-# index.tcl
-#
-# Main index page for the site owner administration of the portals system.
-# A site owner can create new portals and change the super administrators of
-# the system
-#
-# by aure@arsdigita.com and dh@arsdigita.com
-#
-# Last modified: 10/8/1999
+# www/admin/portals/index.tcl
 
-set db [ns_db gethandle]
+ad_page_contract {
+
+    Main index page for the site owner administration of the portals system.
+    A site owner can create new portals and change the super administrators of
+    the system
+
+    @author aure@arsdigita.com 
+    @author dh@arsdigita.com
+    @creation-date 10/8/1999
+    @cvs-id index.tcl,v 3.4.2.6 2000/09/22 01:35:50 kevin Exp
+    
+} {
+}    
 
 set user_id [ad_verify_and_get_user_id]
 ad_maybe_redirect_for_registration 
 # --------------------------------------
 # make a list of the super administrators
 
-set selection [ns_db select $db "select u.first_names||' '||u.last_name as name, u.user_id
-   from users u, user_groups ug
-   where  ug.group_name = 'Super Administrators' 
-   and    ug.group_type = 'portal_group'
-   and    ad_group_member_p ( u.user_id, ug.group_id ) = 't'
-   order by u.last_name "]
-
 set super_list ""
 set super_count 0
 
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
+db_foreach super_admins {
+    select u.first_names||' '||u.last_name as name, 
+           u.user_id
+   from    users u, user_groups ug
+   where   ug.group_name = 'Super Administrators' 
+   and     ug.group_type = 'portal_group'
+   and     ad_group_member_p ( u.user_id, ug.group_id ) = 't'
+   order   by u.last_name
+} {
     # name, user_id
     append super_list "<li>$name\n"
 }
@@ -36,18 +39,17 @@ while {[ns_db getrow $db $selection]} {
 
 # make  a list of all the portals
 
-set selection [ns_db select $db "select group_name
-    from user_groups
-    where group_type = 'portal_group'
-    and   group_name <> 'Super Administrators'
-    order by group_name"]
-
 set portal_count 0
 set portal_list ""
-while {[ns_db getrow $db $selection ]} {
-    set_variables_after_query
+
+db_foreach portals {
+    select group_name
+    from   user_groups
+    where  group_type = 'portal_group'
+    and    group_name <> 'Super Administrators'
+    order  by group_name
+} {
     # group_name
-    
     append portal_list "<li>$group_name</a>"
     incr portal_count
 }
@@ -58,11 +60,11 @@ while {[ns_db getrow $db $selection ]} {
 set group_type "portal_group"
 
 # done with database
-ns_db releasehandle $db
+db_release_unused_handles
 
 #----------------------------------------------------------
 # serve the page
-ns_return 200 text/html "[ad_admin_header "Portals Admin"]
+doc_return  200 text/html "[ad_admin_header "Portals Admin"]
 
 <h2>Portals Admin</h2>
 
@@ -79,17 +81,16 @@ The portal-wide Super Administrators:
 <ul>
 $super_list
 </ul>
-<a href=add-manager.tcl>Add</a> or <a href=delete-manager.tcl>Remove</a> a Super Administrator.
+<a href=add-manager>Add</a> or <a href=delete-manager>Remove</a> a Super Administrator.
 <P>
 
 The available portals:  
 <ul>
 $portal_list
 </ul>
-Portal administration assignments and creation of new portals is done at <a href=/admin/ug/group-type-new.tcl?[export_url_vars group_type]>/admin/ug/group-type-new.tcl</a>.
+Portal administration assignments and creation of new portals is done at <a href=/admin/ug/group-type-new?[export_url_vars group_type]>/admin/ug/group-type-new.tcl</a>.
 [ad_admin_footer]
 "
-
 
 
 

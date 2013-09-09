@@ -1,29 +1,25 @@
-# $Id: banner-edit.tcl,v 3.0 2000/02/06 02:48:25 ron Exp $
-set_the_usual_form_variables
+# /www/admin/bannerideas/banner-edit.tcl
+ad_page_contract {
 
-# idea_id
+} {
+    idea_id:integer
+}
 
-ReturnHeaders
+db_1row banner_edit_query "
+select intro, more_url, picture_html, keywords
+from bannerideas 
+where idea_id = :idea_id" -bind [ad_tcl_vars_to_ns_set idea_id]
 
-set db [banner_ideas_gethandle]
-set selection [ns_db 1row $db "
-	select intro, more_url, picture_html, keywords
-	from bannerideas 
-	where idea_id='[DoubleApos $idea_id]'"]
-set_variables_after_query
-
-
-ns_write "
+set page_content "
 [ad_admin_header "Edit banner idea"]
 
 <h2>Edit</h2>
 
 [ad_admin_context_bar [list "index.tcl" "Banner Ideas Administration"] "Edit One"]
 
-
 <hr>
 
-<form method=POST action=banner-edit-2.tcl>
+<form method=POST action=banner-edit-2>
 [export_form_vars idea_id] 
 <table>
 <tr><th valign=top align=right> Idea: </th><td><textarea name=intro cols=60 rows=5 wrap=soft>[ns_striphtml $intro]</textarea></td></tr>
@@ -44,3 +40,6 @@ ns_write "
 
 [ad_admin_footer]
 "
+
+
+doc_return  200 text/html $page_content

@@ -4,7 +4,7 @@
 </head>
 <body bgcolor=white>
 <h2>Data Pipeline</h2>
-part of the <a href="index.html">ArsDigita Community System</a>
+part of the <a href="index">ArsDigita Community System</a>
 by <a href="mailto:oumi@arsdigita.com">Oumung Mehrotra</a>,
 <a href="mailto:mbryzek@arsdigita.com">Michael Bryzek</a>
 
@@ -14,7 +14,7 @@ by <a href="mailto:oumi@arsdigita.com">Oumung Mehrotra</a>,
 <li>User-accessible directory:  None
 <li>Site administrator directory:  None
 <li>Data model:  None
-<li>Tcl procs:  /tcl/data-pipeline.tcl
+<li>Tcl procs:  /tcl/data-pipeline
 </ul>
 
 <h3>The Big Picture</h3>
@@ -138,7 +138,7 @@ create table inquiries (
 
 </td><td valign=top><pre>
 
-&lt;form method=post action=signup-2.tcl&gt;
+&lt;form method=post action=signup-2&gt;
 &lt;input type=hidden name=dp.inquiries.inquiry_id.int value=1003&gt;
 &lt;input type=hidden name=dp_c.inquiry_contact.contact_id.int value=123&gt;
 &lt;p&gt;1 Your name:
@@ -186,9 +186,9 @@ set form_setid [ns_getform]
 # Need to create the relation
 ns_set put $form_setid dp.inquiries.contact_id ${dp_c.inquiry_contact.contact_id.int}
 
-set db [ns_db gethandle]
 
-ns_db dml $db "begin transaction"
+
+db_transaction {
 
 # update or insert the record in inquiry_contact 
 dp_process -db $db -form_index "_c" -where_clause "contact_id=${dp_c.inquiry_contact.contact_id.int}"
@@ -196,7 +196,7 @@ dp_process -db $db -form_index "_c" -where_clause "contact_id=${dp_c.inquiry_con
 # update or insert the record in inquiries
 dp_process -db $db -where_clause "inquiry_id=${dp.inquiries.inquiry_id.int}"
 
-ns_db dml $db "end transaction"
+}
 
 ns_returnredirect /
 </pre></blockquote>

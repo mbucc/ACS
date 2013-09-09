@@ -7,7 +7,7 @@
 <body bgcolor=#ffffff text=#000000>
 <h2>Technical Details</h2>
 
-of the <a href="ecommerce.html">Ecommerce Module</a> by <a href="mailto:eveander@arsdigita.com">Eve Andersson</a> of <a href="http://arsdigita.com">ArsDigita</a>
+of the <a href="ecommerce">Ecommerce Module</a> by <a href="mailto:eveander@arsdigita.com">Eve Andersson</a> of <a href="http://arsdigita.com">ArsDigita</a>
 
 <hr>
 <h3>Setup</h3>
@@ -16,7 +16,7 @@ of the <a href="ecommerce.html">Ecommerce Module</a> by <a href="mailto:eveander
 <li>This module requires Oracle 8i.
 <p>
 <li>Install CyberCash by following the instructions for the
-<a href="http://arsdigita.com/free-tools/shoppe.html">ArsDigita Shoppe</a>.
+<a href="http://arsdigita.com/free-tools/shoppe">ArsDigita Shoppe</a>.
 (Note: it can take a few weeks for your bank and CyberCash to get your
 account ready, so get started on that right away!)
 
@@ -25,14 +25,14 @@ account ready, so get started on that right away!)
 <li>These are the files in this ACS release that you need to have to run the ecommerce module:
   <ul>
   <li>data model in /doc/sql/ecommerce*.sql
-  <li>documentation in /doc/ecommerce*.html
+  <li>documentation in /doc/ecommerce*
   <li>scripts in /ecommerce/
   <li>admin scripts in /admin/ecommerce/
   <li>ADP templates in /templates/ecommerce/
-  <li>tcl procs in /tcl/ecommerce-*.tcl
+  <li>tcl procs in /tcl/ecommerce-*
   <li>ecommerce section of .ini file in parameters/
-  <li>ecommerce section of /admin/users/one.tcl
-  <li>a little proc ad_return_warning in ad-defs.tcl
+  <li>ecommerce section of /admin/users/one
+  <li>a little proc ad_return_warning in ad-defs
   </ul>
 
 <p>
@@ -45,9 +45,11 @@ Note: this module also relies on you having the tools package, the style package
 
 <p>
 
-<li>ImageMagick must be installed in /usr/local/bin/ if you want thumbnails
+<li>ImageMagick must be installed (either in /usr/local/bin/ or elsewhere
+if you're <a href="security.html">running your server chrooted</a>)
+if you want thumbnails
 to be automatically created.  For information on ImageMagick (which is
-free), see <a href="http://photo.net/wtr/thebook/images.html">Chapter 6:
+free), see <a href="http://photo.net/wtr/thebook/images">Chapter 6:
 Adding Images to Your Site</a> of Philip and Alex's Guide to Web
 Publishing.
 
@@ -64,13 +66,25 @@ in /web/yourserver/parameters/yourserver.ini need to be edited.
 
 <p>
 
+<li>The page templates display correctly only if you're using fancy ADP parsing.
+To do this, make sure that this is in your server .ini file (replacing yourserver
+with the name of your server):
+
+<blockquote>
+<code>[ns/server/acs/adp/parsers]<br>
+fancy=.adp</code>
+</blockquote>
+
+<p>
+
 <li>Either find a copy of the <code>zip_codes</code> table to import (ArsDigitans know where
 to find it but unfortunately we can't redistribute it because it's licensed),
 or delete the little bit of code that uses it.
 
 <p>
 
-<li>Qmail must be installed on your system.
+<li>Qmail must be installed on your system (it may require special setup
+if you're <a href="security.html">running your server chrooted</a>).
 </ul>
 
 <h3>Under the Hood</h3>
@@ -138,7 +152,7 @@ automatically assigned to that <code>user_id</code>.
 <p>
 <b><li>Order States</b>
 <p>
-Order states are discussed in detail in <a href="ecommerce-operation.html">Operation of the Ecommerce Module</a>.  That should be read to understand the
+Order states are discussed in detail in <a href="ecommerce-operation">Operation of the Ecommerce Module</a>.  That should be read to understand the
 concepts of order states and item states and to see the finite state machines
 involved.
 <p>
@@ -427,7 +441,7 @@ OTHER
 <p> 
 Before credit card information is sent out to CyberCash for authorization,
 some checking is done by the module to make sure that the credit card
-number is well-formed (using the procedure <code>ec_creditcard_precheck</code> which can be found in /tcl/ecommerce-credit.tcl).  The procedure checks the length of the credit card number, makes sure
+number is well-formed (using the procedure <code>ec_creditcard_precheck</code> which can be found in /tcl/ecommerce-credit).  The procedure checks the length of the credit card number, makes sure
 it starts with the right digit for the card type, and does a LUHN-10
 check (that's a checksum which can't determine whether the number is a
 valid credit card number but which determines whether it's even <i>possible</i>
@@ -445,7 +459,7 @@ order" or "Your order has shipped").  If a site administrator adds a
 new email template using the admin pages, you will have to create a
 new procedure that does all the variable substitution, the actual
 sending out of the email, etc.  This should be easy.  Just copy any
-one of the 7 autoemail procedures in /tcl/ecommerce-email.tcl (<i>except</i>
+one of the 7 autoemail procedures in /tcl/ecommerce-email (<i>except</i>
 for <code>ec_email_gift_certificate_recipient</code>, which is unusual).
 Then invoke your new procedure anywhere appropriate (e.g. the email that
 says "Thank you for your order" is invoked by calling
@@ -466,7 +480,7 @@ an item to their order.
 If you've decided not to allow customers to reuse their credit cards,
 their credit card data is removed periodically (a few times a day) by
 <code>ec_remove_creditcard_data</code> in
-/tcl/ecommerce-scheduled-procs.tcl (it removes credit card numbers for
+/tcl/ecommerce-scheduled-procs (it removes credit card numbers for
 orders that are FULFILLED, RETURNED, VOID, or EXPIRED).
 <p>
 If you've decided to allow customers to reuse their credit cards, their
@@ -505,7 +519,7 @@ you can reduce some of the risk by manually removing old credit card data
 once in a while (at least then there will be fewer numbers in your database for
 the crackers to steal).  To clear out the unnecessary credit card data, just 
 run a procedure like <code>ec_remove_creditcard_data</code> (in
-/tcl/ecommerce-scheduled-procs.tcl) but get rid of the if statement that
+/tcl/ecommerce-scheduled-procs) but get rid of the if statement that
 checks whether <code>SaveCreditCardDataP</code> is 0 or 1.
 <p>
 <b><li>Price Calculation</b>
@@ -516,9 +530,9 @@ arbitrary periods of time (sale prices may be available to all
 customers or only to ones who have the appropriate <code>offer_code</code>
 in their URL).  
 <p>
-The procedure <code>ec_lowest_price_and_price_name_for_an_item</code> in /tcl/ecommerce-money-computations.tcl determines the lowest price that a given user
+The procedure <code>ec_lowest_price_and_price_name_for_an_item</code> in /tcl/ecommerce-money-computations determines the lowest price that a given user
 is entitled to receive based on what user classes they're in and what
-<code>offer_code</code>s they came to product.tcl with.  Their <code>offer_code</code>s are stored, along with their <code>user_session_id</code>, in
+<code>offer_code</code>s they came to product with.  Their <code>offer_code</code>s are stored, along with their <code>user_session_id</code>, in
 <code>ec_user_session_offer_codes</code> (we decided to store this in 
 the database instead of in cookies because it was a slightly more efficient
 method, although either implementation would have worked).  One minor

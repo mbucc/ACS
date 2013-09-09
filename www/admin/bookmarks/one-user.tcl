@@ -1,25 +1,25 @@
-# /admin/bookmarks/one-user.tcl
-#
-# allows administration of a given users (owner_id) bookmarks
-#
-# by aure@arsdigita.com and dh@arsdigita.com, June 1999
-#
-# $Id: one-user.tcl,v 3.0.4.1 2000/03/15 21:11:38 aure Exp $
+# /www/admin/bookmarks/one-user.tcl
 
-ad_page_variables {owner_id}
+ad_page_contract {
+    allows administration of a given users (owner_id) bookmarks
+    @param bookmark_id ID of bookmark to be deleted
+    @author David Hill (dh@arsdigita.com)
+    @author Aurelius Prochazka (aure@arsdigita.com)    
+    @creation-date June 1999  
+    @cvs-id one-user.tcl,v 3.2.2.4 2000/09/22 01:34:24 kevin Exp
+} {
+    {owner_id:integer}
+} 
 
 set user_id [ad_verify_and_get_user_id]
 ad_maybe_redirect_for_registration
 
-
-# get database handle
-set db [ns_db gethandle]
-
 # get the bookmark owner's name
-set owner_name [database_to_tcl_string $db "select first_names||' '||last_name from users where user_id = $owner_id"]
+set owner_name [db_string owner_name "select first_names||' '||last_name 
+                                      from   users 
+                                      where  user_id = :owner_id"]
 
 set title "$owner_name's Bookmarks"
-
 
 # get generic display parameters from the .ini file
 set folder_bgcolor    [ad_parameter FolderBGColor    bm]
@@ -37,7 +37,6 @@ set page_content "
 <h2> $title </h2>
 [ad_admin_context_bar  [list "" "Bookmarks"] $title]
 
-
 <hr>
 
   <table bgcolor=$folder_bgcolor cellpadding=0 cellspacing=0 border=0 width=100%>
@@ -46,28 +45,21 @@ set page_content "
     </tr>
   </table>"
 
+set bookmark_count 0
+set bookmark_list ""
 
-set bookmark_query "
+db_foreach bookmark {
         select   bookmark_id, bm_list.url_id, 
                  nvl(local_title, url_title) as bookmark_title, 
                  hidden_p, complete_url,  
                  last_live_date, last_checked_date, 
                  folder_p, closed_p, length(parent_sort_key)*8 as indent_width  
         from     bm_list, bm_urls
-        where    owner_id=$owner_id
-        and      in_closed_p='f'
-        and      bm_list.url_id=bm_urls.url_id(+)
+        where    owner_id = :owner_id
+        and      in_closed_p = 'f'
+        and      bm_list.url_id = bm_urls.url_id(+)
         order by parent_sort_key || local_sort_key
-        "
-
-set selection [ns_db select $db $bookmark_query]
-
-set bookmark_count 0
-set bookmark_list ""
-
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
-
+} {
     # decoration refers to color and font of the associated text
     set decoration ""
 
@@ -92,7 +84,6 @@ while {[ns_db getrow $db $selection]} {
 
     # this fancy edit link shows "Edit foo" in the status bar
     set edit_link "<a onMouseOver=\"window.status='Edit $javascript_title'; return true;\" onMouseOut=\"window.status=' '; return true;\" href=edit-bookmark?return_url=one-user&[export_url_vars bookmark_id]>$edit_anchor</a>"
-
 
     # define url, background color, and image depending on whether we are display a bookmark or folder
     if {$folder_p=="f"} {
@@ -124,6 +115,9 @@ while {[ns_db getrow $db $selection]} {
     incr bookmark_count
 }
 
+# release the database handle before serving the page
+db_release_unused_handles 
+
 # write the bookmarks if there are any to show
 if {$bookmark_count!=0} {
     append page_content $bookmark_list
@@ -131,15 +125,9 @@ if {$bookmark_count!=0} {
     append page_content "No bookmarks stored in the database. <p>"
 }
 
-
 # Add a footer
 append page_content "[ad_admin_footer]"
 
-# release the database handle before serving the page
-ns_db releasehandle $db 
-
 # serve the page
-ns_return 200 text/html $page_content 
-
-
+doc_return  200 text/html $page_content 
 

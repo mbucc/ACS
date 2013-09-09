@@ -1,15 +1,24 @@
-# $Id: search-ctx.tcl,v 3.0 2000/02/06 03:50:00 ron Exp $
-set_the_usual_form_variables
+# /www/neighbor/search-ctx.tcl
+ad_page_contract {
+    Searches the neighbor-to-neighbor data.
 
-# query_string, accumulate_p (optional), fuzzy_p (optional)
-   
-ReturnHeaders
+    @author Philip Greenspun (philg@mit.edu)
+    @creation-date 1 January 1996
+    @cvs-id search-ctx.tcl,v 3.2.2.2 2000/09/22 01:38:56 kevin Exp
+    @param query_string_p what to search for
+    @param accumulate_p whether the results should be accumulated
+    @param fuzzy_p whether the search should be fuzzy
+} {
+    query_string:notnull
+    accumulate_p:optional
+    fuzzy_p:optional
+}
 
-ns_write "[neighbor_header "Postings Matching \"$query_string\""]
+set page_content "[neighbor_header "Postings Matching \"$query_string\""]
 
 <h2>Postings Matching \"$query_string\"</h2>
 
-in <a href=\"index.tcl\">[neighbor_system_name]</a>
+in <a href=\"index\">[neighbor_system_name]</a>
 
 <hr>
 
@@ -17,9 +26,7 @@ in <a href=\"index.tcl\">[neighbor_system_name]</a>
 
 "
 
-set db [neighbor_db_gethandle]
-
-regsub -all { +} [string trim $QQquery_string] "," query_string_for_ctx
+regsub -all { +} [string trim $query_string] "," query_string_for_ctx
 
 # we've separated the words with commas (sometimes more than one if the
 # user typed multiple spaces)
@@ -39,37 +46,13 @@ if { [info exists fuzzy_p] && $fuzzy_p == "t" } {
     append prefix {?}
 }
 
-if [catch {set selection [ns_db select $db "select score(10) as the_score, nton.*
-from neighbor_to_neighbor nton
-where contains (indexed_stuff, '${prefix}($query_string_for_ctx)', 10) > 0
-order by score(10) desc"]} errmsg] {
+set sql_query "
+    select score(10) as the_score, nton.*
+      from neighbor_to_neighbor nton
+     where contains (indexed_stuff, '${prefix}($query_string_for_ctx)', 10) > 0
+  order by score(10) desc"
 
-    ns_write "There aren't any results because something about
-your query string has made Oracle Context unhappy:
-<pre>
-$errmsg
-</pre>
-In general, ConText does not like special characters.  It does not like
-to see common words such as \"AND\" or \"a\" or \"the\".  
-I haven't completely figured this beast out.
-
-Back up and try again!
-
-</ul>
-<hr>
-</body>
-</html>"
-
-    return
-
-}
-
-
-set counter 0 
-
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
-    incr counter
+if {![catch {db_foreach select_search $sql_query {
     if { ![info exists max_score] } {
 	# first iteration, this is the highest score
 	set max_score $the_score
@@ -95,31 +78,53 @@ while {[ns_db getrow $db $selection]} {
     } else {
 	set anchor "$about : $one_line"
     }
-    ns_write "<li>$the_score: <a href=\"view-one.tcl?neighbor_to_neighbor_id=$neighbor_to_neighbor_id\">$anchor</a>\n"
-}
-
-if { $counter == 0 } {
+    append page_content "<li>$the_score: <a href=\"view-one?neighbor_to_neighbor_id=$neighbor_to_neighbor_id\">$anchor</a>\n"
+} if_no_rows {
     if { ![info exists fuzzy_p] && ![info exists accumulate_p] } {
 	# nothin' special requested, offer special options
-	ns_write "<li>sorry, but no messages matched this query.
+	append page_content "<li>sorry, but no messages matched this query.
 Your query words were fed to Oracle ConText with instructions that
 they had to appear near each other.  This is a good way of achieving
 high relevance for common queries such as \"Nikon zoom lens\".
 <p>
 There are two basic ways in which we can expand your search:
 <ol>
-<li><a href=\"search.tcl?accumulate_p=t&query_string=[ns_urlencode $query_string]\">drop the proximity requirement</a>
-<li><a href=\"search.tcl?fuzzy_p=t&query_string=[ns_urlencode $query_string]\">expand the search words to related terms (fuzzy)</a>
+<li><a href=\"search?accumulate_p=t&query_string=[ns_urlencode $query_string]\">drop the proximity requirement</a>
+<li><a href=\"search?fuzzy_p=t&query_string=[ns_urlencode $query_string]\">expand the search words to related terms (fuzzy)</a>
 </ol>
 "
 
-} else {
+    } else {
 	# user is already doing something special but still losing unfortunately
-	ns_write "<li>sorry, but no messages matched this query\n"
+	append page_content "<li>sorry, but no messages matched this query\n"
     }
+}   } errmsg]} {
+    # now the error handling
+    append page_content "There aren't any results because something about
+your query string has made Oracle Context unhappy:
+<pre>
+$errmsg
+</pre>
+In general, ConText does not like special characters.  It does not like
+to see common words such as \"AND\" or \"a\" or \"the\".  
+I haven't completely figured this beast out.
+
+Back up and try again!
+
+</ul>
+<hr>
+</body>
+</html>"
+
+    return
+
 }
 
 
-ns_write "</ul>
+append page_content "</ul>
 
 [neighbor_footer]"
+
+
+db_release_unused_handles
+doc_return 200 text/html $page_content

@@ -1,41 +1,34 @@
-# $Id: one.tcl,v 3.1 2000/03/07 04:14:24 eveander Exp $
-# one.tcl 
-#
-# by eveander@arsdigita.com June 1999
-# 
-# main admin page for a single product
-# 
+#  www/admin/ecommerce/products/one.tcl
+ad_page_contract {
+  Main admin page for a single product.
 
-set_the_usual_form_variables
-
-# product_id
+  @author eveander@arsdigita.com
+  @creation-date June 1999
+  @cvs-id one.tcl,v 3.4.2.5 2000/08/18 21:46:59 stevenp Exp
+} {
+  product_id:integer,notnull
+}
 
 # Have to get everything about this product from ec_products, 
 # ec_custom_product_field_values (along with the info about the fields from
 # ec_custom_product_fields), ec_category_product_map, ec_subcategory_product_map, ec_subsubcategory_product_map
 
-set db_pools [ns_db gethandle [philg_server_default_pool] 2]
-set db [lindex $db_pools 0]
-set db_sub [lindex $db_pools 1]
-
-set selection [ns_db 1row $db "select * from ec_products where product_id=$product_id"]
-set_variables_after_query
+db_0or1row product_select "select * from ec_products where product_id=:product_id"
 
 # we know these won't conflict with the ec_products columns because of the constraint
 # in custom-field-add-2.tcl
-set selection [ns_db 1row $db "select * from ec_custom_product_field_values where product_id=$product_id"]
-set_variables_after_query
+db_0or1row custom_fields_select "select * from ec_custom_product_field_values where product_id=:product_id"
 
-set category_list [database_to_tcl_list $db "select category_id from ec_category_product_map where product_id=$product_id"]
+set category_list [db_list categories_select "select category_id from ec_category_product_map where product_id=:product_id"]
 
-set subcategory_list [database_to_tcl_list $db "select subcategory_id from ec_subcategory_product_map where product_id=$product_id"]
+set subcategory_list [db_list subcategories_select "select subcategory_id from ec_subcategory_product_map where product_id=:product_id"]
 
-set subsubcategory_list [database_to_tcl_list $db "select subsubcategory_id from ec_subsubcategory_product_map where product_id=$product_id"]
+set subsubcategory_list [db_list subsubcategories_select "select subsubcategory_id from ec_subsubcategory_product_map where product_id=:product_id"]
 
 set multiple_retailers_p [ad_parameter MultipleRetailersPerProductP ecommerce]
 set currency [ad_parameter Currency ecommerce]
 
-set n_professional_reviews [database_to_tcl_string $db "select count(*) from ec_product_reviews where product_id = $product_id"]
+set n_professional_reviews [db_string n_professional_reviews_select "select count(*) from ec_product_reviews where product_id = :product_id"]
 
 if { $n_professional_reviews == 0 } { 
     set product_review_anchor "none yet; click to add"
@@ -43,22 +36,22 @@ if { $n_professional_reviews == 0 } {
     set product_review_anchor $n_professional_reviews
 }
 
-set n_customer_reviews [database_to_tcl_string $db "select count(*) from ec_product_comments where product_id = $product_id"]
+set n_customer_reviews [db_string n_customer_reviews_select "select count(*) from ec_product_comments where product_id = :product_id"]
 
 if { $n_customer_reviews == 0 } {
     set customer_reviews_link "none yet"
 } else {
-    set customer_reviews_link "<a href=\"../customer-reviews/index-2.tcl?[export_url_vars product_id]\">$n_customer_reviews</a>"
+    set customer_reviews_link "<a href=\"../customer-reviews/index-2?[export_url_vars product_id]\">$n_customer_reviews</a>"
 }
 
-set n_links_to [database_to_tcl_string $db "select count(*) from ec_product_links where product_b = $product_id"]
+set n_links_to [db_string n_links_to_select "select count(*) from ec_product_links where product_b = :product_id"]
 
-set n_links_from [database_to_tcl_string $db "select count(*) from ec_product_links where product_a = $product_id"]
+set n_links_from [db_string n_links_from_select "select count(*) from ec_product_links where product_a = :product_id"]
 
 if { $multiple_retailers_p } {
     set price_row ""
 } else {
-    if { [database_to_tcl_string $db "select count(*) from ec_sale_prices_current where product_id=$product_id"] > 0 } {
+    if { [db_string sale_select "select count(*) from ec_sale_prices_current where product_id=:product_id"] > 0 } {
 	set sale_prices_anchor "on sale; view price"
     } else {
 	set sale_prices_anchor "put on sale"	
@@ -69,11 +62,29 @@ if { $multiple_retailers_p } {
     </td>
     <td>
     [ec_message_if_null [ec_pretty_price $price $currency]]
-    (<a href=\"sale-prices.tcl?[export_url_vars product_id]\">$sale_prices_anchor</a>)
+    (<a href=\"sale-prices?[export_url_vars product_id price]\">$sale_prices_anchor</a>)
     </td>
     </tr>
     "
 }
+
+if { $no_shipping_avail_p == "f" } {
+    set no_shipping_avail_p_for_display "Shipping Avail"
+} else {
+    set no_shipping_avail_p_for_display "No Shipping Avail"
+}
+
+set no_shipping_avail_p_row "
+<tr>
+<td>
+Shipping Avail/No Shipping Avail:
+</td>
+<td>
+$no_shipping_avail_p_for_display
+(<a href=\"toggle-no-shipping-avail-p?[export_url_vars product_id]\">toggle</a>)
+</td>
+</tr>
+"
 
 if { $active_p == "t" } {
     set active_p_for_display "Active"
@@ -88,7 +99,7 @@ Active/Discontinued:
 </td>
 <td>
 $active_p_for_display
-(<a href=\"toggle-active-p.tcl?[export_url_vars product_id]\">toggle</a>)
+(<a href=\"toggle-active-p?[export_url_vars product_id]\">toggle</a>)
 </td>
 </tr>
 "
@@ -96,12 +107,10 @@ $active_p_for_display
 if [empty_string_p $dirname] {
     set dirname_cell "something is wrong with this product; there is no place to put files!"
 } else {
-    set dirname_cell "$dirname (<a href=\"supporting-files-upload.tcl?[export_url_vars product_id]\">Supporting Files</a>)"
+    set dirname_cell "$dirname (<a href=\"supporting-files-upload?[export_url_vars product_id]\">Supporting Files</a>)"
 }
 
-ReturnHeaders
-
-ns_write "[ad_admin_header "$product_name"]
+doc_body_append "[ad_admin_header "$product_name"]
 
 <h2>$product_name</h2>
 
@@ -110,14 +119,13 @@ ns_write "[ad_admin_header "$product_name"]
 <hr>
 
 <ul>
-<li>Professional Reviews:  <a href=\"reviews.tcl?[export_url_vars product_id]\">$product_review_anchor</a>
+<li>Professional Reviews:  <a href=\"reviews?[export_url_vars product_id]\">$product_review_anchor</a>
 
 <li>Customer Reviews: $customer_reviews_link
 
-<li>Cross-selling Links:  <a href=\"link.tcl?[export_url_vars product_id]\">$n_links_to to; $n_links_from from</a>
+<li>Cross-selling Links:  <a href=\"link?[export_url_vars product_id]\">$n_links_to to; $n_links_from from</a>
 
 </ul>
-
 
 <h3>Complete Record</h3>
 
@@ -126,10 +134,10 @@ ns_write "[ad_admin_header "$product_name"]
 "
 
 if { $active_p == "f" } {
-    ns_write "<b>This product is discontinued.</b><p>\n"
+    doc_body_append "<b>This product is discontinued.</b><p>\n"
 }
 
-ns_write "[ec_linked_thumbnail_if_it_exists $dirname]
+doc_body_append "[ec_linked_thumbnail_if_it_exists $dirname]
 <table noborder>
 <tr>
 <td>
@@ -156,34 +164,35 @@ SKU:
 </td>
 </tr>
 $price_row
+$no_shipping_avail_p_row
 $active_p_row
 <tr>
 <td>
 Categorization:
 </td>
 <td>
-[ec_category_subcategory_and_subsubcategory_display $db $category_list $subcategory_list $subsubcategory_list]
+[ec_category_subcategory_and_subsubcategory_display $category_list $subcategory_list $subsubcategory_list]
 </td>
 </tr>
 "
 if { !$multiple_retailers_p } {
-    ns_write "<tr>
+    doc_body_append "<tr>
     <td>
     Stock Status:
     </td>
     <td>
     "
     if { ![empty_string_p $stock_status] } {
-	ns_write [ad_parameter "StockMessage[string toupper $stock_status]" ecommerce]
+	doc_body_append [ad_parameter "StockMessage[string toupper $stock_status]" ecommerce]
     } else {
-	ns_write [ec_message_if_null $stock_status]
+	doc_body_append [ec_message_if_null $stock_status]
     }
     
-    ns_write "</td>
+    doc_body_append "</td>
     </tr>
     "
 }
-ns_write "<tr>
+doc_body_append "<tr>
 <td>
 One-Line Description:
 </td>
@@ -233,6 +242,14 @@ Style Choices:
 </tr>
 <tr>
 <td>
+Email on Purchase:
+</td>
+<td>
+[ec_message_if_null $email_on_purchase_list]
+</td>
+</tr>
+<tr>
+<td>
 URL:
 </td>
 <td>
@@ -249,7 +266,7 @@ Display this product when user does a search?
 </tr>
 "
 if { !$multiple_retailers_p } {
-    ns_write "<tr>
+    doc_body_append "<tr>
     <td>
     Shipping Price:
     </td>
@@ -267,7 +284,7 @@ if { !$multiple_retailers_p } {
     </tr>
     "
 }
-ns_write "<tr>
+doc_body_append "<tr>
 <td>
 Weight:
 </td>
@@ -278,13 +295,10 @@ Weight:
 "
 if { !$multiple_retailers_p } {
 
-    set selection [ns_db select $db "select user_class_id, user_class_name from ec_user_classes order by user_class_name"]
-    
-    while { [ns_db getrow $db $selection] } {
-	set_variables_after_query
-	set temp_price [database_to_tcl_string_or_null $db_sub "select price from ec_product_user_class_prices where product_id=$product_id and user_class_id=$user_class_id"]
+    db_foreach user_class_select "select user_class_id, user_class_name from ec_user_classes order by user_class_name" {
+	set temp_price [db_string temp_price_select "select price from ec_product_user_class_prices where product_id=:product_id and user_class_id=:user_class_id" -default ""]
 	
-	ns_write "
+	doc_body_append "
 	<tr>
 	<td>
 	$user_class_name Price:
@@ -297,12 +311,9 @@ if { !$multiple_retailers_p } {
     }
 }
 
-set selection [ns_db select $db "select field_identifier, field_name, column_type from ec_custom_product_fields where active_p = 't'"]
-
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+db_foreach custom_fields_select "select field_identifier, field_name, column_type from ec_custom_product_fields where active_p = 't'" {
     if { [info exists $field_identifier] } {
-	ns_write "
+	doc_body_append "
 	<tr>
 	<td>
 	$field_name:
@@ -310,24 +321,24 @@ while { [ns_db getrow $db $selection] } {
 	<td>
 	"
 	if { $column_type == "char(1)" } {
-	    ns_write "[ec_message_if_null [ec_PrettyBoolean [set $field_identifier]]]\n"
+	    doc_body_append "[ec_message_if_null [ec_PrettyBoolean [set $field_identifier]]]\n"
 	} elseif { $column_type == "date" } {
-	    ns_write "[ec_message_if_null [util_AnsiDatetoPrettyDate [set $field_identifier]]]\n"
+	    doc_body_append "[ec_message_if_null [util_AnsiDatetoPrettyDate [set $field_identifier]]]\n"
 	} else {
-	    ns_write "[ec_display_as_html [ec_message_if_null [set $field_identifier]]]\n"
+	    doc_body_append "[ec_display_as_html [ec_message_if_null [set $field_identifier]]]\n"
 	}
-	ns_write "</td>
+	doc_body_append "</td>
 	</tr>
 	"
     }
 }
 
-ns_write "<tr>
+doc_body_append "<tr>
 <td>
 Template:
 </td>
 <td>
-[ec_message_if_null [database_to_tcl_string_or_null $db "select template_name from ec_templates where template_id='$template_id'"]]
+[ec_message_if_null [db_string template_name_select "select template_name from ec_templates where template_id=:template_id" -default "" ]]
 </td>
 </tr>
 <tr>
@@ -355,7 +366,7 @@ $dirname_cell
 </td>
 </tr>
 </table>
-(<a href=\"edit.tcl?[export_url_vars product_id]\">Edit</a>)
+(<a href=\"edit?[export_url_vars product_id]\">Edit</a>)
 </blockquote>
 
 <p>
@@ -365,13 +376,13 @@ $dirname_cell
 <ul>
 "
 if { $multiple_retailers_p } {
-    ns_write "<li><a href=\"offers.tcl?[export_url_vars product_id product_name]\">Retailer Offers</a>
+    doc_body_append "<li><a href=\"offers?[export_url_vars product_id product_name]\">Retailer Offers</a>
     "
 }
 
-ns_write "
+doc_body_append "
 <p>
-<li><a href=\"delete.tcl?[export_url_vars product_id product_name]\">Delete</a>
+<li><a href=\"delete?[export_url_vars product_id product_name]\">Delete</a>
 <p>
 "
 # Set audit variables
@@ -379,11 +390,11 @@ ns_write "
 set audit_name $product_name
 set audit_id $product_id
 set audit_id_column "product_id"
-set return_url "[ns_conn url]?[export_url_vars product_id]"
+set return_url "[ad_conn url]?[export_url_vars product_id]"
 set audit_tables [list ec_products_audit ec_custom_p_field_values_audit ec_category_product_map_audit ec_subcat_prod_map_audit ec_subsubcat_prod_map_audit]
 set main_tables [list ec_products ec_custom_product_field_values ec_category_product_map ec_subcategory_product_map ec_subsubcategory_product_map]
 
-ns_write "<li><a href=\"/admin/ecommerce/audit.tcl?[export_url_vars audit_name audit_id audit_id_column return_url audit_tables main_tables]\">Audit Trail</a>
+doc_body_append "<li><a href=\"/admin/ecommerce/audit?[export_url_vars audit_name audit_id audit_id_column return_url audit_tables main_tables]\">Audit Trail</a>
 
 </ul>
 [ad_admin_footer]

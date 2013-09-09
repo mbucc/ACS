@@ -1,37 +1,54 @@
-#
-# Prompt the user for his password.
-#
-# $Id: user-login.tcl,v 3.4.2.3 2000/04/28 15:11:25 carsten Exp $
-#
+ad_page_contract { 
+     Accepts an email from the user and branches depending on the user_state.
+     If password is present, sources user-login-2 to verify the password and issue cookie.
+     @author Multiple
+     @cvs-id user-login.tcl,v 3.8.2.17 2000/09/22 01:39:15 kevin Exp
+} {
+    email:notnull
+    {return_url [ad_pvt_home]}
+    {password ""}
+    {persistent_cookie_p "f"}
+}
 
-set_the_usual_form_variables
 
-# email, return_url, password (optional)
-
-set db [ns_db gethandle]
+set upper_email [string toupper $email]
 
 # Get the user ID
 # as of Oracle 8.1 we'll have upper(email) constrained to be unique
 # in the database (could do it now with a trigger but there is really 
 # no point since users only come in via this form)
-set selection [ns_db 0or1row $db "select user_id, user_state, converted_p from users where upper(email)=upper('$QQemail')"]
 
-if {$selection == ""} {
+if {![db_0or1row user_login_user_id_from_email {
+    select user_id, user_state, converted_p 
+    from users 
+    where upper(email) = :upper_email
+}]} {
+
     # not in the database
-    ns_db releasehandle $db
+    db_release_unused_handles
 
     # Source user-new.tcl. We would redirect to it, but we don't want
     # the password exposed!
-    source "[ns_url2file "/register/user-new.tcl"]"
+
+    # psu: these unsets are needed here for a really heinous reason. we are about 
+    # source user-new.tcl. this will cause havoc because user-new.tcl calls ad_page_contract,
+    # which we have already done. if we don't unset this stuff here, when ad_page_contract runs
+    # again it will flag everything as a double value. to stop this, i unset everything here.
+    # the real fix for this is to make the code in user-new.tcl a proc.
+
+    ad_set_client_property -persistent t register email $email
+    ad_set_client_property -persistent t register return_url $return_url
+    ad_set_client_property -persistent t register password $password
+    ad_set_client_property -persistent t register persistent_cookie_p $persistent_cookie_p
+    ad_returnredirect /register/user-new.tcl
     return
 } 
 
-set_variables_after_query
-
-ns_db releasehandle $db
+db_release_unused_handles
 
 switch $user_state {
-    "authorized" { # just move on } 
+    "authorized" {  }
+    # just move on
     "banned" { 
 	ad_returnredirect "banned-user.tcl?user_id=$user_id" 
 	return
@@ -63,7 +80,6 @@ switch $user_state {
     }
 }
 
-
 if { [ad_parameter UsersTableContainsConvertedUsersP] && $converted_p == "t" } {
     # we have a user who never actively registered; he or she was 
     # pumped into the database following a conversion, presumably
@@ -72,24 +88,27 @@ if { [ad_parameter UsersTableContainsConvertedUsersP] && $converted_p == "t" } {
     return
 }
 
-if { [info exists password] } {
+if { ![empty_string_p $password] } {
     # Continue the login process (since we already have the password).
-    set password_from_form $password
-    source "[ns_url2file "/register/user-login-2.tcl"]"
+    ad_set_client_property -persistent t register user_id $user_id
+    ad_set_client_property -persistent t register password $password
+    ad_set_client_property -persistent t register return_url $return_url
+    ad_set_client_property -persistent t register persistent_cookie_p $persistent_cookie_p
+    ad_returnredirect /register/user-login-2.tcl
     return
 }
 
-set whole_page "[ad_header "Enter Password"]
+set whole_page "[ad_header -focus password_form.password "Enter Password"]
 
 <h2>Enter Password</h2>
 
-for $email in <a href=\"index.tcl\">[ad_system_name]</a>
+for $email in <a href=\"index\">[ad_system_name]</a>
 
 <hr>
 
-<form action=\"user-login-2.tcl\" method=post>
+<form action=\"user-login-2\" method=post name=password_form>
 [export_form_vars user_id return_url]
-Password:  <input type=password name=password_from_form size=20>
+Password:  <input type=password name=password size=20>
 <input type=submit value=\"Login\">
 
 <p>
@@ -104,9 +123,8 @@ if [ad_parameter AllowPersistentLoginP "" 1] {
     }
     append whole_page "<input type=checkbox name=persistent_cookie_p value=t $checked_option> 
 Remember this address and password?  
-(<a href=\"explain-persistent-cookies.adp\">help</a>)"
+(<a href=\"explain-persistent-cookies\">help</a>)"
 }
-
 
 append whole_page "
 
@@ -115,5 +133,4 @@ append whole_page "
 [ad_footer]
 "
 
-ns_return 200 text/html $whole_page
-
+doc_return  200 text/html $whole_page

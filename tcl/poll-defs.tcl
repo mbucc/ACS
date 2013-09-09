@@ -1,65 +1,50 @@
-# $Id: poll-defs.tcl,v 3.0 2000/02/06 03:13:53 ron Exp $
-# poll-defs.tcl -- definitions for the opinion polling module
-
-# by markd@arsdigita.com, September 1999
-
-util_report_library_entry
-
-
+ad_library {
+    Definintions for the opinion polling module.
+    @date September 1999
+    @author markd@arsdigita.com
+    @cvs-id poll-defs.tcl,v 3.2.2.5 2000/10/04 23:32:46 kevin Exp
+}
 
 # returns a list of info about the poll:
 #   name, description, start_date, end_date, require_registration_p, active_p
 # handy for memoization.
 
 proc poll_info_internal { poll_id } {
-
-    set db [ns_db gethandle subquery]
-
-    set info [database_1row_to_tcl_list $db "
-select name, description, start_date, end_date, require_registration_p,
-       poll_is_active_p(start_date, end_date) as active_p
-  from polls
- where poll_id = $poll_id
-"]
-
-    ns_db releasehandle $db
-
+    set info [list]
+    db_1row get_info_internal {
+	select name, description, start_date, end_date, require_registration_p,
+	       poll_is_active_p(start_date, end_date) as active_p
+	from   polls
+	where  poll_id = :poll_id
+    }
+    lappend info $name
+    lappend info $description
+    lappend info $start_date
+    lappend info $end_date
+    lappend info $require_registration_p
+    lappend info $active_p
     return $info
 
-} ;# poll_info_internal
-
-
-
+} 
 
 # returns a list of poll labels:
 #   label 1, choice id 1, label 2, choice id 2
 # handy for memoization, and handy for passing the result to poll_display
 
 proc poll_labels_internal { poll_id } {
-    set db [ns_db gethandle subquery]
-
-    set selection [ns_db select $db "
-select choice_id, label
-  from poll_choices
- where poll_id = $poll_id
- order by sort_order
-"]
-
     set choices [list]
-
-    while { [ns_db getrow $db $selection] } {
-	set_variables_after_query
+    db_foreach get_poll_labels {
+	select choice_id, label
+	from poll_choices
+	where poll_id = :poll_id
+	order by sort_order
+    } {
 	lappend choices $label
 	lappend choices $choice_id
     }
-
-    ns_db releasehandle $db
-
     return $choices
 
 } ;# poll_labels_internal
-
-
 
 # display the polls on the front page.
 # the 'polls' argument should be a tcl list of the form
@@ -94,8 +79,6 @@ ad_proc poll_front_page { { -item_start "<li>" -item_end "" -style_start "" -sty
 
 } ;# poll_front_page
 
-
-
 # choices is a list of the form
 #   choice_label choice_id choice_label choice_id ...
 
@@ -120,8 +103,6 @@ ad_proc poll_display { { -item_start "<br>" -item_end "" -style_start "" -style_
 
 } ;# poll_display
 
-
-
 ad_proc poll_results { { -bar_color "blue" -display_values_p "t" -display_scale_p "t" -bar_height "15" } results } "" {
 
     if { [llength $results] != 0 } {
@@ -136,7 +117,6 @@ ad_proc poll_results { { -bar_color "blue" -display_values_p "t" -display_scale_
 
 } ;# poll_results
 
-
 ##################################################################
 #
 # interface to the ad-user-contributions-summary.tcl system
@@ -147,33 +127,34 @@ if { ![info exists ad_user_contributions_summary_proc_list] || [util_search_list
     lappend ad_user_contributions_summary_proc_list [list "Poll Choices" poll_user_contributions 0]
 }
 
-proc_doc poll_user_contributions {db user_id purpose} {Returns list items, one for each answer; returns empty list for non-site-admin.} {
+proc_doc poll_user_contributions {user_id purpose} {Returns list items, one for each answer; returns empty list for non-site-admin.} {
     if { $purpose != "site_admin" } {
 	return [list]
     }
-    set selection [ns_db select $db "select 
+set items ""
+    db_foreach get_poll_contribs {
+	select 
   polls.poll_id, 
   polls.name as poll_name,
   pc.label as choice_name,
   puc.choice_date
 from polls, poll_choices pc, poll_user_choices puc
-where puc.user_id = $user_id
+where puc.user_id = :user_id
 and puc.choice_id = pc.choice_id
 and puc.poll_id = polls.poll_id
-order by choice_date asc"]
-
-    set items ""
-    while { [ns_db getrow $db $selection] } {
-	set_variables_after_query
-	append items "<li>[util_AnsiDatetoPrettyDate $choice_date]: <a href=\"/admin/poll/one-poll.tcl?[export_url_vars poll_id]\">$poll_name</a>; $choice_name\n"
-    }
-    if [empty_string_p $items] {
+order by choice_date asc
+    } {
+	append items "<li>[util_AnsiDatetoPrettyDate $choice_date]: <a href=\"/admin/poll/one-poll?[export_url_vars poll_id]\">$poll_name</a>; $choice_name\n"
+    } if_no_rows {
+   
 	return [list]
-    } else {
-	return [list 0 "Poll Choices" "<ul>\n\n$items\n\n</ul>"]
     }
+	return [list 0 "Poll Choices" "<ul>\n\n$items\n\n</ul>"]
+    
 }
 
 
-util_report_successful_library_load
+
+
+
 

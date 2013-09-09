@@ -1,7 +1,14 @@
-# $Id: clear.tcl,v 3.0 2000/02/06 03:21:24 ron Exp $
-ReturnHeaders
+#  www/admin/ecommerce/sales-tax/clear.tcl
+ad_page_contract {
 
-ns_write "[ad_admin_header "Clear Sales Tax Settings"]
+  @author
+  @creation-date
+  @cvs-id clear.tcl,v 3.1.6.3 2000/09/22 01:35:00 kevin Exp
+} {
+}
+
+
+doc_return  200 text/html  "[ad_admin_header "Clear Sales Tax Settings"]
 
 <h2>Clear Sales Tax Settings</h2>
 
@@ -11,7 +18,7 @@ ns_write "[ad_admin_header "Clear Sales Tax Settings"]
 
 Please confirm that you wish to clear all your sales tax settings.
 
-<form method=post action=clear-2.tcl>
+<form method=post action=clear-2>
 <center>
 <input type=submit value=\"Confirm\">
 </center>

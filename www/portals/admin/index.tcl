@@ -1,21 +1,18 @@
-#
-# /portals/admin/index.tcl
-#
-# Main index paage for the portals administration pages, which will redirect non-super-administrators
-# to index-manager.tcl
-#
-# by aure@arsdigita.com and dh@arsdigita.com
-#
-# Last modified: 10/8/1999
-#
-# $Id: index.tcl,v 3.2.2.1 2000/03/17 18:08:08 aure Exp $
-#
+# www/portals/admin/index.tcl
 
-set db [ns_db gethandle]
+ad_page_contract {
+    Main index paage for the portals administration pages, which will
+    redirect non-super-administrators to index-manager.tcl
+
+    @author Aure aure@arsdigita.com 
+    @author Dave Hill dh@arsdigita.com
+    @cvs-id index.tcl,v 3.4.2.6 2000/09/22 01:39:04 kevin Exp
+} {
+}
 
 # Verify user
 set user_id [ad_verify_and_get_user_id]
-portal_check_administrator_maybe_redirect $db $user_id "" index-manager
+portal_check_administrator_maybe_redirect $user_id "" index-manager
 
 # ---------------------------------------------------------------
 
@@ -24,7 +21,7 @@ portal_display_info
 
 # Create a display of portals and their administrators 
 
-set group_id_list [database_to_tcl_list $db "
+set group_id_list [db_list portals_index_group_list "
     select group_id 
     from   user_groups 
     where  group_type = 'portal_group' 
@@ -35,14 +32,14 @@ set portal_table ""
 foreach group_id $group_id_list {
 
     # get the name of the portal group
-    set group_name [database_to_tcl_string $db "
-        select group_name from user_groups where group_id=$group_id"]
+    set group_name [db_string portals_index_group_name "
+        select group_name from user_groups where group_id=:group_id"]
 
     # get a list of all authorized administrators
-    set admin_list [database_to_tcl_list $db "
+    set admin_list [db_list portals_index_admin_list "
         select first_names||' '||last_name as name 
         from   users
-        where  ad_group_member_p ( user_id, $group_id ) = 't'"]
+        where  ad_group_member_p ( user_id, :group_id ) = 't'"]
     
     # special case for super administrators  - they have no portal page and a super administrator
     # may or may not be able to edit the list of super administrators
@@ -68,12 +65,11 @@ foreach group_id $group_id_list {
     </tr>"
 } 
 
-
 # ------------------------------------------------------------
 
 # show a list of all tables in the portals
 
-set table_list [database_to_tcl_list_list $db "
+set table_list [db_list_of_lists portals_admin_index_table_list  "
     select   pt.table_name, pt.table_id, count(map.table_id)
     from     portal_tables pt, portal_table_page_map map
     where    pt.table_id = map.table_id(+)
@@ -91,10 +87,10 @@ foreach table_set $table_list {
 
     append table_table "
         <tr>
-        $normal_td [string toupper [portal_adp_parse $table_name $db]] ($count)</td>
+        $normal_td [string toupper [portal_adp_parse $table_name]] ($count)</td>
         $normal_td<a href=edit-table?[export_url_vars table_id]>Edit</a> /
         <a href=delete-table?[export_url_vars table_id]>Delete</a> / 
-        <a href=restore?[export_url_vars table_id]>Restore</a></td> 
+                    <a href=restore?[export_url_vars table_id]>View Versions</a></td> 
         </tr>"
     incr counter
 }
@@ -102,6 +98,9 @@ foreach table_set $table_list {
 if { $counter == 0 } {
     set table_table "<tr><td colspan=2>There are no html tables in the database.</td></tr>" 
 }
+
+# done with the database
+db_release_unused_handles
 
 # ---------------------------------------------------------
 # serve the page
@@ -145,19 +144,7 @@ $end_table
 
 [portal_admin_footer]"
 
-ns_return 200 text/html $page_content
-
-
-
-
-
-
-
-
-
-
-
-
+doc_return  200 text/html $page_content
 
 
 

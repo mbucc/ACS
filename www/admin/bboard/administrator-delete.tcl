@@ -1,13 +1,24 @@
-# $Id: administrator-delete.tcl,v 3.0.4.1 2000/04/28 15:08:24 carsten Exp $
-set_the_usual_form_variables
+# /www/admin/bboard/administrator-delete.tcl
+ad_page_contract {
+    Page to remove an administrator from a bboard topic
 
-# topic, topic_id, admin_group_id, user_id
+    @param topic the name of the bboard topic
+    @param topic_id the ID of the bboard topic
+    @param admin_group_id the ID of the group associated with the topic
+    @param user_id the ID of the user to remove
+} {
+    topic
+    topic_id:integer
+    admin_group_id:integer
+    user_id:integer
+}
 
-set db [ns_db gethandle]
+# -----------------------------------------------------------------------------
 
-ns_db dml $db "delete from user_group_map
-where user_id = $user_id
-and group_id = $admin_group_id"
+db_dml admin_delete "
+delete from user_group_map
+where  user_id  = :user_id
+and    group_id = :admin_group_id"
 
 ad_returnredirect "topic-administrators.tcl?[export_url_vars topic topic_id]"
 

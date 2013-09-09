@@ -1,9 +1,20 @@
-# $Id: picklist-item-delete-2.tcl,v 3.0.4.1 2000/04/28 15:08:40 carsten Exp $
-set_the_usual_form_variables
-# picklist_item_id
+# picklist-item-delete-2.tcl
 
-set db [ns_db gethandle]
+ad_page_contract {
+    @param picklist_item_id
+    @author
+    @creation-date
+    @cvs-id picklist-item-delete-2.tcl,v 3.1.6.4 2000/07/21 03:56:57 ron Exp
+} {
+    picklist_item_id
+}
 
-ns_db dml $db "delete from ec_picklist_items where picklist_item_id=$picklist_item_id"
 
+
+
+
+
+db_dml delete_item_from_picklist "delete from ec_picklist_items where picklist_item_id=:picklist_item_id"
+db_release_unused_handles
 ad_returnredirect "picklists.tcl"
+

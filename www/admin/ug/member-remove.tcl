@@ -1,12 +1,18 @@
-# $Id: member-remove.tcl,v 3.1 2000/02/26 07:29:11 markc Exp $
-set_the_usual_form_variables
-  
-# group_id, user_id, role
+ad_page_contract {
+    @param group_id the Id of the group
+    @param user_id the user_id to remove
+    @param role role of that user
 
-set db [ns_db gethandle]
+    @cvs-id member-remove.tcl,v 3.3.2.6 2000/09/22 01:36:16 kevin Exp
+} {
+    group_id:notnull,naturalnum
+    user_id:notnull,naturalnum
+    role:notnull
+}
 
 
-set selection [ns_db 0or1row  $db "
+
+if { [db_0or1row  get_user_info "
     select 
         first_names || ' ' || last_name as name, 
         group_name
@@ -15,18 +21,15 @@ set selection [ns_db 0or1row  $db "
         user_group_map, 
         user_groups 
     where 
-       users.user_id = $user_id
+       users.user_id = :user_id
        and user_group_map.user_id = users.user_id
        and user_groups.group_id = user_group_map.group_id
-       and user_group_map.group_id = $group_id and
-       user_group_map.role = '$role'
-"]
+       and user_group_map.group_id = :group_id and
+       user_group_map.role = :role
+"] == 0 } {
 
 
-ReturnHeaders 
-
-if { $selection == "" } {
-ns_write "
+doc_return  200 text/html  "
 [ad_admin_header "User could not be found in the specified role."]
 <h2>User could not be found in the specified role.</h2>
 <hr>
@@ -36,25 +39,25 @@ The user could not be removed from the role because he or she is no longer in it
 return
 
 }
-set_variables_after_query
 
-ns_write "[ad_admin_header "Really remove $name from the role \"$role?\""]
+
+doc_return  200 text/html "[ad_admin_header "Really remove $name from the role \"$role?\""]
 
 <h2>Remove $name from the role \"$role\"</h2>
 
-in <a href=\"group.tcl?[export_url_vars group_id]\">$group_name</a>
+in <a href=\"group?[export_url_vars group_id]\">$group_name</a>
 
 <hr>
 
 <center>
 <table>
 <tr><td>
-<form method=get action=\"group.tcl\">
+<form method=get action=\"group\">
 [export_form_vars group_id]
 <input type=submit name=submit value=\"No, Cancel\">
 </form>
 </td><td>
-<form method=get action=\"member-remove-2.tcl\">
+<form method=get action=\"member-remove-2\">
 [export_form_vars group_id user_id role]
 <input type=submit name=submit value=\"Yes, Proceed\">
 </form>

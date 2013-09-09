@@ -1,21 +1,26 @@
-# $Id: shopping-cart-save-2.tcl,v 3.0.4.1 2000/04/28 15:10:04 carsten Exp $
-# we need them to be logged in
+#  www/ecommerce/shopping-cart-save-2.tcl
+ad_page_contract {
+
+    @author
+    @creation-date
+    @cvs-id shopping-cart-save-2.tcl,v 3.1.6.6 2000/09/22 01:37:31 kevin Exp
+} {
+}
+
 set user_id [ad_verify_and_get_user_id]
 
 if {$user_id == 0} {
     
-    set return_url "[ns_conn url]"
+    set return_url "[ad_conn url]"
 
-    ad_returnredirect "/register.tcl?[export_url_vars return_url]"
+    ad_returnredirect "/register?[export_url_vars return_url]"
     return
 }
 
 set user_session_id [ec_get_user_session_id]
 
-set db [ns_db gethandle]
-
 if { $user_session_id == 0 } {
-    ns_return 200 text/html "[ad_header "No Cart Found"]<h2>No Shopping Cart Found</h2>
+    doc_return  200 text/html "[ad_header "No Cart Found"]<h2>No Shopping Cart Found</h2>
     <p>
     We could not find any shopping cart for you.  This may be because you have cookies 
     turned off on your browser.  Cookies are necessary in order to have a shopping cart
@@ -29,7 +34,7 @@ if { $user_session_id == 0 } {
 
     <p>
 
-    [ec_continue_shopping_options $db]
+    [ec_continue_shopping_options]
     "
     return
 }
@@ -38,9 +43,12 @@ if { $user_session_id == 0 } {
 # and remove the user_session_id so that they can't mess with their
 # saved order (until they retrieve it, of course)
 
-ns_db dml $db "update ec_orders set user_id=$user_id, user_session_id=null, saved_p='t'
-where user_session_id=$user_session_id and order_state='in_basket'"
+db_dml update_ec_orders "update ec_orders set user_id=:user_id, user_session_id=null, saved_p='t'
+where user_session_id=:user_session_id and order_state='in_basket'"
 
 # this should have only updated 1 row, or 0 if they reload, which is fine
+db_release_unused_handles
 
 ad_return_template
+
+

@@ -1,13 +1,19 @@
-# $Id: ecommerce-credit.tcl,v 3.1 2000/02/08 05:59:16 eveander Exp $
-## Procedures related to credit card transactions for the ecommerce module
-## Started April, 1999 by Eve Andersson (eveander@arsdigita.com)
-## Other ecommerce procedures can be found in ecommerce-*.tcl
+# /tcl/ecommerce-credit.tcl
+ad_library {
+
+    Procedures related to credit card transactions for the ecommerce module
+
+    @author Eve Andersson [eveander@arsdigita.com]
+    @date 1 April 1999
+    @cvs-id ecommerce-credit.tcl,v 3.3.2.3 2000/08/17 17:37:13 seb Exp
+
+}
 
 # If transaction_id is null, it tries to do an auth for the entire
 # order; otherwise it tries to do an auth for the tranaction_amount.
 # You can leave order_id blank if you're using a transaction_id
 # (useful for gift certificates).
-proc ec_creditcard_authorization { db order_id {transaction_id ""} } {
+proc ec_creditcard_authorization { order_id {transaction_id ""} } {
 
     # Gets info it needs from database.
     # Calls ec_talk_to_cybercash to authorize card (which in turn writes a line
@@ -27,17 +33,24 @@ proc ec_creditcard_authorization { db order_id {transaction_id ""} } {
     # order_id, and billing_zip_code shouldn't be null.
 
     if { [empty_string_p $transaction_id] } {
-	set total_amount [database_to_tcl_string $db "select ec_order_cost($order_id) from dual"]
-	set creditcard_id [database_to_tcl_string $db "select creditcard_id from ec_orders where order_id=$order_id"]
-	set youth [database_to_tcl_string $db "select decode(sign(sysdate-confirmed_date-.95),-1,1,0) as youth
-	from ec_orders
-	where order_id = $order_id"]
+
+	db_1row order_data_select {
+	    select ec_order_cost(:order_id) as total_amount,
+	           creditcard_id,
+	           decode(sign(sysdate - confirmed_date - .95), -1, 1, 0) as youth
+	      from ec_orders
+	     where order_id = :order_id
+	}
+
     } else {
-	set total_amount [database_to_tcl_string $db "select transaction_amount from ec_financial_transactions where transaction_id=$transaction_id"]
-	set creditcard_id [database_to_tcl_string $db "select creditcard_id from ec_financial_transactions where transaction_id=$transaction_id"]
-	set youth [database_to_tcl_string $db "select decode(sign(sysdate-inserted_date-.95),-1,1,0) as youth
-	from ec_financial_transactions
-	where transaction_id = $transaction_id"]
+
+	db_1row transaction_data_select {
+	    select transaction_amount as total_amount,
+	           creditcard_id,
+	           decode(sign(sysdate-inserted_date-.95),-1,1,0) as youth
+	    from ec_financial_transactions
+	    where transaction_id = :transaction_id
+	}
 
     }
 
@@ -62,19 +75,23 @@ proc ec_creditcard_authorization { db order_id {transaction_id ""} } {
     # determine whether the order was authorizable (which occurs after
     # 1 day of trying).
 
-    set selection [ns_db 0or1row $db "select creditcard_number, creditcard_expire,
-    billing_zip_code
-    from ec_creditcards
-    where creditcard_id=$creditcard_id"]
+    if {
+	![db_0or1row creditcard_data_select {
+	    select creditcard_number, creditcard_expire,
+	           billing_zip_code
+	      from ec_creditcards
+	     where creditcard_id = :creditcard_id
+	}]
+    } {
 
-    if { $selection == "" } {
 	set level "invalid_input"
+
     } else {
 	
-	set_variables_after_query
-
 	if { [empty_string_p $transaction_id] } {
-	    set transaction_id [database_to_tcl_string $db "select max(transaction_id) from ec_financial_transactions where order_id=$order_id"]
+	    set transaction_id [db_string latest_transaction_select {
+		select max(transaction_id) from ec_financial_transactions where order_id = :order_id
+	    }]
 	}
 
 	set cc_args [ns_set new]
@@ -165,7 +182,7 @@ proc ec_creditcard_authorization { db order_id {transaction_id ""} } {
     return $level
 }
 
-proc ec_creditcard_marking { db transaction_id } {
+proc ec_creditcard_marking { transaction_id } {
 
     ns_log Notice "begin ec_creditcard_marking on transaction $transaction_id"
 
@@ -195,7 +212,9 @@ proc ec_creditcard_marking { db transaction_id } {
     # Case (d) is not expected to occur.  This proc outputs "unknown"
     # if cases (a), (b) and (c) do not apply.
 
-    set transaction_amount [database_to_tcl_string_or_null $db "select transaction_amount from ec_financial_transactions where transaction_id=$transaction_id"]
+    set transaction_amount [db_string transaction_amount_select {
+	select transaction_amount from ec_financial_transactions where transaction_id = :transaction_id
+    } -default ""]
 
     if { [empty_string_p $transaction_amount] } {
 	ns_log Notice "Eve debug 1"
@@ -235,8 +254,7 @@ proc ec_creditcard_marking { db transaction_id } {
     return $mark_status
 }
 
-
-proc ec_creditcard_return { db transaction_id } {
+proc ec_creditcard_return { transaction_id } {
     # Calls ec_talk_to_cybercash to mark order for return (which in turn 
     # writes a line to the ec_cybercash_log table).
     # Outputs one of the following strings corresponding to whether or
@@ -262,15 +280,23 @@ proc ec_creditcard_return { db transaction_id } {
     # Case (d) is not expected to occur.  This proc outputs "unknown"
     # if cases (a), (b) and (c) do not apply.
 
-    set selection [ns_db 0or1row $db "select t.transaction_amount, c.creditcard_number, c.creditcard_expire, c.billing_zip_code
-    from ec_financial_transactions t, ec_creditcards c
-    where t.transaction_id = $transaction_id
-    and c.creditcard_id=t.creditcard_id"]
+    if {
+	![db_0or1row transaction_info_select {
+	    select t.transaction_amount,
+	           c.creditcard_number,
+	           c.creditcard_expire,
+	           c.billing_zip_code
+	      from ec_financial_transactions t,
+	           ec_creditcards c
+	     where t.transaction_id = :transaction_id
+	       and c.creditcard_id = t.creditcard_id
+	}]
+    } {
 
-    if { $selection == "" } {
 	set return_status "invalid_input"
+
     } else {
-	set_variables_after_query
+
     
 	if { $transaction_amount == 0 } {
 	    return "success"
@@ -312,7 +338,6 @@ proc_doc ec_get_from_quasi_form {quasi_form key} "CyberCash sometimes gives us a
 	return ""
     }
 }
-
 
 proc_doc ec_talk_to_cybercash { txn_attempted_type cc_args } "This procedure talks to CyberCash to do whatever transaction is specified, adds a row to the ec_cybercash_log table, and returns all of CyberCash's output in an ns_set" {
 
@@ -369,6 +394,51 @@ proc_doc ec_talk_to_cybercash { txn_attempted_type cc_args } "This procedure tal
 	regsub -all {[^0-9\.]} $smart_amount "" smart_amount
 	
 	ns_set update $cc_args "amount" "$currency [format "%0.2f" $smart_amount]"
+    }
+
+    if { ![ec_use_cybercash_p] } {
+	# ignore cybercash and assume success on any operation
+	# This will hold what this proc (ec_talk_to_cybercash) outputs
+	set ttcc_output [ns_set new]
+
+	ns_set put $ttcc_output "txn_status" "success"
+	ns_set put $ttcc_output "errloc" ""
+	ns_set put $ttcc_output "errmsg" ""
+	ns_set put $ttcc_output "merch_txn" ""
+	ns_set put $ttcc_output "cust_txn" ""
+	ns_set put $ttcc_output "aux_msg" ""
+	ns_set put $ttcc_output "auth_code" ""
+	ns_set put $ttcc_output "action_code" ""
+	ns_set put $ttcc_output "avs_code" "A"
+	ns_set put $ttcc_output "ref_code" ""
+
+	# Figure out what to stick into txn_type
+	if { $txn_attempted_type == "mauthonly" } {
+	    set txn_type "auth"
+	} elseif { $txn_attempted_type == "postauth" } {
+	    set txn_type "postauth"
+	} elseif { $txn_attempted_type == "return" } {
+	    set txn_type "markret"
+	} elseif { $txn_attempted_type == "void" && [ns_set get $cc_args "txn-type"] == "marked" } {
+	    set txn_type "voidmark"
+	} elseif { $txn_attempted_type == "void" && [ns_set get $cc_args "txn-type"] == "markret" } {
+	    set txn_type "voidreturn"
+	} elseif { $txn_attempted_type == "retry" && [ns_set get $cc_args "txn-type"] == "auth" } {
+	    set txn_type "auth"
+	} elseif { $txn_attempted_type == "retry" && [ns_set get $cc_args "txn-type"] == "postauth" } {
+	    set txn_type "marked"
+	} elseif { $txn_attempted_type == "retry" && [ns_set get $cc_args "txn-type"] == "return" } {
+	    set txn_type "markret"
+	} elseif { $txn_attempted_type == "retry" && [ns_set get $cc_args "txn-type"] == "voidmark" } {
+	    set txn_type "voidmark"
+	} elseif { $txn_attempted_type == "retry" && [ns_set get $cc_args "txn-type"] == "voidreturn" } {
+	    set txn_type "voidreturn"
+	} else {
+	    set txn_type "unknown"
+	}
+
+	ns_set put $ttcc_output "txn_type" $txn_type
+	return $ttcc_output
     }
 
     # This will hold what CyberCash outputs
@@ -481,20 +551,34 @@ proc_doc ec_talk_to_cybercash { txn_attempted_type cc_args } "This procedure tal
     }
 	
     # Add a row to cybercash_log
-    set db [ns_db gethandle subquery]
 
+    set bind_vars [ad_tcl_list_list_to_ns_set [list \
+						   [list transaction_id [ns_set get $cc_args "order-id"]] \
+						   [list txn_attempted_type $txn_attempted_type] \
+						   [list txn_type [ns_set get $ttcc_output "txn_type"]] \
+						   [list cc_time [ns_set get $ttcc_output "cc_time"]] \
+						   [list merch_txn [ns_set get $ttcc_output "merch_txn"]] \
+						   [list cust_txn [ns_set get $ttcc_output "cust_txn"]] \
+						   [list origin [ns_set get $ttcc_output "origin"]] \
+						   [list txn_status [ns_set get $ttcc_output "txn_status"]] \
+						   [list errloc	[ns_set get $ttcc_output "errloc"]] \
+						   [list errmsg	[ns_set get $ttcc_output "errmsg"]] \
+						   [list aux_msg [ns_set get $ttcc_output "aux_msg"]] \
+						   [list auth_code [ns_set get $ttcc_output "auth_code"]] \
+						   [list action_code [ns_set get $ttcc_output "action_code"]] \
+						   [list avs_code [ns_set get $ttcc_output "avs_code"]] \
+						   [list ref_code [ns_set get $ttcc_output "ref_code"]] \
+						   [list batch_id [ns_set get $ttcc_output "batch_id"]] \
+						   [list amount [ns_set get $ttcc_output "amount"]]]]
 
-    ns_db dml $db "insert into ec_cybercash_log
-    (transaction_id, txn_attempted_time, txn_attempted_type, txn_type, cc_time, merch_txn, cust_txn, origin, txn_status, errloc, errmsg, aux_msg, auth_code, action_code, avs_code, ref_code, batch_id, amount)    
-    values
-    ([ns_set get $cc_args "order-id"], sysdate, '[DoubleApos $txn_attempted_type]', '[DoubleApos [ns_set get $ttcc_output "txn_type"]]', to_date('[ns_set get $ttcc_output "cc_time"]','YYYYMMDDHH24MISS'), '[DoubleApos [ns_set get $ttcc_output "merch_txn"]]', '[DoubleApos [ns_set get $ttcc_output "cust_txn"]]', '[DoubleApos [ns_set get $ttcc_output "origin"]]', '[DoubleApos [ns_set get $ttcc_output "txn_status"]]', '[DoubleApos [ns_set get $ttcc_output "errloc"]]', '[DoubleApos [ns_set get $ttcc_output "errmsg"]]', '[DoubleApos [ns_set get $ttcc_output "aux_msg"]]', '[DoubleApos [ns_set get $ttcc_output "auth_code"]]', '[DoubleApos [ns_set get $ttcc_output "action_code"]]', '[DoubleApos [ns_set get $ttcc_output "avs_code"]]', '[DoubleApos [ns_set get $ttcc_output "ref_code"]]', '[DoubleApos [ns_set get $ttcc_output "batch_id"]]', '[DoubleApos [ns_set get $ttcc_output "amount"]]') "
-    
-    ns_db releasehandle $db
-	
+    db_dml cybercash_log_insert "
+	insert into ec_cybercash_log ([join [ad_ns_set_keys -exclude "cc_time" $bind_vars] ", "], cc_time, txn_attempted_time)
+        values ([join [ad_ns_set_keys -exclude "cc_time" -colon $bind_vars] ", "], to_date(:cc_time, 'YYYYMMDDHH24MISS'), sysdate)
+    " -bind $bind_vars
+
     # Finally, return the ns_set
     return $ttcc_output
 }
-
 
 proc_doc ec_avs_acceptable_p {avs_code_from_cybercash} "Returns 1 if the AVS code is acceptable (implying that the consumer address sufficiently matches the creditor's records), or 0 otherwise" {
     set acceptable_codes [list A W X Y Z]
@@ -506,9 +590,10 @@ proc_doc ec_avs_acceptable_p {avs_code_from_cybercash} "Returns 1 if the AVS cod
     }
 }
 
-
-proc_doc ec_date_to_cybercash_date_for_query { db the_date n_hours_to_add } "turns date in the format YYYY-MM-DD HH24:MI:SS into CyberCash's format yyyymmddhhmmss with n_hours_to_add hours added because CyberCash uses GMT" {
-    return [database_to_tcl_string $db "select to_char($n_hours_to_add/24 + to_date('$the_date', 'YYYY-MM-DD HH24:MI:SS'), 'YYYYMMDDHH24MISS') from dual"]
+proc_doc ec_date_to_cybercash_date_for_query { the_date n_hours_to_add } "turns date in the format YYYY-MM-DD HH24:MI:SS into CyberCash's format yyyymmddhhmmss with n_hours_to_add hours added because CyberCash uses GMT" {
+    return [db_string cybercash_date_create {
+	select to_char(:n_hours_to_add / 24 + to_date(:the_date, 'YYYY-MM-DD HH24:MI:SS'), 'YYYYMMDDHH24MISS') from dual
+    }]
 }
 
 # If you're going to accept cards other than MasterCard, Visa, or
@@ -574,11 +659,6 @@ proc ec_creditcard_precheck { creditcard_number creditcard_type } {
     }
     return [list $exception_count $exception_text]
 }
-
-
-
-
-
 
 # This procedure, originally called valCC, by Horace Vallas was
 # found at http://www.hav.com/valCC/nph-src.htm?valCC.nws

@@ -1,13 +1,11 @@
-#
 # /admin/file-storage/info.tcl
-#
-# by aure@arsdigita.com, July 1999
-#
-# $Id: info.tcl,v 3.1.2.9 2000/04/28 15:09:00 carsten Exp $
-#
 
-ad_page_variables {
-    {file_id}
+ad_page_contract {
+    @author aure@arsdigita.com
+    @creation-date July 1999
+    @cvs-id info.tcl,v 3.6.2.4 2000/09/22 01:35:15 kevin Exp
+} {
+    file_id:integer
     {group_id ""}
     {owner_id ""}
 }
@@ -15,15 +13,12 @@ ad_page_variables {
 set return_url "info?[ns_conn query]"
 set graphic "<img border=0 src=/graphics/file-storage/ftv2doc.gif align=top>"
 
-set db [ns_db gethandle]
-
 set exception_text ""
 set exception_count 0
 
 if {![info exists file_id] || [empty_string_p $file_id] } {
     ad_returnredirect ""
 }
-
 
 set file_info_query "
 select count(fs_versions.version_id) as n_versions, 
@@ -48,15 +43,11 @@ and    f1.file_id = fs_versions.file_id
 and    f1.owner_id=users.user_id
 group by f1.file_title, f2.file_title, f1.folder_p, f1.parent_id, fs_versions_latest.url, first_names, last_name, f1.public_p"
 
-
-set selection [ns_db 0or1row $db $file_info_query]
-if [empty_string_p $selection] {
+if { [db_0or1row file_list $file_info_query]==0 } {
     ad_return_error "File not found" "Could not find file $file_id; it may have been deleted.
 <pre>$file_info_query</pre>"
     return
 }
- 
-set_variables_after_query
 
 if {$folder_p=="t"} {
     set object_type "Folder"
@@ -65,7 +56,7 @@ if {$folder_p=="t"} {
 }
 
 if { [info exists group_id] && ![empty_string_p $group_id]} {
-    set group_name [database_to_tcl_string $db "
+    set group_name [db_string unused "
     select group_name 
     from   user_groups 
     where  group_id=$group_id"]
@@ -79,14 +70,11 @@ if { [info exists group_id] && ![empty_string_p $group_id]} {
     }
 }
 
-
 set title "$file_title"
 
 if {[empty_string_p $parent_title]} {
     set parent_title "Root (Top Level)"
 }
-
-
 
 # the navbar is determined by where they just came from
 if ![info exists source] {
@@ -119,7 +107,6 @@ switch $source {
     }
 }
 
-
 set page_content  "
 
 [ad_header $title ]
@@ -141,8 +128,7 @@ $navbar
 set version_html ""
 set version_count 0
 
-
-
+set bind_vars [ad_tcl_vars_to_ns_set file_id]
 
 set sql_query "
     select version_id, 
@@ -155,7 +141,7 @@ set sql_query "
            author_id
     from   fs_versions, 
            users
-    where  file_id = $file_id
+    where  file_id = :file_id
     and    author_id=users.user_id
     and    fs_versions.file_id = file_id
     order by pretty_creation_date desc"
@@ -184,15 +170,12 @@ if [empty_string_p $url] {
         <td bgcolor=$header_color>$font &nbsp</td>
         </tr>" 
 
-    set selection [ns_db select $db $sql_query]
-
     # URL vars for /gp/administer-permissions
     #
     set on_which_table FS_VERSIONS
     set return_url "[ns_conn url]?[ns_conn query]"
 
-    while {[ns_db getrow $db $selection]} {
-        set_variables_after_query
+    db_foreach table_columns $sql_query -bind $bind_vars {
 	incr version_count
 	set page_name "$file_title: version [expr $n_versions - $version_count + 1]"
 
@@ -212,13 +195,13 @@ if [empty_string_p $url] {
 	set on_what_id $version_id
 
 	append version_html "
-	    <td><nobr>&nbsp; <a href=/shared/community-member?user_id=$author_id>$creator_name</a> &nbsp;</td>
+	    <td><nobr>&nbsp; <a href=/admin/users/one?user_id=$author_id>$creator_name</a> &nbsp;</td>
 	    <td align=right>$font &nbsp; $n_kbytes  &nbsp;</td>
 	    <td>$font &nbsp; [fs_pretty_file_type $file_type] &nbsp;</td>
 	    <td>$font &nbsp; $pretty_creation_date &nbsp;</td>
 	    <td>$font $version_description &nbsp;</td>
 	    <td align=center>$font <a href=\"/gp/administer-permissions?[export_url_vars on_which_table on_what_id object_name return_url]\">View</a></td>
-	    <td align=center>$font <a href=\"version-delete?file_id=$file_id&version_id=$version_id&return_url=[ns_urlencode return_url]\">Delete</a> &nbsp;</td>
+	    <td align=center>$font <a href=\"version-delete?file_id=$file_id&version_id=$version_id&return_url=[ns_urlencode $return_url]\">Delete</a> &nbsp;</td>
 	    </tr>\n"
     }
 
@@ -237,10 +220,9 @@ append page_content "</td></tr></table></blockquote>
 
 # release the database handle
 
-ns_db releasehandle $db
+db_release_unused_handles
 
-# serve the page
+# and serve the page
 
-ns_return 200 text/html $page_content
-
+doc_return  200 text/html $page_content
 

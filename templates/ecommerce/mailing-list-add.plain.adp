@@ -8,7 +8,7 @@ We think that you are <%= $user_name %>.  If not, please <a href="<%= $register_
 
 <p>
 
-<form method=post action="mailing-list-add-2.tcl">
+<form method=post action="mailing-list-add-2">
 <%= $hidden_form_variables %>
 
 <center>

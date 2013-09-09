@@ -1,21 +1,38 @@
-# $Id: email-changed-password.tcl,v 3.0.4.1 2000/04/28 15:09:37 carsten Exp $
-# email-changed-password.tcl
-#
-# hqm@arsdigita.com
-#
-# form vars: user_id, password
-#
-# emails the user their new password
+#email-changed-password.tcl
+
+ad_page_contract {
+    emails the user their new password
+  
+    @param user_id
+    @param password
+    @author hqm@arsdigita.com
+    @creation-date ?
+    @cvs-id email-changed-password.tcl,v 3.2.2.3.2.4 2000/09/13 16:46:41 lars Exp
+
+} {
+    user_id:integer,notnull
+    password:notnull
+}
 
 
-set_the_usual_form_variables
+db_1row user_email_password "select email, password from users where user_id = :user_id"
 
-set db [ns_db gethandle]
+ns_sendmail  "$email" "[ad_parameter NewRegistrationEmailAddress "" [ad_parameter SystemOwner]]" "Your password for [ad_system_name] has been changed" "Your password for [ad_system_name] ([ad_parameter SystemURL]) has been changed. 
 
-set selection [ns_db 1row $db  "select email, password from users where user_id = $user_id"]
+Here's how you can now log in:
 
-set_variables_after_query
+Username:  $email
+Password:  $password
 
-ns_sendmail  "$email" "[ad_parameter NewRegistrationEmailAddress]" "Your password for [ad_system_name] has been changed" "Your password for [ad_system_name] ([ad_parameter SystemURL]) has been changed. Your new password is $password."
+Please come back to [ad_parameter SystemURL]/register/ to log in with your new password.
+
+Thanks,
+[ad_system_name] Administration
+"
+
+db_release_unused_handles
 
 ad_returnredirect "one.tcl?[export_url_vars user_id]"
+
+
+

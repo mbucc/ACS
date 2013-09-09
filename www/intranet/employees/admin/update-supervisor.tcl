@@ -1,4 +1,4 @@
-# $Id: update-supervisor.tcl,v 3.2.2.1 2000/03/17 07:26:11 mbryzek Exp $
+# update-supervisor.tcl,v 3.10.2.8 2000/09/22 01:38:35 kevin Exp
 #
 # File: /www/intranet/employees/admin/update-supervisor.tcl
 #
@@ -6,41 +6,47 @@
 #
 # present employee's current supervisor and options to update it
 # 
+# /www/intranet/employees/admin/update-supervisor.tcl
 
-set db [ns_db gethandle]
+ad_page_contract {
 
-set_the_usual_form_variables
-# user_id
+    
+
+    @author mbryzek@arsdigita.com
+    @creation-date Jan 2000
+    @cvs-id update-supervisor.tcl,v 3.10.2.8 2000/09/22 01:38:35 kevin Exp
+    @param user_id The user to update
+    @param return_url The url we return to
+} {
+    user_id
+    { return_url "" }
+}
+
+
 set caller_user_id $user_id
 
 # get information about employee and current supervisor
 
-set selection [ns_db 0or1row $db "
+db_0or1row getuserinfo "
 select 
-  u.first_names, 
-  u.last_name, 
-  u.email, 
-  info.*, 
+  info.*,
   supervisors.user_id as supervisor_user_id, 
   supervisors.first_names || ' ' || supervisors.last_name as supervisor_name
-from users u, im_employee_info info, users supervisors
-where u.user_id = $caller_user_id
-and u.user_id = info.user_id(+)
-and info.supervisor_id = supervisors.user_id(+)"]
+from im_employees_active info, users supervisors
+where info.user_id = :caller_user_id
+and info.supervisor_id = supervisors.user_id(+)"
 
-if { [empty_string_p $selection] } {
+if { ![info exists head_of_household_p] } {
     ad_return_error "Error" "That user doesn't exist"
     return
 }
 
-set_variables_after_query
 
 set page_title "Update supervisor for $first_names $last_name"
-set context_bar [ad_context_bar [list "/" Home] [list "../../" "Intranet"] [list "view.tcl?user_id=$caller_user_id" "Employee information"] "Update Supervisor"]
+set context_bar [ad_context_bar_ws [list "view?user_id=$caller_user_id" "Employee information"] "Update Supervisor"]
 
-ReturnHeaders
-ns_write "
-[ad_partner_header]
+set page_body "
+[im_header]
 Name:  $first_names $last_name (<a href=\"mailto:$email\">$email</a>)
 
 <blockquote>
@@ -49,27 +55,28 @@ Name:  $first_names $last_name (<a href=\"mailto:$email\">$email</a>)
 "
 
 if [empty_string_p $supervisor_user_id] {
-    ns_write "<i>This employee currently has no supervisor!  I hope this is the CEO.</i>\n<P>\n\n"
+    append page_body "<i>This employee currently has no supervisor!  I hope this is the CEO.</i>\n<P>\n\n"
 }
 
-set sql "select u.last_name || ', ' || u.first_names as name, u.user_id
-from users u, im_employee_info info
-where u.user_id <> $caller_user_id
-and u.user_id = info.user_id(+)
-and ad_group_member_p ( u.user_id, [im_employee_group_id] ) = 't'
+set sql "select u.user_id, u.last_name || ', ' || u.first_names as name
+from im_employees_active u
+where u.user_id <> :caller_user_id
 order by upper(u.last_name)"
 
-
-ns_write "
-<form method=get action=update-supervisor-2.tcl>
-<input type=hidden name=dp.im_employee_info.user_id value=\"$caller_user_id\">
+append page_body "
+<form method=get action=update-supervisor-2>
+[export_form_vars return_url]
+<input type=hidden name=user_id value=\"$caller_user_id\">
 <select name=dp.im_employee_info.supervisor_id>
 <option value=\"\"> None
-[ad_db_optionlist $db $sql $supervisor_user_id]
+[db_html_select_value_options -select_option $supervisor_user_id supselectbox $sql]
 </select>
 
 <input type=submit value=\"Update\">
 </form>
 </blockquote>
-[ad_partner_footer]
+[im_footer]
 "
+
+
+doc_return  200 text/html $page_body

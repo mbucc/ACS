@@ -1,29 +1,56 @@
-# $Id: gift-certificate-finalize-order.tcl,v 3.1.2.2 2000/04/28 15:10:00 carsten Exp $
-# sorry, no ADP template for this page; too many "if statements"
+#  www/ecommerce/gift-certificate-finalize-order.tcl
+ad_page_contract {
 
-set_the_usual_form_variables
-# gift_certificate_id, certificate_to, certificate_from, certificate_message, amount, recipient_email,
-# creditcard_number, creditcard_type, creditcard_expire_1,
-# creditcard_expire_2, billing_zip_code
+ this script will:
+ (1) put this order into the 'confirmed' state
+ (2) try to authorize the user's credit card info and either
+     (a) redirect them to a thank you page, or
+     (b) redirect them to a "please fix your credit card info" page
+ If they reload, we don't have to worry about the credit card
+ authorization code being executed twice because the order has
+ already been moved to the 'confirmed' state, which means that
+ they will be redirected out of this page.
+ We will redirect them to the thank you page which displays the
+ order with the most recent confirmation date.
+ The only potential problem is that maybe the first time the
+ order got to this page it was confirmed but then execution of
+ the page stopped before authorization of the order could occur.
+ This problem is solved by the scheduled procedure,
+ ec_query_for_cybercash_zombies, which will try to authorize
+ any 'confirmed' orders over half an hour old.
 
-# this script will:
-# (1) put this order into the 'confirmed' state
-# (2) try to authorize the user's credit card info and either
-#     (a) redirect them to a thank you page, or
-#     (b) redirect them to a "please fix your credit card info" page
+    @param gift_certificate_id
+    @param certificate_to
+    @param certificate_from
+    @param certificate_message
+    @param amount
+    @param recipient_email
+    
+    @param creditcard_number
+    @param creditcard_type
+    @param creditcard_expire_1
+    
+    @param creditcard_expire_2
+    @param billing_zip_code
 
-# If they reload, we don't have to worry about the credit card
-# authorization code being executed twice because the order has
-# already been moved to the 'confirmed' state, which means that
-# they will be redirected out of this page.
-# We will redirect them to the thank you page which displays the
-# order with the most recent confirmation date.
-# The only potential problem is that maybe the first time the
-# order got to this page it was confirmed but then execution of
-# the page stopped before authorization of the order could occur.
-# This problem is solved by the scheduled procedure,
-# ec_query_for_cybercash_zombies, which will try to authorize
-# any 'confirmed' orders over half an hour old.
+    @author
+    @creation-date
+    @cvs-id gift-certificate-finalize-order.tcl,v 3.4.6.8 2001/01/12 19:47:51 khy Exp
+} {
+    gift_certificate_id:naturalnum,notnull,verify
+    certificate_to
+    certificate_from
+    certificate_message
+    amount:notnull
+    recipient_email:notnull
+    
+    creditcard_number:notnull
+    creditcard_type:notnull
+    creditcard_expire_1:notnull
+    
+    creditcard_expire_2:notnull
+    billing_zip_code:notnull
+}
 
 ec_redirect_to_https_if_possible_and_necessary
 
@@ -32,9 +59,9 @@ set user_id [ad_verify_and_get_user_id]
 
 if {$user_id == 0} {
     
-    set return_url "[ns_conn url]?[export_entire_form_as_url_vars]"
+    set return_url "[ad_conn url]?[export_entire_form_as_url_vars]"
 
-    ad_returnredirect "/register.tcl?[export_url_vars return_url]"
+    ad_returnredirect "/register?[export_url_vars return_url]"
     return
 }
 
@@ -58,10 +85,7 @@ if { [string length $certificate_message] > 200 } {
     append exception_text "<li>The recipient email address you entered is too long.  It needs to contain fewer than 100 characters (the current length is [string length $recipient_email] characters)."
 }
 
-if { [empty_string_p $amount] } {
-    incr exception_count
-    append exception_text "<li>You forgot to enter the amount of the gift certificate."
-} elseif { [regexp {[^0-9]} $amount] } {
+if { [regexp {[^0-9]} $amount] } {
     incr exception_count
     append exception_text "<li>The amount needs to be a number with no special characters."
 } elseif { $amount < [ad_parameter MinGiftCertificateAmount ecommerce] } {
@@ -72,10 +96,7 @@ if { [empty_string_p $amount] } {
     append exception_text "<li>The amount cannot be higher than [ec_pretty_price [ad_parameter MaxGiftCertificateAmount ecommerce]]"
 }
 
-if { [empty_string_p $recipient_email] } {
-    incr exception_count
-    append exception_text "<li>You forgot to specify the recipient's email address (we need it so we can send them their gift certificate!)"
-} elseif {![philg_email_valid_p $recipient_email]} {
+if {![philg_email_valid_p $recipient_email]} {
     incr exception_count
     append exception_text "<li>The recipient's email address that you typed doesn't look right to us.  Examples of valid email addresses are 
 <ul>
@@ -92,11 +113,6 @@ if { [regexp {[^0-9]} $creditcard_number] } {
     append exception_text "<li> Your credit card number contains invalid characters."
 }
 
-if { ![info exists creditcard_type] || [empty_string_p $creditcard_type] } {
-    incr exception_count
-    append exception_text "<li> You forgot to enter your credit card type."
-}
-
 # make sure the credit card type is right & that it has the right number
 # of digits
 # set additional_count_and_text [ec_creditcard_precheck $creditcard_number $creditcard_type]
@@ -104,33 +120,26 @@ if { ![info exists creditcard_type] || [empty_string_p $creditcard_type] } {
 # set exception_count [expr $exception_count + [lindex $additional_count_and_text 0]]
 # append exception_text [lindex $additional_count_and_text 1]
 
-if { ![info exists creditcard_expire_1] || [empty_string_p $creditcard_expire_1] || ![info exists creditcard_expire_2] || [empty_string_p $creditcard_expire_2] } {
-    incr exception_count
-    append exception_text "<li> Please enter your full credit card expiration date (month and year)"
-}
-
 if { $exception_count > 0 } {
     ad_return_complaint $exception_count $exception_text
     return
 }
 
 if { [empty_string_p $gift_certificate_id] } {
-    ad_returnredirect "gift-certificate-order-4.tcl?[export_entire_form_as_url_vars]"
+    ad_returnredirect "gift-certificate-order-4?[export_entire_form_as_url_vars]"
     return
 }
 
 # user session tracking
 set user_session_id [ec_get_user_session_id]
 
-set db [ns_db gethandle]
-
 ec_log_user_as_user_id_for_this_session
 
 # doubleclick protection
-if { [database_to_tcl_string $db "select count(*) from ec_gift_certificates where gift_certificate_id=$gift_certificate_id"] > 0 } {
+if { [db_string get_gift_c_id "select count(*) from ec_gift_certificates where gift_certificate_id=:gift_certificate_id"] > 0 } {
 
     # query the status of the gift certificate in the database
-    set gift_certificate_state [database_to_tcl_string $db "select gift_certificate_state from ec_gift_certificates where gift_certificate_id=$gift_certificate_id"]
+    set gift_certificate_state [db_string get_gift_c_status "select gift_certificate_state from ec_gift_certificates where gift_certificate_id=:gift_certificate_id"]
 
     if { $gift_certificate_state == "authorized_plus_avs" || $gift_certificate_state == "authorized_minus_avs" } {
 	set cybercash_status "success-reload"
@@ -139,10 +148,10 @@ if { [database_to_tcl_string $db "select count(*) from ec_gift_certificates wher
     } elseif { $gift_certificate_state == "confirmed" } {
 	set cybercash_status "unknown-reload"
     } else {
-	ns_db dml $db "insert into ec_problems_log
+	db_dml report_gc_error_into_log "insert into ec_problems_log
 	(problem_id, problem_date, problem_details, gift_certificate_id)
 	values
-	(ec_problem_id_sequence.nextval, sysdate, 'Customer pushed reload on gift-certificate-finalize-order.tcl but gift_certificate_state wasn't authorized_plus_avs, authorized_minus_avs, failed_authorization, or confirmed',$gift_certificate_id)
+	(ec_problem_id_sequence.nextval, sysdate, 'Customer pushed reload on gift-certificate-finalize-order.tcl but gift_certificate_state wasn't authorized_plus_avs, authorized_minus_avs, failed_authorization, or confirmed',:gift_certificate_id)
 	"
 
 	ad_return_error "Unexpected Result" "We received an unexpected result when querying for the status of your gift certificate.  This problem has been logged.  However, it would be helpful if you could email <a href=\"mailto:[ad_system_owner]\">[ad_system_owner]</a> with the events that led up to this occurrence.  We apologize for this problem and we will correct it as soon as we can."
@@ -155,14 +164,18 @@ if { [database_to_tcl_string $db "select count(*) from ec_gift_certificates wher
     # put in the transaction
     # try to auth transaction
     
-    ns_db dml $db "begin transaction"
+    db_transaction {
     
-    set creditcard_id [database_to_tcl_string $db "select ec_creditcard_id_sequence.nextval from dual"]
-    
-    ns_db dml $db "insert into ec_creditcards
+    set creditcard_id [db_string get_cc_id "select ec_creditcard_id_sequence.nextval from dual"]
+
+
+    set ccstuff_1 "[string range $creditcard_number [expr [string length $creditcard_number] -4] [expr [string length $creditcard_number] -1]]"
+    set expiry "$creditcard_expire_1/$creditcard_expire_2"
+
+db_dml get_ec_credit_card "insert into ec_creditcards
     (creditcard_id, user_id, creditcard_number, creditcard_last_four, creditcard_type, creditcard_expire, billing_zip_code)
     values
-    ($creditcard_id, $user_id, '$creditcard_number', '[string range $creditcard_number [expr [string length $creditcard_number] -4] [expr [string length $creditcard_number] -1]]', '[DoubleApos $creditcard_type]','$creditcard_expire_1/$creditcard_expire_2','[DoubleApos $billing_zip_code]')
+    (:creditcard_id, :user_id, :creditcard_number, :ccstuff_1, :creditcard_type,:expiry,:billing_zip_code)
     "
     
     # claim check is generated as follows:
@@ -186,21 +199,23 @@ if { [database_to_tcl_string $db "select count(*) from ec_gift_certificates wher
     set claim_check "$username-$random_string-$gift_certificate_id"
 
 
-    ns_db dml $db "insert into ec_gift_certificates
+    set peeraddr [ns_conn peeraddr]
+    set gc_months [ad_parameter GiftCertificateMonths ecommerce]
+    db_dml insert_new_gc_into_db  "insert into ec_gift_certificates
     (gift_certificate_id, gift_certificate_state, amount, issue_date, purchased_by, expires, claim_check, certificate_message, certificate_to, certificate_from, recipient_email, last_modified, last_modifying_user, modified_ip_address)
     values
-    ($gift_certificate_id, 'confirmed', $amount, sysdate, $user_id, add_months(sysdate,[ad_parameter GiftCertificateMonths ecommerce]), '[DoubleApos $claim_check]', '[DoubleApos $certificate_message]', '[DoubleApos $certificate_to]', '[DoubleApos $certificate_from]', '[DoubleApos [string trim $recipient_email]]', sysdate, $user_id, '[DoubleApos [ns_conn peeraddr]]')
+    (:gift_certificate_id, 'confirmed', :amount, sysdate, :user_id, add_months(sysdate,:gc_months),:claim_check, :certificate_message, :certificate_to, :certificate_from, :recipient_email, sysdate, :user_id, :peeraddr)
     "
     
-    set transaction_id [database_to_tcl_string $db "select ec_transaction_id_sequence.nextval from dual"]
+    set transaction_id [db_string get_transaction_id "select ec_transaction_id_sequence.nextval from dual"]
     
-    ns_db dml $db "insert into ec_financial_transactions
+    db_dml insert_ec_financial_trans "insert into ec_financial_transactions
     (transaction_id, gift_certificate_id, creditcard_id, transaction_amount, transaction_type, inserted_date)
     values
-    ($transaction_id, $gift_certificate_id, $creditcard_id, $amount, 'charge', sysdate)
+    (:transaction_id, :gift_certificate_id, :creditcard_id, :amount, 'charge', sysdate)
     "
     
-    ns_db dml $db "end transaction"
+    }
     
     # try to authorize the transaction
     set cc_args [ns_set new]
@@ -271,15 +286,15 @@ if { $cybercash_status == "success" || $cybercash_status == "success-reload" } {
 	
 	# update transaction and gift certificate to authorized
 	# setting to_be_captured_p to 't' will cause ec_unmarked_transactions to come along and mark it for capture
-	ns_db dml $db "update ec_financial_transactions set authorized_date=sysdate, to_be_captured_p='t' where transaction_id=$transaction_id"
-	ns_db dml $db "update ec_gift_certificates set authorized_date=sysdate, gift_certificate_state='$cc_result' where gift_certificate_id=$gift_certificate_id"
+	db_dml update_ft_set_status "update ec_financial_transactions set authorized_date=sysdate, to_be_captured_p='t' where transaction_id=:transaction_id"
+	db_dml upate_ec_gc_status "update ec_gift_certificates set authorized_date=sysdate, gift_certificate_state=:cc_result where gift_certificate_id=:gift_certificate_id"
 	
 	# send gift certificate order email
 	ec_email_new_gift_certificate_order $gift_certificate_id
     }
 
     # give them a thank you page
-    ad_returnredirect "gift-certificate-thank-you.tcl"
+    ad_returnredirect "gift-certificate-thank-you"
     return
     
 } elseif { $cybercash_status == "failure" || $cybercash_status == "failure-reload" } {
@@ -289,21 +304,21 @@ if { $cybercash_status == "success" || $cybercash_status == "success-reload" } {
 	# distinguish between null and 'f' right now, but it doesn't hurt and it might alleviate
 	# someone's concern when they're looking at ec_financial_transactions and wondering
 	# whether they should be concerned that failed_p is 't'
-	ns_db dml $db "update ec_financial_transactions set failed_p='t', to_be_captured_p='f' where transaction_id=$transaction_id"
-	ns_db dml $db "update ec_gift_certificates set gift_certificate_state='failed_authorization' where gift_certificate_id=$gift_certificate_id"
+	db_dml set_ft_failure "update ec_financial_transactions set failed_p='t', to_be_captured_p='f' where transaction_id=:transaction_id"
+	db_dml set_gc_failure "update ec_gift_certificates set gift_certificate_state='failed_authorization' where gift_certificate_id=:gift_certificate_id"
     }
 
     # give them a gift_certificate_id and a new form
-    set gift_certificate_id [database_to_tcl_string $db "select ec_gift_cert_id_sequence.nextval from dual"]
-    ReturnHeaders
-    ns_write "[ad_header "Credit Card Correction Needed"]
+    set gift_certificate_id [db_string get_cert_id_seq "select ec_gift_cert_id_sequence.nextval from dual"]
+   
+    set page_html "[ad_header "Credit Card Correction Needed"]
     [ec_header_image]<br clear=all>
     <blockquote>
     At this time we are unable to receive authorization to charge your
     credit card.  Please check the number and the expiration date and
     try again or use a different credit card.
     <p>
-    <form method=post action=gift-certificate-finalize-order.tcl>
+    <form method=post action=gift-certificate-finalize-order>
     [export_form_vars gift_certificate_id certificate_to certificate_from certificate_message amount recipient_email]
     <table>
     <tr>
@@ -327,11 +342,11 @@ if { $cybercash_status == "success" || $cybercash_status == "success-reload" } {
     </center>
     </form>
     </blockquote>
-    [ec_footer $db]
+    [ec_footer]
     "
 } elseif { $cybercash_status == "unknown-no-response" } {
-    ReturnHeaders
-    ns_write "[ad_header "No Response from CyberCash"]
+    
+    set page_html "[ad_header "No Response from CyberCash"]
     [ec_header_image]<br clear=all>
     <blockquote>
     We didn't receive confirmation from CyberCash about whether they were able to authorize the
@@ -340,21 +355,24 @@ if { $cybercash_status == "success" || $cybercash_status == "success-reload" } {
     We will query CyberCash within the next hour to see if they processed your transaction, and
     we'll let you know by email.  We apologize for the inconvenience.
     <p>
-    You can also <a href=\"gift-certificate.tcl?[export_url_vars gift_certificate_id]\">check on the status of
+    You can also <a href=\"gift-certificate?[export_url_vars gift_certificate_id]\">check on the status of
     this gift certificate order</a>.
     </blockquote>
-    [ec_footer $db]
+    [ec_footer]
     "
 } elseif { $cybercash_status == "unknown-reload" } {
-    set n_seconds [database_to_tcl_string $db "select round((sysdate-issue_date)*86400) as n_seconds from ec_gift_certificates where gift_certificate_id = $gift_certificate_id"]
-    ReturnHeaders
-    ns_write "[ad_header "Gift Certificate Order Already Processed"]
+    set n_seconds [db_string get_n_seconds "select round((sysdate-issue_date)*86400) as n_seconds from ec_gift_certificates where gift_certificate_id = :gift_certificate_id"]
+   
+    set page_html "[ad_header "Gift Certificate Order Already Processed"]
     You've probably hit submit twice from the same form.  We are already
 in possession of a gift certificate order with id # $gift_certificate_id (placed $n_seconds
 seconds ago) and it is being processed.  You can <a
-href=\"gift-certificate.tcl?[export_url_vars gift_certificate_id]\">check on the status of
+href=\"gift-certificate?[export_url_vars gift_certificate_id]\">check on the status of
 this gift certificate order</a> if you like.
 
-    [ec_footer $db]
+    [ec_footer]
     "
 }
+
+
+doc_return  200 text/html $page_html

@@ -5,7 +5,7 @@
 
 <h2>The Prototype Builder: Documentation</h2>
 
-part of the <a href="index.html">ArsDigita Community System</a>
+part of the <a href="index">ArsDigita Community System</a>
 by <a href="mailto:rfrankel@athena.mit.edu">Rebecca Frankel</a>
 
 <hr>
@@ -14,7 +14,7 @@ by <a href="mailto:rfrankel@athena.mit.edu">Rebecca Frankel</a>
 
 <ul>
 <li>The tool: <a href=/admin/prototype>/admin/prototype</a>
-<li>Procedures: /tcl/ad-prototype.tcl 
+<li>Procedures: /tcl/ad-prototype 
 </ul>
 
 
@@ -61,9 +61,9 @@ builder collects the information it needs on three successive
 pages. The first page asks for the table for which the pages should be
 built, and the base filename for the code that should be returned.
 (For example, if I choose <i>books</i> as my base filename, I will in
-the end be offered the code for the files <i>books-list.tcl</i>,
-<i>books-add.tcl</i>, <i>books-add-2.tcl</i>, <i>books-edit.tcl</i>,
-and <i>books-edit-2.tcl</i>.) The second page asks for general
+the end be offered the code for the files <i>books-list</i>,
+<i>books-add</i>, <i>books-add-2</i>, <i>books-edit</i>,
+and <i>books-edit-2</i>.) The second page asks for general
 information in each of the three categories above, while the third
 page allows us to refine these choices. On the second page we are
 allowed to choose the text for page headers, to identify any special
@@ -121,7 +121,7 @@ create table penguins (
  create sequence penguin_seq
 </pre>  
 
-<a href ="prototype.html">
+<a href ="prototype">
 <img src="prototype-gifs/penguinfront.gif" align=right width=302 height=574 hspace =10></a> 
 
 This is a reasonable collection of data to store about a penguin
@@ -143,7 +143,7 @@ directoryname and filename. The directoryname tells the system where
 you wish code to be save (note that you will have an option to change it later
 too). The base file name tells the system how to prefix all the code it
 generates. Here we have chosen <code>penguin</code> as a basefile name:
-we will be returned files with names like penguin-list.tcl, penguin-add.tcl, 
+we will be returned files with names like penguin-list, penguin-add, 
 and so on.
 
 <p>
@@ -156,7 +156,7 @@ us to tell the program what kind of headers we wish to see on the
 generated pages. I refrained from making this section ask for too much
 detail because it is easy to edit the headers after getting the code
 back, if they aren't exactly the way you like them.
-<a href ="prototype.html">
+<a href ="prototype">
 <img src="prototype-gifs/penguin2a.gif" align=left
      width=311 height=407 vspace=10 hspace =10></a>
 The first textbox asks for the title for the main page.  This appears
@@ -176,13 +176,13 @@ including a link to the homepage of a module directly below the
 main heading of any page. In order to comply with this convention, 
 the prototype builder asks for some phrases to allow it to 
 build this kind of backlink on every page. We needs to fill
-in the filename of the homepage (in this case <code>penguin-list.tcl</code>,
-though it usually is <code>index.tcl</code>) and the name of the module
+in the filename of the homepage (in this case <code>penguin-list</code>,
+though it usually is <code>index</code>) and the name of the module
 (in this case "Penguin Management System"). There is also a phrase which
 introduces the module-name link; it defaults to "part of the" and I didn't 
 chose to edit it.
 
-<a href ="prototype.html">
+<a href ="prototype">
 <img src="prototype-gifs/penguin3a.gif" align=right width=280 height=345 vspace=10 hspace =10></a>
 
 <h4>Special Columns</h4>
@@ -226,7 +226,7 @@ in this catagory; we want the user not to have access to them, so
 we leave them with the "none" option selected.
 
 
-<a href ="prototype.html">
+<a href ="prototype">
 <img src="prototype-gifs/penguin4b.gif" width=677 height=384 vspace=10 hspace =10></a>
 <p>
 
@@ -235,7 +235,7 @@ columns I have chosen appropriate form types. The columns,
 <code>tux_p</code> and <code>date_acquired</code>, whose Oracle
 datatype were boolean and date, obviously should get those form types
 chosen for them.
-<a href ="prototype.html">
+<a href ="prototype">
 <img src="prototype-gifs/penguin5b.gif" align=left width=435 height=364
 vspace=10 hspace =10></a>
  For the shorter text column <code>penguin_name</code> I choose
@@ -277,7 +277,7 @@ left alone for the program to handle.  Also there are columns like the
 harass the user about filling, and for which a null value in the
 database is perfectly acceptible.
 
-<a href ="prototype.html">
+<a href ="prototype">
 <img src="prototype-gifs/penguin6a.gif" align=right width=348 height=287
 vspace=10 hspace =10></a>
 <p>
@@ -313,7 +313,7 @@ Please back up and resubmit your entry.</code>
 It is useful to keep this context in mind when composing
 error messages. 
 
-<a href ="prototype.html">
+<a href ="prototype">
 <img src="prototype-gifs/penguin7a.gif" align=left width=347 height=145
 vspace=10 hspace =10></a>
 <p>
@@ -329,7 +329,7 @@ page. However, I should mention that if you choose to set no default,
 the page will behave the same as if you had chosen this default. As it
 were, "Now" is the default by default, and thus there is little point
 to go out of one's way to specify it. 
-<a href ="prototype.html">
+<a href ="prototype">
 <img src="prototype-gifs/penguin8a.gif" align=right width=351 height=194
 vspace=10 hspace =10></a>
 <p>
@@ -346,7 +346,7 @@ This entry will be checked by default on the add page. If this
 were a checkbox instead of a radiobutton we could choose more
 than one element of the list to be checked by default. 
 
-<a href ="prototype.html">
+<a href ="prototype">
 <img src="prototype-gifs/penguin9a.gif" align=left width=343 height=167 vspace=10
 hspace =10></a> 
 <p>
@@ -363,7 +363,7 @@ letters as the default. (I should improve this interface; it is this
 way because booleans are handled as a special case of radiobuttons.)
 Since I am assuming that Tux dolls do not make up the majority of the
 collection, I choose 'f', for false, as the default.
-<a href ="prototype.html">
+<a href ="prototype">
 <img src="prototype-gifs/penguin10a.gif" align=right width=344 height=166
 vspace=10 hspace =10></a>
 <p>
@@ -379,7 +379,7 @@ So we have come to the bottom of the third page, and
 entered all the data we need to specify our prototype pages.
 We hit submit and see the fruit of our labors...
 
-<a href ="prototype.html">
+<a href ="prototype">
 <img src="prototype-gifs/demopagetop.gif" align=left width=278 height=591
 vspace=10 hspace =10></a>
 
@@ -417,7 +417,7 @@ wish to make them pretty in your eyes, by far the easiest thing is
 to pick up the code using the buttons at the bottom of the page, and
 start editing.
 <p>
-<a href ="prototype.html">
+<a href ="prototype">
 <img src="prototype-gifs/penguincode.gif" align=right width=378 height=365
 vspace=10 hspace =10></a>
  
@@ -455,7 +455,7 @@ my code there, and then later move it to where I want it to be.
 <p>
 
 
-<a href ="prototype.html">
+<a href ="prototype">
 <img src="prototype-gifs/penguinlist.gif" align=left width=295 height=236
 vspace=10 hspace =10></a>
 
@@ -469,10 +469,10 @@ to change filenames every place they appear.
 <p>
 Now suppose we have managed to succesfully save our code under the
 appropriate names. We are ready to enjoy our working Penguin
-Management System. We visit penguin-list.tcl with our browser and
+Management System. We visit penguin-list with our browser and
 see...
 
-<a href ="prototype.html">
+<a href ="prototype">
 <img src="prototype-gifs/penguinadd.gif" align=right width=256 height=551
 vspace=10 hspace =10></a>
 
@@ -509,10 +509,10 @@ in the date of April Fools Day. I also include a short description
 because this is rather strange addition to a penguin collection.
 After
 submitting this data (where it is handled invisibly by
-penguin-add-2.tcl), I return to the list page, where I see I now have a
+penguin-add-2), I return to the list page, where I see I now have a
 new penguin in the database:
 
-<a href ="prototype.html">
+<a href ="prototype">
 <img src="prototype-gifs/penguinlistwtux.gif" align=left width=256 height=250
 vspace=10 hspace =10></a>
 <p>
@@ -536,7 +536,7 @@ in the database and certainly will not produce double-click
 protection for the Add page. 
 <p>
 
-<a href ="prototype.html">
+<a href ="prototype">
 <img src="prototype-gifs/penguinedit.gif" align=right width=253 height=560
 vspace=10 hspace =10></a>
 
@@ -601,7 +601,7 @@ be incorporated into a system like this.
 
 
 </body>
-<!--<a href ="prototype.html"> <img src=".gif" align=left border=2
+<!--<a href ="prototype"> <img src=".gif" align=left border=2
 hspace =10></a>
 
 -->

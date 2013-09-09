@@ -1,8 +1,17 @@
-# $Id: one.tcl,v 3.0 2000/02/06 03:18:47 ron Exp $
-set_the_usual_form_variables
-# either category_id, subcategory_id, and/or subsubcategory_id
-# OR categorization (list which contains category_id, subcategory_id, and/or subsubcategory_id)
-# depending on how they got here
+# one.tcl
+
+ad_page_contract {
+    @author
+    @creation-date
+    @cvs-id one.tcl,v 3.1.6.6 2000/09/22 01:34:57 kevin Exp
+} { 
+    category_id:optional
+    subcategory_id:optional
+    subsubcategory_id:optional
+
+    categorization:optional
+}
+
 
 if { [info exists categorization] } {
     catch { set category_id [lindex $categorization 0] }
@@ -22,11 +31,11 @@ if { ![info exists subsubcategory_id] } {
     set subsubcategory_id ""
 }
 
-set db [ns_db gethandle]
-set mailing_list_name [ec_full_categorization_display $db $category_id $subcategory_id $subsubcategory_id]
 
-ReturnHeaders
-ns_write "[ad_admin_header "$mailing_list_name"]
+set mailing_list_name [ec_full_categorization_display $category_id $subcategory_id $subsubcategory_id]
+
+
+append doc_body "[ad_admin_header "$mailing_list_name"]
 
 <h2>$mailing_list_name</h2>
 
@@ -54,30 +63,28 @@ if { ![empty_string_p $subsubcategory_id] } {
     append user_query "and m.category_id is null"
 }
 
-set selection [ns_db select $db $user_query]
+set sql $user_query
 
-set n_users 0
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
-    incr n_users
-    ns_write "<li><a href=\"/admin/users/one.tcl?user_id=$user_id\">$first_names $last_name</a> \[<a href=\"member-remove.tcl?[export_url_vars category_id subcategory_id subsubcategory_id user_id]\">remove</a>\]"
+db_foreach get_user_info $sql {
+    
+    append doc_body "<li><a href=\"/admin/users/one?user_id=$user_id\">$first_names $last_name</a> \[<a href=\"member-remove?[export_url_vars category_id subcategory_id subsubcategory_id user_id]\">remove</a>\]"
+} if_no_rows {
+    append doc_body "None"
 }
 
-if { $n_users == 0 } {
-    ns_write "None"
-}
+db_release_unused_handles
 
-ns_write "</ul>
+append doc_body "</ul>
 
 <h3>Add a Member</h3>
 
-<form method=post action=member-add.tcl>
+<form method=post action=member-add>
 [export_form_vars category_id subcategory_id subsubcategory_id]
 By last name: <input type=text name=last_name size=30>
 <input type=submit value=\"Search\">
 </form>
 
-<form method=post action=member-add.tcl>
+<form method=post action=member-add>
 [export_form_vars category_id subcategory_id subsubcategory_id]
 By email address: <input type=text name=email size=30>
 <input type=submit value=\"Search\">
@@ -85,3 +92,8 @@ By email address: <input type=text name=email size=30>
 
 [ad_admin_footer]
 "
+
+
+
+doc_return  200 text/html $doc_body
+

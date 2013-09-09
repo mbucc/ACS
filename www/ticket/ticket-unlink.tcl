@@ -1,25 +1,25 @@
-# $Id: ticket-unlink.tcl,v 3.0.4.1 2000/04/28 15:11:35 carsten Exp $
-#
-# remove an entry from the  cross-reference table
-#
-# from_msg_id
-# to_msg_id
-# target
+# /www/ticket/ticket-unlink.tcl
+ad_page_contract {
+    Removes an entry from the cross-reference table
 
-ad_page_variables { 
-    from_ticket
-    to_ticket
-    {return_url {/ticket/}}
+    @param from_ticket the ticket to remove the x-ref from
+    @param to_ticket the ticket to remove the x-ref to 
+    @param return_url where to go when we are done
+
+    @author original author unknown
+    @author Kevin Scaldeferri (kevin@caltech.edu)
+    @cvs-id ticket-unlink.tcl,v 3.1.6.4 2000/07/21 04:04:35 ron Exp
+} { 
+    from_ticket:integer,notnull
+    to_ticket:integer,notnull
+    {return_url "/ticket/"}
 }
 
-if {! [regexp {^[0-9]+$} $from_ticket]
-    || ! [regexp {^[0-9]+$} $to_ticket]} { 
-    ad_return_complaint 1 "<LI> Invalid ticket IDs when unlinking."
-    return
-}
+# -----------------------------------------------------------------------------
 
-set db [ns_db gethandle]
-
-ns_db dml $db "delete from ticket_xrefs where from_ticket = $from_ticket and to_ticket = $to_ticket"
+db_dml xref_delete "
+delete from ticket_xrefs 
+where  from_ticket = :from_ticket 
+and    to_ticket = :to_ticket"
 
 ad_returnredirect $return_url

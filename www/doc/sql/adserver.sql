@@ -40,7 +40,7 @@ create table adv_user_map (
 	event_type      char(1)
 );
 
--- **** tablespace photonet_index
+-- build an index on the user_id column for adv_user_map
 create index adv_user_map_idx on adv_user_map(user_id);
 
 -- for publishers who want to get really fancy 
@@ -79,13 +79,16 @@ create table adv_groups (
 create table adv_group_map (
 	group_key	not null references adv_groups,
 	adv_key		not null references advs,
+	-- added to support sequencial rotation (avni 2000-09-21)
+	rotation_order	integer,
+	-- primary key for this table
 	primary key (group_key,adv_key)
 );
-
 
 -- This view is used to select ads for display based on the current days 
 -- impression count
 create or replace view advs_todays_log AS
 SELECT * FROM adv_log WHERE entry_date = TRUNC(sysdate);
+
 
 

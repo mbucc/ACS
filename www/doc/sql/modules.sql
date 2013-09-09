@@ -1,23 +1,41 @@
--- File:     /doc/sql/modules.sql
--- Date:     12/22/1999
--- Contact:  tarik@arsdigita.com
--- Purpose:  this file contains table, which contain data about the 
---           ACS modules
+-- Filename
+--  /doc/sql/modules.sql
+-- 
+-- Author
+--  Tarik <tarik@arsdigita.com>
+--
+-- Date
+--  12/22/1999
+--
+-- Purpose
+--  Data model for ACS modules
+--
+-- Version
+--  modules.sql,v 3.2 2000/06/17 18:49:35 ron Exp
+--
 
--- this table stores information about the acs modules (news, bboard, ...)
+-- The acs_modules table contains information on all the modules registered with the
+-- ad_module_register procedure. It is part of the core toolkit because the modules that call
+-- ad_module_register depend on it. 
+-- We don't give this table an integer primary key because it is referenced by
+-- user_group_types_module_map and content_sections.
+
 create table acs_modules (
 	module_key		varchar(30) primary key,
 	pretty_name		varchar(200) not null,
 	-- this is the directory where module public files are stored. 
 	-- for the news module public_directory would be /news
+	-- can be a Tcl list of filenames
 	public_directory	varchar(200),
 	-- this is the directory where module admin files are stored
 	-- for the news module admin_directory would be /admin/news
+	-- can be a Tcl list of filenames
 	admin_directory		varchar(200),
 	-- this is the directory where system admin files are stored 
 	-- notice that this is not always same as the admin_directory
 	-- e.g. ticket module has admin directory /ticket/admin and
 	-- site admin directory /admin/ticket
+	-- can be a Tcl list of filenames
 	site_wide_admin_directory	varchar(200),
 	-- if module_type=system, this module has all: public, admin and site_wide admin pages (e.g. faq, news)
 	-- notice that often admin and site_wide admin directory are merged together
@@ -27,16 +45,42 @@ create table acs_modules (
 	-- notice that having admin module for another module allows us to assign administration of modules to user groups
 	-- in this case public_directory will correspond to the directory where files for site wide administration of that
 	-- module are stored and admin_directory and site_wide_admin_directory are irrelevant 
-	module_type                    varchar(20) not null check(module_type in ('system', 'admin', 'site_wide_admin')),
+	module_type                    varchar(20) default 'system' not null check(module_type in ('system', 'admin', 'site_wide_admin')),
 	-- does module support scoping
 	supports_scoping_p	char(1) default 'f' check(supports_scoping_p in ('t','f')),
-	-- this is short description describing what module is doing	
+	-- this is short description describing what module is doin
 	description		varchar(4000),
 	-- this is url of the html file containing module documentation
+	-- can be a Tcl list of filenames
 	documentation_url	varchar(200),
 	-- this is url of the file containing date model of the module
-	data_model_url		varchar(200)
+	-- can be a Tcl list of filenames
+	data_model_url		varchar(200),
+	-- The registered_p flag is set to true if this module called ad_module_register when the
+	-- private Tcl was last initialized
+	registered_p		char(1) default 'f' check(registered_p in ('t','f')),
+	-- version string for the module
+	version			varchar(30),
+	-- space separated list of email addresses of people responsible for a module
+	owner_email_list		varchar(2000),
+	-- cvs_host is the host that holds the CVS repository for the module which 
+	-- can be used for auto-installs and upgrades
+	cvs_host			varchar(400),
+	-- Any file globbing patterns that can be used to uniquely identify files in this
+	-- module that are not in the public, admin or site wide admin directories
+	additional_paths		varchar(2000),
+	-- web server where the bboard is held eg. www.arsdigita.com
+	bboard_server			varchar(2000),
+	-- web server where the Ticket Tracker is held for this module. www.arsdigita.com
+	ticket_server			varchar(2000)
 );
+
+
+-- The insert statements directly into acs_modules should no longer be necessary because we have
+-- an API ad_register_module that gets called in the module-name-defs.tcl files to do this job.
+-- However, if we do delete the insert statements it breaks the install scripts. The reason is that
+-- other scripts depend on having rows present in the acs_modules table otherwise they give
+-- an error. 
 
 insert into acs_modules
 (module_key, pretty_name, public_directory, admin_directory, site_wide_admin_directory, module_type, supports_scoping_p, documentation_url, data_model_url, description)
@@ -135,8 +179,5 @@ create or replace function pretty_name_from_module_key (v_module_key IN acs_modu
      END pretty_name_from_module_key;
 /
 show errors
-
-
-
 
 

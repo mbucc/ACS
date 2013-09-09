@@ -1,24 +1,27 @@
-# /admin/pull-down-menus/pdm-add.tcl
-#
-# Author: aure@caltech.edu, Feb 2000
-# 
-# Page to add a new pdm to the system
-#
-# $Id: pdm-add.tcl,v 1.1.2.2 2000/03/18 00:12:29 michael Exp $
-# -----------------------------------------------------------------------------
+# /www/admin/pull-down-menus/pdm-add.tcl
+ad_page_contract {
 
-set db [ns_db gethandle]
+  Page to add a new pdm to the system.
+
+  @author aure@caltech.edu
+  @creation-date Feb 2000
+  @cvs-id pdm-add.tcl,v 1.2.8.5 2001/01/11 23:36:29 khy Exp
+
+} {
+
+}
+
 
 # get the next available menu_id to pass to the processing form
 # for double click protection
 
-set menu_id [database_to_tcl_string $db "select pdm_menu_id_sequence.nextval from dual"]
+set menu_id [db_string next_menu_id "select pdm_menu_id_sequence.nextval from dual"]
 
-ns_db releasehandle $db
+db_release_unused_handles
 
 set title "Create New Pull-Down Menu"
 
-ns_return 200 text/html "
+doc_return  200 text/html "
 [ad_admin_header $title]
 
 <h2>$title</h2>
@@ -28,7 +31,7 @@ ns_return 200 text/html "
 <hr>
 
 <form method=post action=pdm-add-2>
-[export_form_vars menu_id]
+[export_form_vars -sign menu_id]
 
 <table>
  <tr>

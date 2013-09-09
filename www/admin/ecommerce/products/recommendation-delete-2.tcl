@@ -1,19 +1,16 @@
-# $Id: recommendation-delete-2.tcl,v 3.0.4.1 2000/04/28 15:08:53 carsten Exp $
-# recommendation-delete-2.tcl
-#
-# by philg@mit.edu on July 18, 1999
-#
-# actually deletes the row
-# 
+#  www/admin/ecommerce/products/recommendation-delete-2.tcl
+ad_page_contract {
+  Actually deletes the row.
 
-set_the_usual_form_variables
+  @author philg@mit.edu
+  @creation-date July 18, 1999
+  @cvs-id recommendation-delete-2.tcl,v 3.1.6.2 2000/07/22 07:57:42 ron Exp
+} {
+  recommendation_id:integer,notnull
+}
 
-# recommendation_id
+db_dml recommendation_delete "delete from ec_product_recommendations where recommendation_id=:recommendation_id"
 
-set db [ns_db gethandle]
-
-ns_db dml $db "delete from ec_product_recommendations where recommendation_id=$recommendation_id"
-
-ad_audit_delete_row $db [list $recommendation_id] [list recommendation_id] ec_product_recommend_audit
+ad_audit_delete_row [list $recommendation_id] [list recommendation_id] ec_product_recommend_audit
 
 ad_returnredirect "recommendations.tcl"

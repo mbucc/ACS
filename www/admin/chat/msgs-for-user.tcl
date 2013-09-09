@@ -1,37 +1,40 @@
-# $Id: msgs-for-user.tcl,v 3.0 2000/02/06 03:10:10 ron Exp $
-# File:     admin/chat/msgs-for-user.tcl
-# Date:     1998-11-18
-# Contact:  aure@arsdigita.com,philg@mit.edu, ahmeds@arsdigita.com
+#admin/chat/msgs-for-user.tcl
 
-set_the_usual_form_variables
-# user_id
+ad_page_contract {
+
+    Find all messages post by this user.
+
+    @author Aure (aure@arsdigita.com)
+    @author Philip Greenspun (philg@mit.edu)
+    @author ahmeds@arsdigita.com
+    @param user_id find message post by this user id
+    @creation-date 1998-11-18
+    @cvs-id msgs-for-user.tcl,v 3.0.12.6 2000/09/22 01:34:29 kevin Exp
+} {
+    {user_id:naturalnum,notnull}
+}
 
 ad_maybe_redirect_for_registration
 
-set db [ns_db gethandle]
-
-set selection [ns_db 1row $db "select first_names || ' ' || last_name as username
+set selection [db_1row admin_chat_get_user_name {select first_names || ' ' || last_name as username
 from users
-where user_id = $user_id"]
+where user_id = :user_id}]
 
-set_variables_after_query
 
-set selection [ns_db select $db "select cr.pretty_name, cm.msg, u.first_names || ' ' || u.last_name as recipient
+set sql_query {select cr.pretty_name, cm.msg, u.first_names || ' ' || u.last_name as recipient
 from chat_rooms cr, chat_msgs cm, users u
-where creation_user = $user_id
+where creation_user = :user_id
 and cm.chat_room_id = cr.chat_room_id(+)
 and cm.recipient_user = u.user_id(+)
 and cm.system_note_p = 'f'
-order by cr.pretty_name, u.first_names, u.last_name, cm.creation_date"]
+order by cr.pretty_name, u.first_names, u.last_name, cm.creation_date}
 
 set msgs ""
 set last_chat_room ""
 set last_recipient " "
 
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+db_foreach admin_chat_list_all_msg_by_user $sql_query  {
 
-    
     if { ![empty_string_p $pretty_name] && $last_chat_room != $pretty_name } {
 	append msgs "<h4>Messages in $pretty_name room</h4>\n"
 	set last_chat_room $pretty_name
@@ -44,7 +47,7 @@ while { [ns_db getrow $db $selection] } {
     append msgs "<li>$msg\n"
 }
 
-ns_return 200 text/html "[ad_admin_header "Messages By $username"]
+set page_content "[ad_admin_header "Messages By $username"]
 
 <h2>Messages By $username</h2>
 
@@ -58,3 +61,6 @@ $msgs
 
 [ad_admin_footer]
 "
+
+
+doc_return  200 text/html $page_content

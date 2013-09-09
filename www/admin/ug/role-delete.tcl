@@ -1,14 +1,17 @@
-# $Id: role-delete.tcl,v 3.0.4.1 2000/04/28 15:09:34 carsten Exp $
-set_the_usual_form_variables
+ad_page_contract {
+    @param group_id the Id of the group
+    @param role the role to remove
 
-# group_id, role
+    @cvs-id role-delete.tcl,v 3.2.2.4 2000/07/21 03:58:20 ron Exp
+} {
+    group_id:notnull,naturalnum
+    role:notnull
+}
 
-set db [ns_db gethandle]
+db_dml delete_group_role "delete from user_group_roles
+where group_id = :group_id
+and role = :role"
+db_release_unused_handles
 
-
-ns_db dml $db "delete from user_group_roles
-where group_id = $group_id
-and role = '$QQrole'"
-
-ad_returnredirect "group.tcl?group_id=$group_id"
+ad_returnredirect "group?group_id=$group_id"
 

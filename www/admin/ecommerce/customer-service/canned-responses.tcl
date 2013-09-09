@@ -1,9 +1,17 @@
-# $Id: canned-responses.tcl,v 3.0 2000/02/06 03:17:38 ron Exp $
-set db [ns_db gethandle]
+# canned-responses.tcl
 
-ReturnHeaders
+ad_page_contract {
+    @author
+    @creation-date
+    @cvs-id canned-responses.tcl,v 3.1.6.4 2000/09/22 01:34:51 kevin Exp
+} {
+}
 
-ns_write "[ad_admin_header "Canned Responses"]
+
+
+
+
+append doc_body "[ad_admin_header "Canned Responses"]
 <h2>Canned Responses</h2>
 
 [ad_admin_context_bar [list "../index.tcl" "Ecommerce"] [list "index.tcl" "Customer Service Administration"] "Canned Responses"]
@@ -14,18 +22,18 @@ ns_write "[ad_admin_header "Canned Responses"]
 <ul>
 "
 
-set selection [ns_db select $db "select response_id, one_line, response_text
+set sql "select response_id, one_line, response_text
 from ec_canned_responses
-order by one_line"]
+order by one_line"
 
 set count 0
 
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+db_foreach get_canned_responses $sql {
+    
 
-    ns_write "<li><a href=\"canned-response-edit.tcl?response_id=$response_id\">$one_line</a>
+    append doc_body "<li><a href=\"canned-response-edit?response_id=$response_id\">$one_line</a>
 <blockquote>
-[ec_display_as_html $response_text] <a href=\"canned-response-delete.tcl?response_id=$response_id\">Delete</a>
+[ec_display_as_html $response_text] <a href=\"canned-response-delete?response_id=$response_id\">Delete</a>
 </blockquote>
 "
 
@@ -33,12 +41,16 @@ while { [ns_db getrow $db $selection] } {
 }
 
 if { $count == 0 } {
-    ns_write "<li>No defined canned responses.\n"
+    append doc_body "<li>No defined canned responses.\n"
 }
 
-ns_write "<p>
-<a href=\"canned-response-add.tcl\">Add a new canned response</a>
+append doc_body "<p>
+<a href=\"canned-response-add\">Add a new canned response</a>
 </ul>
 
 [ad_admin_footer]
 "
+
+
+
+doc_return  200 text/html $doc_body

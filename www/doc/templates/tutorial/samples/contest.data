@@ -1,0 +1,63 @@
+<template>
+
+  <name>lesson5</name>
+  <title>Contest Template</title>
+  <author>karlg@arsdigita.com</author>
+  <comment>A sample specification file.</comment>
+
+  <process>
+
+  <datasource>
+
+    <name>contestants</name>
+    <type>query</type>
+    <structure>multirow</structure>
+    <condition>
+      select 
+        first_name, last_name
+      from
+        ad_template_sample_users
+    </condition>
+    <comment>The contestants</comment>
+
+      <variable>
+        <name>first_name</name>
+        <comment>The first name of the contestant.</comment>
+      </variable>
+
+      <variable>
+        <name>last_name</name>
+        <comment>The last name of the contestant.</comment>
+      </variable>
+
+  </datasource>
+
+  <datasource>
+
+    <name>winner</name>
+    <type>eval</type>
+    <structure>onerow</structure>
+    <condition>
+      set contestant_count [llength $contestants]
+      set winner_index [randomRange $contestant_count]
+      lindex $contestants $winner_index
+    </condition>
+    <comment>This is the winner.</comment>
+
+      <variable>
+        <name>first_name</name>
+        <comment>The first name of the winner.</comment>
+      </variable>
+
+      <variable>
+        <name>last_name</name>
+        <comment>The last name of the winner.</comment>
+      </variable>
+
+  </datasource>
+
+  </process>
+
+</template>
+
+

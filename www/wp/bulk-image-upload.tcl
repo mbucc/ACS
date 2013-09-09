@@ -1,22 +1,23 @@
-# File:        bulk-image-upload.tcl
-# Date:        03 Mar 2000
-# Author:      Nuno Santos <nuno@arsdigita.com>
-# Description: Allows the user to bulk upload a presentation (from a set of zipped GIF, PNG and/or JPG files)
-# Inputs:      presentation_id
+# /wp/bulk-image-upload.tcl
 
-set_the_usual_form_variables
+ad_page_contract {
+    Allows the user to bulk upload a presentation  (from a set of zipped GIF, PNG and/or JPG files)
 
-wp_check_numeric $presentation_id
+    @param presentation_id the presentation to which to upload images
 
-set db [ns_db gethandle]
+    @creation-date  03 Mar 2000
+    @author Nuno Santos <nuno@arsdigita.com>
+    @cvs-id bulk-image-upload.tcl,v 3.3.2.7 2000/09/22 01:39:29 kevin Exp
+} {
+    presentation_id:naturalnum,notnull
+}
+
 set user_id [ad_maybe_redirect_for_registration]
-wp_check_authorization $db $presentation_id $user_id "write"
+wp_check_authorization $presentation_id $user_id "write"
 
-set title [database_to_tcl_string $db "select title from wp_presentations where presentation_id = $presentation_id"]
+set title [db_string wp_title_select "select title from wp_presentations where presentation_id = :presentation_id"]
 
-ns_db releasehandle $db
-
-ns_return 200 "text/html" "
+doc_return  200 "text/html" "
 [wp_header_form "enctype=multipart/form-data action=\"bulk-image-upload-2.tcl?[export_url_vars presentation_id]\" method=post"  \
   [list "" "WimpyPoint"] \
   [list "index.tcl?show_user=" "Your Presentations"] \
@@ -44,6 +45,3 @@ You can always adjust the order of the slides, edit their titles and add further
 
 [wp_footer]
 "
-
-
-

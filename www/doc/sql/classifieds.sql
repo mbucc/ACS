@@ -1,3 +1,7 @@
+
+
+
+
 --
 -- Classified Ads data-model.sql
 --

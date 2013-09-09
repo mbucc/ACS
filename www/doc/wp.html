@@ -7,16 +7,15 @@
 <h2>WimpyPoint</h2>
 
 part of the <a href="">ArsDigita Community System</a><br>
-by <a href="http://photo.net/philg/">Philip Greenspun</a>,
-   <a href="http://www.coordination.com/krish/">Krish Menon</a>, and
+by <a href="http://photo.net/philg/">Philip Greenspun</a> and
    <a href="mailto:jsalz@mit.edu">Jon Salz</a>
 
 <hr>
 
 <ul>
 <li>User-accessible directory: <a href="/wp/">/wp/</a>
-<li>Data model: <a href="/doc/sql/display-sql.tcl?url=/doc/sql/wp.sql">/doc/sql/wp.sql</a>
-<li>Procedures: /tcl/wp-defs.tcl
+<li>Data model: <a href="/doc/sql/display-sql?url=/doc/sql/wp.sql">/doc/sql/wp.sql</a>
+<li>Procedures: /tcl/wp-defs
 </ul>
 
 <h3>History</h3>
@@ -27,7 +26,7 @@ rewritten by Jon Salz and reborn as an ACS module in late 1999, as
 a term project for MIT's <a href="http://6916.lcs.mit.edu">6.916: Software Engineering of Innovative Web Services</a> class.
 
 <p>For more general information, see
-the <a href="/help/for-one-page.tcl?url=%2fwp%2findex%2etcl">the user-level help pages</a>.
+the <a href="/help/for-one-page?url=%2fwp%2findex%2etcl">the user-level help pages</a>.
 
 <h3>Data Model</h3>
 
@@ -66,8 +65,8 @@ of <tt>NULL</tt> corresponds to infinity, i.e., the latest version).
 since the latest checkpoint, we make a new copy of the slide and fiddle
 with the <tt>(min|max)_checkpoint</tt> of the old and new slide; when a slide is deleted,
 we just set <tt>max_checkpoint</tt> to the current checkpoint (so it becomes
-invisible in the most recent "view"). See <tt>slide-edit-2.tcl</tt> and
-<tt>slide-delete-2.tcl</tt> for examples.
+invisible in the most recent "view"). See <tt>slide-edit-2</tt> and
+<tt>slide-delete-2</tt> for examples.
 
 <p>When a slide set is frozen, we preserve the sorted order of the slides
 in <tt>wp_historical_sort</tt>. Without this facility, in order to maintain
@@ -104,7 +103,7 @@ but in retrospect maybe using abstraction so heavily is not The ACS Way(tm).
 place of the usual <tt>ns_db select</tt>/<tt>ns_db getrow</tt>/<tt>set_variables_after_query</tt>
 loop. You can do:
 
-<blockquote><pre>wp_select $db "select foo, bar from whatever" {
+<blockquote><pre>wp_select "select foo, bar from whatever" {
     ns_write "&lt;li&gt;$foo, $bar\n"
 } else {
     ns_write "&lt;li&gt;nothing selected\n"
@@ -112,8 +111,8 @@ loop. You can do:
 
 <li><tt><b>wp_prepare_dml</b></tt>, given a table name, and names and values of columns, prepares
 an <tt>UPDATE</tt> or <tt>INSERT</tt> statement. In general, this facilitates the consolidation
-of pages which add records and edit existing records (e.g., <tt>slide-edit-2.tcl</tt> and
-<tt>slide-add-2.tcl</tt> are wrapped into <tt>slide-add.tcl</tt>). This is useful since
+of pages which add records and edit existing records (e.g., <tt>slide-edit-2</tt> and
+<tt>slide-add-2</tt> are wrapped into <tt>slide-add</tt>). This is useful since
 <tt>-add</tt> and <tt>-edit</tt> pages often have to do the same kind of input validation
 anyway.
 
@@ -152,6 +151,10 @@ used like this:
     [list [list 7 "Week Old"] [list 30 "Month Old"] [list all "All"]]]</pre></blockquote>
 
 </ul>
+
+<hr>
+<address>philg@mit.edu</address>
+<address>jsalz@mit.edu</address>
 
 </body>
 </html>

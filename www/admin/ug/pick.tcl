@@ -1,16 +1,18 @@
-# $Id: pick.tcl,v 3.0 2000/02/06 03:29:46 ron Exp $
-# reusable page to let an administrator pick a user group to associate
-# with some other element in the database
+ad_page_contract {
+    Reusable page to let an administrator pick a user group to associate with some other element in the database.
 
-set_the_usual_form_variables
+    @param target ultimate URL where we're heading with group_id set
+    @param passthrough Tcl list of form variable names to pass along from caller
+    @param explanation Reasoning behind the association
 
-# target (ultimate URL where we're heading with group_id set)
-# passthrough (Tcl list of form variable names to pass along from caller)
-# maybe explanation
+    @cvs-id pick.tcl,v 3.0.12.6 2000/09/22 01:36:16 kevin Exp
+} {
+    target:notnull
+    {passthrough {[list]}}
+    explanation:optional
+}
 
-ReturnHeaders
-
-ns_write "[ad_admin_header "Pick a User Group"]
+set page_html "[ad_admin_header "Pick a User Group"]
 
 <h2>Pick a User Group</h2>
 
@@ -21,34 +23,34 @@ ns_write "[ad_admin_header "Pick a User Group"]
 "
 
 if [info exists explanation] {
-   ns_write "$explanation\n\n<p>\n"
+   append page_html "$explanation\n\n<p>\n"
 }
-
-set db [ns_db gethandle] 
-
-set selection [ns_db select $db "select ugt.pretty_plural as group_type_headline, ug.group_id, ug.group_type, ug.group_name
-from user_groups ug, user_group_types ugt
-where ug.group_type = ugt.group_type 
-order by ug.group_type, upper(group_name)"]
-
+ 
 if { ![info exists passthrough] } {
     set passthrough [list]
 }
+
 lappend passthrough "group_id"
 
 set last_group_type_headline ""
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+
+db_foreach get_group_info "select ugt.pretty_plural as group_type_headline, ug.group_id, ug.group_type, ug.group_name
+from user_groups ug, user_group_types ugt
+where ug.group_type = ugt.group_type 
+order by ug.group_type, upper(group_name)" {
+
     if { [string compare $last_group_type_headline $group_type_headline] != 0 } {
-	ns_write "<h4>$group_type_headline</h4>\n\n"
+	append page_html "<h4>$group_type_headline</h4>\n\n"
 	set last_group_type_headline $group_type_headline
     }
-    ns_write "<li><a href=\"$target?[eval "export_url_vars $passthrough"]\">$group_name</a>\n"
+    append page_html "<li><a href=\"$target?[eval "export_url_vars $passthrough"]\">$group_name</a>\n"
 }
 
-ns_write "
+append page_html "
 
 </ul>
 
 [ad_admin_footer]
 "
+
+doc_return  200 text/html $page_html

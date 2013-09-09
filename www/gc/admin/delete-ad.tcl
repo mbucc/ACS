@@ -1,35 +1,29 @@
-# $Id: delete-ad.tcl,v 3.1 2000/03/10 23:58:48 curtisg Exp $
+ad_page_contract {
+    @author
+    @creation-date
+    @cvs-id delete-ad.tcl,v 3.2.6.7 2000/09/22 01:37:59 kevin Exp
+
+    @param classified_ad_id
+} {
+    classified_ad_id:naturalnum
+}
+
 ad_maybe_redirect_for_registration
 
 set admin_id [ad_get_user_id]
 
-set_the_usual_form_variables
-
-# classified_ad_id
-
-set db [ns_db gethandle]
-
-if [catch { set selection [ns_db 1row $db "select ca.one_line, ca.full_ad, ca.domain_id, u.user_id, u.email, u.first_names, u.last_name, ad.domain
-from classified_ads ca, ad_domains ad, users u
-where ca.user_id = u.user_id
-and ad.domain_id = ca.domain_id
-and classified_ad_id = $classified_ad_id"] } errmsg ] {
+if {![db_0or1row ad_delete_1_get_info { select 
+   ca.one_line, ca.full_ad, ca.domain_id, u.user_id, u.email, u.first_names, u.last_name, ad.domain
+   from classified_ads ca, ad_domains ad, users u
+   where ca.user_id = u.user_id
+   and ad.domain_id = ca.domain_id
+   and classified_ad_id = :classified_ad_id} ]
+} { 
     ad_return_error "Could not find Ad $classified_ad_id" "Either you are fooling around with the Location field in your browser
-or my code has a serious bug.  The error message from the database was
-
-<blockquote><code>
-$errmsg
-</blockquote></code>"
+or my code has a serious bug.
        return 
 }
-
-# OK, we found the ad in the database if we are here...
-# the variable SELECTION holds the values from the db
-set_variables_after_query
-
-# now we know to what domain this ad belongs
-
-if ![ad_administration_group_member $db "gc" $domain $admin_id] {
+if { ![ad_administrator_p] && ![ad_administration_group_member "gc" $domain $admin_id]} {
     ad_return_error "Unauthorized" "Unauthorized" 
     return
 }
@@ -56,8 +50,8 @@ Charge Comment:  <input type=text name=charge_comment size=50>
     set member_value_section ""
 }
 
-
-ns_return 200 text/html "[gc_header "Confirm Deletion"]
+db_release_unused_handles
+doc_return  200 text/html "[gc_header "Confirm Deletion"]
 
 <h2>Confirm Deletion</h2>
 
@@ -66,7 +60,7 @@ ns_return 200 text/html "[gc_header "Confirm Deletion"]
 
 <hr>
 
-<form method=POST action=delete-ad-2.tcl>
+<form method=POST action=delete-ad-2>
 [export_form_vars classified_ad_id]
 $member_value_section
 <P>
@@ -81,7 +75,7 @@ $member_value_section
 $full_ad
 <br>
 <br>
--- <a href=\"/admin/users/one.tcl?user_id=$user_id\">$first_names $last_name</a> 
+-- <a href=\"/admin/users/one?user_id=$user_id\">$first_names $last_name</a> 
 (<a href=\"mailto:$email\">$email</a>)
 </blockquote>
 

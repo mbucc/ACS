@@ -1,9 +1,18 @@
-# $Id: link-delete.tcl,v 3.0 2000/02/06 03:20:15 ron Exp $
-set_the_usual_form_variables
-# product_a, product_b, product_id, product_name, rowid
+#  www/admin/ecommerce/products/link-delete.tcl
+ad_page_contract {
 
-ReturnHeaders
-ns_write "[ad_admin_header "Confirm Deletion"]
+  @author Eve Andersson (eveander@arsdigita.com)
+  @creation-date Summer 1999
+  @cvs-id link-delete.tcl,v 3.1.6.1 2000/07/22 07:57:39 ron Exp
+} {
+  product_a:integer,notnull
+  product_b:integer,notnull
+  product_id:integer,notnull
+}
+
+set product_name [ec_product_name $product_id]
+
+doc_body_append "[ad_admin_header "Confirm Deletion"]
 
 <h2>Confirm Deletion</h2>
 
@@ -12,9 +21,9 @@ ns_write "[ad_admin_header "Confirm Deletion"]
 <hr>
 Please confirm that you wish to delete this link.
 
-<form method=post action=link-delete-2.tcl>
+<form method=post action=link-delete-2>
 
-[export_form_vars product_id product_name product_a product_b]
+[export_form_vars product_id product_a product_b]
 
 <center>
 <input type=submit value=\"Confirm\">

@@ -1,0 +1,55 @@
+<template>
+
+  <name status="required"></name>
+  <title status="required"></title>
+  <author status="required"></author>
+  <comment status="required"></comment>
+  <devnote status="optional"></devnote>
+  <group status="optional"></group>
+  <master status="optional"></master>
+  <style status="optional"></style>
+
+  <process status="optional">
+
+  <src status="optional"></src>
+
+  <statuscheck status="optional">
+    <name status="required"></name>
+    <code status="required"></code>
+    <comment status="required"></comment>
+  </statuscheck>
+
+  <datasource status="optional">
+
+    <src status="optional"></src>
+
+    <depends status="optional"></depends>
+    <noprefix status="optional"></noprefix>
+    <cache status="optional"></cache>
+    <datatype status="optional" default="text"></datatype>
+    <maxrows status="optional" default="10000"></maxrows>
+    <startrow status="optional" default="1"></startrow>
+    <name status="required"></name>
+    <type status="optional"></type>
+    <structure status="optional" default="onevalue">
+      <options>onevalue onerow onelist multirow multilist</options>
+    </structure>
+    <condition status="optional" validate="false"></condition>
+    <comment status="optional"></comment>
+    <devnote status="optional"></devnote>
+
+    <variable status="optional">
+
+      <name status="required"></name>
+      <comment status="required"></comment>
+
+    </variable>
+
+  </datasource>
+
+  </process>
+  
+</template>
+
+
+

@@ -1,18 +1,23 @@
-# $Id: add-new-topic.tcl,v 3.0 2000/02/06 03:32:14 ron Exp $
-set db [ns_db gethandle]
+# /www/bboard/add-new-topic.tcl 
+
+ad_page_contract {
+    Page to add new topic
+    @author unknown
+    @creation-date unknown
+    @cvs-id add-new-topic.tcl,v 3.3.2.5 2000/09/22 01:36:41 kevin Exp
+} {} 
 
 set user_id [ad_verify_and_get_user_id]
 
 ad_maybe_redirect_for_registration
 
-if {!([bboard_users_can_add_topics_p] || [ad_administrator_p $db])} {
-  ad_return_error "You are not allowed to add topics" "Sorry, you are
+if {!([bboard_users_can_add_topics_p] || [ad_administrator_p $user_id])} {
+    ad_return_error "You are not allowed to add topics" "Sorry, you are
   not allowed to add discussion group topics on this server."
+    return
 }
 
-ReturnHeaders
-
-ns_write  "[bboard_header "Add New Topic"]
+set page_content  "[bboard_header "Add New Topic"]
 
 <h2>Add New Topic</h2>
 
@@ -20,7 +25,7 @@ ns_write  "[bboard_header "Add New Topic"]
 
 <hr>
 
-<form action=\"/user-search.tcl\" method=post>
+<form action=\"/user-search\" method=post>
 <input type=hidden name=target value=\"/bboard/add-new-topic-2.tcl\">
 <input type=hidden name=passthrough value=\"topic presentation_type private_p bboard_group moderation_policy iehelper_notify_of_new_postings_p\">
 <input type=hidden name=custom_title value=\"Choose a Member to Add as an Administrator\">
@@ -58,17 +63,16 @@ to members of these groups only, or the topic can be made publicly visible and r
 Select the primary group this topic belongs to below. Other groups can be added later.
 <p>
 <table><tr><td><select name=bboard_group size=5>
-[db_html_select_value_options $db "select group_id, group_name 
-from user_groups 
-where group_id in
-   (select group_id from user_group_map where user_id = $user_id)
- order by group_name"]
+[db_html_select_value_options -bind [ad_tcl_vars_to_ns_set user_id] user_groups_select_options "select   group_id, group_name 
+                 from     user_groups 
+                 where    group_id in
+                 (select group_id from user_group_map where user_id = :user_id)
+                 order by group_name"]
 </select>
 </td><td valign=top>
 <input type=checkbox name=private_p value=t checked> Private To Group(s)
 </td></tr></table>
 <p>
-
 
 <h3>How this BBoard is presented to users</h3>
 
@@ -98,8 +102,10 @@ threads, they'd have stuck with USENET.)
 
 What moderation category does this fall under?
 <select name=moderation_policy>"
+
 set optionlist [bboard_moderation_policy_order]
-ns_write "
+
+append page_content "
 [ad_generic_optionlist $optionlist $optionlist]
 </select>
 
@@ -126,3 +132,17 @@ Notify me of all new postings?
 
 [ad_admin_footer]
 "
+
+# release the database handle
+ 
+
+doc_return  200 text/html $page_content
+
+
+
+
+
+
+
+
+

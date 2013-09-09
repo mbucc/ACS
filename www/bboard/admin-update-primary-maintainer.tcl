@@ -1,28 +1,25 @@
-# $Id: admin-update-primary-maintainer.tcl,v 3.0 2000/02/06 03:33:17 ron Exp $
-set_the_usual_form_variables
+# /www/bboard/admin-update-primary-maintainer.tcl
+ad_page_contract {
+    Form to update the maintainer of a bboard
 
-# topic, topic_id
+    @cvs-id admin-update-primary-maintainer.tcl,v 3.1.6.5 2000/09/22 01:36:46 kevin Exp
+} {
+    topic
+    topic_id:notnull,integer
+}
 
-set db [bboard_db_gethandle]
-if { $db == "" } {
-    bboard_return_error_page
+# -----------------------------------------------------------------------------
+ 
+if  {[bboard_get_topic_info] == -1} {
     return
 }
 
- 
-if  {[bboard_get_topic_info] == -1} {
-    return}
-
 if {[bboard_admin_authorization] == -1} {
-	return}
+    return
+}
 
-ReturnHeaders
-
-ns_write "<html>
-<head>
-<title>Change primary maintainer for $topic</title>
-</head>
-<body bgcolor=[ad_parameter bgcolor "" "white"] text=[ad_parameter textcolor "" "black"]>
+doc_return  200 text/html "
+[ad_admin_header "Change primary maintainer for $topic"]
 
 <h2>Change primary maintainer</h2>
 
@@ -30,14 +27,15 @@ for \"$topic\"
 
 <hr>
 
-Current Maintainer:  [database_to_tcl_string $db "select first_names || ' ' || last_name || ' ' || '(' || email || ')' 
+Current Maintainer:  [db_string current_maintainer "
+select first_names || ' ' || last_name || ' ' || '(' || email || ')' 
 from users 
-where user_id = $primary_maintainer_id"]
+where user_id = :primary_maintainer_id"]
 
 <p>
 
 Search for a new user to be primary administrator of this forum by<br>
-<form action=\"/user-search.tcl\" method=POST>
+<form action=\"/user-search\" method=POST>
 [export_form_vars topic topic_id]
 <input type=hidden name=target value=\"/bboard/admin-update-primary-maintainer-2.tcl\">
 <input type=hidden name=passthrough value=\"topic_id\">

@@ -1,15 +1,19 @@
-# $Id: domain-delete.tcl,v 3.1 2000/03/11 00:45:12 curtisg Exp $
-set_the_usual_form_variables
+# /www/admin/gc/domain-delete.tcl
+ad_page_contract {
+    Lets the site administrator delete a domain.
 
-# domain_id
+    @param domain_id which domain
 
-set db [ns_db gethandle]
+    @author philg@mit.edu
+    @cvs_id domain-delete.tcl,v 3.2.6.5 2000/09/22 01:35:22 kevin Exp
+} {
+    domain_id:integer
+}
 
-set selection [ns_db 1row $db "select * from ad_domains
-where domain_id=$domain_id"]
-set_variables_after_query
+db_1row domain_info "select domain, full_noun from ad_domains where domain_id=:domain_id"
 
-append html "[ad_admin_header "Delete $domain"]
+
+append page_contents "[ad_admin_header "Delete $domain"]
 
 <h2>Delete $domain</h2>
 
@@ -18,9 +22,9 @@ append html "[ad_admin_header "Delete $domain"]
 <hr>
 
 Are you sure that you want to delete $domain and its
-[database_to_tcl_string $db "select count(*) from classified_ads where domain_id = $domain_id"] ads?
+[db_string num_ads "select count(*) from classified_ads where domain_id = $domain_id"] ads?
 
-<form method=post action=domain-delete-2.tcl>
+<form method=post action=domain-delete-2>
 [export_form_vars domain_id]
 <center>
 <input type=submit name=submit value=\"Yes, I'm sure\">
@@ -30,5 +34,5 @@ Are you sure that you want to delete $domain and its
 [ad_admin_footer]
 "
 
-ns_db releasehandle $db
-ns_return 200 text/html $html
+
+doc_return  200 text/html $page_contents

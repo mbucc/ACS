@@ -1,11 +1,15 @@
-# one.tcl
-#
-# Shows the pdm items and allows the administrator
-# to add, edit, delete, or arrange items
-#
-# by aure@arsdigita.com 
-#
-# $Id: one.tcl,v 1.1.2.1 2000/03/16 05:33:09 aure Exp $
+# /www/admin/pull-down-menus/one.tcl
+ad_page_contract {
+
+  Shows the pdm items and allows the administrator
+  to add, edit, delete, or arrange items
+
+  @author aure@arsdigita.com 
+  @cvs-id one.tcl,v 1.2.8.4 2000/09/22 01:35:57 kevin Exp
+
+} {
+
+}
 
 set user_id [ad_verify_and_get_user_id]
 ad_maybe_redirect_for_registration
@@ -34,25 +38,23 @@ proc pdm_last_child_p {sort_key_list sort_key} {
     return [expr [lsearch $sort_key_list $key_next] == -1]
 }
 
-proc pdm_toc_local {db} {
+proc pdm_toc_local {} {
+
+    set count 0
+    set toc "<table cellspacing=2 cellpadding=2 border=0>"
 
     # get all of the items
 
-    set selection [ns_db select $db "
+    db_foreach all_menu_items "
     select n1.item_id, n1.label, n1.sort_key, n1.url,
            (select count(*)
             from  pdm_menu_items n2
             where   n2.sort_key like substr(n1.sort_key,0,length(n1.sort_key)-2)||'__'
             and   n2.sort_key > n1.sort_key) as more_children_p
     from   pdm_menu_items n1
-    order by n1.sort_key"]
+    order by n1.sort_key" {
 
-    set count 0
-    set toc "<table cellspacing=2 cellpadding=2 border=0>"
-    while {[ns_db getrow $db $selection]} {
 	incr count
-
-	set_variables_after_query
 
 	if {[expr $count % 2]==0} {
 	    set color "#eeeeee"
@@ -97,13 +99,13 @@ proc pdm_toc_local {db} {
 
 # -----------------------------------------------------------------------------
 
-set db [ns_db gethandle]
 
-ns_return 200 text/html "
+
+set return_html "
 
 [ad_header_with_extra_stuff "Pull-Down Menus: $title"]
 
-[ad_pdm "default" 10 5]
+[ad_pdm "" 10 5]
 &nbsp;
 <h2>$title</h2>
 
@@ -113,7 +115,9 @@ ns_return 200 text/html "
 
 <h3> Contents</h3>
 
-[pdm_toc_local $db]
+[pdm_toc_local]
 
 [ad_admin_footer]"
 
+
+doc_return  200 text/html $return_html

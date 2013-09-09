@@ -1,4 +1,12 @@
-# $Id: index.tcl,v 3.1 2000/03/10 23:58:50 curtisg Exp $
+# index.tcl
+
+ad_page_contract {
+    @author
+    @creation-date
+    @cvs-id index.tcl,v 3.2.6.7 2001/01/10 19:13:13 khy Exp
+
+} {}
+
 ad_maybe_redirect_for_registration
 
 set user_id [ad_get_user_id]
@@ -14,18 +22,16 @@ append html "[ad_admin_header "Classified Administration"]
 
 <h4>Active domains</h4>"
 
-set db [gc_db_gethandle]
-
-set selection [ns_db select $db "select * 
+set sql "select * 
 from ad_domains
-where ad_admin_group_member_p('gc',domain,$user_id) = 't'
-order by active_p desc, upper(domain)"]
+where ad_admin_group_member_p('gc',domain,:user_id) = 't'
+order by active_p desc, upper(domain)"
 
 set count 0
 set inactive_title_shown_p 0
 
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+db_foreach gc_admin_index_domain_list $sql {
+    
     if { $active_p == "f" } {
 	if { $inactive_title_shown_p == 0 } {
 	    # we have not shown the inactive title yet
@@ -38,9 +44,7 @@ while { [ns_db getrow $db $selection] } {
     } else {
     }
 
-    set_variables_after_query
-
-    append html "<li><a href=\"domain-top.tcl?domain_id=$domain_id\">$domain</a>\n"
+    append html "<li><a href=\"domain-top?domain_id=$domain_id\">$domain</a>\n"
     incr count
 }
 
@@ -49,10 +53,14 @@ if { $count == 0 } {
 }
 
 append html "
-
 </ul>
+<br>
+
+<blockquote>
+<h4>Action </h4>
+ <a href=\"domain-add\">Add Domain</a>
+</blockquote>
 
 [ad_admin_footer]"
 
-ns_db releasehandle $db
-ns_return 200 text/html $html
+doc_return  200 text/html $html

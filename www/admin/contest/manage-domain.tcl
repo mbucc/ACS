@@ -1,11 +1,12 @@
-# $Id: manage-domain.tcl,v 3.1.2.1 2000/03/17 23:37:45 tzumainn Exp $
-set_the_usual_form_variables
+# manage-domain.tcl
 
-# domain_id
+ad_page_contract {
+    @cvs-id manage-domain.tcl,v 3.4.2.4 2000/09/22 01:34:36 kevin Exp
+} {
+    domain_id:integer
+}
 
-set db [ns_db gethandle]
-
-set update_form_raw "<form method=post action=\"update-domain.tcl\">
+set update_form_raw "<form method=post action=\"update-domain\">
 [export_form_vars domain_id]
 <table>
 <tr><th>Contest Pretty Name<td><input type=text name=pretty_name size=40>
@@ -24,14 +25,11 @@ set update_form_raw "<form method=post action=\"update-domain.tcl\">
 </form>
 "
 
-set selection [ns_db 1row $db "select unique * from contest_domains where domain_id='$QQdomain_id'"]
+db_1row domain_id_get "select unique * from contest_domains where domain_id=:domain_id" -bind [ad_tcl_vars_to_ns_set domain_id]
 
-set_variables_after_query
-set final_form [bt_mergepiece $update_form_raw $selection]
+set final_form [bt_mergepiece $update_form_raw [ad_tcl_vars_to_ns_set pretty_name home_url blather start_date end_date notify_of_additions_p us_only_p]]
 
-ReturnHeaders
-
-ns_write "[ad_admin_header "Manage $domain"]
+set doc_body "[ad_admin_header "Manage $domain"]
 
 <h2>Manage $domain ($pretty_name)</h2>
 
@@ -40,29 +38,25 @@ ns_write "[ad_admin_header "Manage $domain"]
 <hr>
 
 <ul>
-<li>automatically generated entry form: <a href=\"/contest/entry-form.tcl?[export_url_vars domain_id]\">/contest/entry-form.tcl?[export_url_vars domain_id]</a>
+<li>automatically generated entry form: <a href=\"/contest/entry-form?[export_url_vars domain_id]\">/contest/entry-form.tcl?[export_url_vars domain_id]</a>
 
 <li>target for a static form should be 
-<a href=\"/contest/process-entry.tcl?[export_url_vars domain_id]\">/contest/process-entry.tcl?[export_url_vars domain_id]</a>
-
-
+/contest/process-entry.tcl?[export_url_vars domain_id]
 
 </ul>
 
 <h3>Entrants</h3>
 
-
 <ul>
 <li>View the entrants: 
-<a href=\"view-verbose.tcl?[export_url_vars domain_id]&order_by=email\">ordered by email address</a> |
-<a href=\"view-verbose.tcl?[export_url_vars domain_id]&order_by=entry_date\">ordered by entry_date</a>
-
+<a href=\"view-verbose?[export_url_vars domain_id]&order_by=email\">ordered by email address</a> |
+<a href=\"view-verbose?[export_url_vars domain_id]&order_by=entry_date\">ordered by entry_date</a>
 
 </ul>
 
 <h3>Pick Winner(s)</h3>
 
-<form method=post action=pick-winners.tcl>
+<form method=get action=pick-winners>
 <input type=hidden name=domain value=\"$domain\">
 [export_form_vars domain_id]
 
@@ -129,3 +123,5 @@ $final_form
 [ad_contest_admin_footer]
 "
 
+db_release_unused_handles
+doc_return 200 text/html $doc_body

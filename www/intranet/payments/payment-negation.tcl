@@ -1,17 +1,28 @@
-# $Id: payment-negation.tcl,v 3.0.4.2 2000/04/28 15:11:09 carsten Exp $
-# File: /www/intranet/payments/payment-negation.tcl
-#
-# Author: mbryzek@arsdigita.com, Jan 2000
-#
-# Purpose: toggles the paid_p column for a specified payment
-#
+# /www/intranet/payments/payment-negation.tcl
 
-set_the_usual_form_variables
+ad_page_contract {
+    Purpose: toggles the paid_p column for a specified payment
 
-# return_url, payment_id
+    @param return_url
+    @param payment_id
 
-set db [ns_db gethandle]
+    @author mbryzek@arsdigita.com
+    @creation-date Jan 2000
 
-ns_db dml $db "update im_project_payments set paid_p  = logical_negation(paid_p), received_date = sysdate where payment_id= $payment_id"
+    @cvs-id payment-negation.tcl,v 3.2.6.5 2000/08/16 21:24:58 mbryzek Exp
+} {
+    return_url
+    payment_id:integer
+}
+
+
+
+db_dml payment_update \
+ "update im_project_payments 
+  set paid_p = logical_negation(paid_p), received_date = sysdate 
+  where payment_id= :payment_id"
+
+db_release_unused_handles
 
 ad_returnredirect $return_url
+

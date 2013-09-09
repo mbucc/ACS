@@ -1,64 +1,63 @@
-# $Id: move-1.tcl,v 3.0.4.1 2000/04/28 15:11:02 carsten Exp $
-# File:     /homepage/move-1.tcl
-# Date:     Mon Jan 24 20:54:29 EST 2000
-# Location: 42ÅÅ∞21'N 71ÅÅ∞04'W
-# Location: 80 PROSPECT ST CAMBRIDGE MA 02139 USA
-# Author:   mobin@mit.edu (Usman Y. Mobin)
-# Purpose:  Page to move a file or folder
+# /homepage/move-1.tcl
 
-set_form_variables
-# filesystem_node, move_node
+ad_page_contract {
+    Allow to move a file or directory.
+
+    @param filesystem_node The top directory the directory will be moved in.
+    @param move_node The directory to move.
+
+    @creation-date Jan 24 22:03:59 EST 2000
+    @author mobin@mit.edu
+    @cvs-id move-1.tcl,v 3.3.2.5 2000/09/22 01:38:17 kevin Exp
+
+} {
+    filesystem_node:notnull,naturalnum
+    move_node:notnull,naturalnum
+}
 
 # ------------------------------ initialization codeBlock ----
 
-# First, we need to get the user_id
-set user_id [ad_verify_and_get_user_id]
-
-# If the user is not registered, we need to redirect him for
-# registration
-if { $user_id == 0 } {
-    ad_redirect_for_registration
-    return
-}
+set user_id [ad_maybe_redirect_for_registration]
 
 # ------------------------------ htmlGeneration codeBlock ----
 
-set db [ns_db gethandle]
-set filename [database_to_tcl_string $db "
-select filename from users_files
-where file_id=$move_node"]
+set filename [db_string file_name {
+    select filename from users_files
+    where file_id=:move_node
+}]
 
 set html "
 Please click on the directory to which<br>you would like to move `$filename':
 <br><p>
 <table border=0 cellpadding=0 cellspacing=0>"
 
-set user_root [database_to_tcl_string $db "
-select hp_get_filesystem_root_node($user_id) from dual"]
+set user_root [db_string user_root {
+    select hp_get_filesystem_root_node(:user_id) from dual
+}]
 
-set selection [ns_db select $db "
-select file_id as fid, filename, level, parent_id,
-hp_filesystem_node_sortkey_gen(f.file_id) as generated_sort_key
-from users_files f
-where owner_id=$user_id
-and directory_p='t'
-and managed_p='f'
-connect by prior file_id = parent_id
-start with file_id=$user_root
-order by generated_sort_key asc"]
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
+
+db_foreach dir_listing {
+    select file_id as fid, filename, level, parent_id,
+           hp_filesystem_node_sortkey_gen(f.file_id) as generated_sort_key
+    from users_files f
+    where owner_id=:user_id
+      and directory_p='t'
+      and managed_p='f'
+    connect by prior file_id = parent_id
+    start with file_id=:user_root
+    order by generated_sort_key asc
+} {
     set level [expr $level - 1]
     if {$level == 0} {
 	append html "<tr><td>[ad_space [expr $level * 8]]<img src=dir.gif>
-	<a href=move-2.tcl?filesystem_node=$filesystem_node&move_node=$move_node&move_target=$fid>Your root directory</a>"
+	<a href=move-2?filesystem_node=$filesystem_node&move_node=$move_node&move_target=$fid>Your root directory</a>"
     } else {
 	append html "<tr><td>[ad_space [expr $level * 8]]<img src=dir.gif>
-	<a href=move-2.tcl?filesystem_node=$filesystem_node&move_node=$move_node&move_target=$fid>$filename</a>"
+	<a href=move-2?filesystem_node=$filesystem_node&move_node=$move_node&move_target=$fid>$filename</a>"
     }
 }
 
-ns_db releasehandle $db
+db_release_unused_handles
 
 append html "</table>"
 
@@ -69,19 +68,15 @@ append html "</table>"
 
 #  <table border=0 cellpadding=0> \
 #  <tr> \
-#      <td><form method=get action=index.tcl> \
+#      <td><form method=get action=index> \
 #          <input type=hidden name=filesystem_node value=$filesystem_node> \
 #          <input type=submit value=Cancel></form></td> \
 #  </tr></table>"
 
-
 #ad_returnredirect "dialog-class.tcl?title=Filesystem Management&text=$dialog_body"
 #return
 
-ReturnHeaders
-
 set title "Filesystem Management"
-
 # Code deactivated Mon Jan 24 21:40:52 EST 2000
 #ns_write "
 #[ad_header $title]
@@ -93,7 +88,7 @@ set title "Filesystem Management"
 #
 #$html
 #
-#<form method=post action=rename-2.tcl>
+#<form method=post action=rename-2>
 #  <input type=hidden name=filesystem_node value=$filesystem_node>
 #  <input type=hidden name=move_node value=$move_node>
 #  <p><br>
@@ -111,7 +106,7 @@ set title "Filesystem Management"
 #[ad_footer]
 #"
 
-ns_write "
+set document "
 <html>
 
 <head>
@@ -175,3 +170,4 @@ A:vlink {text-decoration:none; font-style:plain; font-weight:bold}
 </body>
 </html>
 "
+doc_return  200 text/html $document

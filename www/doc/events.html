@@ -7,7 +7,7 @@
 <body bgcolor=#ffffff text=#000000>
 <h2>Events</h2>
 
-part of the <a href="/doc/index.html">ArsDigita Community System</a>
+part of the <a href="/doc/index">ArsDigita Community System</a>
 by <a href="http://photo.net/philg/">Philip Greenspun</a> and Bryan Che
 
 <hr>
@@ -15,8 +15,8 @@ by <a href="http://photo.net/philg/">Philip Greenspun</a> and Bryan Che
 <ul>
 <li>User-accessible directory:  <a href="/events/">/events/</a>
 <li>Administrator directory:  <a href="/events/admin/">/events/admin/</a>
-<li>data model :  <a href="/doc/sql/display-sql.tcl?url=/doc/sql/events.sql">/doc/sql/events.sql</a>
-<li>Tcl procs:  /tcl/events-defs.tcl 
+<li>data model :  <a href="/doc/sql/display-sql?url=/doc/sql/events.sql">/doc/sql/events.sql</a>
+<li>Tcl procs:  /tcl/events-defs 
 
 </ul>
 
@@ -94,7 +94,6 @@ create table events_activities (
 	activity_id	integer primary key,
 	-- activities are owned by user groups
 	group_id	integer references user_groups,
-	user_id		integer references users,
         creator_id      integer not null references users,
 	short_name	varchar(100) not null,
 	default_price   number default 0 not null,
@@ -105,6 +104,7 @@ create table events_activities (
         available_p	char(1) default 't' check (available_p in ('t', 'f')),
         deleted_p	char(1) default 'f' check (deleted_p in ('t', 'f')),
         detail_url 	varchar(256) -- URL for more details,
+	default_contact_user_id integer references users
 );
 </pre>
 
@@ -133,7 +133,7 @@ create table events_events (
         -- An event may have been cancelled.
         available_p	      char(1) default 't' check (available_p in ('t', 'f')),	
         deleted_p	      char(1) default 'f' check (deleted_p in ('t', 'f')),
-        max_people	      number,
+        max_people	      integer,
 	-- can someone cancel his registration?		
 	reg_cancellable_p     char(1) default 't' check (reg_cancellable_p in ('t', 'f')),
 	-- does a registration need approval to become finalized?
@@ -150,6 +150,7 @@ create table events_events (
 	check (reg_deadline <= start_time)
 );
 
+
 -- where the events occur
 create table events_venues (
        venue_id		  integer primary key,
@@ -161,8 +162,12 @@ create table events_venues (
        postal_code	  varchar(20),
        iso		  char(2) default 'us' references country_codes,
        time_zone	  varchar(50),
+       -- some contact info for this venue
+       fax_number	  varchar(30),
+       phone_number	  varchar(30),
+       email		  varchar(100),
        needs_reserve_p	  char(1) default 'f' check (needs_reserve_p in ('t', 'f')),
-       max_people	  number,	
+       max_people	  integer,	
        description	  clob
 );
 
@@ -172,7 +177,7 @@ create table events_venues (
 This data model also contains extensions for selling admission to
 events, althought the tcl pages do not currently implement this feature.
 These extensions can tie in with the 
-<a href="/doc/ecommerce.html">ecommerce module</a>.  
+<a href="/doc/ecommerce">ecommerce module</a>.  
 
 <pre>
 create table events_prices (
@@ -201,18 +206,45 @@ create table events_prices (
 
 <h4>Organizers</h4> 
 
-Each event should have at least one organizer.  Organizer are the people
-responsible for various aspects of a particular event.  For example, a
-lecture's organizers might be its speaker, the person in charge of
-audio/visual equipment, and the person in charge of catering.
+Each event should have at least one organizer role.  An organizer role
+is an official position for that event.  For example, a lecture
+might have the organizer role of "speaker."  Organizers are people
+who fill an organizer role position.
+
 
 <pre>
-create table events_organizers_map (
-       event_id		      integer not null references events_events,  
-       user_id		      integer not null references users,
-       role		      varchar(200) default 'organizer' not null,
-       responsibilities	      clob
+create table events_event_organizer_roles (
+       role_id			integer 
+				constraint evnt_ev_org_roles_role_id_pk 
+				primary key,
+       event_id			integer 
+				constraint evnt_ev_org_roles_event_id_fk 
+				references events_events
+				constraint evnt_ev_org_roles_event_id_nn
+				not null,  
+       role			varchar(200) 
+				constraint evnt_ev_org_roles_role_nn
+				not null,
+       responsibilities		clob,
+       -- is this a role that we want event registrants to see?
+       public_role_p		char(1) default 'f' 
+				constraint evnt_ev_roles_public_role_p
+				check (public_role_p in ('t', 'f'))
 );
+
+create table events_organizers_map (
+       user_id			   constraint evnt_org_map_user_id_nn
+				   not null
+				   constraint evnt_org_map_user_id_fk
+				   references users,
+       role_id			   integer 
+				   constraint evnt_org_map_role_id_nn
+				   not null 
+				   constraint evnt_org_map_role_id_fk
+				   references events_event_organizer_roles,
+       constraint events_org_map_pk primary key (user_id, role_id)
+);
+
 </pre>
 
 <h4>Registrations</h4>
@@ -261,7 +293,7 @@ create table events_registrations(
 	-- the person registered for this reg_id (may not be the person
 	-- who made the order)
 	user_id		integer not null references users,
-	-- reg_states: pending, shipped, canceled, refunded
+	-- reg_states: pending, shipped, canceled, waiting
 	--pending: waiting for approval
 	--shipped: registration all set 
 	--canceled: registration canceled

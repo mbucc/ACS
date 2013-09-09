@@ -1,13 +1,20 @@
-# $Id: items-add.tcl,v 3.0 2000/02/06 03:19:18 ron Exp $
-set_the_usual_form_variables
-# order_id
+# /www/admin/ecommerce/orders/items-add.tcl
+ad_page_contract {
 
-ReturnHeaders
-ns_write "[ad_admin_header "Add Items"]
+  Add an item to an order.
+
+  @author Eve Andersson (eveander@arsdigita.com)
+  @creation-date Summer 1999
+  @cvs-id items-add.tcl,v 3.2.2.2 2000/08/16 21:19:21 seb Exp
+} {
+  order_id:integer,notnull
+}
+
+doc_body_append "[ad_admin_header "Add Items"]
 
 <h2>Add Items</h2>
 
-[ad_admin_context_bar [list "../" "Ecommerce"] [list "index.tcl" "Orders"] [list "one.tcl?order_id=$order_id" "One Order"] "Add Items"]
+[ad_admin_context_bar [list "../" "Ecommerce"] [list "index" "Orders"] [list "one?order_id=$order_id" "One Order"] "Add Items"]
 
 <hr>
 <blockquote>
@@ -15,8 +22,7 @@ Search for a product to add:
 
 <ul>
 
-
-<form method=post action=items-add-2.tcl>
+<form method=post action=items-add-2>
 [export_form_vars order_id]
 <li>By Name: <input type=text name=product_name size=20>
 <input type=submit value=\"Search\">
@@ -24,7 +30,7 @@ Search for a product to add:
 
 <p>
 
-<form method=post action=items-add-2.tcl>
+<form method=post action=items-add-2>
 [export_form_vars order_id]
 <li>By ID: <input type=text name=product_id size=3>
 <input type=submit value=\"Search\">
@@ -35,7 +41,4 @@ Search for a product to add:
 </blockquote>
 [ad_admin_footer]
 "
-
-
-
 

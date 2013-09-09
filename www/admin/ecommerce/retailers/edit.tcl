@@ -1,10 +1,17 @@
-# $Id: edit.tcl,v 3.0 2000/02/06 03:21:20 ron Exp $
-set_the_usual_form_variables
-# retailer_id
+#  www/admin/ecommerce/retailers/edit.tcl
+ad_page_contract {
+    @param retailer_id the ID of the retailer
 
-ReturnHeaders
+  @author
+  @creation-date
+  @cvs-id edit.tcl,v 3.1.6.5 2000/09/22 01:35:00 kevin Exp
+} {
+    retailer_id
+}
 
-ns_write "[ad_admin_header "Edit Retailer"]
+
+
+set page_html "[ad_admin_header "Edit Retailer"]
 
 <h2>Edit Retailer</h2>
 
@@ -15,11 +22,37 @@ ns_write "[ad_admin_header "Edit Retailer"]
 <p>
 "
 
-set db [ns_db gethandle]
-set selection [ns_db 1row $db "select * from ec_retailers where retailer_id=$retailer_id"]
-set_variables_after_query
 
-ns_write "<form method=post action=edit-2.tcl>
+db_1row get_retailer_details "
+select retailer_id ,
+    retailer_name,
+    primary_contact_name,
+    secondary_contact_name,
+    primary_contact_info,
+    secondary_contact_info,
+    line1,
+    line2,
+    city ,
+    usps_abbrev,
+    zip_code,
+    phone,
+    fax,
+    url,
+    country_code,
+    reach,
+    nexus_states,
+    financing_policy,
+    return_policy,
+    
+    price_guarantee_policy,
+    delivery_policy,
+    installation_policy
+from ec_retailers 
+where retailer_id=:retailer_id"
+
+db_release_unused_handles
+
+append page_html "<form method=post action=edit-2>
 [export_form_vars retailer_id]
 <table>
 <tr>
@@ -68,13 +101,13 @@ ns_write "<form method=post action=edit-2.tcl>
 <tr>
 <td valign=top>City</td>
 <td valign=top><input type=text name=city size=15 value=\"[philg_quote_double_quotes $city]\">
-State [state_widget $db $usps_abbrev]
+State [state_widget $usps_abbrev]
 Zip <input type=text name=zip_code size=5 value=\"[philg_quote_double_quotes $zip_code]\">
 </td>
 </tr>
 <tr>
 <td valign=top>Country</td>
-<td valign=top>[country_widget $db "$country_code" "country_code" ""]</td>
+<td valign=top>[country_widget "$country_code" "country_code" ""]</td>
 </tr>
 <tr>
 <td valign=top>Phone</td>
@@ -94,7 +127,7 @@ Zip <input type=text name=zip_code size=5 value=\"[philg_quote_double_quotes $zi
 </tr>
 <tr>
 <td valign=top>Nexus States</td>
-<td valign=top>[ec_multiple_state_widget $db "$nexus_states" nexus_states]</td>
+<td valign=top>[ec_multiple_state_widget "$nexus_states" nexus_states]</td>
 </tr>
 <tr>
 <td valign=top>Financing</td>
@@ -126,3 +159,6 @@ Zip <input type=text name=zip_code size=5 value=\"[philg_quote_double_quotes $zi
 </form>
 [ad_admin_footer]
 "
+
+
+doc_return  200 text/html $page_html

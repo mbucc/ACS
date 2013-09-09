@@ -1,23 +1,40 @@
-# $Id: add-charge.tcl,v 3.0.4.1 2000/04/28 15:09:10 carsten Exp $
-set_the_usual_form_variables
+# /www/admin/member-value/add-charge.tcl
 
-# note: nobody gets to this page who isn't a site administrator (ensured
-# by a filter in ad-security.tcl)
+ad_page_contract {
+    Add a charge to an user.
+    
+    @param user_id
+    @param chage_type
+    @param amount
+    @param charge_comment    
+    @author mbryzek@arsdigita.com
+    @creation-date Tue Jul 11 21:02:42 2000
+    @cvs-id add-charge.tcl,v 3.2.2.6 2000/08/05 00:41:07 jmp Exp
 
-# user_id (the guy who will be charged), charge_type
-# amount, charge_comment
+} {
+    user_id:integer,notnull
+    charge_type:notnull 
+    amount:notnull
+    charge_comment:notnull,nohtml
+}
 
 set admin_id [ad_verify_and_get_user_id]
 
 if { $admin_id == 0 } {
-    ad_return_error "no filter" "something wrong with the filter on add-charge.tcl; couldn't find registered user_id"
+    ad_return_error "no filter" "something wrong with the filter on add-charge; couldn't find registered user_id"
     return
 }
+ 
+if {![regexp {^([0-9]+)(\.)?([0-9]*)$} $amount]} {
+    ad_return_complaint 1 " <li>Amount must be a positive number."
+    return 0
+}
 
-set db [ns_db gethandle]
-ns_db dml $db "insert into users_charges (user_id, admin_id, charge_type, amount, charge_comment, entry_date)
+db_dml mv_users_charges_insertion "insert into users_charges (user_id, admin_id, charge_type, amount, charge_comment, entry_date)
 values
-($user_id, $admin_id, '$QQcharge_type', $amount, '$QQcharge_comment', sysdate)"
+(:user_id, :admin_id, :charge_type, :amount, :charge_comment, sysdate)"
 
-ad_returnredirect "user-charges.tcl?user_id=$user_id"
+db_release_unused_handles
+
+ad_returnredirect "user-charges?user_id=$user_id"
 

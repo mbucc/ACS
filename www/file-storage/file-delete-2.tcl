@@ -1,25 +1,21 @@
 # /file-storage/file-delete-2.tcl
-#
-# by aure@arsdigita.com, July 1999
-#
-# marks a file deleted (but does not actually remove anything 
-# from the database); if a folder, marks the entire subtree deleted
-#
-# modified by randyg@arsdigita, January, 2000 to use the general permissions module
-#
-# $Id: file-delete-2.tcl,v 3.2.2.3 2000/04/28 15:10:27 carsten Exp $
+ad_page_contract {
+    marks a file deleted (but does not actually remove anything 
+    from the database); if a folder, marks the entire subtree deleted
+    
+    @author aure@arsdigita.com
+    @creation-date July 1999
+    @cvs-id file-delete-2.tcl,v 3.8.2.2 2000/07/21 22:05:16 mdetting Exp
 
-ad_page_variables {
+    modified by randyg@arsdigita, January, 2000 to use the general permissions module
+} {
     {file_id}
     {group_id ""}
     {source ""}
 }
 
-set user_id [ad_verify_and_get_user_id]
+set user_id [ad_maybe_redirect_for_registration]
 
-ad_maybe_redirect_for_registration
-
-set db [ns_db gethandle ]
 # Determine if we are working in a Group, or our personal space
 # this is based if no group_id was sent - then we are in
 # our personal area - otherwise the group defined by group_id
@@ -27,10 +23,10 @@ set db [ns_db gethandle ]
 set exception_text ""
 set exception_count 0
 
-set version_id [database_to_tcl_string $db "
-    select version_id from fs_versions_latest where file_id = $file_id"]
+set version_id [db_string unused "
+    select version_id from fs_versions_latest where file_id = :file_id"]
 
-if {! [fs_check_edit_p $db $user_id $version_id $group_id]} {
+if {! [fs_check_edit_p $user_id $version_id $group_id]} {
     incr exception_count
     append exception_text "<li>You do not own this file"
 }
@@ -41,12 +37,11 @@ if { $exception_count> 0 } {
     return 0
 }
 
-
 # is this a folder ? Get all its children
-set folder_p [database_to_tcl_string $db "
-    select folder_p from fs_files where file_id=$file_id"]
+set folder_p [db_string unused "
+    select folder_p from fs_files where file_id=:file_id"]
 
-ns_db dml $db "begin transaction"
+db_transaction {
 
 if {$folder_p=="t"} {
 
@@ -54,10 +49,10 @@ if {$folder_p=="t"} {
         select file_id
         from   fs_files
         connect by prior file_id = parent_id
-        start with file_id = $file_id"
+        start with file_id = :file_id"
 
     # note that the "children" list includes the top-level folder
-    set children_list [database_to_tcl_list $db $children_query]
+    set children_list [db_list unused $children_query]
     
     set sql_faux_delete "
         update fs_files
@@ -72,17 +67,30 @@ if {$folder_p=="t"} {
         where  file_id = $file_id"
 }
 
+db_dml unused $sql_faux_delete
 
-ns_db dml $db $sql_faux_delete
+fs_order_files
 
-fs_order_files $db
-
-ns_db dml $db "end transaction"
-
-ns_db releasehandle $db 
-
-if {[info exists group_id] && ![empty_string_p $group_id]} {
-    ad_returnredirect group?group_id=$group_id
-} else {
-    ad_returnredirect /file-storage/$source
 }
+
+db_release_unused_handles 
+
+switch $source {
+    "private_individual" {
+	set return_url "private-one-person?[export_url_vars user_id]"
+    }
+    "private_group" { 
+	set return_url "private-one-group?[export_url_vars group_id]"
+    }
+    "public_individual" {
+	set return_url "public-one-person?[export_url_vars user_id]"
+    }
+    "public_group" {
+	set return_url "public-one-group?[export_url_vars group_id]"
+    }
+    default {
+	set return_url ""
+    }
+}
+
+ad_returnredirect $return_url

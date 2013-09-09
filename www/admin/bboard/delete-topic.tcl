@@ -1,20 +1,28 @@
-# $Id: delete-topic.tcl,v 3.0 2000/02/06 02:49:18 ron Exp $
-set_form_variables_string_trim_DoubleAposQQ
-set_form_variables
+# /www/admin/bboard/delete-topic.tcl
+ad_page_contract {
+    Deletes a topic area from the bboard system
+    
+    @param topic the name of the bboard topic
 
-# topic
+    @cvs-id delete-topic.tcl,v 3.1.6.4 2000/09/22 01:34:22 kevin Exp
+} {
+    topic:notnull
+}
 
-set db [bboard_db_gethandle]
-if [catch {set selection [ns_db 0or1row $db "select unique * from bboard_topics where topic='$QQtopic'"]} errmsg] {
+# -----------------------------------------------------------------------------
+
+if { ![db_0or1row bboard_topic_info "
+select unique * from bboard_topics where topic= :topic"]} {
     [bboard_return_cannot_find_topic_page]
     return
 }
+
 # we found the data we needed
-set_variables_after_query
 
-set n_messages [database_to_tcl_string $db "select count(*) from bboard where topic='$QQtopic'"]
+set n_messages [db_string n_messages "
+select count(*) from bboard where topic= :topic"]
 
-ns_return 200 text/html "<html>
+doc_return  200 text/html "<html>
 <head>
 <title>Confirm</title>
 </head>
@@ -30,7 +38,7 @@ Are you absolutely sure that you want to remove \"$topic\" and
 its $n_messages postings from the [bboard_system_name] system?
 
 <p>
-<form method=post action=delete-topic-2.tcl>
+<form method=post action=delete-topic-2>
 <input type=hidden name=topic value=\"$topic\">
 
 <input type=submit value=\"Yes, I am absolutely sure\">

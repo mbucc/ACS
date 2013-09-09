@@ -1,21 +1,24 @@
-# $Id: domain-add.tcl,v 3.1 2000/03/11 00:45:11 curtisg Exp $
+# /www/admin/gc/domain-add.tcl
 
-set db [ns_db gethandle]
-set domain_id [database_to_tcl_string $db "select ad_domain_id_seq.nextval from dual"]
-ns_db releasehandle $db
+ad_page_contract {
+    Form for adding a domain
 
-ns_return 200 text/html "[ad_admin_header "Add a domain"]
+    @author xxx
+    @creation-date unknown
+    @cvs-id domain-add.tcl,v 3.2.6.6 2000/09/22 01:35:22 kevin Exp
+} {
+}
+
+set html "[ad_admin_header "Add a domain"]
 
 <h2>Add domain</h2>
 
 [ad_admin_context_bar [list "index.tcl" "Classifieds"] "Add domain"]
 
 <hr>
-
-<form method=post action=/user-search.tcl>
-[export_form_vars domain_id]
+<form method=post action=/user-search>
 <input type=hidden name=target value=\"/admin/gc/domain-add-2.tcl\">
-<input type=hidden name=passthrough value=\"domain_id full_noun domain\">
+<input type=hidden name=passthrough value=\"full_noun domain\">
 <input type=hidden name=custom_title value=\"Choose a Member to Add as an Administrator\">
 
 <H3>Identity</H3>
@@ -40,3 +43,5 @@ Search for a user to be primary administrator of this domain by<br>
 </form>
 [ad_admin_footer]
 "
+
+doc_return  200 text/html $html

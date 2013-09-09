@@ -1,22 +1,25 @@
-# $Id: banner-add.tcl,v 3.0 2000/02/06 02:48:25 ron Exp $
-set db [banner_ideas_gethandle]
-ReturnHeaders 
+# /www/admin/bannerideas/banner-add.tcl
 
+ad_page_contract {
+    @cvs-id banner-add.tcl,v 3.2.2.7 2001/01/09 22:14:33 khy Exp
+} {
+    
+}
 
-ns_write "
+set idea_id [db_string idea_id_sequence_query "select idea_id_sequence.nextval from dual"]
+
+set page_content "
 [ad_admin_header "Add a banner idea"]
 
 <h2>Add</h2>
 
 [ad_admin_context_bar [list "index.tcl" "Banner Ideas Administration"] "Add One"]
 
-
 <hr>
 
-<form method=POST action=\"banner-add-2.tcl\">
- 
-<input type=hidden name=idea_id value=\"[database_to_tcl_string $db "
-select idea_id_sequence.nextval from dual"]\">
+<form method=POST action=\"banner-add-2\">
+
+[export_form_vars -sign idea_id]
 
 <table>
 <tr><th align=right valign=top>Idea:</th><td><textarea name=intro cols=60 rows=5 wrap=soft></textarea></td></tr>\n\n
@@ -34,3 +37,6 @@ select idea_id_sequence.nextval from dual"]\">
 </form>
 <p>
 [ad_admin_footer]"
+
+
+doc_return  200 text/html $page_content

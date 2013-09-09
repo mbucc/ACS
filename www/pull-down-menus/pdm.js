@@ -6,7 +6,8 @@
 //
 // requires standard.js
 //
-// $Id: pdm.js,v 1.1.2.1 2000/03/17 18:07:40 aure Exp $
+// pdm.js,v 1.11 2000/06/20 09:46:37 randyb Exp
+
 
 var NavBar = new Array();
 var menu_spacing = 0;
@@ -159,11 +160,12 @@ function MakeNavLayers(){
                             current_x_offset,
 	                    current_y_offset,
                             NavBar[i].url,
-                            'TopOver(' + i +',' + 
-                                     (x_offset + current_x_offset) + ',' + 
-                                     (y_offset + current_y_offset) + 
-                                   ');',
-	                    '');
+                            "TopOver(" + i +"," + 
+                                     (x_offset + current_x_offset) + "," + 
+                                     (y_offset + current_y_offset) + ",'firstpass'" + 
+                                   ");",
+	                    '',
+			    'top');
 	
 	//build first level cascade for this nav item
 	var sub1_id = 'casc1_' + i;
@@ -234,7 +236,8 @@ function MakeNavLayers(){
                                                           x1 + ',' + 
                                                           (y1 + sub1_top + sub2_top) +
                                                         ')',
-                                            '');
+                                            '',
+					    'sub');
 		    }
 
 		    sub2_cont += '</table>\n';
@@ -305,7 +308,8 @@ function MakeNavLayers(){
                                                   (y2 + sub1_top)  +',' + 
                                                    NavBar[i].cascade.members[j].has_cascade +',' + 
 		                                   i + ')',
-		                    '');
+		                    '',
+				    'sub');
 	    }
 	    
 	    sub1_cont += '</table>\n';
@@ -499,6 +503,11 @@ function MakeNavLayers(){
 //closes all opened explore items
 //called by giant mouseover layer activated by any rollover
 function CloseAll(){
+    if (click_to_open_menu_p) {
+	hoverActive = false;
+    } else {
+        hoverActive = true;
+    }
     visLay("nav_highlight",false);
     visLay(last_casc1, false);
     visLay(last_casc1 + '_bg', false);
@@ -514,11 +523,25 @@ function CloseAll(){
     visLay("casc2_highlight",false);
     
     visLay("closer",false);
+
 }
 
 //TopOver
 //handles toplevel mouseovers
-function TopOver(which,x,y){
+function TopOver(which,x,y,pass){
+    
+    if ((pass == 'firstpass') && (hoverActive)) {
+	hoverActive = false;
+        visLay('closer',true);
+	setTimeout("TopOver(" + which + "," + x + "," + y + ",'second')", 1000);
+	return;
+    } else if ((pass =='firstpass') && (hoverActive == false)) {
+	setTimeout("TopOver(" + which + "," + x + "," + y + ",'second')", 1);
+	return;
+    } else if (hoverActive) {
+	return;
+    }
+
     //first turn stuff off
     visLay(last_casc1, false);
     visLay(last_casc1 + '_bg', false);
@@ -584,10 +607,18 @@ function Cascade2Over(which,x,y){
 //MapArea
 //returns individual lines of an image map
 //used to build activation layers
-function MapArea(width,height,x,y,url,over,out){
+function MapArea(width,height,x,y,url,over,out,level){
+
     var my_map = '<area shape="rect" coords="';
     my_map += x + ',' + y + ',' + (x + width) + ',' + (y + height);
-    my_map += '" href="'+ url +'" onmouseover="'+ over +'" onmouseout="'+ out +'" onclick="return '+ (url != "#") +';">\n';
+
+    if ((click_to_open_menu_p) && (level == 'top')) {
+	my_map += '" href="'+ url +'" onclick="'+ over +'; return false;" onmouseout="'+ out +'">\n';
+    } else {
+    	my_map += '" href="'+ url +'" onmouseover="'+ over +'" onmouseout="'+ out +'" onclick="return '+ (url != "#") +';">\n';
+    }
     return my_map;
 }
+
+
 

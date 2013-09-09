@@ -1,22 +1,40 @@
-# $Id: ticket-code-set.tcl,v 3.11 2000/03/09 22:41:49 davis Exp $
-#Ugh
-set scope public 
+# /www/ticket/ticket-code-set.tcl
+ad_page_contract {
+    Page for changing an arbitrary ticket code
 
-ad_page_variables {
-    msg_id
+    @param msg_id the ticket being changed
+    @param what a code type
+    @param value the new value
+    @param action
+    @param message
+    @param msg_html one of <code>plain</code>,<code>html</code>,
+           or <code>pre</code>
+    @param didsubmit have they confirmed their message
+    @param return_url where to go when finished
+    @param project_id 
+    @param domain_id
+
+    @author original author unknown
+    @author Kevin Scaldeferri (kevin@caltech.edu)
+    @cvs-id ticket-code-set.tcl,v 3.19.2.7 2000/09/22 01:39:24 kevin Exp
+} {
+    msg_id:integer,notnull
     what
     value
     action 
-    {message {}}
+    message:optional,notnull,html
     {msg_html {}}
     {didsubmit {}}
     {return_url {/ticket/}}
+    {project_id {}}
+    {domain_id {}}
 }
 
+# -----------------------------------------------------------------------------
 
 # fix up the message
 
-if {![empty_string_p $message]} { 
+if {[info exists message]} { 
     set raw_message $message
     if { $msg_html == "pre" } { 
         regsub "\[ \012\015\]+\$" $message {} message
@@ -28,30 +46,49 @@ if {![empty_string_p $message]} {
         set html_p f
     }
 } else { 
+    set message ""
     set raw_message {}
     if {$didsubmit == "check"} { 
         set didsubmit {}
     }
 }
 
-set db [ns_db gethandle]
-set user_id [ad_get_user_id]
+page_validation {
+    if { [info exists html_p] && $html_p == "t" && \
+	    ![empty_string_p [ad_check_for_naughty_html $message]]} {
+	error [ad_check_for_naughty_html
+    }
+
+    if {![db_column_exists ticket_issues_i ${what}_id]} {
+	error "Attempt to modify nonexistant database column"
+    }
+}
+
+set user_id [ad_verify_and_get_user_id]
  
 set mail_message {} 
 set warn_msg {} 
 
+# For the context bar if the project_id and domain_id exists
+set optional_context_w_proj ""
+set context_flag 0
+if [exists_and_not_null project_id] {
+    if [catch {set project_title_long [db_string project_title "select title_long from ticket_projects where project_id = :project_id"]} errmsg] {
+	set context_flag -1
+    }
+    if { [exists_and_not_null domain_id] && $context_flag == 0} {
+	set context_flag 1
+	set modified_return_url "$return_url&project_id=$project_id&domain_id=$domain_id"
+    }
+}
+
 # given a what (code_type) we look up the value and set it on the 
 # ticket
-util_dbq {value what}
-
-if {![regexp {^[0-9]+$} $msg_id]} { 
-    ad_return_complaint 1 "<LI> Invalid message \#$msg_id."
-    return
-}
 
 # Lets get the code info
 
-set selection [ns_db 0or1row $db "select 
+if { ![db_0or1row code_info "
+select 
   code_id,
   code as new_status,
   code_long as new_status_long,
@@ -67,19 +104,18 @@ set selection [ns_db 0or1row $db "select
     ticket_projects tp, 
     general_comments gc, 
     users u
- where ti.msg_id = $msg_id 
+ where ti.msg_id = :msg_id 
    and tp.project_id  = ti.project_id 
    and tp.code_set = tc.code_set 
-   and lower(code) = lower($DBQvalue) 
-   and code_type = $DBQwhat 
+   and lower(code) = lower(:value) 
+   and code_type = :what 
    and gc.comment_id(+) = ti.comment_id
-   and u.user_id = $user_id"]
+   and u.user_id = :user_id" ] } {
 
-if {[empty_string_p $selection]} { 
-    ad_return_complaint 1 "<LI> TR\#$msg_id does not have a code for $what:$value"
-    return
+     ad_return_complaint 1 "<LI> TR\#$msg_id does not have a code for $what:$value"
+     return
 }
-set_variables_after_query
+
 
 if {$action != "comment" 
     && $code_id == $old_code_id} { 
@@ -101,21 +137,31 @@ set cause(reopen) "Reopened"
 set cause(cancel) "Canceled"
 set cause(clarify) "Clarification"
 set cause(comment) "Comment"
-set cause(close) "Fixed"
-set cause(fixed) "Closed"
+set cause(close) "Closed"
+set cause(fixed) "Fixed"
 set cause(defer) "Deferred"
 set cause(needdef) "Need info"
 
-
-if {($didsubmit == "yes" && ![empty_string_p $message]) 
-    || ![info exists explain($action)]} { 
+if {($didsubmit == "yes" && ![empty_string_p $message]) \
+	|| ![info exists explain($action)]} { 
     
-    with_transaction $db { 
+    db_transaction { 
         if {$action != "comment" } {
             set subject "Ticket \#$msg_id $one_line ($old_status_long -> $new_status_long)"
             set body "Status change: Ticket \#$msg_id - $one_line\nBy: $my_name $my_email\n\n"
+            if { $action == "close" } { 
+                set close_info ", closed_by = :user_id, closed_date = sysdate"
+            } else { 
+                set close_info {}
+            }
 
-            ns_db dml $db "update ticket_issues_i set ${what}_id = $code_id, last_modifying_user = $user_id, modified_ip_address = '[DoubleApos [ns_conn peeraddr]]', last_modified = sysdate where msg_id = $msg_id"
+            db_dml code_update "
+	    update ticket_issues_i 
+	    set ${what}_id = :code_id $close_info, 
+	        last_modifying_user = :user_id, 
+	        modified_ip_address = '[DoubleApos [ns_conn peeraddr]]', 
+	        last_modified = sysdate 
+	    where msg_id = :msg_id"
         } else { 
 
             set subject "Ticket comment \#$msg_id $one_line"
@@ -129,7 +175,8 @@ if {($didsubmit == "yes" && ![empty_string_p $message])
         }
         
         if {![empty_string_p $message]} { 
-            set comment_id [database_to_tcl_string $db "select general_comment_id_sequence.nextval from dual"]
+            set comment_id [db_string next_comment_id "
+	    select general_comment_id_sequence.nextval from dual"]
             set cause(comment) {}
             if { ![info exists cause($action)] || [empty_string_p $cause($action)] } { 
                 set item_action_desc {}
@@ -137,9 +184,9 @@ if {($didsubmit == "yes" && ![empty_string_p $message])
                 set item_action_desc "\[$cause($action)\]"
             }
             
-            ad_general_comment_add $db $comment_id {ticket_issues} $msg_id "\#$msg_id $one_line $item_action_desc" $message $user_id [ns_conn peeraddr] {t} $html_p $cause($action)
+            ad_general_comment_add $comment_id {ticket_issues} $msg_id "\#$msg_id $one_line $item_action_desc" $message $user_id [ns_conn peeraddr] {t} $html_p $cause($action)
         }
-    } {        
+    } on_error {        
         ad_return_complaint 1 "<LI>Setting $what to $value failed.  The database error was <pre>$errmsg</pre>"
         return -code return
     }
@@ -148,19 +195,31 @@ if {($didsubmit == "yes" && ![empty_string_p $message])
     # 
     # Now lets generate and send off the change notification
     #
-    ReturnHeaders
-    ns_write "[ad_header "Notifications sent"]
-     <h3>Notifications sent</h3>
-    [ad_context_bar_ws_or_index [list $return_url {Ticket Tracker}] {Notifcations sent}]
+    append page_content "
+    [ad_header "Notifications sent"]
+     <h2>Notifications sent</h2>"
+
+    if {$context_flag != 1} {
+	set changing_url $return_url
+	append page_content "
+	[ad_context_bar_ws_or_index [list $return_url {Ticket Tracker}] \
+		{Notifications sent}]"
+    } else {
+	set changing_url $modified_return_url
+	append page_content "
+	[ad_context_bar_ws_or_index [list $return_url {Ticket Tracker}] \
+		[list $modified_return_url $project_title_long] \
+		{Notifications sent}]"
+    }
+    append page_content "
     <hr>
-     You can now go <a href=\"$return_url\">back to where you were</a>.<p>
-     [ticket_notify $db change_status $msg_id $subject $body $user_id]
+     You can now go <a href=\"$changing_url\">back to where you were</a>.<p>
+     [ticket_notify change_status $msg_id $subject $body $user_id]
      [ad_footer]"
 
-    
+    doc_return  200 text/html $page_content
     return
 }
-
 
 #
 # We need a message for this state transition
@@ -172,31 +231,41 @@ if { $didsubmit == "yes"} {
     set badmsg {}
 }
 
-
-
 if {[string compare $didsubmit "check"] == 0} { 
 
     # Confirmation of comment 
 
-    ReturnHeaders 
+    append page_content "
+    [ad_header "TR\#$msg_id: $one_line"]
 
-    ns_write "[ad_header "TR\#$msg_id: $one_line"]<h3>Confirm $action</h3>
- [ad_context_bar_ws_or_index [list $return_url {Ticket Tracker}] "Confirm $action"]<hr>
- $warn_msg
- Here is how your comment will appear:<blockquote><strong>$cause($action)</strong><p>"
-    if {$html_p == "t" } {
-        ns_write $message
-    } else { 
-        ns_write [util_convert_plaintext_to_html $message]
+    <h2>Confirm $action</h2>
+    "
+
+    if {$context_flag != 1} {
+	append page_content "
+	[ad_context_bar_ws_or_index [list $return_url {Ticket Tracker}] \
+		"Confirm $action"]"
+    } else {
+	append page_content "
+	[ad_context_bar_ws_or_index [list $return_url {Ticket Tracker}] \
+		[list $modified_return_url $project_title_long] \
+		"Confirm $action"]"
     }
-    ns_write "
+
+    append page_content "
+    <hr>
+    $warn_msg
+    Here is how your comment will appear:<blockquote><strong>$cause($action)</strong><p>"
+
+    append page_content [util_maybe_convert_to_html $message $html_p]
+
+    append page_content "
    <form method=post action=\"[ns_conn url]\">
    [export_ns_set_vars form didsubmit]
    <input type=hidden name=didsubmit value=\"yes\">
   <br><blockquote><input type=submit value=\"Confirm\">
  </blockquote>
  </blockquote>
-
 
  </form>
  <font size=-1 face=\"verdana, arial, helvetica\">
@@ -207,24 +276,42 @@ if {[string compare $didsubmit "check"] == 0} {
  </font>
 
  [ad_footer]"
+
 } else { 
     # Initial entry of comment 
-    ReturnHeaders 
-    ns_write "[ad_header "TR\#$msg_id: $one_line"]<h3>$explain($action)</h3>
- [ad_context_bar_ws_or_index [list $return_url {Ticket Tracker}] {Comment}]
+    append page_content "
+    [ad_header "TR\#$msg_id: $one_line"]
+    <h3>$explain($action)</h3>"
+
+    if {$context_flag != 1} {
+	append page_content "
+	[ad_context_bar_ws_or_index [list $return_url {Ticket Tracker}] \
+		{Comment}]"
+    } else {
+	append page_content "
+	[ad_context_bar_ws_or_index [list $return_url {Ticket Tracker}] \
+		[list $modified_return_url $project_title_long] {Comment}]"
+    }
+
+    append page_content "
  <hr>$warn_msg $badmsg
  <form method=post action=\"[ns_conn url]\">
    <textarea name=message rows=12 cols=64 wrap=soft></textarea><br>
  <b>The message above is:</b>
-  <input type=radio name=msg_html value=\"pre\">Prefomatted text
+  <input type=radio name=msg_html value=\"pre\">Preformatted text
   <input type=radio name=msg_html value=\"plain\" checked>Plain text
   <input type=radio name=msg_html value=\"html\">HTML
   <br><blockquote><input type=submit value=\"Proceed\"></blockquote>
    [export_ns_set_vars form]
    <input type=hidden name=didsubmit value=\"check\">
-</form>"
-    ns_write "<hr><strong>\#$msg_id - $one_line<br>Status: $old_status_long</strong><br><blockquote>$original_message</blockquote>"
-    ns_write "[ad_general_comments_list $db $msg_id ticket_issues "Ticket \#$msg_id: $one_line" ticket {} {} modified_long 0]
+</form>
+<hr>
+<strong>\#$msg_id - $one_line<br>Status: $old_status_long</strong><br><blockquote>$original_message</blockquote>
+
+[ad_general_comments_list $msg_id ticket_issues "Ticket \#$msg_id: $one_line" ticket {} {} modified_long 0]
+
  [ad_footer]"
     
 }
+
+doc_return  200 text/html $page_content

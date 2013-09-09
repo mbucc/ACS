@@ -1,8 +1,14 @@
-# $Id: credit-card-correction.tcl,v 3.1.2.1 2000/04/28 15:10:00 carsten Exp $
-set_form_variables 0
-# possibly usca_p
+# /www/ecommerce/credit-card-correction.tcl
+ad_page_contract {
+    Gives them a chance to correct the information for a credit card that CyberCash rejected
+    @param usca_p User session started or not
 
-# Gives them a chance to correct the information for a credit card that CyberCash rejected
+    @author
+    @creation-date
+    @cvs-id credit-card-correction.tcl,v 3.3.2.9 2000/08/18 21:46:32 stevenp Exp
+} {
+    usca_p:optional
+}
 
 # The order that we're trying to reauthorize is the 'in_basket' order for their user_session_id
 # because orders are put back into the 'in_basket' state when their authorization fails
@@ -11,8 +17,6 @@ set_form_variables 0
 # order which points to this credit card, so insert a new row into ec_creditcards.
 # Obvious mistypes (wrong # of digits, etc.) will be weeded out before this point anyway,
 # so the ec_creditcards table shouldn't get too huge.
-
-ec_redirect_to_https_if_possible_and_necessary
 
 # do all the normal url/cookie surgery checks
 # except don't bother with the ones unneccessary for security (like "did they put in an address for
@@ -24,9 +28,9 @@ set user_id [ad_verify_and_get_user_id]
 
 if {$user_id == 0} {
     
-    set return_url "[ns_conn url]"
+    set return_url "[ad_conn url]"
 
-    ad_returnredirect "/register.tcl?[export_url_vars return_url]"
+    ad_returnredirect "/register?[export_url_vars return_url]"
     return
 }
 
@@ -34,16 +38,16 @@ if {$user_id == 0} {
 
 set user_session_id [ec_get_user_session_id]
 
-set db [ns_db gethandle]
+
 ec_create_new_session_if_necessary
 # type1
 
 ec_log_user_as_user_id_for_this_session
 
-set order_id [database_to_tcl_string_or_null $db "select order_id from ec_orders where user_session_id=$user_session_id and order_state='in_basket'"]
+set order_id [db_string  get_order_id "select order_id from ec_orders where user_session_id=:user_session_id and order_state='in_basket'" -default ""]
 
 if { [empty_string_p $order_id] } {
-    ad_returnredirect index.tcl
+    ad_returnredirect index
     return
 }
 
@@ -54,17 +58,17 @@ if { [empty_string_p $order_id] } {
 # redirect them to their shopping cart which will tell them
 # that it's empty.
 
-if { [database_to_tcl_string $db "select count(*) from ec_items where order_id=$order_id"] == 0 } {
-    ad_returnredirect shopping-cart.tcl
+if { [db_string get_ec_item_count_inbasket "select count(*) from ec_items where order_id=:order_id"] == 0 } {
+    ad_returnredirect shopping-cart
     return
 }
 
 # make sure the order belongs to this user_id, otherwise they managed to skip past checkout.tcl, or
 # they messed w/their user_session_id cookie
-set order_owner [database_to_tcl_string $db "select user_id from ec_orders where order_id=$order_id"]
+set order_owner [db_string get_order_owner "select user_id from ec_orders where order_id=:order_id"]
 
 if { $order_owner != $user_id } {
-    ad_returnredirect checkout.tcl
+    ad_returnredirect checkout
     return
 }
 
@@ -72,21 +76,24 @@ if { $order_owner != $user_id } {
 # they've probably gotten here via url surgery, so redirect them to checkout-2.tcl
 # and while we're here, get the credit card info to pre-fill the form
 
-set selection [ns_db 0or1row $db "select creditcard_type, creditcard_number, creditcard_expire, billing_zip_code from 
+if { [db_0or1row get_cc_info "select creditcard_type, creditcard_number, creditcard_expire, billing_zip_code from 
 ec_creditcards, ec_orders
 where ec_creditcards.creditcard_id=ec_orders.creditcard_id
-and order_id=$order_id"]
-
-if { [empty_string_p $selection] } {
-    ad_returnredirect checkout-2.tcl
+and order_id=:order_id"] == 0 } {
+    ad_returnredirect checkout-2
     return
 }
 
 # check done
 # set the credit card variables
-set_variables_after_query
+
 
 set ec_creditcard_widget [ec_creditcard_widget $creditcard_type]
 set ec_expires_widget "[ec_creditcard_expire_1_widget [string range $creditcard_expire 0 1]] [ec_creditcard_expire_2_widget [string range $creditcard_expire 3 4]]"
-
+db_release_unused_handles
 ad_return_template
+
+
+
+
+

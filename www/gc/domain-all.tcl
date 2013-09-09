@@ -1,13 +1,14 @@
-# $Id: domain-all.tcl,v 3.1 2000/03/10 23:58:23 curtisg Exp $
-set_the_usual_form_variables
+# /www/gc/domain-all.tcl
 
-# domain_id, by_category_p, wtb_p
+ad_page_contract {
+    @cvs-id domain-all.tcl,v 3.3.2.5 2000/09/22 01:37:52 kevin Exp
+} {
+    domain_id:integer
+    by_category_p
+    wtb_p
+}
 
-set db [gc_db_gethandle]
-
-set selection [ns_db 1row $db [gc_query_for_domain_info $domain_id]]
-set_variables_after_query
-
+db_1row domain_info_get [gc_query_for_domain_info $domain_id]
 
 append html "[gc_header "$full_noun Ads"]
 
@@ -34,22 +35,22 @@ if { [info exists wtb_p] && $wtb_p == "f" } {
    set wtb_restriction ""
 }
 
-set selection [ns_db select $db "select classified_ad_id,one_line,primary_category as category
-from classified_ads
-where domain_id = $domain_id $wtb_restriction
-and (sysdate <= expires or expires is null)
-$order_by"]
+set sql "select classified_ad_id,one_line,primary_category as category
+         from classified_ads
+         where domain_id = :domain_id 
+         $wtb_restriction
+         and (sysdate <= expires or expires is null)
+         $order_by"
 
 set last_category_printed ""
 set first_loop_flag 1
 
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
+db_foreach domain_all_ads_list $sql -bind [ad_tcl_vars_to_ns_set domain_id] {
     if { $category != $last_category_printed && $by_category_p == "t" } {
 	append list_items "</ul><h3>$category</h3>\n<ul>"
 	set last_category_printed $category
     }
-    append list_items "<li><a href=\"view-one.tcl?classified_ad_id=$classified_ad_id\">
+    append list_items "<li><a href=\"view-one?classified_ad_id=$classified_ad_id\">
 $one_line</a>
 "
     set first_loop_flag 0
@@ -60,7 +61,7 @@ if { $first_loop_flag  == 1 } {
     append list_items "there aren't any unexpired ads in this domain"
 }
 
-ns_db releasehandle $db
+db_release_unused_handles
 
 append html "$list_items
 
@@ -68,4 +69,4 @@ append html "$list_items
 
 [gc_footer $maintainer_email]"
 
-ns_return 200 text/html $html
+doc_return  200 text/html $html

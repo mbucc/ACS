@@ -1,27 +1,29 @@
-# $Id: element-view.tcl,v 3.0 2000/02/06 03:16:01 ron Exp $
-#This file should be called element-view.tcl
-#Called from element-list.tcl
-set_the_usual_form_variables
+# /www/admin/curriculum/element-list.tcl
 
-# curriculum_element_id
+ad_page_contract {
+    This file should be called element-view.tcl
+    Called from element-list.tcl
+    @author unknown
+    @cvs-id element-view.tcl,v 3.1.6.6 2000/09/22 01:34:39 kevin Exp
+    @param curriculum_element_id The curriculum to view
+} {
+    curriculum_element_id
+}
 
-set db [ns_db gethandle]
-set selection [ns_db 1row $db "
+
+db_1row get1element "
     select element_index, url, very_very_short_name, one_line_description, full_description
     from curriculum 
-    where curriculum_element_id='[DoubleApos $curriculum_element_id]'"]
-set_variables_after_query
+    where curriculum_element_id=:curriculum_element_id"
 
-#now we have the values from the database.
 
-ReturnHeaders
 
-ns_write "
+doc_return  200 text/html "
 [ad_admin_header "View the entry for $one_line_description"]
 
 <h2>View the entry for $one_line_description</h2>
 
-[ad_admin_context_bar [list "element-list.tcl" "Curriculum"] "View a curriculum element"]
+[ad_admin_context_bar [list "element-list" "Curriculum"] "View a curriculum element"]
 
 <hr>
 
@@ -43,7 +45,8 @@ ns_write "
 
 </table>
 <ul>
-<li><a href=\"element-edit.tcl?[export_url_vars curriculum_element_id]\">Edit the data for $one_line_description</a><br>
+<li><a href=\"element-edit?[export_url_vars curriculum_element_id]\">Edit the data for $one_line_description</a><br>
 </ul>
 <p>
 [ad_admin_footer]"
+

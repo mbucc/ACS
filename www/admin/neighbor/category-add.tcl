@@ -1,38 +1,43 @@
-# $Id: category-add.tcl,v 3.0 2000/02/06 03:25:49 ron Exp $
-set_form_variables 0
+# /www/admin/neighbor/category-add.tcl
+ad_page_contract {
+    Adds or edits a category.
 
-# either category_id or subcategory_id
-
-set db [ns_db gethandle]
+    @author Philip Greenspun (philg@mit.edu)
+    @creation-date 1 January 1996
+    @cvs-id category-add.tcl,v 3.2.2.5 2001/01/11 19:19:10 khy Exp
+    @param category_id the ID of a category to edit.  if null, a new category is added
+} {
+    {category_id:integer,optional}
+}
 
 if { [info exists category_id] } {
     # get the previous data
-    set selection [ns_db 1row $db "select n_to_n_primary_categories.*,
-users.email from n_to_n_primary_categories, users
-where category_id = $category_id
-and users.user_id(+) = n_to_n_primary_categories.primary_maintainer_id"] 
-    set_variables_after_query
+    db_1row select_category "
+      select n_to_n_primary_categories.*,
+             users.email 
+        from n_to_n_primary_categories, users
+       where category_id = :category_id
+         and users.user_id(+) = n_to_n_primary_categories.primary_maintainer_id"
     set action "Edit category $primary_category"
 } else {
     set action "Add a new category"
     # generate a new category_id to use
-    set category_id [database_to_tcl_string $db "select
-n_to_n_primary_category_id_seq.nextval from dual"]
+    set category_id [db_string select_category_id "
+      select n_to_n_primary_category_id_seq.nextval
+        from dual"]
 } 
 
-ReturnHeaders
-
-ns_write "[ad_admin_header "$action"]
+set page_content "[ad_admin_header "$action"]
 
 <h2>$action</h2>
 
-[ad_admin_context_bar [list "index.tcl" "Neighbor to Neighbor"] $action]
+[ad_admin_context_bar [list "" "Neighbor to Neighbor"] $action]
 
 <hr>
 
-<form action=\"/user-search.tcl\" method=post>
-<input type=hidden name=target value=\"/admin/neighbor/category-add-2.tcl\">
-<input type=hidden name=passthrough value=\"category_id primary_category approval_policy\">
+<form action=\"/user-search\" method=post>
+<input type=hidden name=target value=\"/admin/neighbor/category-add-2\">
+<input type=hidden name=passthrough value=\"category_id primary_category approval_policy category_id:sig\">
 <input type=hidden name=custom_title value=\"Choose a Member to Add as an Administrator\">
 
 <h3></h3>
@@ -53,7 +58,10 @@ What type of approval system would you like for new postings?<br>
 <center>
 <input type=submit name=submit value=\"Proceed\">
 </center>
-[export_form_vars category_id]
+[export_form_vars -sign category_id]
 </form>
 [ad_admin_footer]
 "
+
+
+doc_return  200 text/html $page_content

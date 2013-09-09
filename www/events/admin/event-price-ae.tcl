@@ -1,10 +1,17 @@
-#not supporting prices at this time
+# File:  events/admin/event-price-ae.tcl
+# Owner: bryanche@arsdigita.com
+# Purpose: Allow admins to edit and update prices/ecommerce info
+#####
+
+### we're not supporting prices at this time
 return
+
+### but if we were...
 
 set_the_usual_form_variables
 #event_id, maybe price_id
 
-set db [ns_db gethandle]
+
 
 set time_elements "
 <tr>
@@ -22,19 +29,19 @@ if {[exists_and_not_null price_id]} {
     set page_title "Edit Price"
     set submit_text "Update Price"
     set selection [ns_db 1row $db "select
-    product_id, price, description as product_name, 
-    to_char(available_date, 'YYYY-MM-DD HH24:MI:SS') as available_timestamp,
-    to_char(expire_date, 'YYYY-MM-DD HH24:MI:SS') as expire_timestamp,
-    price_id
+      product_id, price, description as product_name, 
+      to_char(available_date, 'YYYY-MM-DD HH24:MI:SS') as available_timestamp,
+      to_char(expire_date, 'YYYY-MM-DD HH24:MI:SS') as expire_timestamp,
+      price_id
     from events_prices
     where price_id = $price_id"]
 
     set_variables_after_query
 
-    set end_time [database_to_tcl_string $db "
-    select to_char(end_time, 'YYYY-MM-DD HH24:MI:SS')
-    from events_events
-    where event_id = $event_id"]
+    set end_time [db_string unused "
+      select to_char(end_time, 'YYYY-MM-DD HH24:MI:SS')
+        from events_events
+       where event_id = $event_id"]
 
 } else {
     #we're adding
@@ -42,30 +49,37 @@ if {[exists_and_not_null price_id]} {
 
     set page_title "Add New Price"
     set submit_text "Add Price"
-#    set product_id [database_to_tcl_string $db "select ec_product_id_sequence.nextval from dual"]
+#    set product_id [db_string unused "select ec_product_id_sequence.nextval from dual"]
     set product_name ""
     set price ""
-    set price_id [database_to_tcl_string $db "select events_price_id_sequence.nextval from dual"]
+    set price_id [db_string unused "select events_price_id_sequence.nextval from dual"]
 
     set selection [ns_db 1row $db "select
-    to_char(sysdate, 'YYYY-MM-DD HH24:MI:SS') as available_timestamp,
-    to_char(end_time, 'YYYY-MM-DD HH24:MI:SS') as expire_timestamp
-    from events_events, dual
-    where event_id = $event_id"]
+            to_char(sysdate, 'YYYY-MM-DD HH24:MI:SS') as available_timestamp,
+            to_char(end_time, 'YYYY-MM-DD HH24:MI:SS') as expire_timestamp
+       from events_events, dual
+      where event_id = $event_id"]
+
     set_variables_after_query
-    
+
     set end_time $expire_timestamp
 }
 
-set stuffed_with_a [ns_dbformvalueput $time_elements "available_time" "timestamp" $available_timestamp]
-set times [ns_dbformvalueput $stuffed_with_a "expire_time" "timestamp" $expire_timestamp]
+set stuffed_with_a [ns_dbformvalueput $time_elements "available_time" 
+                    "timestamp" $available_timestamp]
+set times [ns_dbformvalueput $stuffed_with_a "expire_time" 
+                    "timestamp" $expire_timestamp]
 
 set context_bar "[ad_admin_context_bar [list "index.tcl" "Events"] "Pricing"]"
 
+## Clean up, return the page
+db_release_unused_handles
+
 ReturnHeaders
+
 ns_write "
 [ad_partner_header]
-<form method=post action=\"event-price-ae-2.tcl\">
+<form method=post action=\"event-price-ae-2\">
 [export_form_vars price_id product_id event_id]
 
 <table cellpadding=5>
@@ -84,3 +98,5 @@ $times
 </center>
 </form>
 [ad_partner_footer]"
+
+##### EOF
