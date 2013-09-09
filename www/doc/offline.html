@@ -1,0 +1,49 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+  <head>
+    <title>Offline browsing using wwwoffle</title>
+  </head>
+
+  <body bgcolor="white">
+    <h1>Offline browsing using wwwoffle</h1>
+<h2>What is WWWOFFLE?</h2>
+WWWOFFLE is a GPL'd program, written for UNIX, which allows a user to seamlessly browse the web without an Internet connection. It acts as a standard proxy for any web browser. It has two main modes
+<ul>
+<li>An online mode, where it stores all queries done by users (static pages, and dynamic pages alike)
+<li>An offline mode, where it serves the users the same responses to their queries as were relieved while in online mode
+</ul>
+This has two major advantages over a dumb spider
+<ul>
+<li>Since the web browser is doing the work, and requesting everything it needs to properly display a page through it, nothing is missed by the program making a mistake in reading links, or not being able to follow certain types of links. 
+<li>Since the user is logged in, and is able to serve their cookies through the proxy, it is possible to store content from sites with various forms of security, where it would normally not be possible.
+</ul>
+The fact that the program is a port to Win32 from various UNIX platforms gives it much greater portability than most Windows programs, since it doesn't understand the registry, or have a need for any special Windows system directories. The entire cache, all of the binaries, and the log files are all kept within a single directory by default.
+
+    <h2>Getting and installing wwwoffle</h2>
+    WWWOFFLE for Windows is available from the <a href="http://www.gedanken.demon.co.uk/wwwoffle/version-2.5/win32-download.html">Win32 Download Page</a>. In most cases, installing WWWOFFLE requires no more than unzipping the downloaded file directly into c:\ (the file contains directories). 
+
+
+    <h2><a name="start">Starting wwwoffle</a></h2>
+    If wwwoffle is in its default location, starting it up simply requires running "c:\wwwoffle\start.bat". This will start up the wwwoffle daemon in offline mode.
+    <h2><a name="setting">Setting up</a> a web browser to work with wwwoffle</h2>
+    Wwwoffle works with any web browser due to the fact that it acts as a generic proxy to the browser. To set up a browser to point at wwwoffle, set the browser's proxy (on the same machine that the daemon is running on) to http://localhost:8080 . All requests will now go through wwwoffle, whether it is in offline or online mode.
+    <h2>Gathering content in preparation for offline content</h2>
+    After <a href="#start">starting up</a> wwwoffle and <a href="#setting">setting up</a> a web browser to work with it, it needs to be placed in online mode in order to start gathering content. This is accomplished by (again assuming everything is installed in the default location) running "c:\wwwoffle\online.bat" . Any content desired to be viewable offline can now be stored, simply by visiting it. The software is capable of spidering web sites, but it is not able to fake a user's authentication, so it is necessary to go through a site by hand which has any sort of protection scheme. 
+<P>
+Since all of a web browser's requests are forced to go through wwwoffle, everything needed to store each page is stored. To check that everything needed is stored, one should run "c:\wwwoffle\offline.bat" to get into offline mode, and then try browsing the site again, looking for any links which are not saved in the cache. If a page is visited which wwwoffle does not have, it makes a note of this, and fetches it when it is put back into online mode (again, when there is protection on a site, it will be necessary to go back and visit any missing pages by hand once the software is back in online mode). 
+
+<h2>Getting wwwoffle on to a CD</h2>
+In order to get wwwoffle onto a CD, all that is needed is for the entire "c:\wwwoffle" directory to be burned to the CD (be sure to stop wwwoffle by running "c:\wwwoffle\stop.bat" first). 
+
+<h2>Running wwwoffle from a CD</h2>
+The one caveat of wwwoffle, is that it is necessary to run it on a read-write media (ie, not a CD). In order to run it, the wwwoffle directory should be deleted off of the computer which it is being installed on, and the wwwoffle directory should be copied from the CD as "c:\wwwoffle". Once this is done, all a user will have to do is <a href="#setup">setup their web browser</a>, and <a href="#start">start wwwoffle</a>. Once this is done, the user should be able to travel seamlessly to any part of any site visited while the user was originally in online mode.    
+
+
+    <hr>
+    <address><a href="mailto:adamp@arsdigita.com">root</a></address>
+<!-- Created: Thu Jun  1 17:31:40 EDT 2000 -->
+<!-- hhmts start -->
+Last modified: Thu Jun  1 18:44:40 EDT 2000
+<!-- hhmts end -->
+  </body>
+</html>

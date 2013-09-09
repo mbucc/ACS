@@ -1,25 +1,35 @@
-# $Id: delete.tcl,v 3.0 2000/02/06 03:49:28 ron Exp $
+# /links/delete.tcl
+
+ad_page_contract {
+    Step 1 of 2 in deleting a link from a static page
+
+    @param url The URL of the link to delete
+    @param page_id The ID of the page to delete from
+
+    @author Original Author Unknown
+    @creation-date Original Date Unknown
+    @cvs-id delete.tcl,v 3.1.6.7 2000/09/22 01:38:52 kevin Exp
+} {
+    url:notnull
+    page_id:notnull,naturalnum
+}
+
 if {[ad_read_only_p]} {
     ad_return_read_only_maintenance_message
     return
 }
 
-set_the_usual_form_variables
-
-# url, page_id
-
-set db [ns_db gethandle]
 set user_id [ad_verify_and_get_user_id]
 
-set selection [ns_db 1row $db "select  nvl(page_title,url_stub) as page_title, url_stub 
+db_1row select_page_info "select  nvl(page_title,url_stub) as page_title, url_stub 
 from static_pages
-where page_id = $page_id"]
-set_variables_after_query
+where page_id = :page_id"
 
-set selection [ns_db 1row $db "select url, link_title, link_description from links where page_id = $page_id and url='$QQurl' and user_id=$user_id"]
-set_variables_after_query
+db_1row select_link_info "select url, link_title, link_description from links where page_id = :page_id and url=:url and user_id=:user_id"
 
-ns_return 200 text/html "[ad_header "Verify deletion"]
+db_release_unused_handles
+
+set page_content "[ad_header "Verify deletion"]
     
 <h2>Verify Deletion</h2>
 to <a href=\"$url_stub\">$page_title</a>
@@ -31,7 +41,7 @@ Would you like to delete the following link?
 <p>
 <table>
 <tr><td>
-<form action=delete-2.tcl method=post>
+<form action=delete-2 method=post>
 [export_form_vars page_id url]
 <center>
 <input type=submit value=\"Delete Link\" name=submit>
@@ -45,3 +55,5 @@ Would you like to delete the following link?
 </center>
 </form>
 [ad_footer]"
+
+doc_return  200 text/html $page_content

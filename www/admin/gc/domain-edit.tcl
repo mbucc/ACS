@@ -1,23 +1,38 @@
-# $Id: domain-edit.tcl,v 3.1.2.1 2000/03/16 22:09:55 curtisg Exp $
-set_the_usual_form_variables
+# /www/admin/gc/domain-edit.tcl
+ad_page_contract {
+    Lets the site administrator edit a domain.
 
-# domain_id
+    @param domain_id which domain
 
-set db [ns_db gethandle]
+    @author philg@mit.edu
+    @cvs_id domain-edit.tcl,v 3.4.2.5 2000/09/22 01:35:22 kevin Exp
+} {
+    domain_id:integer
+}
 
-set selection [ns_db 1row $db "select * from ad_domains
-where domain_id=$domain_id"]
-set_variables_after_query
 
-append html "[ad_admin_header "Edit $domain parameters"]
+set column_list [list domain full_noun blurb blurb_bottom insert_form_fragments default_expiration_days wtb_common_p auction_p geocentric_p]
+
+db_1row domain_info "select [join $column_list ", "] from ad_domains where domain_id = :domain_id"
+
+# this has to be done because database API doesn't yet create ns_sets,
+# but bt_mergepiece requires them
+
+set selection [ns_set new]
+
+foreach column $column_list {
+    ns_set put $selection $column [set $column]
+}
+
+set page_contents "[ad_admin_header "Edit $domain parameters"]
 
 <h2>Edit $domain parameters</h2>
 
-in the <a href=\"index.tcl\"> classifieds</a>
+in the <a href=\"index\"> classifieds</a>
 
 <hr>
 
-<form method=post action=domain-edit-2.tcl>
+<form method=post action=domain-edit-2>
 <H3>Identity</H3>
 Full domain name: <input type=text name=full_noun value=\"$full_noun\"><br>
 Pick a short key : <input type=text name=domain value=\"$domain\"><br>
@@ -67,8 +82,7 @@ Are your ads based on geography?
 <input type=radio name=geocentric_p value=\"t\">Yes
 <input type=radio name=geocentric_p value=\"f\">No"
 
-
-append html "[bt_mergepiece $html_form $selection]
+append page_contents "[bt_mergepiece $html_form $selection]
 </td></tr>
 </table>
 <p>
@@ -81,5 +95,5 @@ append html "[bt_mergepiece $html_form $selection]
 [ad_admin_footer]
 "
 
-ns_db releasehandle $db
-ns_return 200 text/html $html
+
+doc_return  200 text/html $page_contents

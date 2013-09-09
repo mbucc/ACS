@@ -1,13 +1,20 @@
-# $Id: delete.tcl,v 3.0 2000/02/06 03:21:57 ron Exp $
-set_the_usual_form_variables
-# user_class_id
+#  www/admin/ecommerce/user-classes/delete.tcl
+ad_page_contract {
+    @param  user_class_id
+  @author
+  @creation-date
+  @cvs-id delete.tcl,v 3.1.6.5 2000/09/22 01:35:06 kevin Exp
+} {
+    user_class_id:naturalnum
+}
 
-set db [ns_db gethandle]
-set user_class_name [database_to_tcl_string $db "select user_class_name from ec_user_classes where user_class_id=$user_class_id"]
 
-ReturnHeaders
 
-ns_write "[ad_admin_header "Delete $user_class_name"]
+set user_class_name [db_string get_ucname "select user_class_name from ec_user_classes where user_class_id=:user_class_id"]
+
+
+
+set page_html "[ad_admin_header "Delete $user_class_name"]
 
 <h2>Delete $user_class_name</h2>
 
@@ -19,7 +26,7 @@ Please confirm that you wish to delete this user class.  Note that this will lea
 <p>
 
 <center>
-<form method=post action=delete-2.tcl>
+<form method=post action=delete-2>
 [export_form_vars user_class_id]
 <input type=submit value=\"Confirm\">
 </form>
@@ -27,3 +34,7 @@ Please confirm that you wish to delete this user class.  Note that this will lea
 
 [ad_admin_footer]
 "
+
+
+doc_return  200 text/html $page_html
+

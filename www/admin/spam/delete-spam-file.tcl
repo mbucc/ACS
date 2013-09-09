@@ -1,20 +1,20 @@
-# $Id: delete-spam-file.tcl,v 3.2 2000/03/08 07:39:58 hqm Exp $
-# delete-spam-file.tcl
-#
-# hqm@arsdigita.com
-#
-# confirm delete of a file from dropzone
+# www/admin/spam/delete-spam-file.tcl
 
-set_the_usual_form_variables
-# form vars:
-# filename
+ad_page_contract {
 
-ReturnHeaders
+ Confirm delete of a file from dropzone
+
+    @param filename name of file to be deleted
+    @author hqm@arsdigita.com
+    @cvs-id delete-spam-file.tcl,v 3.3.6.4 2000/09/22 01:36:06 kevin Exp
+} {
+    filename
+}
 
 set clean_filename [spam_sanitize_filename $filename]
 set path [spam_file_location $clean_filename]
 
-append pagebody "[ad_admin_header "Confirm Delete Spam File $clean_filename"]
+append page_content "[ad_admin_header "Confirm Delete Spam File $clean_filename"]
 
 [ad_admin_context_bar [list "index.tcl" "Spam"] "Delete Spam File"]
 
@@ -23,7 +23,7 @@ append pagebody "[ad_admin_header "Confirm Delete Spam File $clean_filename"]
 Do you really want to delete spam file: <tt>$clean_filename</tt>?
 <p>
 
-<form action=delete-spam-file-2.tcl method=post>
+<form action=delete-spam-file-2 method=post>
 [export_form_vars filename]
 <center><input type=submit value=\"Delete File\">
 </center>
@@ -32,5 +32,6 @@ Do you really want to delete spam file: <tt>$clean_filename</tt>?
 <p>
 [ad_admin_footer]"
 
-ns_write $pagebody
+doc_return  200 text/html $page_content
+
 

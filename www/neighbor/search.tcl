@@ -1,15 +1,20 @@
-# $Id: search.tcl,v 3.0 2000/02/06 03:50:01 ron Exp $
-set_the_usual_form_variables
+# search.tcl
+ad_page_contract {
+    Searches the postings.
 
-# query_string
-   
-ReturnHeaders
+    @author Philip Greenspun (philg@mit.edu)
+    @creation-date 1 January 1996
+    @cvs-id search.tcl,v 3.2.2.2 2000/09/22 01:38:56 kevin Exp
+    @param query_string the string to search for
+} {
+    query_string:nohtml,trim
+}
 
-ns_write "[neighbor_header "Postings Matching \"$query_string\""]
+append doc_body "[neighbor_header "Postings Matching \"$query_string\""]
 
 <h2>Postings Matching \"$query_string\"</h2>
 
-in <a href=\"index.tcl\">[neighbor_system_name]</a>
+in <a href=\"index\">[neighbor_system_name]</a>
 
 <hr>
 
@@ -17,18 +22,45 @@ in <a href=\"index.tcl\">[neighbor_system_name]</a>
 
 "
 
-set db [neighbor_db_gethandle]
-
 # if the user put in commas, replace with spaces
 
-regsub -all {,+} [string trim $QQquery_string] " " final_query_string
+regsub -all {,+} $query_string " " final_query_string
 
-if [catch {set selection [ns_db select $db "select pseudo_contains(dbms_lob.substr(body,3000) || title || about, '$final_query_string') as the_score, nton.*
-from neighbor_to_neighbor nton
-where pseudo_contains (dbms_lob.substr(body,3000) || title || about, '$final_query_string') > 0
-order by 1 desc"]} errmsg] {
+set counter 0 
 
-    ns_write "There aren't any results because something about
+if [catch {db_foreach results "select pseudo_contains(dbms_lob.substr(body,3000) || title || about, :final_query_string) as the_score, 
+                                       nton.about, nton.title, nton.neighbor_to_neighbor_id
+                                  from neighbor_to_neighbor nton
+                                 where pseudo_contains (dbms_lob.substr(body,3000) || title || about, :final_query_string) > 0
+                                 order by 1 desc" {
+    incr counter
+    if { ![info exists max_score] } {
+	# first iteration, this is the highest score
+	set max_score $the_score
+    }
+    if { ($counter > 25) && ($the_score < [expr 0.3 * $max_score] ) } {
+	# we've gotten more than 25 rows AND our relevance score
+	# is down to 30% of what the maximally relevant row was
+	break
+    }
+    if { ($counter > 50) && ($the_score < [expr 0.5 * $max_score] ) } {
+	# take a tougher look
+	break
+    }
+    if { ($counter > 100) && ($the_score < [expr 0.8 * $max_score] ) } {
+	# take a tougher look yet
+	break
+    }
+    if { $title == "" } {
+	set anchor $about
+    } else {
+	set anchor "$about : $title"
+    }
+    append doc_body "<li>$the_score: <a href=\"view-one?neighbor_to_neighbor_id=$neighbor_to_neighbor_id\">$anchor</a>\n"
+    } if_no_rows {
+	append doc_body "<li>sorry, but no postings matched this query\n"
+    } } errmsg] {
+	ad_return_error "Invalid Query" "There aren't any results because something about
 your query string has made Oracle unhappy:
 <pre>
 $errmsg
@@ -41,49 +73,13 @@ Back up and try again!
 </body>
 </html>"
 
-    return
-
+return
 }
 
 
-set counter 0 
-
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
-    incr counter
-    if { ![info exists max_score] } {
-	# first iteration, this is the highest score
-	set max_score $the_score
-    }
-    if { ($counter > 25) && ($the_score < [expr 0.3 * $max_score] ) } {
-	# we've gotten more than 25 rows AND our relevance score
-	# is down to 30% of what the maximally relevant row was
-	ns_db flush $db
-	break
-    }
-    if { ($counter > 50) && ($the_score < [expr 0.5 * $max_score] ) } {
-	# take a tougher look
-	ns_db flush $db
-	break
-    }
-    if { ($counter > 100) && ($the_score < [expr 0.8 * $max_score] ) } {
-	# take a tougher look yet
-	ns_db flush $db
-	break
-    }
-    if { $title == "" } {
-	set anchor $about
-    } else {
-	set anchor "$about : $title"
-    }
-    ns_write "<li>$the_score: <a href=\"view-one.tcl?neighbor_to_neighbor_id=$neighbor_to_neighbor_id\">$anchor</a>\n"
-}
-
-if { $counter == 0 } {
-    ns_write "<li>sorry, but no postings matched this query\n"
-}
-
-
-ns_write "</ul>
+append doc_body "</ul>
 
 [neighbor_footer]"
+
+db_release_unused_handles
+doc_return 200 text/html $doc_body

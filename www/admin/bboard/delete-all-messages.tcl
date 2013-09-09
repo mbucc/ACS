@@ -1,26 +1,42 @@
-# $Id: delete-all-messages.tcl,v 3.0 2000/02/06 02:49:17 ron Exp $
-set_the_usual_form_variables
+# /www/admin/bboard/delete-all-messages.tcl
+ad_page_contract {
+    Checks they really want to delete all the messages.
 
-# topic_id
+    @param topic_id the ID of the topic being cleared
 
-set db [bboard_db_gethandle]
-if [catch {set selection [ns_db 0or1row $db "select bt.*,u.password as admin_password
-from bboard_topics bt, users u
-where bt.topic_id=$topic_id
-and bt.primary_maintainer_id = u.user_id"]} errmsg] {
+    @author ?
+    @creation-date ?
+    @cvs-id delete-all-messages.tcl,v 3.2.2.4 2000/09/22 01:34:21 kevin Exp
+} {
+    topic_id:integer
+}
+
+# -----------------------------------------------------------------------------
+
+if { ![db_0or1row get_topic_info "
+select bt.*,
+       u.password as admin_password
+from   bboard_topics bt, 
+       users u
+where  bt.topic_id=:topic_id
+and    bt.primary_maintainer_id = u.user_id"]} {
     [bboard_return_cannot_find_topic_page]
     return
 }
-# we found the data we needed
-set_variables_after_query
 
-set n_messages [database_to_tcl_string $db "select count(*) from bboard where topic_id = $topic_id"]
 
-ns_return 200 text/html "[ad_admin_header "Clear Out $topic"]
+set n_messages [db_string n_messages "
+select count(*) from bboard where topic_id = :topic_id"]
+
+# -----------------------------------------------------------------------------
+
+doc_return  200 text/html "[ad_admin_header "Clear Out $topic"]
 
 <h2>Clear Out \"$topic\"</h2>
 
-[ad_admin_context_bar [list "index.tcl" "BBoard Hyper-Administration"] [list "administer.tcl?[export_url_vars topic]" "One Bboard"] "Clear Out"]
+[ad_admin_context_bar [list "index.tcl" "BBoard Hyper-Administration"] \
+	[list "administer.tcl?[export_url_vars topic]" "One Bboard"] \
+	"Clear Out"]
 
 <hr>
 
@@ -29,14 +45,13 @@ this forum?
 
 <center>
 
-<form action=\"delete-all-messages-2.tcl\">
+<form action=\"delete-all-messages-2\">
 [export_form_vars topic]
 <input type=submit value=\"yes, I'm sure; delete them!\">
 
 </form>
 
 </center>
-
 
 [ad_admin_footer]
 "

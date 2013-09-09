@@ -1,19 +1,18 @@
-#
-# /tcl/ad-partner.tcl
-#
-# system to manage site-wide templates with very little 
-# intrustion to the programmer or the tcl environment.
-# Requires programmers to manage and make changes to the
-# templates (as opposed to a content management system
-# where the client can do the changes)
-#
-# created by mbryzek 12/1/99, adapted originally from 
-# guidestar.org
-#
-# $Id: ad-partner-defs.tcl,v 3.2.2.2 2000/04/28 15:08:09 carsten Exp $
-#
+# /tcl/ad-partner-defs.tcl
 
-util_report_library_entry
+ad_library { 
+
+    system to manage site-wide templates with very little intrustion
+    to the programmer or the tcl environment.  Requires programmers to
+    manage and make changes to the templates (as opposed to a content
+    management system where the client can do the changes). Adapted
+    originally from guidestar.org
+    
+    @author Michael Bryzek (mbryzek@arsdigita.com)
+    @creation-date 12/1/99
+
+    @cvs-id ad-partner-defs.tcl,v 3.8.2.6 2000/09/22 01:33:57 kevin Exp
+}
 
 # We need to tell AOLServer to set cookies for our partners
 proc_doc ad_partner_initialize {} "Registers every url_stub from ad_partner_url as a url" {
@@ -22,27 +21,18 @@ proc_doc ad_partner_initialize {} "Registers every url_stub from ad_partner_url 
     # need to register?
     set list_of_cookies_to_register [list]
     
-    if { [catch {set db [ns_db gethandle subquery]} err_msg] } {
-	ns_log Notice "ad-partner: Can't get db handle. Using list_of_cookies to register cookies"
-    } else {
-	set sub_selection [ns_db select $db "select distinct partner_cookie from ad_partner"]
-	
-	while { [ns_db getrow $db $sub_selection] } {
-	    set_variables_after_subquery
-	    if {[lsearch -exact $list_of_cookies_to_register $partner_cookie] == -1} {
-		lappend list_of_cookies_to_register $partner_cookie
-	    }
+    set sql "select partner_cookie from ad_partner"
+    db_foreach partner_register_cookies $sql {
+	if {[lsearch -exact $list_of_cookies_to_register $partner_cookie] == -1} {
+	    lappend list_of_cookies_to_register $partner_cookie
 	}
-	
-	ns_db releasehandle $db
     }
-
+    
     foreach partner_cookie $list_of_cookies_to_register {
-	ns_register_proc GET /$partner_cookie/* ad_set_partner_cookie
-	ns_register_proc POST /$partner_cookie/* ad_set_partner_cookie
+	ad_register_proc GET /$partner_cookie/* ad_set_partner_cookie
+	ad_register_proc POST /$partner_cookie/* ad_set_partner_cookie
 	ns_log Notice "Registered partner cookie: $partner_cookie"
-    }
-
+    }   
 }
 
 ad_schedule_proc -once t 2 ad_partner_initialize
@@ -58,31 +48,6 @@ proc_doc ad_partner_from_cookie {} "Returns name of template or empty string fro
 
 }
 
-proc_doc ad_get_partner_query {{var_list partner_id} {partner ""}} "Returns the selection from the gs_partner table for the current partner and url. Selection includes all vars in var_list (default is just partner_id)" { 
-    if { [empty_string_p $partner] } {
-	set partner [ad_partner_from_cookie]
-    }
-    set url [ns_conn url]
-    # The partner site would be the phrase between the first and second slash
-    # Note that the first slash has been removed
-    set stub "/[lindex [split $url "/"] 1]"
-    set stub [string trim $stub]
-    set sql_vars ""
-    foreach var $var_list {
-	if { ![empty_string_p $sql_vars] } { 
-	    append sql_vars ", "
-	}
-	append sql_vars "partner.$var"
-    }
-    return "select $sql_vars
-            from ad_partner partner, ad_partner_url url
-            where partner.partner_id=url.partner_id
-            and url.url_stub='[DoubleApos $stub]' 
-            and partner.partner_cookie='[DoubleApos [string trim $partner]]'"
-
-}
-
-
 proc_doc ad_partner_get_stub {} "Returns the url stub for the ad_partner table. No trailing slash and final script name removed" {
     set url [ns_conn url]
     # remove the final slash and filename
@@ -93,16 +58,39 @@ proc_doc ad_partner_get_stub {} "Returns the url stub for the ad_partner table. 
     return "/"
 }
 
-
 proc_doc ad_partner_default_divider {} {Returns the default divider we use in strings that represent lists} {
     return "\253"
 }
 
-proc_doc ad_partner_memoize_one { sql_query var } {Wrapper for ad_partner_memoize_list_from_db that lets us easily memoize a query that returns one thing} {
-    return [lindex [ad_partner_memoize_list_from_db $sql_query [list $var]] 0]
+ad_proc ad_partner_memoize_one { 
+    { -bind "" }
+    sql_query 
+    { var "" }
+} {
+    Wrapper for ad_partner_memoize_list_from_db that lets us easily
+    memoize a query that returns one thing 
+} {
+    if { ![empty_string_p $var] } {
+	return [lindex [ad_partner_memoize_list_from_db -bind $bind $sql_query [list $var]] 0]
+    } else {
+	return [lindex [ad_partner_memoize_list_from_db -bind $bind $sql_query] 0]
+    }
 }
 
-proc_doc ad_partner_memoize_list_from_db { sql_query var_list {divider ""} {also_memoize_as ""} } {Allows you to memoize database queries without having to grab a db handle first. If the query you specified is not in the cache, this proc grabs a db handle, and memoizes a list, separated by divider inside the cache, of the results. Your calling proc can then process this list as it normally. Each var in var_list is simply appended as a single element to the list that is eventually returned.} {
+ad_proc ad_partner_memoize_list_from_db { 
+    { -bind "" } 
+    sql_query 
+    { var_list "" }
+    { divider "" } 
+    { also_memoize_as "" }  
+} {
+    Allows you to memoize database queries without having to grab a db
+    handle first. If the query you specified is not in the cache, this
+    proc grabs a db handle, and memoizes a list, separated by divider
+    inside the cache, of the results. Your calling proc can then process
+    this list as it normally. Each var in var_list is simply appended as a
+    single element to the list that is eventually returned.
+} {
     ns_share ad_partner_memoized_lists
 
     set str ""
@@ -114,18 +102,15 @@ proc_doc ad_partner_memoize_list_from_db { sql_query var_list {divider ""} {also
     if { [info exists ad_partner_memoized_lists($sql_query)] } {
 	set str $ad_partner_memoized_lists($sql_query)
     } else {
-	set db [ns_db gethandle subquery]
-	set selection [ns_db select $db $sql_query]
-	while { [ns_db getrow $db $selection] } {
-	    set_variables_after_query
-	    foreach var $var_list {
+	# ns_log Notice "Memoizing: $sql_query"
+	foreach row [db_list_of_lists ad_partner_memoized_sql_query $sql_query -bind $bind] {
+	    foreach col $row {
 		if { ![empty_string_p $str] } {
 		    append str $divider
 		}
-		append str [expr $$var]
+		append str $col
 	    }
 	}
-	ns_db releasehandle $db
 	set ad_partner_memoized_lists($sql_query) $str
     }
     if { ![empty_string_p $also_memoize_as] } {
@@ -133,7 +118,6 @@ proc_doc ad_partner_memoize_list_from_db { sql_query var_list {divider ""} {also
     }
     return [split $str $divider]
 }
-
 
 proc_doc ad_partner_shorten_url_stub {stub } {Pulls off the last directory in the specified stub (e.g. /volunteer/register --> /volunteer} {
     if { [empty_string_p $stub] || [string compare $stub "/"] == 0 } {
@@ -157,44 +141,48 @@ proc_doc ad_partner_shorten_url_stub {stub } {Pulls off the last directory in th
     return $new_stub
 }
 
-
 proc_doc ad_partner_procs { table {partner ""} } {Returns all procs from $table for the current partner. Memoizes the procs so we don't hit the db constantly for each partner} {
     if { [empty_string_p $partner] } {
 	set partner [ad_partner_from_cookie]
     }
-    set stub [ad_partner_get_stub]
+    set stub [string trim [ad_partner_get_stub]]
+    set partner [string trim $partner]
 
     set original_query ""
     set query_list [list]
     # Shorten the url stub until we find a hit or run out  of url stubs!
     # This is slow, but tcl is simpler and we memoize the result anyway
+
+    # Use bind variables to pass the ns_set to the ad_partner_memoize_list
+    set bind_vars [ad_tcl_vars_to_ns_set stub partner]
     while { 1 } {
-	# ns_log Notice "Looking for procs that match stub: $stub"
-	set query "select procs.proc_name 
+	# # ns_log Notice "Looking for procs that match stub: $stub"
+	set query "select /* PARTNER($partner) URL($stub) */ procs.proc_name 
                      from ad_partner partner, ad_partner_url url, $table procs
                     where partner.partner_id=url.partner_id
                       and procs.url_id=url.url_id
-                      and url.url_stub='[DoubleApos $stub]' 
-                      and partner.partner_cookie='[DoubleApos [string trim $partner]]'"
+                      and url.url_stub=:stub
+                      and partner.partner_cookie=:partner"
 	if { [empty_string_p $original_query] } {
 	    set original_query $query
 	}
-	# ns_log Notice "Memoizing $query"
-	set query_list [ad_partner_memoize_list_from_db $query [list proc_name]]
-	# ns_log Notice "QUERY LIST IS $query_list"
+	set query_list [ad_partner_memoize_list_from_db -bind $bind_vars $query]
+	# ns_log Notice "ad_partner: QUERY LIST IS $query_list"
 	if { [llength $query_list] > 0 } {
+	    # ns_log notice "Query List longer than 1 element: $query_list"
 	    break
 	}
 	set stub [ad_partner_shorten_url_stub $stub]
 	if { [empty_string_p $stub] } {
 	    break;
 	}
-    }
-    
-    if { [string compare $original_query $query] != 0 } {
-	ad_partner_memoize_list_from_db $query [list proc_name] [ad_partner_default_divider] $original_query
+	ns_set update $bind_vars stub [string trim $stub]
     }
 
+    if { [string compare $original_query $query] != 0 } {
+	ad_partner_memoize_list_from_db -bind $bind_vars $query [list proc_name] [ad_partner_default_divider] $original_query
+    }
+    ns_set free $bind_vars
 
     # we check to be sure the current partner has some procedures 
     # registered for the requested url. If not, we use the templates
@@ -208,24 +196,26 @@ proc_doc ad_partner_procs { table {partner ""} } {Returns all procs from $table 
     return $query_list
 }
 
-
-proc_doc ad_get_partner_procs { db table } {Returns all procs from $table for the current partner. Memoizes the procs so we don't hit the db constantly for each partner} {
+proc_doc ad_get_partner_procs { table } {
+    Returns all procs from $table for the current partner. Memoizes
+    the procs so we don't hit the db constantly for each partner
+} {
     return [ad_partner_procs $table]
 }
 	
-proc_doc ad_get_footer_procs { {db ""} } {Returns a list of all the footer procs to call for the curre
+proc_doc ad_get_footer_procs } {Returns a list of all the footer procs to call for the curre
 nt section} {
     return [ad_partner_procs "ad_partner_footer_procs"]
 }
 
-proc_doc ad_get_header_procs { {db ""} } {Returns a list of all the header procs to call for the curre
+proc_doc ad_get_header_procs } {Returns a list of all the header procs to call for the curre
 nt section} {
     return [ad_partner_procs "ad_partner_header_procs"]
 }
 
-
 proc ad_partner_header { {cookie "" } } {
     set proc_list [ad_partner_procs "ad_partner_header_procs" $cookie]
+    # ns_log Notice "ad_partner_header: PROC LIST $proc_list"
     set header ""
     foreach proc_name $proc_list {
 	append header [$proc_name]
@@ -233,12 +223,13 @@ proc ad_partner_header { {cookie "" } } {
     return $header
 }
 
-proc ad_get_partner_header { {db ""} } {
+proc ad_get_partner_header { } {
     return [uplevel { ad_partner_header }]
 }
 
 proc ad_partner_footer { {cookie "" } } {
     set proc_list [ad_partner_procs "ad_partner_footer_procs" $cookie]
+    # ns_log Notice "ad_partner_footer: PROC LIST $proc_list"
     set footer ""
     foreach proc_name $proc_list {
 	append footer [$proc_name]
@@ -246,19 +237,16 @@ proc ad_partner_footer { {cookie "" } } {
     return $footer
 }
 
-proc ad_get_partner_footer { {db ""} } {
+proc ad_get_partner_footer { } {
     return [uplevel { ad_partner_footer }]
 }
 
-
-
 proc_doc ad_partner_return_error { page_title {page_body ""} } {Like the normal ad_return_error except it uses partner headers and footers} {
-    ns_return 200 text/html [ad_partner_return_template]
+    doc_return  200 text/html [ad_partner_return_template]
     return -code return
 }
 
-
-proc_doc ad_partner_var { var {db ""} {force 0} {cookie ""} } {Caches and returns the value of the specified var for the current partner.} {
+proc_doc ad_partner_var { var {force 0} {cookie ""} } {Caches and returns the value of the specified var for the current partner.} {
     if { [empty_string_p $cookie] } {
 	set cookie [ad_partner_from_cookie]
     }
@@ -274,25 +262,13 @@ proc_doc ad_partner_var { var {db ""} {force 0} {cookie ""} } {Caches and return
 	# cache for the lifetime of the current server process
 	set var_list [ad_partner_list_all_var_names]
 	
-	set sql "select [join $var_list ", "]
+	# Use the comment to correctly memoize the query (make it unique!)
+	set sql "select /* Variables for $cookie */ [join $var_list ", "]
                  from ad_partner 
-                 where partner_cookie='[DoubleApos $cookie]'"
+                 where partner_cookie=:cookie"
 	
-	if { [empty_string_p $db] } {
-	    set db [ns_db gethandle subquery]
-	    set sub_selection [ns_db 0or1row $db $sql]
-	    if { [empty_string_p $sub_selection] } {
-		ns_db releasehandle $db
-		return ""
-	    }
-	    set_variables_after_subquery
-	    ns_db releasehandle $db
-	} else {
-	    set selection [ns_db 0or1row $db $sql]
-	    if { [empty_string_p $selection] } {
-		return ""
-	    }
-	    set_variables_after_query
+	if { ![db_0or1row partner_list_vars $sql] } {
+	    return ""
 	}
 
 	foreach v $var_list {
@@ -302,12 +278,11 @@ proc_doc ad_partner_var { var {db ""} {force 0} {cookie ""} } {Caches and return
 	# Make sure we got the desired value from the database
 	if { ![info exists ad_partner_cache($varname)] } {
 	    ad_return_error "Cannot find $varname" "Missing or mistaken partner variable name"
-	    return -code return
+	    ad_script_abort
 	}
     }
     return $ad_partner_cache($varname)
 }
-
 
 proc_doc ad_partner_var_or_default { var } {Returns the specified variable for the current parter, unless it's the empty string in which case it returns the variable for the cobrandsitedefault} {
     set value [ad_partner_var $var]
@@ -317,7 +292,6 @@ proc_doc ad_partner_var_or_default { var } {Returns the specified variable for t
     return [ad_partner_var $var "" 0 [ad_parameter CookieDefault partner]]
 }
 
-
 proc_doc ad_partner_default_font { {props ""} } {Returns an html font tag with the default font face and default font color filled in from the partner database. If props is nonempty, it is simply included in the font statement} {
 
     set face [ad_partner_var default_font_face]
@@ -325,14 +299,11 @@ proc_doc ad_partner_default_font { {props ""} } {Returns an html font tag with t
     return [ad_partner_format_font $face $color $props]
 }
 
-
-
 proc_doc ad_partner_title_font { {props ""} } {Returns an html font tag with the default font face and default font color filled in from the partner database. If props is nonempty, it is simply included in the font statement} {
     set face [ad_partner_var title_font_face]
     set color  [ad_partner_var title_font_color]
     return [ad_partner_format_font $face $color $props]
 }
-
 
 proc_doc ad_partner_format_font { face color props } {Returns a <font html tag based on the parameters passed, using only the non-empty ones} {
     set html ""
@@ -350,7 +321,6 @@ proc_doc ad_partner_format_font { face color props } {Returns a <font html tag b
     }
     return "<font$html>"
 }
-
 
 proc_doc ad_partner_url_with_query { { url "" } } {Returns the current url (or the one specified) with all queries correctly attached} {
     if { [empty_string_p $url] } {
@@ -379,22 +349,22 @@ proc_doc ad_set_partner_cookie { } "Sets a cookie based on the current url to cr
     if { [empty_string_p $return_url] } { 
 	set return_url /
     }
-    ad_returnredirect "/cookie-chain.tcl?cookie_name=[ns_urlencode ad_partner]&cookie_value=[ns_urlencode $stub]&expire_state=s&final_page=[ns_urlencode $return_url]"
-    return -code return
+    ad_returnredirect "/cookie-chain?cookie_name=[ns_urlencode ad_partner]&cookie_value=[ns_urlencode $stub]&expire_state=s&final_page=[ns_urlencode $return_url]"
+    ad_script_abort
 }
-
 
 proc_doc ad_partner_return_template {} {Adds the partner header and footer around the string page_body or page_content that is defined in the calling environment} {
     uplevel { 
-	return "  
+	set ad_partner_template "
 [ad_partner_header]
 [value_if_exists page_body]
 [value_if_exists page_content]
 [ad_partner_footer]
 "
+        db_release_unused_handles
+        return $ad_partner_template
     }
 }
-
 
 proc ad_partner_upvar { var {levels 2} } {
     incr levels
@@ -420,7 +390,6 @@ proc_doc ad_partner_list_all_var_names {} {Returns a list of just the variable n
     return $var_names
 }
 
-
 proc_doc ad_partner_list_all_vars {} {Returns a list of pairs. Each pair is <English text> <variable name> where variable_name is one of the variables in the ad_partner table. This is great for simple text fields} {
 
     # we could use ad_parameter_section (defined in ad-defs.tcl)
@@ -432,7 +401,7 @@ proc_doc ad_partner_list_all_vars {} {Returns a list of pairs. Each pair is <Eng
     append config_path "ns/server/" $server_name "/acs/partner"
     set ad_partner_vars [ns_configsection $config_path]
 
-    ns_log Notice "/tcl/ad-partner.tcl has found [ns_set size $ad_partner_vars] variables (specified in $config_path)"
+    # ns_log Notice "/tcl/ad-partner.tcl has found [ns_set size $ad_partner_vars] variables (specified in $config_path)"
 
     set var_list [list]
     # now we have an ns_set of all the specs
@@ -449,11 +418,9 @@ proc_doc ad_partner_list_all_vars {} {Returns a list of pairs. Each pair is <Eng
 }
 		
 proc_doc ad_reset_partner_cookie { { return_url "/" } } "Resets ad_partner cookie and redirects to the specified url" {
-    ad_returnredirect "/cookie-chain.tcl?cookie_name=[ns_urlencode ad_partner]&final_page=[ns_urlencode $return_url]"
-    return -code return
+    ad_returnredirect "/cookie-chain?cookie_name=[ns_urlencode ad_partner]&final_page=[ns_urlencode $return_url]"
+    ad_script_abort
 }
-
-
 
 proc_doc ad_partner_verify_cookie { {redirect_if_not_logged_in 0 } } {Makes sure the user's appropriate cookie is set and if not, redirects to the same page to set the cookie.  A special flag is set so we avoid an infinite loop when someone's cookies are off} {
     # ns_log Notice "ad_partner_verify_cookie: starting"
@@ -467,8 +434,8 @@ proc_doc ad_partner_verify_cookie { {redirect_if_not_logged_in 0 } } {Makes sure
     if { $user_id == 0 } {
 	# We wouldn't know how to set the cookie without a user id!
 	if { $redirect_if_not_logged_in } {
-	    ad_returnredirect /register/index.tcl?[export_url_vars return_url]
-	    return -code return
+	    ad_returnredirect /register/index?[export_url_vars return_url]
+	    ad_script_abort
 	} else {
 	    return
 	}
@@ -486,27 +453,24 @@ proc_doc ad_partner_verify_cookie { {redirect_if_not_logged_in 0 } } {Makes sure
 	}
 	if { $c == 1 } {
 	    ad_return_error "Your cookies are turned off" "You must turn on your cookies to use this site. Sorry for the inconvenience"
-	    return -code return
+	    ad_script_abort
 	}
-	set db [ns_db gethandle subquery]
-	set cookie [ad_partner_cookie_from_user_id $db $user_id]
-	ns_db releasehandle $db
+	set cookie [ad_partner_cookie_from_user_id $user_id]
 	ad_returnredirect "/$cookie$return_url"
-	return -code return
+	ad_script_abort
     }
 }
-
 
 proc_doc ad_partner_group_id_from_cookie { { cookie "" } } {Returns the group id for the specified partner cookie or for the cookie in the user's cookies. Memoizes the result.} {
     if { [empty_string_p $cookie] } {
 	set cookie [ad_partner_from_cookie]
     }
-    return [lindex [ad_partner_memoize_list_from_db \
+    set bind_vars [ad_tcl_vars_to_ns_set cookie]
+    return [lindex [ad_partner_memoize_list_from_db -bind $bind_vars \
 	    "select group_id 
                from ad_partner 
-              where partner_cookie='[DoubleApos $cookie]'" [list group_id]] 0]
+              where partner_cookie=:cookie" [list group_id]] 0]
 }
-
 
 proc_doc ad_partner_cookie_select { {sel ""} {name partner_cookie} } {Returns an html select box to select a cookie based on partner_name} {
     set var_list [ad_partner_memoize_list_from_db \
@@ -525,8 +489,6 @@ proc_doc ad_partner_cookie_select { {sel ""} {name partner_cookie} } {Returns an
 </select>
 "
 }
-
-
 
 # Now we define some generic header and footer procedures
 # that can be used to set-up the generic ArsDigita look and feel
@@ -558,6 +520,3 @@ proc_doc ad_partner_generic_footer {} {Wrapper for ad_footer} {
     }
     return "[ad_footer $signatory $suppress_curriculum_bar_p]</font>"
 }
-
-
-util_report_successful_library_load

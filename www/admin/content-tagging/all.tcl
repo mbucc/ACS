@@ -1,9 +1,15 @@
-# $Id: all.tcl,v 3.0 2000/02/06 03:15:24 ron Exp $
-ReturnHeaders
+#File: /www/admin/content-tagging/all.tcl
+ad_page_contract {
+    Shows all the words in the dictionary
+    @param none
+    @author unknown
+    @cvs-id all.tcl,v 3.2.2.4 2000/09/22 01:34:35 kevin Exp
+} {
+}
 
 set title "Naughty Dictionary"
 
-ns_write "[ad_admin_header $title]
+set page_content "[ad_admin_header $title]
 
 <h2>$title</h2>
 
@@ -11,33 +17,38 @@ ns_write "[ad_admin_header $title]
 
 <hr>
 
-<form action=rate.tcl method=post>
+<form action=rate method=post>
 
 "
-set db [ns_db gethandle]
+
 set pretty_tag(0) "Rated G"
 set pretty_tag(1) "Rated PG"
 set pretty_tag(3) "Rated R"
 set pretty_tag(7) "Rated X"
 
 
-set sql "select word, tag from content_tags order by tag, word"
-set selection [ns_db select $db $sql]
 
 set last_tag ""
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
+db_foreach select_tag "select word, tag from content_tags order by tag, word" {
     if {[string compare $tag $last_tag]} {
-	ns_write "</ul><b>$pretty_tag($tag)</b><ul>"
+	append page_content "</ul><b>$pretty_tag($tag)</b><ul>"
 	set last_tag $tag
     }
-    ns_write "<li><a href=lookup.tcl?[export_url_vars word]>$word</a>"
+    append page_content "<li><a href=lookup?[export_url_vars word]>$word</a>"
 }
 
-ns_write "</ul>
 
+
+
+append page_content "</ul>
 [ad_admin_footer]
 "
+
+
+
+doc_return  200 text/html $page_content
+
+
 
 
 

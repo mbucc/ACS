@@ -1,46 +1,42 @@
 # /www/download/admin/download-edit-version.tcl
-#
-# Date:     01/04/2000
-# Author :  ahmeds@mit.edu
-# Purpose:  edits information related to this version_id
-#
-# $Id: download-edit-version.tcl,v 3.1.2.2 2000/05/18 00:05:15 ron Exp $
-# -----------------------------------------------------------------------------
+ad_page_contract {
+    edits information related to this version_id
 
-set_the_usual_form_variables
-# maybe scope, maybe scope related variables (group_id)
-# version_id
+    @param version_id the version being edited
+    @param scope
+    @param group_id
+
+    @author ahmeds@mit.edu
+    @creation-date 4 Jan 2000
+    @cvs-id download-edit-version.tcl,v 3.9.2.6 2000/09/24 22:37:14 kevin Exp
+} {
+    version_id:integer,notnull
+    scope:optional
+    group_id:optional,integer
+}
+
+# -----------------------------------------------------------------------------
 
 ad_scope_error_check
 
-set db [ns_db gethandle]
-download_version_admin_authorize $db $version_id
 
-set selection [ns_db 0or1row $db \
-	"select * from download_versions where version_id = $version_id"]
+download_version_admin_authorize $version_id
 
-set exception_count 0
-set exception_text ""
+page_validation {
+    if {![db_0or1row version_info "
+    select download_id,
+           pseudo_filename,
+           release_date,
+           version,
+           status,
+           version_description,
+           version_html_p
+    from   download_versions 
+    where  version_id = :version_id"]} {
 
-if { [empty_string_p $selection] } {
-    incr exception_count
-    append exception_text "<li>There is no file with version_id = $version_id."
-} else {
-    set_variables_after_query
+	error "There is no file with version_id = $version_id."
+    }
 }
-
-if { $exception_count > 0 } {
-    ad_scope_return_complaint $exception_count $exception_text $db
-    return
-}
-
-set selection [ns_db 0or1row $db "
-select visibility, 
-       availability,
-       price, 
-       currency 
-from   download_rules
-where  version_id = $version_id"]
 
 set item_list [ad_decode $scope "public" \
 	"[list "All Users" "Registered Users" ]" \
@@ -50,11 +46,13 @@ set value_list [ad_decode $scope "public" \
 	"[list "all" "registered_users"]" \
 	"[list "all" "registered_users" "group_members" ]" ]
 
-set counter 0
-
-if { ![empty_string_p $selection] } {
-    # found a rule for this specific version_id
-    set_variables_after_query
+if {[db_0or1row version_rules "
+select visibility, 
+       availability,
+       price, 
+       currency 
+from   download_rules
+where  version_id = :version_id"] } {
 
     set rule_html "
     <tr>
@@ -82,22 +80,21 @@ if { ![empty_string_p $selection] } {
 	</tr>
 	"
     }
+
 } else {    
     
     # no version-specific rule, look for a rule for all versions of this download_id
  
-    set selection [ns_db 0or1row $db "
+    if { [db_0or1row download_rules "
     select visibility, 
            availability,
            price, 
            currency 
     from   download_rules
-    where  download_id = $download_id 
-    and    version_id is null"]
+    where  download_id = :download_id 
+    and    version_id is null"]} {
     
-    if { ![empty_string_p $selection] } {
 	# found a rule for all versions of this download_id
-	set_variables_after_query
 	
 	set rule_html "
 	<tr>
@@ -135,24 +132,25 @@ if { ![empty_string_p $selection] } {
 
 set page_title "Edit Version Info"
 
-set download_name [database_to_tcl_string $db \
-	"select download_name from downloads where download_id = $download_id"]
+db_1row download_name "
+select download_name from downloads 
+where download_id = :download_id"
 
-ns_return 200 text/html "
+doc_return 200 text/html "
 
-[ad_scope_header $page_title $db]
-[ad_scope_page_title $page_title $db]
+[ad_scope_header $page_title]
+[ad_scope_page_title $page_title]
 [ad_scope_context_bar_ws \
-	[list "/download/" "Download"] \
-	[list "/download/admin/" "Admin"] \
-	[list "download-view.tcl?[export_url_scope_vars download_id]" "$download_name"] \
-	[list "view-versions.tcl?[export_url_scope_vars download_id]" "Versions"] \
-	[list "view-one-version.tcl?[export_url_scope_vars version_id]" "One Version"] \
+	[list "/download/index?[export_url_scope_vars]" "Download"] \
+	[list "/download/admin/index?[export_url_scope_vars]" "Admin"] \
+	[list "download-view?[export_url_scope_vars download_id]" "$download_name"] \
+	[list "view-versions?[export_url_scope_vars download_id]" "Versions"] \
+	[list "view-one-version?[export_url_scope_vars version_id]" "One Version"] \
 	"Edit"]
 
 <hr>
 
-<form method=get action=download-edit-version-2.tcl>
+<form method=get action=download-edit-version-2>
 [export_form_scope_vars version_id]
 
 <blockquote>

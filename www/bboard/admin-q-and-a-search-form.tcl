@@ -1,42 +1,38 @@
-# $Id: admin-q-and-a-search-form.tcl,v 3.0 2000/02/06 03:33:05 ron Exp $
-set_form_variables_string_trim_DoubleAposQQ
-set_form_variables
+# /www/bboard/admin-q-and-a-search-form.tcl
+ad_page_contract {
+    Form for the admin to search
 
-# topic required
+    @param topic the name of the bboard topic
 
-set db [bboard_db_gethandle]
-if { $db == "" } {
-    bboard_return_error_page
+    @cvs-id admin-q-and-a-search-form.tcl,v 3.2.2.3 2000/09/22 01:36:45 kevin Exp
+} {
+    topic
+}
+
+# -----------------------------------------------------------------------------
+ 
+if  {[bboard_get_topic_info] == -1} {
     return
 }
 
- 
-if  {[bboard_get_topic_info] == -1} {
-    return}
-
 if {[bboard_admin_authorization] == -1} {
-	return}
-
+    return
+}
 
 set search_submit_button ""
 if { [msie_p] == 1 } {
     set search_submit_button "<input type=submit value=\"Submit Query\">"
 }
 
-set_variables_after_query
-
-ns_return 200 text/html "<html>
-<head>
-<title>Search $topic Q&A</title>
-</head>
-<body bgcolor=[ad_parameter bgcolor "" "white"] text=[ad_parameter textcolor "" "black"]>
+doc_return  200 text/html "
+[bboard_header "Search $topic Q&A"]
 
 <h2>Search</h2>
 
-the <a href=\"admin-home.tcl?[export_url_vars topic topic_id]\">$topic Q&A forum</a>
+the <a href=\"admin-home?[export_url_vars topic topic_id]\">$topic Q&A forum</a>
 
 <hr>
-<form method=POST action=admin-q-and-a-search.tcl target=\"_top\">
+<form method=POST action=admin-q-and-a-search target=\"_top\">
 <input type=hidden name=topic value=\"$topic\">
 <input type=hidden name=topic_id value=\"$topic_id\">
 Full Text Search:  <input type=text name=query_string size=40>

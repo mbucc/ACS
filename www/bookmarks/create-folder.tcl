@@ -1,22 +1,21 @@
-#
-# /bookmarks/create-folder.tcl
-#
-# create a folder to store bookmarks in
-#
-# by aure@arsdigita.com and dh@arsdigita.com, June 199
-#
-# $Id: create-folder.tcl,v 3.0.4.2 2000/03/16 03:09:50 tina Exp $
-#
+# /www/bookmarks/create-folder.tcl
 
-ad_page_variables {return_url}
+ad_page_contract {
+    create a folder to store bookmarks in
+    @param return_url the url to return to 
+    @author David Hill (dh@arsdigita.com)
+    @author Aurelius Prochazka (aure@arsdigita.com)
+    @creation-date June 1999  
+    @cvs-id create-folder.tcl,v 3.2.2.6 2001/01/09 22:45:11 khy Exp
+} {
+    return_url
+}
+
 
 set user_id [ad_verify_and_get_user_id]
 ad_maybe_redirect_for_registration
 
-set db [ns_db gethandle]
-
-set bookmark_id [database_to_tcl_string $db "
-    select bm_bookmark_id_seq.nextval from dual"]
+set bookmark_id [db_string bookmark_id "select bm_bookmark_id_seq.nextval from dual"]
 
 set title "Create Folder"
 
@@ -29,7 +28,8 @@ set page_content "
 
 <hr>
 <form action=create-folder-2 method=post>
-[export_form_vars bookmark_id return_url]
+[export_form_vars -sign bookmark_id]
+[export_form_vars return_url]
 
 <table>
 <tr>
@@ -39,7 +39,7 @@ set page_content "
 <tr>
   <td valign=top align=right>Place in folder:  
   <img border=0 src=pics/ftv2folderopen align=top></td>
-  <td>[bm_folder_selection $db $user_id $bookmark_id]</td>
+  <td>[bm_folder_selection $user_id $bookmark_id]</td>
 </tr>
 <tr>
   <td></td>
@@ -51,11 +51,10 @@ set page_content "
 [bm_footer]"
 
 # Release the database handle
-ns_db releasehandle $db
+db_release_unused_handles
 
 # serve the page
-ns_return 200 text/html $page_content
-
+doc_return  200 text/html $page_content
 
 
 

@@ -1,31 +1,50 @@
-# $Id: presentation-edit.tcl,v 3.0 2000/02/06 03:55:18 ron Exp $
-# File:        presentation-edit.tcl
-# Date:        28 Nov 1999
-# Author:      Jon Salz <jsalz@mit.edu>
-# Description: Allows the user to create or edit a presentation.
-# Inputs:      presentation_id (if editing)
+# /wp/presentation-edit.tcl
+ad_page_contract {
+    Allows the user to create or edit a presentation.
+    @cvs-id presentation-edit.tcl,v 3.3.2.15 2001/01/12 00:45:04 khy Exp
+    @author jsalz@mit.edu
+    @creation-date 28 Nov 1999
+    @param presentation_id the ID of the WP presentation
+} {
+    presentation_id:naturalnum,optional
+}
+# modified by jwong@arsdigita.com 10 Jul 2000 for ACS 3.4 upgrade
 
-set_the_usual_form_variables 0
-set db [ns_db gethandle]
 set user_id [ad_maybe_redirect_for_registration]
 
 if { [info exists presentation_id] } {
     # Editing an existing presentation - check auth and grab info from the database.
-    wp_check_authorization $db $presentation_id $user_id "write"
-    set selection [ns_db 1row $db "select * from wp_presentations where presentation_id = $presentation_id"]
-    set_variables_after_query
+    wp_check_authorization $presentation_id $user_id "write"
 
-    set header [list "presentation-top.tcl?presentation_id=$presentation_id" $title]
+    db_1row presentation_select "
+    select  title,
+	    page_signature, 
+	    copyright_notice, 
+	    style,
+	    show_modified_p,
+	    public_p,
+	    audience,
+	    background,
+	    group_id
+    from wp_presentations where presentation_id = :presentation_id"
+
+    set header [list "presentation-top?presentation_id=$presentation_id" $title]
 
     set role "Edit"
 
     # Give the user access to any style owned by any other collaborator.
-    set or_styles "or owner in (select user_id from user_group_map
-                                      where group_id = $group_id
-                                      and   role in ('write','admin'))"
+    if { [exists_and_not_null group_id] } {
+	
+	set or_styles "or owner in (select user_id from user_group_map
+	where group_id = :group_id
+	and   role in ('write','admin'))"
+    } { 
+	set or_styles "" 
+    }
+
     if { $style != "" } {
 	# Make sure the user has access to the currently set style.
-	append or_styles " or style_id = $style"
+	append or_styles " or style_id = :style"
     }
 } else {
     # Creating a new presentation - set some defaults.
@@ -33,7 +52,7 @@ if { [info exists presentation_id] } {
 	set $var ""
     }
     set show_modified_p "f"
-    set public_p "t"
+    set public_p "f"
     set style -1
 
     set header ""
@@ -42,17 +61,17 @@ if { [info exists presentation_id] } {
 
     set or_styles ""
 
-    set presentation_id [wp_nextval $db "wp_ids"]
+    set presentation_id [wp_nextval "wp_ids"]
     set creating "t"
 }
 
 # Generate the list of styles. If the owner is the current user or null, or the
 # style is public, the user can see it.
 set styles ""
-wp_select $db "
+db_foreach wp_styles_select "
     select style_id, name
     from   wp_styles
-    where  owner = $user_id
+    where  owner = :user_id
     or     owner is null
     or     public_p = 't'
     $or_styles
@@ -64,11 +83,12 @@ wp_select $db "
     append styles ">$name\n"
 }
 
-ReturnHeaders
-ns_write "[wp_header_form "name=f action=presentation-edit-2.tcl method=post" \
-           [list "" "WimpyPoint"] [list "index.tcl?show_user=" "Your Presentations"] \
+set page_output "[wp_header_form "name=f action=presentation-edit-2 method=post" \
+           [list "" "WimpyPoint"] [list "index?show_user=" "Your Presentations"] \
            $header "$role Presentation"]
-[export_form_vars presentation_id creating]
+[export_form_vars -sign presentation_id]
+[export_form_vars creating]
+<P>
 
 <table>
   <tr>
@@ -170,7 +190,7 @@ world know whom you gave the presentation to and for what purpose.
   </tr>
   <tr valign=top>
     <th nowrap align=right><br>Background:</th>
-    <td><textarea name=background rows=4 cols=50 wrap=virtual>[philg_quote_double_quotes $audience]</textarea></td>
+    <td><textarea name=background rows=4 cols=50 wrap=virtual>[philg_quote_double_quotes $background]</textarea></td>
   </tr>
 </table>
 
@@ -181,3 +201,7 @@ world know whom you gave the presentation to and for what purpose.
 
 [wp_footer]
 "
+
+
+
+doc_return  200 text/html $page_output

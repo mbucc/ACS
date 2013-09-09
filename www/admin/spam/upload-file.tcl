@@ -1,13 +1,11 @@
-# File:     /admin/spam/upload-file.tcl
-# Date:     02/06/2000
-# Contact:  hqm@ai.mit.edu
-# Purpose:  
-#
-# Upload a message file to the spam drop zone
+# www/admin/spam/upload-file.tcl
 
-if {[ad_read_only_p]} {
-    ad_return_read_only_maintenance_message
-    return
+ad_page_contract {
+
+ Upload a message file to the spam drop zone
+    @author hqm@arsdigita.com
+    @cvs-id upload-file.tcl,v 3.3.2.4 2000/09/22 01:36:07 kevin Exp
+} {
 }
 
 # assign necessary data for insert
@@ -15,10 +13,6 @@ set user_id [ad_verify_and_get_user_id]
 ad_maybe_redirect_for_registration
 
 set originating_ip [ns_conn peeraddr]
-
-set db [ns_db gethandle]
-
-ReturnHeaders
 
 append pagebody "[ad_admin_header "Upload Spam Message File to Drop Zone"]
 
@@ -28,10 +22,7 @@ append pagebody "[ad_admin_header "Upload Spam Message File to Drop Zone"]
 
 <hr>
 
-
-
-
- <form enctype=multipart/form-data method=POST action=\"upload-file-2.tcl\">
+ <form enctype=multipart/form-data method=POST action=\"upload-file-2\">
 <blockquote>
 Upload a notification (spam) file to the drop zone at 
 <i>[spam_file_location ""]</i>.<p>
@@ -52,6 +43,6 @@ give the file the same name as it has on your local machine.
 [ad_footer]
 "
 
-ns_write $pagebody
 
+doc_return  200 text/html $pagebody
 

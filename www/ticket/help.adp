@@ -1,9 +1,20 @@
 <%=[ad_header "Ticket system help"]%>
-<h1>Ticket system help</h1>
+
 <%
-    ad_page_variables {{return_url {/ticket/}}}
-    ns_puts [ticket_context [list [list $return_url {Ticket Tracker}] [list {} {Help}]]]
+    ad_page_contract {
+	{return_url "/ticket/"}
+    } {
+	Displays ticket tracker help
+
+	@param return_url where we go when finished
+
+	@cvs-id help.adp,v 3.1.10.2 2000/09/08 20:48:08 kevin Exp
+    }
 %>
+
+<h1>Ticket system help</h1>
+
+<%= [ticket_context [list [list $return_url {Ticket Tracker}] [list {} {Help}]]] %>
 
 <hr>
     <h3> Navigation and Viewing </h3>

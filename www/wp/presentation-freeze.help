@@ -1,0 +1,6 @@
+<%= [wp_help_header "Editing Slides"] %>
+<h3>Freezing</h3>
+Wimpy point allows you to have as many versions of a set of slides as you desire. Every time you "freeze" a presentation, you create a version of that presentation, and all of the slides with it, which can be "restored" at any point in time in the future. This can be used to keep a polished, presentation-ready version of a slide-show, while editing another version. It also works well for having a copy of the slide show which was used for a particular presentation, making it possible to look back and see what versions of the presentation might have been more or less successful.
+<h3>Restoring</H3>
+Once a presentation has been frozen, a new section will appear on the main page for the presentation, allowing frozen versions of the given presentation. More information is available on the <a href="/help/for-one-page.tcl?url=%2fwp%2fpresentation%2dtop%2etcl">presentation-top help page</a>
+<%=[wp_footer]%>

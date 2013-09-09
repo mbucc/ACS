@@ -11,6 +11,22 @@
 
 -- use this to prevent double spamming if user hits submit twice 
 
+
+insert into acs_modules (
+        module_key, pretty_name, public_directory, admin_directory,
+        site_wide_admin_directory, module_type, supports_scoping_p, 
+        documentation_url, data_model_url, description
+) values ( 
+        'spam','Spam System','/spam/','/spam/admin/','/admin/spam/','system','f',
+        '/doc/spam.html','doc/sql/spam/sql',  'The spam system: for periodic and group mailings');
+       
+-- create an administration group for spam tracker administration
+begin
+   administration_group_add ('Spam Admin Staff', 'spam', 'spam', NULL, 'f', '/spam/admin/');
+end;
+/
+
+
 create sequence spam_id_sequence;
 
 create table spam_history (
@@ -27,6 +43,7 @@ create table spam_history (
 	-- query which over users_spammable.* to enumerate the recipients of this spam
 	user_class_query	varchar(4000),
 	creation_date		date not null,
+        cc_emails		varchar(4000),
 	-- to which users did we send this?
 	user_class_description	varchar(4000),
 	creation_user		not null references users(user_id),
@@ -51,7 +68,10 @@ create table daily_spam_files (
 	user_class_description	varchar(4000),
 	from_address		varchar(200),
 	template_p		char(1) default 'f' check (template_p in ('t','f')),
-	period			varchar(64) default 'daily' check (period in ('daily','weekly', 'monthly', 'yearly'))
+	period			varchar(64) default 'daily' check (period in ('daily','weekly', 'monthly', 'yearly')),
+	day_of_week		integer,
+	day_of_month		integer,
+	day_of_year		integer
 );
 
 

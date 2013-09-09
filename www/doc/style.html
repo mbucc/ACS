@@ -8,7 +8,7 @@
 
 <h2>Establishing Style and Supporting Multi-Lingualism</h2>
 
-using <a href="index.html">the ArsDigita Community System</a>
+using <a href="index">the ArsDigita Community System</a>
 by <a href="http://photo.net/philg/">Philip Greenspun</a> 
 
 <hr>
@@ -16,10 +16,10 @@ by <a href="http://photo.net/philg/">Philip Greenspun</a>
 <ul>
 <li>User-accessible directory:  none
 <li>Site administrator directory:  none (<a
-href="styles.tcl">/doc/styles.tcl</a> is as close as it gets)
+href="styles">/doc/styles</a> is as close as it gets)
 <li>data model :  none; entirely Tcl- and virtual memory-based
-<li>Tcl scripts:  /tcl/ad-style.tcl
-<li>style definitions:  by convention in /tcl/sitename-styles.tcl
+<li>Tcl scripts:  /tcl/ad-style
+<li>style definitions:  by convention in /tcl/sitename-styles
 <li>Templates:  /web/yourservername/templates/
 
 </ul>
@@ -57,17 +57,17 @@ editing only one file, across thousands of dynamic pages:
 <li>edit the ad.ini file to set site background and text colors (these
 parameters are read by <code>ad_header</code>)
 
-<li>bash the source code for <code>ad_header</code> in /tcl/ad-defs.tcl
+<li>bash the source code for <code>ad_header</code> in /tcl/ad-defs
 to do something more dramatic (e.g., display a company logo at the top
 right of each page).
 
-<li>bash the source code for <code>ad_footer</code> in /tcl/ad-defs.tcl
+<li>bash the source code for <code>ad_footer</code> in /tcl/ad-defs
 to do something consistent at the bottom of all the pages on a site
 
 </ul>
 
 What about static HTML pages?  You can put <code>regsub</code> calls in
-<code>ad_serve_html_page</code> (in /tcl/ad-html.tcl) to consistently
+<code>ad_serve_html_page</code> (in /tcl/ad-html) to consistently
 change the appearance of outgoing pages.
 
 <p>
@@ -79,7 +79,7 @@ and use <code>ns_register_adptag</code> to augment the HTML a bit.
 
 In a perfect world, you'd modify <code>ad_header</code> or your static
 HTML to reference a cascading style sheet (CSS).  See <a
-href="http://photo.net/wtr/thebook/html.html">the HTML chapter of
+href="http://photo.net/wtr/thebook/html">the HTML chapter of
 <cite>Philip and Alex's Guide to Web Publishing</cite></a> for an
 explanation and also do a View Source on the document to see a style
 sheet reference from the HEAD of a document.
@@ -112,7 +112,7 @@ In the end you'll have programs that query the database and produce
 output exactly like what the designer wanted... on Monday.  By Friday,
 the designer has changed his or her mind.  Would you rather spend your
 life attacking the hard problem of Web-based collaboration or moving
-strings around inside .tcl pages?
+strings around inside  pages?
 
 
 <h3>Templates</h3>
@@ -129,7 +129,7 @@ that call a Tcl procedure which will set a bunch of local variables with
 values from the database.  They are then to stick <%=$variable_name=> in
 the ADP page wherever they want one of the variables to appear.
 
-Alternatively, write .tcl scripts that implement the "business logic"
+Alternatively, write  scripts that implement the "business logic"
 and, after stuffing a bunch of local vars, call ns_adp_parse to drag in
 the ADP created by the graphic designer.
 </pre>
@@ -148,10 +148,10 @@ Putting it all together in an ArsDigita Community System-based site:
 <li>We define a set of styles using
 <code>ad_register_styletag</code>. This procedure will (a) record that
 we've got a style we want to use site-wide, (b) register an ADP tag, and
-(c) create a Tcl function to be used by straight .tcl pages (and that is
+(c) create a Tcl function to be used by straight  pages (and that is
 also called by the ADP subsystem)
 
-<li>We create a convention that /www/foo/bar.tcl looks for ADP templates
+<li>We create a convention that /www/foo/bar looks for ADP templates
 at /templates/foo/bar.*
 
 <li>We create a /style section in the ad.ini file to specify whether or
@@ -164,11 +164,11 @@ what language is our system default ("foobar.plain.en.adp" for English,
 
 
 Why are the templates stored under a separate directory structure than
-the .tcl scripts?  Isn't this inconvenient?  Yes, if you're one person
+the  scripts?  Isn't this inconvenient?  Yes, if you're one person
 maintaining a site.  However, the whole point of this system is that a
 bunch of programmers and designers are collaborating.  The programmers
 will probably be happier if the designers never get FTP access to the
-directories containing .tcl scripts.  Also, from a security point of
+directories containing  scripts.  Also, from a security point of
 view, if someone is going to upload files to your server via FTP, you
 don't want them ending up directly underneath the Web server root.
 
@@ -176,9 +176,9 @@ don't want them ending up directly underneath the Web server root.
 
 Caveat nerdor:  remember that AOLserver sources private Tcl libraries
 alphabetically.  So your calls to <code>ad_register_styletag</code> must
-be in a Tcl file that sorts alphabetically after "ad-style.tcl" (we
-suggest that you stick to a convention of "sitename-styles.tcl", e.g.,
-"photonet-styles.tcl" would be the photo.net styles).
+be in a Tcl file that sorts alphabetically after "ad-style" (we
+suggest that you stick to a convention of "sitename-styles", e.g.,
+"photonet-styles" would be the photo.net styles).
 
 <h3>How we represent languages</h3>
 
@@ -188,7 +188,7 @@ Japanese (<em>not</em> "jp" as you might expect; jp is the country code
 for Japan, not the language code for the Japanese language).  For a
 complete list, check your Netscape preferences (click on "languages" and
 then try to add one), visit <a
-href="http://www.w3.org/International/O-charset-lang.html">http://www.w3.org/International/O-charset-lang.html</a>,
+href="http://www.w3.org/International/O-charset-lang">http://www.w3.org/International/O-charset-lang</a>,
 
 or refer to this list below (we're not going to make sure that it is
 kept up to date, so you might want to visit the source).
@@ -353,7 +353,7 @@ have worse problems that non-standard file names.
 
 <h3>How we pick the right template</h3>
 
-At the end of /foo/bar.tcl, release your database handle (good practice;
+At the end of /foo/bar, release your database handle (good practice;
 this way other threads can reuse it while AOLserver is streaming bytes
 out to your client) and then call <code>ad_return_template</code>.
 
@@ -364,7 +364,7 @@ If you need to set a cookie, bash <code>ns_conn outputheaders</code>.
 <p>
 
 How does <code>ad_return_template</code> work?  It goes up one Tcl
-level so that it can have access to all the local vars that bar.tcl
+level so that it can have access to all the local vars that bar
 might have set.  Then it looks at the user's language and graphics
 preferences (from the <code>users_preferences</code> defined in
 community-core.sql).  Then it looks in the templates subtree of the file
@@ -391,14 +391,14 @@ said he or she wanted.
 
 It is tough to know how and where the publisher will want to present
 users with language and graphics options.  But we can build standard Tcl
-API calls into /tcl/ad-style.tcl if we agree to standardize on cookie
+API calls into /tcl/ad-style if we agree to standardize on cookie
 names.  So let's agree on the same names as the columns in
 <code>users_preferences</code>: "prefer_text_only_p" (value "t" or "f")
 and "language_preference" (two-char lowercase code).
 
 <p>
 
-Note that the code in ad-style.tcl will only look for cookies if 
+Note that the code in ad-style will only look for cookies if 
 PlainFancyCookieP and LanguageCookieP parameters are turned on.
 
 

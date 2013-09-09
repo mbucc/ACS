@@ -1,8 +1,18 @@
-# $Id: creditcard-add-2.tcl,v 3.0 2000/02/06 03:18:57 ron Exp $
-set_the_usual_form_variables
-# order_id,
-# creditcard_number, creditcard_type, creditcard_expire_1,
-# creditcard_expire_2, billing_zip_code
+#  www/admin/ecommerce/orders/creditcard-add-2.tcl
+ad_page_contract {
+  Credit card confirm.
+
+  @author Eve Andersson (eveander@arsdigita.com)
+  @creation-date Summer 1999
+  @cvs-id creditcard-add-2.tcl,v 3.1.6.2 2000/08/16 18:49:04 seb Exp
+} {
+  order_id:integer,notnull
+  creditcard_number
+  creditcard_type
+  creditcard_expire_1
+  creditcard_expire_2
+  billing_zip_code
+}
 
 # get rid of spaces and dashes
 regsub -all -- "-" $creditcard_number "" creditcard_number
@@ -40,12 +50,11 @@ if { $exception_count > 0 } {
     return
 }
 
-ReturnHeaders
-ns_write "[ad_admin_header "Confirm Credit Card"]
+doc_body_append "[ad_admin_header "Confirm Credit Card"]
 
 <h2>Confirm Credit Card</h2>
 
-[ad_admin_context_bar [list "../" "Ecommerce"] [list "index.tcl" "Orders"] [list "one.tcl?[export_url_vars order_id]" "One Order"] "Confirm Credit Card"]
+[ad_admin_context_bar [list "../" "Ecommerce"] [list "index" "Orders"] [list "one?[export_url_vars order_id]" "One Order"] "Confirm Credit Card"]
 
 <hr>
 Please confirm that this is correct:
@@ -59,7 +68,7 @@ zip: $billing_zip_code
 </pre>
 </blockquote>
 
-<form method=post action=creditcard-add-3.tcl>
+<form method=post action=creditcard-add-3>
 [export_entire_form]
 
 <center>

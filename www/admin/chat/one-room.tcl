@@ -1,47 +1,53 @@
-# $Id: one-room.tcl,v 3.0 2000/02/06 03:10:10 ron Exp $
-# File:     admin/chat/one-room.tcl
-# Date:     1998-11-18
-# Contact:  aure@arsdigita.com,philg@mit.edu, ahmeds@arsdigita.com
-# Purpose:  shows one chat room
+# www/admin/chat/one-room.tcl
+ad_page_contract {
+    Shows info for one chat room.
 
-set_the_usual_form_variables
+    @author Aure (aure@arsdigita.com)
+    @author Philip Greenspun (philg@mit.edu)
+    @author ahmeds@arsdigita.com
+    @param chat_room_id
+    @creation-date 18 November 1999
+    @creation-date 18 November 1999
+    @cvs-id one-room.tcl,v 3.2.2.10 2000/09/22 01:34:29 kevin Exp
+} {
+    {chat_room_id:naturalnum}
+}
 
-# chat_room_id 
+# Get group_id immediately since there is no later dependency for its setting.
+set group_id [ad_administration_group_id chat $chat_room_id]
 
-set db [ns_db gethandle]
 
-set selection [ns_db 0or1row $db "select * from chat_rooms where chat_room_id = $chat_room_id"]
-
-if { $selection == "" } {
+if {![db_0or1row admin_chat_get_chat_room_info {
+    select chat_room_id,
+        pretty_name,
+        private_group_id,
+	moderated_p,
+	expiration_days,
+	creation_date,
+	active_p,
+	scope,
+	group_id
+    from  chat_rooms 
+    where chat_room_id = :chat_room_id
+}]} {
     ad_return_error "Not Found" "Could not find chat_room $chat_room_id"
     return
 }
 
-set_variables_after_query
-
-set selection [ns_db 1row $db "
-select scope, group_id
-from chat_rooms
-where chat_room_id = $chat_room_id "]
-
-set_variables_after_query
-
-if { $scope=="group" } {
-    set short_name [database_to_tcl_string $db "select short_name
-                                                from user_groups
-                                                where group_id = $group_id"]    
+if { [string compare $scope "group"] == 0 } {
+    set short_name [db_string admin_chat_get_short_group_name {
+	select short_name from user_groups where group_id = :group_id
+    }]
 }
 
-if { $scope == "public" } {
-    set userpage_url_string "/chat/chat.tcl?chat_room_id=$chat_room_id&scope=$scope"
+if { [string compare $scope "public"] == 0 } {
+    set userpage_url_string "/chat/enter-room.tcl?chat_room_id=$chat_room_id&scope=$scope"
 } else {
-    set userpage_url_string "/groups/$short_name/chat/chat.tcl?chat_room_id=$chat_room_id&scope=$scope&group_id=$group_id" 
+    set userpage_url_string "/chat/enter-room.tcl?chat_room_id=$chat_room_id&scope=$scope&group_id=$group_id" 
 }
 
 
-ReturnHeaders 
-
-ns_write "
+set page_content "
 
 [ad_admin_header "$pretty_name"]
 <h2>$pretty_name</h2>
@@ -50,7 +56,6 @@ ns_write "
 <hr>
 
 User page:  <a href=\"$userpage_url_string\">$userpage_url_string</a>
-
 
 "
 
@@ -61,22 +66,40 @@ if [empty_string_p $expiration_days] {
     set expired_select_item ", sum(decode(sign((sysdate-$expiration_days)-creation_date),1,1,0)) as n_expired_msgs"
 }
 
-set selection [ns_db 1row $db "select min(creation_date) as min_date, max(creation_date) as max_date, count(*) as n_messages, count(distinct creation_user) as n_users $expired_select_item
-from chat_msgs
-where chat_room_id = $chat_room_id"]
+if { ![db_0or1row admin_chat_get_chat_room_usage_stats " 
+    select min(creation_date) as min_date, 
+           max(creation_date) as max_date, 
+           count(*) as n_messages, 
+           count(distinct creation_user) as n_users 
+           $expired_select_item
+    from chat_msgs
+    where chat_room_id = :chat_room_id"] } {
+        
+    append page_content "<ul><i>No chat room usage statistics available.</i></ul>"
 
-set_variables_after_query
+} else {
+    append page_content "
+    <ul>
+    <li>Oldest message:  $min_date
+    <li>Newest message:  $max_date
+    <li>Total messages: $n_messages (from $n_users distinct users)
+    </ul> "
+}
 
-ns_write "
-<ul>
-<li>oldest message:  $min_date
-<li>newest message:  $max_date
-<li>total messages: $n_messages (from $n_users distinct users)
-</ul>
+set group_options_widget [ad_db_optionlist admin_chat_get_all_group_rooms {
+    select unique group_name, user_groups.group_id 
+    from user_groups, user_group_map 
+    where user_groups.group_id=user_group_map.group_id 
+    and user_groups.group_type <> 'administration'
+    order by group_name
+} $group_id]
+
+
+append page_content "
 
 <h3>Properties</h3>
 
-<form action=\"/admin/chat/edit-room.tcl\" method=post>
+<form action=\"/admin/chat/edit-room\" method=post>
 [export_form_vars chat_room_id]
 <table>
 <tr>
@@ -85,14 +108,11 @@ ns_write "
 </tr>
 <tr>
     <td align=right>Group (optional):</td>
-    <td><select name=group_id>
-<option value=\"\">No Group, this is a Public Chat Room</option>
-[ad_db_optionlist $db "select unique group_name, user_groups.group_id 
-from user_groups, user_group_map 
-where user_groups.group_id=user_group_map.group_id 
-and user_groups.group_type <> 'administration'
-order by group_name" $group_id]
-</select></td>
+    <td>
+    <select name=group_id>
+    <option value=\"\">No Group, this is a Public Chat Room</option>
+    $group_options_widget
+    </select></td>
 </tr>
 <tr>
     <td align=right>Expire messages after</td>
@@ -103,18 +123,18 @@ order by group_name" $group_id]
     <td><select name=active_p>
 "
 if {$active_p=="t"} {
-    ns_write "
+    append page_content "
     <option value=f>No</option>
     <option value=t selected>Yes</option>
     "
 } else {
-    ns_write "
+    append page_content "
     <option value=f selected>No</option>
     <option value=t>Yes</option>
     "
 }
 
-ns_write "
+append page_content "
 </select>
 </td>
 </tr>
@@ -123,17 +143,18 @@ ns_write "
     <td><select name=moderated_p>
 "
 if {$moderated_p=="t"} {
-    ns_write "
+    append page_content "
     <option value=f>Unmoderated</option>
     <option value=t selected>Moderated (see below)</option>
     "
 } else {
-    ns_write "
+    append page_content "
     <option value=f selected>Unmoderated</option>
     <option value=t>Moderated (see below)</option>
     "
 }
-ns_write "
+
+append page_content "
 </select>
 </td>
 </tr>
@@ -142,17 +163,17 @@ ns_write "
 </form>
 <h3>Moderators</h3>
 "
-
-set group_id [ad_administration_group_id $db chat $chat_room_id]
-set selection [ns_db select $db "select users.user_id as moderator_id, first_names, last_name
-from users, user_group_map
-where group_id=$group_id 
-and users.user_id = user_group_map.user_id"]
-
+set group_id [ad_administration_group_id chat $chat_room_id]
 set moderators ""
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
-    lappend moderators "<a href=\"/admin/users/one.tcl?user_id=$moderator_id\">$first_names $last_name</a>"
+db_foreach admin_chat_get_chat_room_moderators {
+    select users.user_id as moderator_id, 
+	first_names, 
+	last_name
+    from users, user_group_map
+    where group_id=:group_id 
+    and users.user_id = user_group_map.user_id
+} {
+    lappend moderators "<a href=\"/admin/users/one?user_id=$moderator_id\">$first_names $last_name</a>"
 }
 
 set moderators [join $moderators ", "]
@@ -161,12 +182,12 @@ if {[empty_string_p $moderators]} {
     set moderators "none"
 }
 
-ns_write "
+append page_content "
 Current Moderator(s):
 $moderators
 
 <center>
-<form method=GET action=\"/admin/ug/group.tcl\">
+<form method=GET action=\"/admin/ug/group\">
 [export_form_vars group_id]
 <input type=submit value=\"Add/Remove Moderators\">
 </form>
@@ -177,14 +198,34 @@ $moderators
 "
 
 if { $n_expired_msgs > 0 } {
-    ns_write "<li> <a href=expire-messages.tcl?[export_url_vars chat_room_id]>Deleted expired messages</a> ($n_expired_msgs)\n"
+    append page_content "<li> <a href=expire-messages?[export_url_vars chat_room_id]>Deleted expired messages</a> ($n_expired_msgs)\n"
 }
 
-ns_write "
-<li> <a href=delete-messages.tcl?[export_url_vars chat_room_id]>Delete all messages from this room</a>
+append page_content "
+<li> <a href=delete-messages?[export_url_vars chat_room_id]>Delete all messages from this room</a>
 
-<li><a href=delete-room.tcl?[export_url_vars chat_room_id]>Delete this room</a>
+<li><a href=delete-room?[export_url_vars chat_room_id]>Delete this room</a>
 </ul>
 
 [ad_admin_footer]
 "
+
+
+
+doc_return  200 text/html $page_content
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

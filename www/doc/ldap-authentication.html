@@ -1,0 +1,372 @@
+<html>
+<head>
+<title>LDAP Authentication</title>
+</head>
+<body bgcolor=white>
+
+<h2>LDAP Authentication</h2>
+
+For the <a href="http://arsdigita.com/doc">ArsDigita Community
+System</a>, by <a href="http://www.pinds.com/lars">Lars Pind</a> on July 1, 2000.
+
+<hr>
+
+<blockquote><em>
+
+Note, this is still experimental, so it's not part of
+this release.  It'll be rolled in as part of the ACS 4.0 release. If
+you're interested in helping us test this, please contact me at <a
+href="mailto:lars@pinds.com">lars@pinds.com</a>, and I can provide you
+with the patch.
+
+</em></blockquote>
+
+<h3>The Big Picure</h3>
+
+Many companies have their own LDAP directory servers where they
+centrally store information on all the users of their computing
+equipment, including their user ids and passwords. We want to let
+users of an ACS-based web site log in using the same user id and
+password as everywhere else in their computing environment.
+
+<p>
+
+Currently, We do <em>not</em> stuff users into the LDAP directory. If
+a new user is to have access to the site, he must first have an entry
+created in the LDAP server by some other means.
+
+<p>
+
+If you want to know more about what LDAP is, <a
+href="http://www.pinds.com/software/ldap-in-general">I've actually
+written up something about it</a>.
+
+
+
+<h3>The Medium-Sized Picture</h3>
+
+An ACS installation is hooked up against one specific, trusted LDAP
+server. Every user of ACS has to be known to this LDAP server, and the
+have to live under some agreed-on base DN (e.g. <code>ou=people,
+dc=arsdigita, dc=com</code>). 
+
+<p>
+
+This software builds on the assumption that you want all the users
+under the base DN to have access to this ACS installation. This is not
+always reasonable, but since we don't deal with authorization, you'll
+have to modify this yourself. We also assume that you have some other
+means of maintaining the information in the directory. We don't
+provide tools for that yet.
+
+<p>
+
+The login process goes like this: 
+
+<ol>
+
+<li>We ask for email and password. Since DN's are generally tedious to
+type, we still rely on emails rather than DN. Since the user might not
+have a row in the users table, we won't do the old-style "email first,
+then check if he exists, then ask for password" login process.
+
+<li>We search the LDAP directory for a user with this email address
+and get back the DN. If there's no such entry, we deny access to the
+user. If there's more than one, we're in trouble, so we dump an
+error. If there's exactly one entry, we grab the DN.
+
+<li>We do an LDAP bind operation with the DN just found and the
+password provided by the user. If it doesn't succeed we complain that
+the user typed in a bad password.
+
+<li>After the bind, we check to see if we already have a row in the
+users table with the DN. If we don't, we pull out the person's
+name from the directory and insert a row.
+
+</ol>
+
+
+<blockquote><table bgcolor=#e6e6e6><tr><td>
+
+<i><b>Important Note:</b></i> We still have the two special users
+<code>system</code> and <code>anonymous</code> around. Since their
+password is still checked against the password in the local database,
+they pose a security risk. However, they're needed for setting up the
+site. See the section on <a href="#installation">installation</a>
+below for more info.
+</td></tr></table></blockquote>
+
+
+<h3>Under The Hood</h3>
+
+
+<h4>LDAP-specifics</h4>
+
+The attributes being searched on are
+
+<blockquote><pre>
+mail: <i>email as typed in by user</i>
+objectClass: inetOrgPerson
+</pre></blockquote>
+
+You might want to add other requirements. How to do that is shown in
+a comment in <code>LdapLogin.sqlj</code>.
+
+<p>
+
+The attributes being retrieved and stuffed into the users table are:
+
+<p>
+
+<table align=center>
+
+<tr bgcolor=#e6e6e6><th>LDAP
+attribute</th><th>Description</th><th>Column in users table</th></tr>
+
+<tr bgcolor=#e6e6e6><td><code>dn</code></td>
+<td>Distinguished name, the primary key of the entry</td>
+<td><code>ldap_dn</code></td></tr>
+
+<tr bgcolor=#e6e6e6><td><code>givenName</code></td>
+<td>The person's first name</td>
+<td><code>first_names</code></td></tr>
+
+<tr bgcolor=#e6e6e6><td><code>sn</code></td>
+<td>The person's last name (surname)</td>
+<td><code>last_name</code></td></tr>
+
+<tr bgcolor=#e6e6e6><td><code>mail</code></td>
+<td>The email address</td>
+<td><code>email</code></td></tr>
+
+</table>
+
+<p>
+
+Again, you might want to get others. How to do this is shown in
+<code>LdapLogin.sqlj</code>.
+
+
+
+<h4>Java API</h4>
+
+We don't want to implement an LDAP client in Tcl, so we rely on Sun's
+JNDI LDAP client in Java 1.2 running inside Oracle.
+
+<p>
+
+There are a few Java stored procedures to handle the interfacing
+between ACS and the LDAP server. Here are their interfaces:
+
+<blockquote><pre>
+String <b>getDnByEmail</b>(String url, String base, String email) 
+String <b>bind</b>(String url, String dn, String password, String securityMechanism) 
+String <b>syncUsersTable</b>(String url, String dn)
+</pre></blockquote>
+
+<dl>
+
+<dt><b>getDnByEmail</b>
+
+<dd>Performs an LDAP search for an <code>inetOrgPerson</code> with a
+<code>mail</code> attribute that matches the email address given and
+returns the DN if successful. If there's an error, the string "Error:
+<i>explanation</i>" is returned.
+
+<p>
+
+<dt><b>bind</b> 
+
+<dd>Performs the LDAP bind operation with the DN and password
+supplied. It'll use the security mechanism specified in the server
+parameter file.
+
+
+Returns <code>ok</code> if the bind was successfull. If not, it
+returns <code>Error: <i>explanation</i></code>
+
+<p>
+
+<dt><b>syncUsersTable</b>
+
+<dd>If the DN is already in the users table, it simply returns the
+<code>user_id</code>. If it's not, it queries the LDAP server for the
+<code>givenName</code>, <code>sn</code> and <code>mail</code>
+attributes and puts them into the <code>first_names</code>,
+<code>last_name</code> and <code>email</code> columns of the users
+table, respectively.
+
+</dl>
+
+
+
+
+
+<h4><a name="parameters">Parameters</a></h4>
+
+
+There are a few parameters you need to set up, one in the  general ACS
+section, the rest in the LDAP section:
+
+<blockquote><pre>
+<b>[ns/server/<i>yourdomain</i>/acs]</b>
+   ...
+; what authentication method we use
+; possible values are: internal, ldap
+<b>AuthenticationMethod=<i>ldap</i></b>
+
+   ...
+
+<b>[ns/server/<i>yourdomain</i>/acs/ldap]</b>
+; The URL of the LDAP server, including ldap://
+<b>ServerURL=<i>ldap://ldap.yourdomain.com</i></b>
+; The base DN under which all the users of this website resides
+<b>BaseDN=<i>ou=people,dc=yourdomain,dc=com</i></b>
+; Preferred security mechanisms seperated by space, e.g.
+; simple, CRAM-MD5, DIGEST-MD5
+<b>SecurityMechanism=<i>simple</i></b>
+</pre></blockquote>
+
+
+
+<blockquote><table bgcolor=#e6e6e6><tr><td>
+<i><b>Important Note:</b></i> You must make sure you have a login
+process with email and password prompt on the same page, i.e. the
+following lines in the general section of your acs .ini file:
+<pre>
+; use the old login process where email and password are on separate pages?
+SeparateEmailPasswordPagesP=0
+</pre>
+</td></tr></table></blockquote>
+
+
+<h4>Tcl Wrappers</h4>
+
+There are straight-forward Tcl wrappers for both the parameters and
+the Java procs in <code>/packages/acs-core/ldap-procs.tcl</code>. 
+
+
+
+
+<h4>Patched /www/register Pages</h4>
+
+The login process has been modified to accomodate LDAP
+authenticaion. The following pages are affected: user-login,
+user-login-2, deleted-user, restore-user.
+
+
+
+<h3><a name="installation">Installation</a></h3>
+
+<dl>
+<dt><b>Prerequisites</b>
+
+<dd>We assume that you already have the LDAP server running and that
+you have your directory organization decided i.e., that you know where
+the users of this website will be stored.
+
+</dl>
+
+<ol>
+
+<li>Make sure you have the <b><code>ldap_dn</code> column in the
+<code>users</code> table</b>. Here's the DDL to put it in:
+
+<blockquote><pre>
+alter table users add (
+	ldap_dn			varchar(400)
+				constraint users_ldap_dn_unq unique
+);
+</pre></blockquote>
+
+
+<li><b>Load the Java code</b>
+
+<blockquote><pre>
+$ cd /web/<i>yourservice</i>/www/register/java
+$ loadjava -user <i>yourservice/password</i> -resolve -verbose LdapLogin.sqlj
+</pre></blockquote>
+
+It'll give you a bunch of warnings, but it should compile
+nevertheless (look out for "source needs recompilation").
+
+<p>
+
+<li><b>Create the JSP wrappers in the database</b>
+
+<blockquote><pre>
+$ sqlplus <i>yourservice/password</i> < ldap-authentication-wrappers.sql
+</pre></blockquote>
+
+
+<li><b>Set up the parameters</b>, as described above in the <a
+href="#parameters">parameters</a> section.
+
+<p>
+
+<li><b>Bootstrap yourself as administrator</b>: 
+
+<ol>
+
+<li>Log in as yourself using LDAP authentication, so that you'll have
+a row in the users table.
+
+<li>Then login as <code>system</code> using the default password
+(<code>changeme</code>), and make yourself site-wide administrator
+(visit <a href="/admin/ug">/admin/ug</a>, group type administration,
+group site-wide administrators, add member).
+
+<li>Then login as yourself again, and ban the users
+<code>system</code> and <code>anonymous</code>, so people can't log in
+as those.
+
+</ol>
+
+
+</ol>
+
+
+
+
+
+<h3>Future Improvements</h3>
+
+Obvious enhancements that would improve the usefulness without
+changing the assumptions are:
+
+<ul>
+
+<li>Store mappings from LDAP attributes to columns in our users table
+in the same configuration tool thing. We'd want each of them to have
+synchronization options or 'never', 'on_login', 'regularly', etc.
+
+<li>Store additional attribute requirements for giving access to the
+website.
+
+<li>Synchronization of the users table with their respective LDAP
+entries. It could be per x number of logins or per x number of
+hours/days.
+
+
+</ul>
+
+Bigger things that would change the assumptions:
+
+<ul>
+
+<li>Allow us to create users and add them to LDAP. This is useful for
+using LDAP to synchronize the users table between two sites, without
+using LDAP for figuring out who should have access or not.
+
+<li>Use LDAP for authorization purposes, too, e.g. to identify
+site-wide admins, or simply by storing all of our user-group info in
+the directory as well.
+
+</ul>
+
+
+
+
+<hr>
+<address><a href="mailto:lars@pinds.com">lars@pinds.com</a></address>
+</body>

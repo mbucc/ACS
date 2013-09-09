@@ -1,20 +1,26 @@
-# $Id: supporting-files-upload-2.tcl,v 3.0.4.1 2000/04/28 15:08:54 carsten Exp $
-set_the_usual_form_variables
-# upload_file, dirname, product_id
+#  www/admin/ecommerce/products/supporting-files-upload-2.tcl
+ad_page_contract {
+  Upload a file.
 
-if { ![info exists upload_file] || [string compare $upload_file ""] == 0 } {
-    ad_return_complaint 1 "<li> You didn't specify a file to upload.\n"
-    return
+  @author Eve Andersson (eveander@arsdigita.com)
+  @creation-date Summer 1999
+  @cvs-id supporting-files-upload-2.tcl,v 3.2.2.2 2000/07/22 07:57:46 ron Exp
+} {
+  product_id:integer,notnull
+  upload_file:notnull
+  upload_file.tmpfile
 }
 
-
-set tmp_filename [ns_queryget upload_file.tmpfile]
+set tmp_filename ${upload_file.tmpfile}
 
 set subdirectory [ec_product_file_directory $product_id]
 
+set dirname [db_string dirname_select "select dirname from ec_products where product_id=:product_id"]
+db_release_unused_handles
+
 set full_dirname "[ad_parameter EcommerceDataDirectory ecommerce][ad_parameter ProductDataDirectory ecommerce]$subdirectory/$dirname"
 
-if ![regexp {([^//\]+)$} $upload_file match client_filename] {
+if ![regexp {([^//\\]+)$} $upload_file match client_filename] {
     # couldn't find a match
     set client_filename $upload_file
 }

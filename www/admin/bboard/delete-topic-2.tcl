@@ -1,25 +1,33 @@
-# $Id: delete-topic-2.tcl,v 3.0 2000/02/06 02:49:17 ron Exp $
-set_form_variables_string_trim_DoubleAposQQ
-set_form_variables
+# /www/admin/bboard/delete-topic-2.tcl
+ad_page_contract {
+    Deletes the specified topic from the bboard system
 
-# topic
+    @param topic the name of the bboard topic to delete
 
-set db [bboard_db_gethandle]
+    @cvs-id delete-topic-2.tcl,v 3.1.6.4 2000/09/22 01:34:21 kevin Exp
+} {
+    topic:notnull
+}
 
-set option_text "I guess you can return to the <a href=index.tcl>Hyper Administration page</a>"
+# -----------------------------------------------------------------------------
+
+set option_text "I guess you can return to the <a href=index>Hyper Administration page</a>"
 
 if { [bboard_use_ns_perm_authorization_p] == 1 } {
-    set ns_perm_group_added_for_this_forum [database_to_tcl_string $db "select ns_perm_group_added_for_this_forum from bboard_topics where topic='$QQtopic'"]
+    set ns_perm_group_added_for_this_forum [db_string group_perm "
+    select ns_perm_group_added_for_this_forum from bboard_topics 
+    where topic= :topic"]
+
     if { $ns_perm_group_added_for_this_forum != "" } {
 	set option_text "The \"$ns_perm_group_added_for_this_forum\" AOLserver permissions group was created
 when the $topic forum was created.  Unless you are using this permissions 
 group for authenticating users in another forum or for static files, 
 you probably want to
-<a href=\"delete-ns-perm-group.tcl?group_name=[ns_urlencode $ns_perm_group_added_for_this_forum]\">delete the ns_perm group now</a>.
+<a href=\"delete-ns-perm-group?group_name=[ns_urlencode $ns_perm_group_added_for_this_forum]\">delete the ns_perm group now</a>.
 
 <p>
 
-Alternatively, you can return to the <a href=index.tcl>Hyper Administration page</a>"
+Alternatively, you can return to the <a href=index>Hyper Administration page</a>"
     }
 
 }
@@ -27,11 +35,16 @@ Alternatively, you can return to the <a href=index.tcl>Hyper Administration page
 # the order here is important because of the integrity constraint on
 # the topic column of bboard 
 
-ns_db dml $db "delete from bboard where topic='$QQtopic'"
-ns_db dml $db "delete from bboard_q_and_a_categories where topic='$QQtopic'"
-ns_db dml $db "delete from bboard_topics where topic='$QQtopic'"
+db_transaction {
+    db_dml bboard_delete "
+    delete from bboard where topic= :topic"
+    db_dml category_delete "
+    delete from bboard_q_and_a_categories where topic= :topic"
+    db_dml topic_delete "
+    delete from bboard_topics where topic= :topic"
+}
 
-ns_return 200 text/html "<html>
+doc_return  200 text/html "<html>
 <head>
 <title>Deletion Accomplished</title>
 </head>

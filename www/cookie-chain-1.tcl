@@ -1,10 +1,18 @@
-# $Id: cookie-chain-1.tcl,v 3.0.4.1 2000/04/28 15:08:20 carsten Exp $
-# 1998/10/22 tea
-# updated by philg 10/25/98
-set_form_variables
-
-#Requires:
-#cookie_name, cookie_value, final_page, expire_state
+# /www/cookie-chain-1.tcl
+ad_page_contract {
+    @author Philip Greenspun
+    @creation-date 10/25/1998
+    @param cookie_name 
+    @param cookie_value
+    @param final_page
+    @param expire_state
+    @cvs-id cookie-chain-1.tcl,v 3.1.6.2 2000/07/21 03:55:54 ron Exp
+} {
+    {cookie_name:notnull}
+    {cookie_value:notnull}
+    {final_page:notnull}
+    {expire_state:notnull}
+}
 
 switch $expire_state {
     s   { set expire_clause "" }

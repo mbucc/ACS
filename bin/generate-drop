@@ -1,0 +1,16 @@
+#!/bin/sh
+#
+#  @author rhs@mit.edu
+#  @creation-date 8/3/2000
+#  @cvs-id generate-drop,v 1.1.2.1 2000/08/04 18:33:23 rhs Exp
+#
+#  Generates a drop script, given an sql data model.
+#
+
+if [ $# -lt 1 ] ; then
+  echo "Usage: $0 data-model.sql"
+  exit
+fi
+
+exec egrep '^[ \t]*create' $1 | sed "s/or[ \t][ \t]*replace//" | sed "s/;//" |
+     awk '$3 != "body" {print n++ " " $2 " " $3 ";"}' | sort -nr | awk '{print "drop " $2 " " $3}'

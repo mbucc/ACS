@@ -1,0 +1,36 @@
+# /www/wap/phone-tweak.wap
+#
+
+ad_page_contract {
+    Let user edit phone number before calling.
+
+    @param digits optional
+    @param name optional
+    @author Andrew Grumet (aegrumet@arsdigita.com)
+    @creation-date  Wed May 24 03:41:23 2000
+    @cvs-id phone-tweak.wap,v 1.2.2.3 2000/07/24 14:23:32 aegrumet Exp
+} {
+    {digits {}}
+    {name {}}
+}
+
+
+
+if ![empty_string_p $name] {
+    set maybe_name " for $name"
+} else {
+    set maybe_name {}
+}
+
+wml_return "
+<wml>
+  <card>
+    <do type=\"accept\" label=\"Dial\">
+      <go href=\"wtai://wp/mc;\$(number)\"/>
+    </do>
+    <p>
+    Edit number$maybe_name: <input name=\"number\" value=\"$digits\"/>
+    </p>
+  </card>
+</wml>"	
+

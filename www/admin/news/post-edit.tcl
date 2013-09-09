@@ -1,34 +1,36 @@
-#
 # /www/admin/news/post-edit.tcl
 #
-# input form for editing a news item
-#
-# Author: jkoontz@arsdigita.com March 8, 2000
-#
-# $Id: post-edit.tcl,v 3.1 2000/03/10 23:45:54 jkoontz Exp $
 
-# Note:     if this page is accessed from the group pages (scope=group), then 
-#           group_id, group_name, short_name and admin_email are already
-#           set up in the environment by the ug_serve_section
+ad_page_contract {
+    input form for editing a news item
 
-set_the_usual_form_variables 0
+    @author jkoontz@arsdigita.com
+    @creation-date March 8, 2000
+    @cvs-id post-edit.tcl,v 3.3.2.6 2000/09/22 01:35:44 kevin Exp
 
-# maybe return_url, name
-# news_item_id
+    Note: if this page is accessed from the group pages (scope=group), then 
+    group_id, group_name, short_name and admin_email are already
+    set up in the environment by the ug_serve_section
+} {
+    return_url:optional
+    name:optional
+    news_item_id:integer,notnull
+}
 
-set db [ns_db gethandle]
 
-set selection [ns_db 0or1row $db "
+db_0or1row news_item_get "
 select title, body, html_p,  release_date, expiration_date
-from news_items where news_item_id = $news_item_id"]
-set_variables_after_query
+from news_items where news_item_id = :news_item_id"
+
+db_release_unused_handles
+
 
 set page_content "
 [ad_admin_header "Edit $title"]
 <h2>Edit $title</h2>
-[ad_admin_context_bar [list "index.tcl" "News"] "Edit Item"]
+[ad_admin_context_bar [list "" "News"] "Edit Item"]
 <hr>
-<form method=post action=\"post-edit-2.tcl\">
+<form method=post action=\"post-edit-2\">
 
 <table>
 <tr><th>Title <td><input type=text size=40 name=title value=\"[philg_quote_double_quotes $title]\">
@@ -50,6 +52,6 @@ set page_content "
 [ad_admin_footer]
 "
 
-ns_db releasehandle $db
 
-ns_return 200 text/html $page_content
+
+doc_return  200 text/html $page_content

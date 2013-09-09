@@ -1,22 +1,25 @@
-# $Id: basic-info-update.tcl,v 3.1 2000/03/09 00:01:33 scott Exp $
-set_the_usual_form_variables
+# /www/admin/users/basic-info-update.tcl
+#
 
-# user_id
+ad_page_contract {
+    @param user_id
+    @author ?
+    @creation-date ?
+    @cvs-id basic-info-update.tcl,v 3.2.6.3.2.4 2000/09/22 01:36:17 kevin Exp
+} {
+    user_id:integer,notnull
+}
 
-set db [ns_db gethandle]
 
-set selection [ns_db 1row $db "
+db_1row user_info "
 select first_names, 
        last_name, 
        email, 
        url,
        screen_name
 from users 
-where user_id=$user_id"]
+where user_id = :user_id"
 
-set_variables_after_query
-
-ns_db releasehandle $db
 
 append whole_page "
 [ad_admin_header "Update Basic Information"]
@@ -27,7 +30,7 @@ for $first_names $last_name
 
 <hr>
 
-<form method=POST action=\"basic-info-update-2.tcl\">
+<form method=POST action=\"basic-info-update-2\">
 [export_form_vars user_id]
 
 <table>
@@ -53,4 +56,12 @@ for $first_names $last_name
 
 [ad_admin_footer]
 "
-ns_return 200 text/html $whole_page
+
+
+doc_return  200 text/html $whole_page
+
+
+
+
+
+

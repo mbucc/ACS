@@ -1,19 +1,26 @@
-# $Id: poll-delete-2.tcl,v 3.0.4.1 2000/04/28 15:09:15 carsten Exp $
-# poll-delete-2.tcl -- remove a poll from the database, including votes
+# /admin/poll/poll-delete-2.tcl 
 
-set_form_variables
+ad_page_contract {
+    Remove a poll from the database, including votes.
 
-# expects poll_id
+    @param poll_id the ID of the poll to be deleted
 
-set db [ns_db gethandle]
+    @cvs-id poll-delete-2.tcl,v 3.2.2.4 2000/07/21 03:57:51 ron Exp
+} {
+    poll_id:notnull,naturalnum
+}
 
-ns_db dml $db "begin transaction"
 
-ns_db dml $db "delete from poll_user_choices where poll_id = $poll_id"
-ns_db dml $db "delete from poll_choices where poll_id = $poll_id"
-ns_db dml $db "delete from polls where poll_id = $poll_id"
 
-ns_db dml $db "end transaction"
+db_transaction {
 
-ad_returnredirect index.tcl
+    db_dml delete_user_choices "delete from poll_user_choices where poll_id = :poll_id"
+    db_dml delete_poll_choices "delete from poll_choices where poll_id = :poll_id"
+    db_dml delete_poll "delete from polls where poll_id = :poll_id"
+
+}
+
+db_release_unused_handles
+
+ad_returnredirect ""
 

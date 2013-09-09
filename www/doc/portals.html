@@ -7,7 +7,7 @@
 <body bgcolor=#ffffff text=#000000>
 <h2>Portals</h2>
 
-part of the <a href="index.html">ArsDigita Community System</a>
+part of the <a href="index">ArsDigita Community System</a>
 by <a href="http://aure.com/">Aurelius Prochazka</a> and <a href="mailto:dh@arsdigita.com">David Hill</a>
 
 <hr>
@@ -16,8 +16,8 @@ by <a href="http://aure.com/">Aurelius Prochazka</a> and <a href="mailto:dh@arsd
 <li>User-accessible directory:  <a href="/portals/">/portals/</a>
 <li>Site administrator directory:  <a href="/admin/portals/">/admin/portals/</a>
 <li>Portal manager directory:  <a href="/portals/admin/">/portals/admin/</a>
-<li>data model :  <a href="/doc/sql/display-sql.tcl?url=/doc/sql/portals.sql">/doc/sql/portals.sql</a>
-<li>Tcl procs:  /tcl/portals-defs.tcl
+<li>data model :  <a href="/doc/sql/display-sql?url=/doc/sql/portals.sql">/doc/sql/portals.sql</a>
+<li>Tcl procs:  /tcl/portals-defs
 
 <p>
 
@@ -135,12 +135,11 @@ of the various portal groups.
 
 </ol>
 
-
 <h3> User interface</h3>
 
 Portal display should be fairly simple to understand for the user. If the manager has spread that information over two pages, the user will see page tabs at the upper and lower right sections of the page.  Also in the footer, content managers are advertised to allow the user a place to complain if he didn't find what he wanted.
 <p>
-We use the "memoize" procs on the  portal pages for speed:  Popular pages need not incur x sql queries on each server request. We use a variant of Memoize_Force called Memoize_for_Awhile_Force found in /tcl/portals-defs.tcl
+We use the "memoize" procs on the  portal pages for speed:  Popular pages need not incur x sql queries on each server request. We use a variant of Memoize_Force called Memoize_for_Awhile_Force found in /tcl/portals-defs
 
 <h3> Manager interface</h3>
 

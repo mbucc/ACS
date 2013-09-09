@@ -1,34 +1,46 @@
-# $Id: js-message.tcl,v 3.0 2000/02/06 03:36:46 ron Exp $
-# File:     /chat/js-message.tcl
-# Date:     1998-11-18
-# Contact:  aure@arsdigita.com,philg@mit.edu, ahmeds@arsdigita.com
+# /www/chat/js-message-form.tcl
 
-# Note: if page is accessed through /groups pages then group_id and group_vars_set 
-#       are already set up in the environment by the ug_serve_section. group_vars_set 
-#       contains group related variables (group_id, group_name, group_short_name, 
-#       group_admin_email, group_public_url, group_admin_url, group_public_root_url,
-#       group_admin_root_url, group_type_url_p, group_context_bar_list and group_navbar_list)
+ad_page_contract { 
 
-set_the_usual_form_variables
-
-# chatter_id
-# maybe scope, maybe scope related variables (owner_id, group_id, on_which_group, on_what_id)
-# note that owner_id is the user_id of the user who owns this module (when scope=user)
+    If page is accessed through /groups pages then group_id and group_vars_set 
+    are already set up in the environment by the ug_serve_section. group_vars_set 
+    contains group related variables (group_id, group_name, group_short_name, 
+    group_admin_email, group_public_url, group_admin_url, group_public_root_url,
+    group_admin_root_url, group_type_url_p, group_context_bar_list and group_navbar_list)
+    
+    @author Aure (aure@arsdigita.com)
+    @author Philip Greenspun (philg@mit.edu)
+    @author Sarah Ahmeds (ahmeds@arsdigita.com)
+    @param chatter_id
+    @param scope
+    @param owner_id
+    @param group_id
+    @param on_which_group
+    @param on_what_id
+    @creation-date 1998-11-18
+    @cvs-id  js-message.tcl,v 3.0.12.5 2000/09/22 01:37:13 kevin Exp
+} { 
+    chatter_id:naturalnum,notnull
+    scope:optional
+    owner_id:naturalnum,optional
+    group_id:naturalnum,optional
+    on_which_group:naturalnum,optional
+    on_what_id:naturalnum,optional
+}
 
 ad_scope_error_check
 
-set db [ns_db gethandle]
-set user_id [ad_scope_authorize $db $scope registered group_member none]
+set user_id [ad_scope_authorize $scope registered group_member none]
 
-set pretty_name [database_to_tcl_string $db "select first_names||' '||last_name from users where user_id=$chatter_id"]
+set pretty_name [db_string chat_js_message_pretty_name "
+                   select first_names||' '||last_name from users where user_id=$chatter_id"]
 ns_log Notice "CHATTER: $pretty_name"
-ns_db releasehandle $db
 
-ReturnHeaders
 
+set page_content ""
 
 if {[ad_parameter MostRecentOnTopP chat]} {
-    ns_write "
+    append page_content "
     <html>
     <head>
     <title>Chat: $pretty_name</title>
@@ -46,7 +58,7 @@ if {[ad_parameter MostRecentOnTopP chat]} {
     </html>
     "
 } else {
-    ns_write "
+    append page_content  "
     <html>
     <head>
     <title>Chat: $pretty_name</title>
@@ -64,5 +76,8 @@ if {[ad_parameter MostRecentOnTopP chat]} {
     </html>
     "
 }
-    
+
+
+doc_return  200 text/html $page_content
+
 

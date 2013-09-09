@@ -1,14 +1,19 @@
-# $Id: link-check.tcl,v 3.1 2000/02/29 04:39:18 jsc Exp $
-# link-check.tcl 
+# /www/admin/static/link-check.tcl
 
-# AOLserver link verifier
-# this program crawls through all of your Web content and finds the dead links
-# it should simply be placed in "link-check.tcl" somewhere accessible through an
-# AOLserver 2.2 (2.1 might work also but no guarantees).  Request the URL and it 
-# will grind through the Web content.
+ad_page_contract {
+    @author jsc@arsdigita.com philg@mit.edu
+    @creation-date Jul 7 2000
+    @cvs-id link-check.tcl,v 3.2.2.4 2000/09/22 01:36:08 kevin Exp
 
-# Copyright Jin Choi (jsc@arsdigita.com) and Philip Greenspun (philg@mit.edu)
-# distributed under the GNU General Public License
+    AOLserver link verifier
+This program crawls through all of your Web content and finds the dead links 
+it should simply be placed in "link-check.tcl" somewhere accessible through an
+AOLserver 2.2 (2.1 might work also but no guarantees).  Request the URL and it 
+will grind through the Web content.
+
+} {
+
+}
 
 global webroot
 global httproot
@@ -26,7 +31,7 @@ set running_on_wimpy_machine [ad_parameter WimpyMachineP machine 1]
 set webroot [ns_info pageroot]
 set httproot [ns_conn location]
 
-proc check_file {f} {
+ad_proc check_file {f} {} {
     ns_write "<li>$f\n<ul>\n"
     set stream [open $f]
     set content [read $stream]
@@ -61,9 +66,7 @@ proc check_file {f} {
     ns_write "</ul>\n"
 }
 
-
-
-proc walk_tree {dir procedure seen_already_cache {pattern {.*}}} {
+ad_proc walk_tree {dir procedure seen_already_cache {pattern {.*}}} {} {
     upvar $seen_already_cache seen
     global debug_link_checker
     global running_on_wimpy_machine
@@ -108,9 +111,8 @@ proc walk_tree {dir procedure seen_already_cache {pattern {.*}}} {
     }
 }
 
-
 ## Assumes url is a URL valid for use with ns_httpopen
-proc get_http_status {url {use_get_p 0} {timeout 30}} { 
+ad_proc get_http_status {url {use_get_p 0} {timeout 30}} {} { 
     if $use_get_p {
 	set http [ns_httpopen GET $url "" $timeout] 
     } else {
@@ -128,7 +130,7 @@ proc get_http_status {url {use_get_p 0} {timeout 30}} {
     return $status
 }
 
-proc check_link  {base_file reference_inside_href {use_get_p 0}} {
+ad_proc check_link  {base_file reference_inside_href {use_get_p 0}} {} {
     # base_file is the full file system path where the 
     # HTML was found; reference_inside_href is the string
     # that was inside the <a href=" tag
@@ -161,10 +163,7 @@ proc check_link  {base_file reference_inside_href {use_get_p 0}} {
     }
 }
 
-
-ReturnHeaders
-
-ns_write "<html>
+set page_body "<html>
 <head>
 <title>Testing Links at $httproot</title>
 </head>
@@ -182,7 +181,8 @@ All HTML files:
 set seen_already_cache() 0
 walk_tree $webroot check_file seen_already_cache {\.html$}
 
-
-ns_write "</ul><hr>
+append page_body "</ul><hr>
 <address><a href=\"mailto:jsc@arsdigita.com\">Jin S. Choi</a></address>
 </body></html>"
+
+doc_return  200 text/html $page_body

@@ -1,29 +1,36 @@
-# $Id: sequence-update.tcl,v 3.1 2000/03/10 21:53:55 jkoontz Exp $
-#
 # /admin/conversion/sequence-update.tcl
-#
-# by randyg@arsdigita.com, July 1999 for the HP MiniPress project
-# documented and "improved" by philg@mit.edu on October 30, 1999
-# 
-# for each sequence in the Oracle database, we query to figure out the maximum 
-# key that is being used.  We then drop and recreate the sequence starting at 
-# this max value + 1 (or 1 if there aren't any rows yet in the table).
-#
-# Note that this rude behavior is required by Oracle; you can't ALTER SEQUENCE
-# to move to a new next value (at least not in Oracle 8.1.5).
 
-ReturnHeaders text/plain
 
-set db [ns_db gethandle]
+ad_page_contract {
+    for the HP MiniPress project
+    documented and "improved" by philg@mit.edu on October 30, 1999
+
+    for each sequence in the Oracle database, we query to figure out the maximum 
+    key that is being used.  We then drop and recreate the sequence starting at 
+    this max value + 1 (or 1 if there aren't any rows yet in the table).
+
+    Note that this rude behavior is required by Oracle; you can't ALTER SEQUENCE
+    to move to a new next value (at least not in Oracle 8.1.5).
+
+    @author  randyg@arsdigita.com
+    @creation-date July 1999 
+    @cvs-id # sequence-update.tcl,v 3.2.2.5 2000/09/22 01:34:37 kevin Exp
+} {
+
+}
 
 # each sublists has sequence name, key name that uses the sequence, table name 
+
+set html_string ""
+
+# there must be a better way
 
 set sequences [list]
 lappend sequences [list idea_id_sequence idea_id bannerideas] 
 lappend sequences [list bboard_upload_id_sequence bboard_upload_id bboard_uploaded_files] 
 lappend sequences [list calendar_id_sequence calendar_id calendar]
-lappend sequences  [list chat_room_id_sequence chat_room_id chat_rooms] 
-lappend sequences  [list chat_msg_id_sequence chat_msg_id chat_msgs] 
+lappend sequences [list chat_room_id_sequence chat_room_id chat_rooms] 
+lappend sequences [list chat_msg_id_sequence chat_msg_id chat_msgs] 
 lappend sequences [list classified_ad_id_sequence classified_ad_id classified_ads] 
 lappend sequences [list user_id_sequence user_id users] 
 lappend sequences [list category_id_sequence category_id categories] 
@@ -57,20 +64,34 @@ lappend sequences [list ticket_issue_id_sequence msg_id ticket_issues]
 lappend sequences [list ticket_response_id_sequence response_id ticket_issue_responses] 
 lappend sequences [list user_group_sequence group_id user_groups]
 
+append html_string "<ul>"
+
+
+
+# KS - there used to be a transaction here.  I removed it, because DDL 
+# statement don't operate transactionally, they are instantaneous and 
+# irrevokable. Danger, Will Robinson! Danger!
+
+
 foreach sequence_set $sequences {
     set sequence_name [lindex $sequence_set 0]
-    ns_db dml $db "drop sequence $sequence_name"
-    set column_name [lindex $sequence_set 1]
-    set table_name [lindex $sequence_set 2]
-    set maxvalue [database_to_tcl_string $db "select nvl(max($column_name)+1,1) from $table_name"] 
-    ns_db dml $db "create sequence $sequence_name start with $maxvalue"
-    ns_write "updated $sequence_name  new value = $maxvalue\n"
+    if {[catch {db_dml admin_sequence_update_drop_sequence "drop sequence $sequence_name"} errmsg]} {
+	append html_string "<li><font color=red>error</font> in updating $sequence_name: $errmsg"
+    } else {
+	set column_name [lindex $sequence_set 1]
+	set table_name [lindex $sequence_set 2]
+	set maxvalue [db_string admin_sequence_update_get_max_sequence_value "select nvl(max($column_name)+1,1) from $table_name" -default ""] 
+	db_dml admin_sequence_update_create_sequence "create sequence $sequence_name start with $maxvalue"
+	append html_string  "<li>updated $sequence_name  new value = $maxvalue<br>"
+    }
+
 }
 
+append html_string "</ul>"
 
+db_release_unused_handles
 
-
-
+doc_return 200 text/html $html_string
 
 
 

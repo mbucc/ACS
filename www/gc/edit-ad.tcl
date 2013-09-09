@@ -1,9 +1,10 @@
-# $Id: edit-ad.tcl,v 3.1.2.1 2000/04/28 15:10:31 carsten Exp $
-set_form_variables
-set_form_variables_string_trim_DoubleAposQQ
+# edit-ad.tcl
 
-# domain_id
-
+ad_page_contract {
+    @cvs-id edit-ad.tcl,v 3.3.2.1 2000/07/21 22:40:31 mdetting Exp
+} {
+    domain_id:integer
+}
 
 #check for the user cookie
 set user_id [ad_get_user_id]
@@ -13,5 +14,4 @@ if {$user_id != 0} {
 } else {
     ad_returnredirect /register/index.tcl?return_url=[ns_urlencode /gc/edit-ad-2.tcl?domain_id=$domain_id]
 }
-
 

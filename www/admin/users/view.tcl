@@ -1,67 +1,86 @@
-# $Id: view.tcl,v 3.1.2.1 2000/04/28 15:09:38 carsten Exp $
-set admin_user_id [ad_verify_and_get_user_id]
+# /www/admin/users/view.tcl
 
-if { $admin_user_id == 0 } {
-    ad_returnredirect /register.tcl?return_url=[ns_urlencode "/admin/users/"]
-    return
+ad_page_contract {
+    @cvs-id view.tcl,v 3.5.2.6.2.4 2000/09/22 01:36:26 kevin Exp
+} {
+    category_id:optional,integer
+    country_code:optional 
+    usps_abbrev:optional 
+    intranet_user_p:optional 
+    group_id:optional,integer
+    last_name_starts_with:optional  
+    email_starts_with:optional 
+    expensive:optional 
+    user_state:optional 
+    sex:optional 
+    age_above_years:optional  
+    age_below_years:optional
+    registration_during_month:optional  
+    registration_before_days:optional 
+    registration_after_days:optional 
+    registration_after_date:optional 
+    last_login_before_days:optional 
+    last_login_after_days:optional 
+    last_login_equals_days:optional  
+    number_visits_below:optional 
+    number_visits_above:optional 
+    user_class_id:optional,integer
+    sql_post_select:optional 
+    crm_state:optional 
+    curriculum_elements_completed:optional 
 }
 
-# we get a form that specifies a class of user, plus maybe an order_by
-# spec
+# Removed all of the code for order_by since it was broken and will
+# never work the way this page is constructed.
+
+# we get a form that specifies a class of user
 
 set description [ad_user_class_description [ns_conn form]]
-
 
 append whole_page "[ad_admin_header "Users who $description"]
 
 <h2>Users</h2>
 
-[ad_admin_context_bar [list "index.tcl" "Users"] "View Class"]
-
+[ad_admin_context_bar [list "" "Users"] "View Class"]
 
 <hr>
 
-Class description:  users who $description.
+<p>Class description:  users who $description.
 
-<P>
-
-
+<p>
 "
-
-if { [ns_queryget order_by] == "email" } {
-    set order_by_clause "order by upper(email),upper(last_name),upper(first_names)"
-    set option "<a href=\"view.tcl?order_by=name&[export_entire_form_as_url_vars]\">sort by name</a>"
-} else {
-    set order_by_clause "order by upper(last_name),upper(first_names), upper(email)"
-    set option "<a href=\"view.tcl?order_by=email&[export_entire_form_as_url_vars]\">sort by email address</a>"
-}
-
-
-set db [ns_db gethandle]
 
 # we print out all the users all of the time 
 append whole_page "
 
-$option
-
 <ul>"
 
-set query [ad_user_class_query [ns_conn form]]
-append ordered_query $query "\n" $order_by_clause
+set query "
+[ad_user_class_query [ns_conn form]]
 
-set selection [ns_db select $db $ordered_query]
-set count 0
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+order by upper(email), 
+         upper(last_name),
+         upper(first_names)"
 
-    incr count
-    append whole_page "<li><a href=\"one.tcl?user_id=$user_id\">$first_names $last_name</a> ($email) \n"
+if { [catch {
 
-    if {$user_state == "need_email_verification_and_admin_approv" || $user_state ==	"need_admin_approv"}  {
-	append whole_page "<font color=red>$user_state</font> <a target=approve href=approve.tcl?[export_url_vars user_id]>Approve</a> | <a  target=approve href=reject.tcl?[export_url_vars user_id]>Reject</a>"
-    }
+    set count 0
+    db_foreach admin_users_view_ordered_query $query {
+	incr count
+	append whole_page "<li><a href=\"one?user_id=$user_id\">$first_names $last_name</a> ($email) \n"
+	
+	if {$user_state == "need_email_verification_and_admin_approv" || $user_state ==	"need_admin_approv"}  {
+	    append whole_page "<font color=red>$user_state</font> <a href=approve?[export_url_vars user_id]>Approve</a> | <a href=reject?[export_url_vars user_id]>Reject</a>"
+	}
     
+    }
+
+} err_msg] } {
+    ad_return_error "Database Error" "We got the following error trying to run this query:
+$err_msg<p><pre>$ordered_query</pre>\n"
+    return
 }
+
 
 if { $count == 0 } {
     append whole_page "no users found meeting these criteria"
@@ -71,5 +90,7 @@ append whole_page "</ul>
 
 [ad_admin_footer]
 "
-ns_db releasehandle $db
-ns_return 200 text/html $whole_page
+
+
+
+doc_return  200 text/html $whole_page

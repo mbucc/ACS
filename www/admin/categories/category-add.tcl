@@ -1,34 +1,45 @@
-# $Id: category-add.tcl,v 3.1 2000/03/09 22:14:56 seb Exp $
-#
-# /admin/categories/category-add.tcl
-#
-# by sskracic@arsdigita.com and michael@yoon.org on October 31, 1999
-#
-# form for adding a new category
-#
+# /www/admin/categories/category-add.tcl
+ad_page_contract {
 
-set_the_usual_form_variables 0
+  Display forms for adding a new category.
 
-# category_type (optional), parent_category_id (optional)
+  @param category_type   Preselects appropriate category_type in displayed form
+  @param parent_category_id  Inserts appropriate mapping in category_hierarchy to designate this as a parent of newly created category
+
+  @author sskracic@arsdigita.com 
+  @author michael@yoon.org 
+  @creation-date October 31, 1999
+  @cvs-id category-add.tcl,v 3.5.2.6 2000/09/22 01:34:27 kevin Exp
+} {
+
+  category_type:optional
+  parent_category_id:naturalnum,optional
+
+}
+
 
 if {![info exists category_type]} {
     set category_type ""
 }
 
-set db [ns_db gethandle]
 
 if {![info exists parent_category_id]} {
     set parent_category_id ""
 } else {
-    set parent_category [database_to_tcl_string $db "select category
+    set parent_category [db_string parent_category_name "select category
 from categories
-where category_id = $parent_category_id"]
+where category_id = :parent_category_id" ]
 }
 
-set category_id [database_to_tcl_string $db "select category_id_sequence.nextval from dual"]
+set category_id [db_string next_category_id "select category_id_sequence.nextval from dual"]
 
-set category_type_select_html [db_html_select_options $db \
-    "SELECT DISTINCT category_type FROM categories ORDER BY 1" $category_type]
+set category_type_select_html [db_html_select_options \
+    -select_option $category_type type_selection_widget \
+    "SELECT DISTINCT category_type FROM categories ORDER BY 1"]
+
+if {[empty_string_p $category_type_select_html]} {
+    set category_type_select_html {<OPTION VALUE="">}
+}
 
 set category_parentage_html ""
 
@@ -37,18 +48,22 @@ if {![empty_string_p $parent_category_id]} {
 <th align=right>Category parentage</th>
 <td>
 "
-
     # Print out a Yahoo-style context bar for each line of parentage.
     #
-    foreach parentage_line [ad_category_parentage_list $db $parent_category_id] {
-	set parentage_line_html [list]
-	foreach ancestor $parentage_line {
-	    set ancestor_category_id [lindex $ancestor 0]
-	    set ancestor_category [lindex $ancestor 1]
-	    lappend parentage_line_html \
-		    "<a href=\"one.tcl?category_id=$ancestor_category_id\">$ancestor_category</a>"
-	}
-	append category_parentage_html "[join $parentage_line_html " : "]<br>\n"
+    set parentage_list [ad_category_parentage_list $parent_category_id]
+    if {[llength $parentage_list] > 0} {
+        foreach parentage_line $parentage_list {
+            set parentage_line_html [list]
+            foreach ancestor $parentage_line {
+                set ancestor_category_id [lindex $ancestor 0]
+                set ancestor_category [lindex $ancestor 1]
+                lappend parentage_line_html \
+                        "<a href=\"one?category_id=$ancestor_category_id\">$ancestor_category</a>"
+            }
+            append category_parentage_html "[join $parentage_line_html " : "]<br>\n"
+        }
+    } else {
+        append category_parentage_html "<a href=\"one?category_id=$parent_category_id\">$parent_category</a>"
     }
 
     append category_parentage_html "</td>
@@ -56,21 +71,18 @@ if {![empty_string_p $parent_category_id]} {
 "
 }
 
-ns_db releasehandle $db
 
-ReturnHeaders
 
-ns_write "[ad_admin_header  "Add a category"]
+doc_return  200 text/html "[ad_admin_header  "Add a category"]
 
 <H2>Add a category</H2>
 
-[ad_admin_context_bar [list "index.tcl" "Categories"] "Add"]
+[ad_admin_context_bar [list "index" "Categories"] "Add"]
 
 <hr>
 
-
-<form action=\"category-add-2.tcl\" method=post>
-[export_form_vars category_id parent_category_id]
+<form action=\"category-add-2\" method=post>
+[export_form_vars category_id parent_category_id return_url]
 
 <table>
 <tr>
@@ -93,7 +105,7 @@ ns_write "[ad_admin_header  "Add a category"]
 
 <tr>
 <th align=right>Profiling weight</th>
-<td><input size=10 name=profiling_weight></td>
+<td><input size=10 name=profiling_weight value=1></td>
 </tr>
 <tr>
 <th align=right valign=top>Category description</th>
@@ -107,9 +119,9 @@ if they express an interest in this category)
 </td>
 </tr>
 <tr>
-<th align=right>Enabled</th><td>
-<input type=radio name=enabled_p value=\"t\" checked>Yes 
-<input type=radio name=enabled_p value=\"f\">No
+<th align=right>Enabled<br>(as a User Interest category)</th><td>
+<input type=radio name=enabled_p value=\"t\">Yes 
+<input type=radio name=enabled_p value=\"f\" checked>No
 </td>
 </tr>
 </table>

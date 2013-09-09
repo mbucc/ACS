@@ -1,18 +1,13 @@
-# $Id: public-bookmarks.tcl,v 3.0 2000/02/06 03:35:40 ron Exp $
-# public-bookmarks.tcl
-#
-# show other people's bookmarks
-#
-# by dh@arsdigita.com and aure@arsdigita.com
-#
-# modified by philg@mit.edu on November 7, 1999
-# to include a link to the most popular, release the 
-# database handle, etc.
+# /www/bookmarks/public-bookmarks.tcl
+
+ad_page_contract {
+    show other people's bookmarks
+    @author dh@arsdigita.com and aure@arsdigita.com
+    @creation-date June 1999  
+    @cvs-id public-bookmarks.tcl,v 3.2.2.6 2000/09/22 01:37:03 kevin Exp
+} {} 
 
 set title "Public Bookmarks"
-
-set db [ns_db gethandle]
-
 
 set whole_page "
 [ad_header $title ]
@@ -23,28 +18,30 @@ set whole_page "
 
 <hr>"
 
-set sql_query "
-select  first_names, last_name, owner_id as viewed_user_id, count(bookmark_id) as number_of_bookmarks
-from    users, bm_list
-where   user_id=owner_id
-and     hidden_p='f'
-group by first_names, last_name, owner_id
-order by number_of_bookmarks desc"
-
-set selection [ns_db select $db $sql_query]
 set user_count 0
 set user_list ""
 
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
+db_foreach sql_query {
+    select  first_names, 
+            last_name, 
+            owner_id as viewed_user_id, 
+            count(bookmark_id) as number_of_bookmarks
+    from    users, bm_list
+    where   user_id = owner_id
+    and     hidden_p = 'f'
+    group by first_names, 
+             last_name, 
+             owner_id
+    order by number_of_bookmarks desc
+} {
     incr user_count            
-    append user_list "<li><a href=public-bookmarks-for-one-user.tcl?[export_url_vars viewed_user_id] >$first_names $last_name</a> ($number_of_bookmarks)\n"
+    append user_list "<li><a href=public-bookmarks-for-one-user?[export_url_vars viewed_user_id] >$first_names $last_name</a> ($number_of_bookmarks)\n"
 }
 
 if { $user_count > 0 } {
     append whole_page "
 
-Look at the most popular bookmarks:  <a href=\"most-popular-public.tcl\">summarized by URL</a>
+Look at the most popular bookmarks:  <a href=\"most-popular-public\">summarized by URL</a>
 
 <P>
 
@@ -64,10 +61,7 @@ $user_list
 
 append whole_page [bm_footer]
 
-ns_db releasehandle $db
-
-ns_return 200 text/html $whole_page
 
 
-
+doc_return  200 text/html $whole_page
 

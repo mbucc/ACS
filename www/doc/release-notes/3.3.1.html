@@ -1,0 +1,142 @@
+<html>
+<!--AD_DND-->
+<!--3.3.1.html,v 1.2.2.1 2000/07/25 08:00:37 ron Exp-->
+<head>
+<title>ACS 3.3.1 Release Notes</title>
+</head>
+<body bgcolor=white>
+
+<h2>ACS 3.3.1 Release Notes</h2>
+
+by Richard Li
+
+<hr>
+
+<p>This release is a bugfix-only release for <a href="3.3">ACS
+3.3</a>. In order to use this release, you must use the latest <a
+href="http://www.arsdigita.com/free-tools/oracle-driver">Oracle
+driver</a> (due to the use of bind variables). This release will be
+superseded fairly soon by ACS 3.4; in ACS 3.4, every module will be
+released in accordance with the <a
+href="/doc/core-arch-guide/database-access-api">DB API</a> using bind
+variables. Notable fixes in this release include:
+
+<ul>
+
+<li>improved support for server clustering with the addition of
+<tt><a
+href="/doc/proc-one?proc_name=ad%5fcanonical%5fserver%5fp">ad_canonical_server_p</a></tt>
+and a rewritten <tt><a
+href="/doc/proc-one?proc_name=ad%5fschedule%5fproc">ad_schedule_proc</a></tt>
+that schedules procedures to run only on the canonical server by
+default
+
+<li>the latest set of patches to the <a href="/doc/template/">dynamic
+publishing system</a> have been merged; the documentation has been
+updated
+
+<li>patches to support international character sets in the ACS
+(requires <a href="http://www.arsdigita.com/aol3/">AOLserver 3.0 +
+ad5</a> for international support; this patch should be released soon)
+
+<li>minor scalability, feature, and bug fixes to various modules
+
+<li>the <a href="/doc/core-arch-guide/database-access-api">Database
+Access API</a> now uses bind variables. The new API also requires each
+statement to have a logical name; this requirement simplifies the
+ultimate goal of SQL abstraction. <b>Custom code written using the
+original database API will not work with this upgrade.</b>
+
+<li>security fixes (<b>for detailed instructions on how to patch legacy sites, see <a href="3.3.1-patches/">Eve Andersson's document</a></b>):
+<ul>
+<li>implemented user input checking with
+<tt>check_for_form_variable_naughtiness</tt>; the following were
+patched to call <tt>check_for_form_variable_naughtiness</tt>
+<ul>
+<li><tt>set_form_variables</tt>
+<li><tt>set_the_usual_form_variables</tt>
+<li><tt>set_form_variables_string_trim_DoubleApos</tt>
+<li><tt>set_form_variables_string_trim</tt>
+<li><tt>ad_page_variables</tt>
+<li><tt>ad_form_set_variables</tt> in packages/form-manager/form-procs.tcl
+<li><tt>util_getcheckboxvalues</tt>
+</ul>
+<li>tcl/ecommerce-defs.tcl in ec_return_product_file regexp should be: <tt>regexp {/product-file/([^/]+)$} $url match file_path</tt>
+<li>QQ form variables bug (fixed in <tt>check_for_form_variable_naughtiness</tt>, thanks to michael@cleverly.com)
+<li><a href="/doc/core-arch-guide/security-sql-smuggling">Branimir/Carsten's filter</a> that checks user inputs for SQL: <tt><a
+href="/doc/proc-one?proc_name=ad%5fblock%5fsql%5furls">ad_block_sql_urls</a></tt>.
+<li>DVR's <tt><a
+href="/doc/proc-one?proc_name=ad%5fset%5ftyped%5fform%5fvariable%5ffilter">ad_set_typed_form_variable_filter</a></tt>
+that performs type checking on user inputs.
+<li>upload files bug (fixed in
+<tt>check_for_form_variable_naughtiness</tt>, discovered by ben@mit.edu)
+<li>took away unnecessary calls to
+<tt>ec_redirect_to_https_if_necessary</tt> in:
+<ul>
+<li>/ecommerce/process-payment.tcl 
+<li>/ecommerce/checkout-3.tcl
+<li>/ecommerce/credit-card-correction-2.tcl
+<li>/ecommerce/credit-card-correction.tcl
+<li>/ecommerce/finalize-order.tcl
+<li>/ecommerce/gift-certificate-finalize-order.tcl
+<li>/ecommerce/gift-certificate-order-3.tcl
+<li>/ecommerce/gift-certificate-order-4.tcl
+<li>/ecommerce/payment.tcl
+<li>/ecommerce/process-order-quantity-shipping.tcl
+<li>/ecommerce/process-payment.tcl
+</ul>
+<li><tt>exec</tt>s in user-editable ADP pages
+<li>security checks for search/search and bboard/search (note that
+the fix for this, the PL/SQL proc
+<tt>bboard_user_can_view_topic_p</tt> is fairly expensive)
+
+<p>
+
+<h4>use ns_queryget unnecessarily</h4>
+
+These use ns_queryget unnecessarily and are replaced with calls to
+<tt>ad_page_variables</tt>.
+
+<p>
+
+<li>www/admin/users/view-verbose.tcl
+<li>www/admin/users/view.tcl
+<li>www/bboard/q-and-a-post-reply-form.tcl
+<li>www/bboard/usgeospatial-post-reply-form.tcl
+<li>www/doc/template/show-source.tcl
+
+</ul>
+
+<p>
+
+<li>Additional security notes:
+<ul>
+<li>Some additional checks in
+<tt>check_for_form_variable_naughtiness</tt> have been commented out
+for the sake of backwards compatibility.
+<li><tt><a
+href="/doc/proc-one?proc_name=ad%5fblock%5fsql%5furls">ad_block_sql_urls</a></tt>
+blocks SQL in URLs. To deactivate this filter, turn off the
+BlockSqlUrlsP parameter in the parameters .ini file. For more
+information, read <a
+href="/doc/core-arch-guide/security-sql-smuggling">the documentation</a>.
+<li><tt><a
+href="/doc/proc-one?proc_name=ad%5fset%5ftyped%5fform%5fvariable%5ffilter">ad_set_typed_form_variable_filter</a></tt>
+will require configuration for custom non-ACS modules. See
+packages/acs-core/security-init.tcl for examples. Note that this
+filter does somewhat hurt performance. At startup a large number of
+filters are registered with the system, which slows down startup. In
+addition, regular expressions are used to verify certain user inputs,
+which may cause problems when using AOLserver 3.0/Tcl8x.
+</ul>
+
+</ul>
+
+
+As always, please report bugs to <a href="mailto:
+bugs@arsdigita.com">bugs@arsdigita.com</a>.
+
+<hr>
+<address>richardl@arsdigita.com</address>
+</body>
+</html>

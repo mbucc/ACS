@@ -1,4 +1,8 @@
-# $Id: utils-extra.tcl,v 3.0 2000/02/06 03:14:10 ron Exp $
+ad_library {
+    Additional utility files.
+
+    @cvs-id utils-extra.tcl,v 3.3.2.2 2000/07/17 14:07:55 bquinn Exp
+}
 proc_doc export_form_value { var_name {default ""} } "Returns a properly formatted value part of a form field." {
 
     # Returns the value part of a form field ( value=\"foo\" ) for text fields. 
@@ -25,7 +29,7 @@ proc_doc export_form_value { var_name {default ""} } "Returns a properly formatt
 #      Oracle if html_p is undefined.  But Oracle reserves the right to change
 #      this oddity in the future.  In that case, you'd probably get an error.
 
-proc_doc export_var { var_name { default "" } } "Returns a variable's value if it exists.  This can be used to protect against undefined variables." {
+ad_proc -deprecated export_var { var_name { default "" } } "Returns a variable's value if it exists.  This can be used to protect against undefined variables." {
 
     # export_var protects against undefined variables
     # Returns the value of the variable if it exists in the caller's environment. 
@@ -40,7 +44,7 @@ proc_doc export_var { var_name { default "" } } "Returns a variable's value if i
 }
 
 # this is a little better (redesigned by philg and Tracy)
-proc util_quote_var_for_sql { varname { type text } } {
+ad_proc -deprecated util_quote_var_for_sql { varname { type text } } {
     if [eval uplevel {info exists $varname}] {
 	upvar $varname value
 	return "[ns_dbquotevalue $value $type]"
@@ -66,11 +70,21 @@ proc_doc util_ldelete { list value } "deletes value from the list" {
     }
 }
 
-proc_doc util_kill_cache_url {} "often netscape caches something we don't want to be cached. pragma: no-cache directive doesn't work always with netscape, either. solution is to pass a variable to a file, which will have a distinct value each time function is called. this function will pass a unix's time in seconds (pretty much guaranteed to be unique) in the variable called no_cache. usage of this function should be something like this <a href=example.tcl?test_var=whatever?\[util_kill_cache_url\]>example</a>" {
+proc_doc util_kill_cache_url {} "often netscape caches something we don't want to be cached. pragma: no-cache directive doesn't work always with netscape, either. solution is to pass a variable to a file, which will have a distinct value each time function is called. this function will pass a unix's time in seconds (pretty much guaranteed to be unique) in the variable called no_cache. usage of this function should be something like this <a href=example?test_var=whatever?\[util_kill_cache_url\]>example</a>" {
     return "no_cache=[ns_time]"
 }
 
 proc_doc util_kill_cache_form {} "often netscape caches something we don't want to be cached. pragma: no-cache directive doesn't work always with netscape, either. solution is to pass a variable to a file, which will have a distinct value each time function is called. this function will pass a unix's time in seconds (pretty much guaranteed to be unique) in the variable called no_cache. usage of this function should be something like this <form method=post action=\"/whatever\"> \[util_kill_cache_form\]  form stuff </form>" {
     return "<input type=hidden name=no_cache value=[ns_time]>
     "
+}
+
+proc_doc util_show_plain_text { text_to_display } "allows plain text (e.g. text  entered through forms) to look good on screen without using <pre> tags; preserves newlines, angle brackets, etc." {
+    regsub -all "\\&" $text_to_display "\\&amp;" good_text
+    regsub -all "\>" $good_text "\\&gt;" good_text
+    regsub -all "\<" $good_text "\\&lt;" good_text
+    regsub -all "\n" $good_text "<br>\n" good_text
+    # get rid of stupid ^M's
+    regsub -all "\r" $good_text "" good_text
+    return $good_text
 }

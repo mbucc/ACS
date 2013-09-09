@@ -1,64 +1,76 @@
-# $Id: ae-2.tcl,v 3.0.4.2 2000/04/28 15:11:08 carsten Exp $
-# File: /www/intranet/hours/ae-2.tcl
-#
-# Author: dvr@arsdigita.com, Sep 1999
-# 
-# Writes hours to db. 
-#
+# /www/intranet/hours/ae-2.tcl
 
-ad_maybe_redirect_for_registration
-set user_id [ad_get_user_id]
+ad_page_contract {
+    Writes hours to db. 
 
-set_the_usual_form_variables
-# on_which_table
-# at least one hours_<id>.<column> field
+    @param on_which_table
+    @param hours
+    @param julian_date
 
-set db [ns_db gethandle]
+    @author dvr@arsdigita.com
+    @author mbryzek@arsdigita.com
+    @creation-date Sep 1999
 
-foreach var [info vars "hours_*"] {
+    @cvs-id ae-2.tcl,v 3.5.2.7 2000/08/17 08:30:26 mbryzek Exp
 
-    if { [regexp {^hours_([0-9]+).*$} $var match on_what_id] } {
+} {
+    on_which_table:trim
+    hours:array,html
+    julian_date
+    { return_url "" }
+}
 
-	set hours [set hours_${on_what_id}.hours]
-	set billing_rate [set hours_${on_what_id}.billing_rate]
+set user_id [ad_maybe_redirect_for_registration]
 
-        if { [empty_string_p $hours] } {
-           set hours 0
-        }
-        if [empty_string_p $billing_rate] {
-           set billing_rate null
-        }
-        set QQnote [DoubleApos [set hours_${on_what_id}.note]]
-
-        if {($hours == 0) && [empty_string_p $QQnote]} {
-            ns_db dml $db "delete from im_hours
-                            where on_what_id = $on_what_id
-                              and on_which_table = '$QQon_which_table'
-                              and user_id = $user_id
-                              and day = to_date($julian_date, 'J')"
+db_transaction {
+    foreach name [array names hours] {
+	if { ![regsub {\.hours$} $name "" on_what_id] } {
+	    continue
+	}
+	set hours_worked $hours($name)
+	if { [empty_string_p $hours_worked] } {
+	    set hours_worked 0
+	}
+	if { [info exists hours(${on_what_id}.note)] } {
+	    set note [string trim $hours(${on_what_id}.note)]
 	} else {
+	    set note ""
+	}
+	if { [info exists hours(${on_what_id}.billing_rate)] } {
+	    set billing_rate $hours(${on_what_id}.billing_rate)
+	} else {
+	    set billing_rate ""
+	}
+	if { $hours_worked == 0 && [empty_string_p $note] } {
+	    db_dml hours_delete "delete from im_hours
+                                  where on_what_id = $on_what_id
+                                    and on_which_table = :on_which_table
+                                    and user_id = :user_id
+                                    and day = to_date(:julian_date, 'J')"
+	} else {
+            db_dml hours_update "update im_hours
+                                    set hours = :hours_worked,
+                                        note = :note,
+                                        billing_rate = :billing_rate
+                                  where on_what_id = :on_what_id
+                                    and on_which_table = :on_which_table
+                                    and user_id = :user_id
+                                    and day = to_date(:julian_date, 'J')"
 
-            ns_db dml $db "update im_hours
-                              set hours = $hours,
-                                  note = '$QQnote',
-                                  billing_rate = $billing_rate
-                            where on_what_id = $on_what_id
-                              and on_which_table = '$QQon_which_table'
-                              and user_id = $user_id
-                              and day = to_date($julian_date, 'J')"
-
-            if {[ns_ora resultrows $db] == 0} {
-                ns_db dml $db "insert into im_hours 
+            if { [db_resultrows] == 0 } {
+                db_dml hours_insert "insert into im_hours 
                                (user_id, on_which_table, on_what_id, day, hours, billing_rate, note) 
                                values 
-                               ($user_id, '$QQon_which_table', $on_what_id, to_date($julian_date,'J'), $hours, $billing_rate, '$QQnote')"
+                               (:user_id, :on_which_table, :on_what_id, to_date(:julian_date,'J'), :hours_worked, :billing_rate, :note)"
             }
         }
     }
 }
 
-if { [exists_and_not_null return_url] } {
+db_release_unused_handles
+
+if { ![empty_string_p $return_url] } {
     ad_returnredirect $return_url
 } else {
-    ad_returnredirect index.tcl?[export_url_vars on_which_table julian_date]
+    ad_returnredirect index?[export_url_vars on_which_table julian_date]
 }

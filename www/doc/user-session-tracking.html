@@ -7,17 +7,17 @@
 <body bgcolor=#ffffff text=#000000>
 <h2>User Session Tracking</h2>
 
-part of the <a href="index.html">ArsDigita Community System</a>
+part of the <a href="index">ArsDigita Community System</a>
 by <a href="http://photo.net/philg/">Philip Greenspun</a> and <a href=http://teadams.com>Tracy Adams</a>
 
 <hr>
 
 <ul>
 <li>User-accessible directory:  none
-<li>really important file:  /tcl/ad-last-visit.tcl
+<li>really important file:  /tcl/ad-last-visit
 <li>Site administrator directory:  linked from 
 <a href="/admin/users/">/admin/users/</a>
-<li>data model :  inside <a href="/doc/sql/display-sql.tcl?url=/doc/sql/community-core.sql">/doc/sql/community-core.sql</a>
+<li>data model :  inside <a href="/doc/sql/display-sql?url=/community-core.sql&package_key=acs-core">/packages/acs-core/community-core.sql</a>
 
 </ul>
 
@@ -36,7 +36,7 @@ since your last visit" content from "the stuff that you've already seen"
 content.  The obvious implementation of storing a single
 <code>last_visit</code> column is inadequate.  Suppose that a user
 arrives at the site and the ACS sets the <cite>last_visit</cite> column
-to the current date and time.  <a href="http://photo.net/wtr/thebook/glossary.html#HTTP">HTTP</a> is
+to the current date and time.  <a href="http://photo.net/wtr/thebook/glossary#HTTP">HTTP</a> is
 a stateless protocol.  If the user clicks to visit a discussion forum,
 the ACS queries the <code>users</code> table and finds that the last
 visit was 3 seconds ago.  Consequently, none of the content will be

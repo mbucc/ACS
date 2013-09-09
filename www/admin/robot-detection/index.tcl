@@ -1,14 +1,17 @@
-# $Id: index.tcl,v 3.0 2000/02/06 03:28:10 ron Exp $
-# Created by michael@yoon.org, 05/27/1999
-#
-# Lists all registered robots and enables the site admin
-# to refresh the list.
+# www/admin/robot-detection/index.tcl
 
-ReturnHeaders
+ad_page_contract {
+    Lists all registered robots and enables the site admin to refresh the list.    
+
+    @author Michael Yoon (michael@yoon.org)
+    @creation-date 27-MAY-1999
+    @cvs-id index.tcl,v 3.1.6.4 2000/09/22 01:36:03 kevin Exp
+} {
+}
 
 set page_title "Web Robot Detection"
 
-ns_write "[ad_admin_header $page_title]
+append doc_body "[ad_admin_header $page_title]
 
 <h2>$page_title</h2>
 
@@ -16,7 +19,7 @@ ns_write "[ad_admin_header $page_title]
 
 <hr>
 
-Documentation:  <a href=\"/doc/robot-detection.html\">/doc/robot-detection.html</a>
+Documentation:  <a href=\"/doc/robot-detection\">/doc/robot-detection.html</a>
 
 <h3>Configuration Settings</h3>
 
@@ -29,12 +32,12 @@ WebRobotsDB=[ad_parameter WebRobotsDB robot-detection]
 set patterns [ad_parameter_all_values_as_list FilterPattern robot-detection]
 
 if [empty_string_p $patterns] {
-    ns_write "**** no filter patterns spec'd; system is disabled ****\n"
+    append doc_body "**** no filter patterns spec'd; system is disabled ****\n"
 } else {
-    ns_write "FilterPattern=[join  "\nFilterPattern="]"
+    append doc_body "FilterPattern=[join  "\nFilterPattern="]"
 }
 
-ns_write "RedirectURL=[ad_parameter RedirectURL robot-detection]
+append doc_body "RedirectURL=[ad_parameter RedirectURL robot-detection]
 </pre>
 
 <h3>Known Robots</h3>
@@ -47,27 +50,21 @@ this installation of the ACS can recognize the following robots:
 <ul>
 "
 
-set counter 0
-set db [ns_db gethandle]
-set selection [ns_db select $db "select robot_name, robot_details_url from robots order by robot_name"]
-while {[ns_db getrow $db $selection]} {
-    incr counter
-    set_variables_after_query
+db_foreach all_robots {select robot_name, robot_details_url from robots order by robot_name} {
     if ![empty_string_p $robot_details_url] {
-	ns_write "<li><a href=\"$robot_details_url\">$robot_name</a>\n"
+	append doc_body "<li><a href=\"$robot_details_url\">$robot_name</a>\n"
     } else {
-	ns_write "<li>$robot_name\n"
+	append doc_body "<li>$robot_name\n"
     }
+} if_no_rows {
+    append doc_body "<li>no robots registered\n";
 }
 
-if {0 == $counter} {
-    ns_write "<li>no robots registered\n";
-}
-
-ns_write "<p>
-<li><a href=\"refresh-robot-list.tcl\">refresh list from the Web Robots Database</a>
+append doc_body "<p>
+<li><a href=\"refresh-robot-list\">refresh list from the Web Robots Database</a>
 </ul>
 
 [ad_admin_footer]
 "
 
+doc_return  200 text/html $doc_body

@@ -1,0 +1,72 @@
+<template>
+
+  <name>lesson4</name>
+  <title>Template Four</title>
+  <author>karlg@arsdigita.com</author>
+  <comment>This is a sample template specification.</comment>
+
+  <process>
+
+  <datasource status="optional">
+
+    <name>state</name>
+    <type>param</type>
+    <condition>
+      format CA
+    </condition>
+    <comment>The state for which a list of users is required.</comment>
+
+  </datasource>
+
+  <datasource>
+
+    <name>users</name>
+    <type>query</type>
+    <structure>multirow</structure>
+    <condition>
+	select 
+	  first_name, last_name, city, state 
+	from 
+	  ad_template_sample_users 
+        where
+          state = '$state'
+    </condition>
+    <comment>The users' basic information.</comment>
+
+    <variable>
+      <name>first_name</name>
+      <comment>The user's first name.</comment>
+    </variable>
+    <variable>
+      <name>last_name</name>
+      <comment>The user's last name.</comment>
+    </variable>
+    <variable>
+      <name>city</name>
+      <comment>The user's city of residence.</comment>
+    </variable>
+    <variable>
+      <name>state</name>
+      <comment>The user's state of residence.</comment>
+    </variable>
+
+  </datasource>
+
+  </process>
+
+
+</template>
+
+
+
+
+
+
+
+
+
+
+
+
+
+

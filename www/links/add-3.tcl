@@ -1,28 +1,36 @@
-# $Id: add-3.tcl,v 3.0 2000/02/06 03:49:24 ron Exp $
-#
 # /links/add-3.tcl
-#
-# originally by Tracy Adams in mid-1998
-# fixed up by philg@mit.edu on November 15, 1999
-# to actually check link_kill_patterns before inserting
-#
+
+ad_page_contract {
+    Step 3 of 3 in adding a link to a static page
+
+    @param page_id
+    @param link_description
+    @param link_title
+    @param url
+    @param contact_p
+
+    @author Tracy Adams (teadams@mit.edu)
+    @author Philip Greenspun (philg@mit.edu)
+    @creation-date mid-1998
+    @cvs-id add-3.tcl,v 3.2.2.7 2000/09/22 01:38:51 kevin Exp
+} {
+    page_id:notnull,naturalnum
+    link_description:
+    link_title:
+    url:
+    contact_p:
+}
 
 if {[ad_read_only_p]} {
     ad_return_read_only_maintenance_message
     return
 }
 
-set_the_usual_form_variables
-
-# page_id, link_description, link_title, url, maybe contact_p
-
 set user_id [ad_verify_and_get_user_id]
 
-set db [ns_db gethandle]
-
-set glob_patterns [database_to_tcl_list $db "select glob_pattern 
+set glob_patterns [db_list select_glob_patterns "select glob_pattern 
 from link_kill_patterns
-where page_id = $page_id
+where page_id = :page_id
 or page_id is null"]
 
 foreach pattern $glob_patterns {
@@ -42,28 +50,23 @@ posting unrelated links.
     }
 }
 
-
 set originating_ip [ns_conn peeraddr]
 
 set already_submitted_p 0
 
-if [catch { ns_db dml $db "insert into links
+if [catch { db_dml insert_link "insert into links
 (page_id, user_id, url, link_title, link_description, contact_p, status,
 originating_ip, posting_time)
 values (
-$page_id, $user_id, '$QQurl', '$QQlink_title', '$QQlink_description', '$contact_p', 'live', '$originating_ip',SYSDATE)" } errmsg] {
+:page_id, :user_id, :url, :link_title, :link_description, :contact_p, 'live', :originating_ip,SYSDATE)" } errmsg] {
 
-    if { [database_to_tcl_string $db "select count(url) from links where page_id = $page_id and url='$QQurl'"] > 0 } {
+    if { [db_string select_existing_link_p "select count(url) from links where page_id = :page_id and url=:url"] > 0 } {
 	# the link was already there, either submitted by another user or this user pressed the button twice.
     	set already_submitted_p 1
     } else {
 
 	# there was a different error, print an error message
-	ReturnHeaders
-	ns_write "[ad_header "Error in inserting a link"]
-	
-<h3> Error in inserting a link</h3>
-<hr>
+	ad_return_error "Error inserting a link" "
 There was an error in inserting your link into the database.
 Here is what the database returned:
 <p>
@@ -71,24 +74,21 @@ Here is what the database returned:
 $errmsg
 </pre>
 
-
 Don't quit your browser. The database may just be busy.
 You might be able to resubmit your posting five or ten minutes from now.
-
-[ad_footer]"
+"
 
     }
 }
 
 # get the page and author information
 
-set selection [ns_db 1row $db "select url_stub, nvl(page_title,  url_stub) as page_title, nvl(email,'[ad_system_owner]') as author_email
+db_1row select_page_info "select url_stub, nvl(page_title,  url_stub) as page_title, nvl(email,'[ad_system_owner]') as author_email
 from static_pages, users
 where static_pages.original_author = users.user_id (+)
-and static_pages.page_id = $page_id"]
-set_variables_after_query
+and static_pages.page_id = :page_id"
 
-ns_return 200 text/html "[ad_header "Link submitted"]
+set page_content "[ad_header "Link submitted"]
 
 <h2>Link submitted</h2>
 
@@ -102,11 +102,12 @@ The following link is listed as a related link on the page <a href=\"$url_stub\"
 </blockquote>
 [ad_footer]"
 
+doc_return  200 text/html $page_content
+
 if { [ad_parameter EmailNewLink links]   && !$already_submitted_p } {    
     # send email if necessary
-    set selection [ns_db 1row $db "select first_names || ' ' || last_name as name, email from users where user_id = $user_id"]
-    set_variables_after_query
-    ns_db releasehandle $db
+    db_1row select_email_info "select first_names || ' ' || last_name as name, email from users where user_id = :user_id"
+    db_release_unused_handles
     set subject "link added to $url_stub"
     set body "
 $name ($email) added a link to
@@ -121,5 +122,6 @@ Description:
 "
     if [catch { ns_sendmail $author_email $email $subject $body } errormsg ] {
 	ns_log Warning "Error in sending email to $author_email on [ns_conn url]"
+
     }
 }   

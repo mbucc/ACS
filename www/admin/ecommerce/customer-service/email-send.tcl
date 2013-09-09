@@ -1,8 +1,20 @@
-# $Id: email-send.tcl,v 3.0.4.1 2000/04/28 15:08:38 carsten Exp $
-set_the_usual_form_variables
-# issue_id, user_identification_id
+# email-send.tcl
 
-set return_url "[ns_conn url]?[export_entire_form_as_url_vars]"
+ad_page_contract { 
+    @param issue_id
+    @param user_identification_id
+
+    @author
+    @creation-date
+    @cvs-id email-send.tcl,v 3.2.6.6 2000/09/22 01:34:51 kevin Exp
+} {
+    issue_id
+    user_identification_id
+
+}
+
+
+set return_url "[ad_conn url]?[export_entire_form_as_url_vars]"
 
 set customer_service_rep [ad_get_user_id]
 
@@ -11,9 +23,9 @@ if {$customer_service_rep == 0} {
     return
 }
 
-ReturnHeaders
+
 set page_title "Send Email to Customer"
-ns_write "[ad_admin_header $page_title]
+append doc_body "[ad_admin_header $page_title]
 <h2>$page_title</h2>
 
 [ad_admin_context_bar [list "../index.tcl" "Ecommerce"] [list "index.tcl" "Customer Service Administration"] $page_title]
@@ -23,14 +35,14 @@ ns_write "[ad_admin_header $page_title]
 
 # make sure this user_identification_id has an email address associated with it
 
-set db [ns_db gethandle]
 
-set selection [ns_db 1row $db "select u.email as user_email, id.email as id_email
+
+db_1row get_user_information "select u.email as user_email, id.email as id_email
 from users u, ec_user_identification id
 where id.user_id = u.user_id(+)
-and id.user_identification_id=$user_identification_id
-"]
-set_variables_after_query
+and id.user_identification_id=:user_identification_id
+"
+
 
 if { ![empty_string_p $user_email] } {
     set email_to_use $user_email
@@ -39,7 +51,7 @@ if { ![empty_string_p $user_email] } {
 }
 
 if { [empty_string_p $email_to_use] } {
-    ns_write "
+    append doc_body "
     
     Sorry, we don't have the customer's email address on file.
     
@@ -49,11 +61,11 @@ if { [empty_string_p $email_to_use] } {
 }
 
 # generate action_id here for double-click protection
-set action_id [database_to_tcl_string $db "select ec_action_id_sequence.nextval from dual"]
+set action_id [db_string get_new_action_id "select ec_action_id_sequence.nextval from dual"]
 
-ns_write "If you are not [database_to_tcl_string $db "select first_names || ' ' || last_name from users where user_id=$customer_service_rep"], please <a href=\"/register.tcl?[export_url_vars return_url]\">log in</a>
+append doc_body "If you are not [db_string get_full_name "select first_names || ' ' || last_name from users where user_id=:customer_service_rep"], please <a href=\"/register?[export_url_vars return_url]\">log in</a>
 
-<form name=email_form method=post action=/tools/spell.tcl>
+<form name=email_form method=post action=/tools/spell>
 [philg_hidden_input var_to_spellcheck "message"]
 [philg_hidden_input target_url "/admin/ecommerce/customer-service/email-send-2.tcl"]
 [export_form_vars email_to_use action_id issue_id customer_service_rep user_identification_id]
@@ -84,7 +96,7 @@ ns_write "If you are not [database_to_tcl_string $db "select first_names || ' ' 
 </tr>
 <tr>
 <td align=right><b>Canned Responses</td>
-<td>[ec_canned_response_selector $db email_form message]</td>
+<td>[ec_canned_response_selector email_form message]</td>
 </tr>
 </table>
 
@@ -97,3 +109,9 @@ ns_write "If you are not [database_to_tcl_string $db "select first_names || ' ' 
 </form>
 [ad_admin_footer]
 "
+
+
+
+doc_return  200 text/html $doc_body
+
+

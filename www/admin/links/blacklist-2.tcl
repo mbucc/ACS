@@ -1,4 +1,21 @@
-# $Id: blacklist-2.tcl,v 3.1.2.1 2000/04/28 15:09:09 carsten Exp $
+# /admin/links/blacklist-2.tcl
+
+ad_page_contract {
+    Step 2 in blacklisting a link from a page (or all pages)
+
+    @param page_id The page ID (or "*") to blacklist the link on
+    @param glob_pattern The URL to blacklist
+    @param pattern_id The ID of the new link pattern
+
+    @author Original Author Unknown
+    @creation-date Original Date Unknown
+    @cvs-id blacklist-2.tcl,v 3.4.2.7 2000/09/22 01:35:28 kevin Exp
+} {
+    page_id:notnull
+    glob_pattern:notnull
+    pattern_id:notnull,naturalnum
+}
+
 set admin_id [ad_verify_and_get_user_id]
 
 if { $admin_id == 0 } {
@@ -8,30 +25,20 @@ if { $admin_id == 0 } {
 
 # we know who the administrator is
 
-set_the_usual_form_variables
-
-# relevant_page_id, glob_pattern
-
-set db_conns [ns_db gethandle [philg_server_default_pool] 2]
-set db [lindex $db_conns 0]
-set db_sub [lindex $db_conns 1]
-
 if { $page_id == "*" } {
-    set complete_page_id "NULL"
+    set complete_page_id ""
     set pretty_page_id "everywhere"
 } else {
-    set url_stub [database_to_tcl_string $db "select url_stub from static_pages where page_id = $page_id"]
+    set url_stub [db_string select_url_stub "select url_stub from static_pages where page_id = :page_id"]
     set complete_page_id $page_id
     set pretty_page_id "from $url_stub"
 }
 
-ReturnHeaders
-
-ns_write "[ad_admin_header "Blacklisting $glob_pattern"]
+set page_content "[ad_admin_header "Blacklisting $glob_pattern"]
 
 <h2>Blacklisting $glob_pattern</h2>
 
-from <a href=\"index.tcl\">the links in [ad_system_name]</a>
+from <a href=\"index\">the links in [ad_system_name]</a>
 
 <hr>
 
@@ -40,13 +47,13 @@ from <a href=\"index.tcl\">the links in [ad_system_name]</a>
 <li>Step 1:  Inserting \"$glob_pattern\" into the table of kill patterns (relevant pages:  $pretty_page_id) ..."
 
 set insert_sql "insert into link_kill_patterns 
-(page_id, user_id, date_added, glob_pattern) 
+(pattern_id, page_id, user_id, date_added, glob_pattern) 
 values
-($complete_page_id, $admin_id, sysdate, '$QQglob_pattern')"
+(:pattern_id, :complete_page_id, :admin_id, sysdate, :glob_pattern)"
 
-ns_db dml $db $insert_sql
+db_dml insert_blacklist $insert_sql
 
-ns_write "DONE
+append page_content "DONE
 
 <li>Step 2: Searching through the database to find links that match
 this kill pattern.  If you've asked for a blacklist everywhere, this
@@ -54,23 +61,21 @@ could take a long time....
 <ul>"
 
 if { $page_id == "*" } {
-    set search_sql "select rowid,url
+    set search_sql "select url, page_id
 from links"
 } else {
-    set search_sql "select rowid,url 
+    set search_sql "select url 
 from links
-where page_id = $page_id"
+where page_id = :page_id"
 }
 
-set selection [ns_db select $db $search_sql]
+db_foreach search_for_url $search_sql {
 
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
     if { [string match $glob_pattern $url] } {
 	# it matches, kill it
 	# subquery for some info about what we're killing; do it with
 	# correlation names so that we don't clobber existing variables 
-	set sub_selection [ns_db 1row $db_sub "select 
+	db_1row kill_link "select 
   links.url as killed_url, 
   links.link_title as killed_title, 
   links.posting_time as killed_posting_time, 
@@ -79,21 +84,27 @@ while {[ns_db getrow $db $selection]} {
   users.user_id as killed_user_id, 
   users.first_names as killed_first_names, 
   users.last_name as killed_last_name
-from links, static_pages sp, users 
-where links.page_id = sp.page_id
-and links.user_id = users.user_id 
-and links.rowid='$rowid'"]
-        set_variables_after_subquery
-	ns_db dml $db_sub "delete from links where rowid='$rowid'"
-	set item "<li>Deleted $killed_url ($killed_title) from $killed_url_stub, originally posted by <a href=\"/admin/users/one.tcl?user_id=$killed_user_id\">$killed_first_names $killed_last_name</a>\n"
+  from links, static_pages sp, users 
+  where links.page_id = sp.page_id
+  and links.user_id = users.user_id 
+  and links.url = :url
+  and links.page_id = :page_id
+"
+
+	db_dml delete_link "delete from links 
+                            where page_id=:page_id and url=:url"
+
+	set item "<li>Deleted $killed_url ($killed_title) from $killed_url_stub, originally posted by <a href=\"/admin/users/one?user_id=$killed_user_id\">$killed_first_names $killed_last_name</a>\n"
         if ![empty_string_p $killed_ip] {
 	    append item "from $killed_ip"
 	}
-	ns_write "$item\n"
+	append page_content "$item\n"
     }
 }
 
-ns_write "</ul>
+db_release_unused_handles
+
+append page_content "</ul>
 <p>
 </ul>
 
@@ -101,3 +112,5 @@ Done.
 
 [ad_admin_footer]
 "
+
+doc_return  200 text/html $page_content

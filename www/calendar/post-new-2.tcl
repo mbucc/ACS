@@ -1,24 +1,41 @@
-# $Id: post-new-2.tcl,v 3.2.2.1 2000/04/28 15:09:48 carsten Exp $
-# File:     /calendar/post-new-2.tcl
-# Date:     1998-11-18
-# Contact:  philg@mit.edu, ahmeds@arsdigita.com
+# www/calendar/post-new-2.tcl
+ad_page_contract {
+    Step 2/4 in adding a new calendar event - Entry Form
+
+    Number of queries: 2
+
+    @author Philip Greenspun (philg@mit.edu)
+    @author Sarah Ahmed (ahmeds@arsdigita.com)
+    @creation-date 1998-11-18
+    @cvs-id post-new-2.tcl,v 3.5.2.6 2000/09/22 01:37:05 kevin Exp
+
+} {
+    category
+    category_id:naturalnum
+    {scope public}
+    {user_id:naturalnum ""}
+    {group_id:naturalnum ""}
+    {on_what_id:naturalnum ""}
+    {on_which_group:naturalnum ""}
+}
+
+
 # Purpose:  at this point, we know what kind of event is being described
 #           and can potentially do something with that information
-# x 
 
-set_the_usual_form_variables 0
 # category
 # maybe scope, maybe scope related variables (user_id, group_id, on_which_group, on_what_id)
-
-ad_scope_error_check
-
-set db [ns_db gethandle]
-ad_scope_authorize $db $scope all group_member registered
 
 if {[ad_read_only_p]} {
     ad_return_read_only_maintenance_message
     return
 }
+
+
+ad_scope_error_check
+
+ad_scope_authorize $scope all group_member registered
+
 
 if { [ad_parameter ApprovalPolicy calendar] == "open"} {
     set verb "Post"
@@ -29,32 +46,25 @@ if { [ad_parameter ApprovalPolicy calendar] == "open"} {
     return
 }
 
-ReturnHeaders
 
-ns_write "
-[ad_scope_header "$verb $category Item" $db]
-<h2>$verb $category Item</h2>
-[ad_scope_context_bar_ws_or_index [list "index.tcl?[export_url_scope_vars]" [ad_parameter SystemName calendar "Calendar"]] "$verb Item"]
+set page_content "
+[ad_scope_header "$verb Event in $category"]
+<h2>$verb Event in <i>$category</i></h2>
+[ad_scope_context_bar_ws_or_index [list "index.tcl?[export_url_scope_vars]" [ad_parameter SystemName calendar "Calendar"]] "$verb Event"]
 
 <hr>
 [ad_scope_navbar]
 
-<form method=post action=\"post-new-3.tcl\">
-[export_form_scope_vars category]
-<h3>The title</h3>
-
-Remember that in a list of events, users will only see the title.  So
-try to make the title as descriptive as possible, e.g.,
-\"[ad_parameter TitleExample calendar "Ansel Adams show at Getty
-Center in Los Angeles, March 1-June 15"]\".  
+<form method=post action=\"post-new-3\">
+[export_form_scope_vars category category_id]
+<h3>Event Title</h3>
 
 <p>
 
-Title: <input type=text size=60 name=title>
+Title: <input type=text size=60 MAXLENGTH=100 name=title>
 
 <h3>Full Description</h3>
 
-This information will be visible to a user who has clicked on a title.
 Make sure to include event hours, e.g., \"10 am to 4 pm\" and
 directions to the event.
 
@@ -69,71 +79,76 @@ Text above is
 <select name=html_p><option value=f>Plain Text<option value=t>HTML</select>
 "
 
-ns_write "
+
+## Create date widgets
+
+
+set param_DaysTillStart [ad_parameter DaysFromPostingToStart calendar 30]
+set param_HowLong [ad_parameter DaysFromStartToEnd calendar 0]
+
+db_1row query_dates "
+select sysdate + :param_DaysTillStart as start_date,
+sysdate + :param_DaysTillStart + :param_HowLong as end_date
+from dual"
+
+set start_date_widget [ad_dateentrywidget start_date $start_date]
+set end_date_widget [ad_dateentrywidget end_date $end_date]
+
+db_release_unused_handles
+
+
+
+append page_content "
 
 <h3>Dates</h3>
 
-To ensure that users get relevant and accurate information, the
-software is programmed to show only events that are in the future.
-Furthermore, these events are sorted by the time that they start.  So
-an event that happens next week is given more prominence than an evetn
-that happens next year.  Make sure that you get these right!
-
-<p>
-
 <table>
-<tr><th>Event Start Date<td>[philg_dateentrywidget start_date [database_to_tcl_string $db "select sysdate + [ad_parameter DaysFromPostingToStart calendar 30] from dual"]]
-<tr><th>Event End Date<td>[philg_dateentrywidget end_date [database_to_tcl_string $db "select sysdate + [ad_parameter DaysFromPostingToStart calendar 30] + [ad_parameter DaysFromStartToEnd calendar 0] from dual"]]
+<tr><th>Start Date<td>$start_date_widget
+<tr><th>End Date<td>$end_date_widget
 </table>
-
 
 <h3>Additional contact information</h3>
 
-If there are Internet sources for additional information about this
-event, enter a URL and/or email address below.
+<p>If there is an Internet source for additional information about this
+event, then enter the URL.</p>
 
-<p>
+<p>Internet URL:<br>
+<input type=text name=event_url size=80 MAXLENGTH=200 value=\"http://\"></p>
 
-<table>
-<tr><th align=left>Url<td><input type=text name=event_url size=40 value=\"http://\">
-</tr>
-<tr><th align=left>Contact Email<td><input type=text name=event_email size=30 value=\"\">
-</tr>
-</table>
+
+<P>If attendees can reach an event coordinator via email, then enter the address below.</p>
+
+<p>Contact Email:<br>
+<input type=text name=event_email size=50 MAXLENGTH=100 value=\"\"></p>
+
 
 "
 
 if [ad_parameter EventsHaveLocationsP calendar 1] {
-    ns_write "<h3>Event Location</h3>
+    append page_content "<h3>Event Location</h3>
 
-If this event can be said to occur in one location, then please tell
-us where it is.  This will help our software give special prominence
-to events that are geographically close to a particular user.
+    <p>This information is not displayed to the user, and is optional.</p>
 
-<p>
+    <table>
+    "
 
-Note that this information is not shown to users but only used by our
-computer programs. The description above should contain information
-about where to find the event.
+    ## Notice that it is possible for the table to be empty, 
+    ## yet the Event Location header would be displayed anyway.
+    ## God, I love good software design. -MJS
 
-<p>
-
-<table>
-"
     if [ad_parameter InternationalP] {
-	ns_write "<tr><th align=left>Country<td>[country_widget $db]</tr>\n"
+	append page_content "<tr><th align=left>Country<td>[country_widget]</tr>\n"
     }
     if [ad_parameter SomeAmericanReadersP] {
-	ns_write "<tr><th align=left>State<td>[state_widget $db]</tr>\n"
-	ns_write "<tr><th align=left>US Zip Code<td><input type=text name=zip_code size=7> (5 digits)</tr> \n"
+	append page_content "<tr><th align=left>State<td>[state_widget]</tr>\n"
+	append page_content "<tr><th align=left>US Zip Code<td><input type=text name=zip_code size=7 MAXLENGTH=10></tr> \n"
     }
-    ns_write "</table>\n"
+    append page_content "</table>\n"
 }
 
-ns_write "
+append page_content "
 
 <P>
-
 
 <center>
 <input type=\"submit\" value=\"Submit\">
@@ -141,4 +156,7 @@ ns_write "
 </form>
 [ad_scope_footer]
 "
- 
+
+doc_return  200 text/html $page_content
+
+## END FILE post-new-2.tcl

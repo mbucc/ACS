@@ -2,7 +2,7 @@
 --
 -- Author: ron@arsdigita.com, December 1999
 --
--- $Id: press.sql,v 3.0 2000/02/06 03:29:04 ron Exp $
+-- press.sql,v 3.0 2000/02/06 03:29:04 ron Exp
 
 
 --

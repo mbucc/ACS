@@ -1,13 +1,18 @@
-# $Id: action-delete.tcl,v 3.0.4.1 2000/04/28 15:09:24 carsten Exp $
-set_the_usual_form_variables
+ad_page_contract {
+    @param action the action to be performed
+    @param group_id the id of the group to perform the action on 
 
-# group_id, action
+    @cvs-id action-delete.tcl,v 3.1.6.4 2000/07/21 03:58:11 ron Exp
+} {
+    group_id:notnull,naturalnum
+    action:notnull
+}
 
-set db [ns_db gethandle]
+db_dml delete_action "delete from user_group_actions
+where group_id = :group_id
+and action = :action"
 
-ns_db dml $db "delete from user_group_actions
-where group_id = $group_id
-and action = '$QQaction'"
+db_release_unused_handles
 
-ad_returnredirect "group.tcl?group_id=$group_id"
+ad_returnredirect "group?group_id=$group_id"
 

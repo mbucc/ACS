@@ -1,19 +1,26 @@
-# $Id: subscriber-class-delete.tcl,v 3.0 2000/02/06 03:25:01 ron Exp $
-set_the_usual_form_variables
+# /www/admin/member-value/subscriber-class-delete.tcl
 
-# subscriber_class
+ad_page_contract {
+    Form to delete a subscriber class.
+    
+    @param subscriber_class    
+    @author mbryzek@arsdigita.com
+    @creation-date Tue Jul 11 20:47:10 2000
+    @cvs-id subscriber-class-delete.tcl,v 3.1.6.6 2000/09/22 01:35:32 kevin Exp
 
-ReturnHeaders
+} {
+    subscriber_class:notnull
+}
 
-ns_write "[ad_no_menu_header "Delete $subscriber_class"]
+set page_content "[ad_admin_header "Delete $subscriber_class"]
 
 <h2>Delete subscriber class $subscriber_class</h2>
 
-from <a href=\"index.tcl\">[ad_system_name]</a>
+[ad_admin_context_bar [list "" "Member Value"] "Delete Subscriber Class"]
 
 <hr>
 
-<form method=GET action=\"subscriber-class-delete-2.tcl\">
+<form method=GET action=\"subscriber-class-delete-2\">
 [export_form_vars subscriber_class]
 
 <ul>
@@ -21,16 +28,18 @@ from <a href=\"index.tcl\">[ad_system_name]</a>
 
 "
 
-set db [ns_db gethandle]
-set n_subscribers [database_to_tcl_string $db "select count(*) from users_payment where subscriber_class = '$QQsubscriber_class'"]
+set n_subscribers [db_string mv_users_payment_count "select count(*) from users_payment where subscriber_class = :subscriber_class"]
 
-ns_write "$n_subscribers"
+db_release_unused_handles
 
-ns_write "<li>subscriber class into which to move the above folks:
+set bind_vars [ad_tcl_vars_to_ns_set subscriber_class]
+
+append page_content "$n_subscribers"
+append page_content "<li>subscriber class into which to move the above folks:
 <select name=new_subscriber_class>
-[db_html_select_options $db "select subscriber_class 
+[db_html_select_options -bind $bind_vars subscriber_classes_select_options "select subscriber_class 
 from mv_monthly_rates
-where subscriber_class <> '$QQsubscriber_class'
+where subscriber_class <> :subscriber_class
 order by rate"]
 </select>
 </ul>
@@ -40,5 +49,7 @@ order by rate"]
 </center>
 </form>
 
-[ad_no_menu_footer]
+[ad_admin_footer]
 "
+
+doc_return  200 text/html $page_content

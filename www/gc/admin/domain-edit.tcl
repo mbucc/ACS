@@ -1,23 +1,31 @@
-# $Id: domain-edit.tcl,v 3.1 2000/03/10 23:58:50 curtisg Exp $
-set_the_usual_form_variables
+# /www/gc/admin/domain-edit.tcl
 
-# domain_id
+ad_page_contract {
+    @author
+    @creation-date
+    @cvs-id domain-edit.tcl,v 3.3.2.6 2000/09/22 01:37:59 kevin Exp
 
-set db [ns_db gethandle]
+    @param domain_id
 
-set selection [ns_db 1row $db "select * from ad_domains
-where domain_id=$domain_id"]
-set_variables_after_query
+} {
+    domain_id:integer
+}
+
+
+set sql "select * from ad_domains
+         where domain_id = :domain_id"
+
+db_1row gc_admin_domain_edit_data_get $sql
 
 append html "[ad_admin_header "Edit $domain parameters"]
 
 <h2>Edit $domain parameters</h2>
 
-in the <a href=\"index.tcl\"> classifieds</a>
+in the <a href=\"index\"> classifieds</a>
 
 <hr>
 
-<form method=post action=domain-edit-2.tcl>
+<form method=post action=domain-edit-2>
 <H3>Identity</H3>
 Full domain name: <input type=text name=full_noun value=\"$full_noun\"><br>
 Pick a short key : <input type=text name=domain value=\"$domain\"><br>
@@ -67,8 +75,7 @@ Are your ads based on geography?
 <input type=radio name=geocentric_p value=\"t\">Yes
 <input type=radio name=geocentric_p value=\"f\">No"
 
-
-append html "[bt_mergepiece $html_form $selection]
+append html "[merge_form_with_query -bind [ad_tcl_vars_to_ns_set domain_id] $html_form domain_data_get_2 $sql]
 </td></tr>
 </table>
 <p>
@@ -81,5 +88,5 @@ append html "[bt_mergepiece $html_form $selection]
 [ad_admin_footer]
 "
 
-ns_db releasehandle $db
-ns_return 200 text/html $html
+db_release_unused_handles
+doc_return  200 text/html $html

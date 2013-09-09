@@ -1,30 +1,34 @@
-# $Id: usgeospatial-post-new-2.tcl,v 3.0 2000/02/06 03:35:00 ron Exp $
-set_the_usual_form_variables
+# /www/bboard/usgeospatial-post-new-2.tcl
+ad_page_contract {
+    Posts a new message to the geospatial bboard system
 
-# topic, epa_region, usps_abbrev
+    @param topic the name of the bboard topic
+    @param epa_region the ID of the epa_region
+    @param usps_abbrev the postal abbreviation
 
-set db [bboard_db_gethandle]
-if { $db == "" } {
-    bboard_return_error_page
-    return
+    @cvs-id usgeospatial-post-new-2.tcl,v 3.1.6.6 2000/09/22 01:36:57 kevin Exp
+} {
+    topic:notnull
+    epa_region:notnull,integer
+    usps_abbrev:notnull
 }
 
+# -----------------------------------------------------------------------------
 
 if {[bboard_get_topic_info] == -1} {
     return
 }
 
+set full_state_name [db_string state_name "
+select state_name from states where usps_abbrev = :usps_abbrev"]
 
-set full_state_name [database_to_tcl_string $db "select state_name from rel_search_st where state = '$QQusps_abbrev'"]
-
-ReturnHeaders
-
-ns_write "[bboard_header "Pick a county in $full_state_name"]
+append page_content "
+[bboard_header "Pick a county in $full_state_name"]
 
 <h2>Pick a County</h2>
 
 so that you can add a thread to 
-<a href=\"usgeospatial-2.tcl?[export_url_vars topic epa_region]\">the $topic (region $epa_region) forum</a>.
+<a href=\"usgeospatial-2?[export_url_vars topic epa_region]\">the $topic (region $epa_region) forum</a>.
 
 <hr>
 
@@ -32,28 +36,26 @@ so that you can add a thread to
 
 "
 
-set selection [ns_db select $db "
+db_foreach county_info "
 SELECT
      FIPS_COUNTY_CODE,
      FIPS_COUNTY_NAME,
-     STATE
+     usps_abbrev
 FROM
-    REL_SEARCH_CO
+     counties
 WHERE
-    STATE = '$usps_abbrev'
+    usps_abbrev = :usps_abbrev
 ORDER BY
-    FIPS_COUNTY_NAME"]
+    FIPS_COUNTY_NAME" {
 
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
-    ns_write "<li><a href=\"usgeospatial-post-new-3.tcl?[export_url_vars topic epa_region usps_abbrev fips_county_code]\">$fips_county_name</a>\n"
+	append page_content "<li><a href=\"usgeospatial-post-new-3?[export_url_vars topic epa_region usps_abbrev fips_county_code]\">$fips_county_name</a>\n"
 }
 
-ns_write "
+append page_content "
 
 <p>
 
-<li><a href=\"usgeospatial-post-new-3.tcl?[export_url_vars topic epa_region usps_abbrev]\">this posting is about $full_state_name but not about a particular county</a>\n
+<li><a href=\"usgeospatial-post-new-3?[export_url_vars topic epa_region usps_abbrev]\">this posting is about $full_state_name but not about a particular county</a>\n
 
 
 </ul>
@@ -61,3 +63,5 @@ ns_write "
 
 [bboard_footer]
 "
+
+doc_return  200 text/html $page_content

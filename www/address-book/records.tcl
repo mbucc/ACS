@@ -1,25 +1,36 @@
-# $Id: records.tcl,v 3.0 2000/02/06 02:44:22 ron Exp $
-# File:     /address-book/records.tcl
-# Date:     mid-1998
-# Contact:  teadams@arsdigita.com, tarik@arsdigita.com
-# Purpose:  shows the list of address book records
-#
-# Note: if page is accessed through /groups pages then group_id and group_vars_set are already set up in 
-#       the environment by the ug_serve_section. group_vars_set contains group related variables (group_id, 
-#       group_name, group_short_name, group_admin_email, group_public_url, group_admin_url, group_public_root_url,
-#       group_admin_root_url, group_type_url_p, group_context_bar_list and group_navbar_list)
+# /www/address-book/records.tcl
+
+ad_page_contract {
+    
+    Purpose:  shows the list of address book records    
+
+    @param scope
+    @param user_id
+    @param group_id
+    @param contact_info_only
+    @param order_by
+
+    @cvs-id records.tcl,v 3.2.2.12 2000/10/10 14:46:36 luke Exp
+    @creation-date mid-1998
+    @author teadams@arsdigita.com
+    @author tarik@arsdigita.com
+
+} {
+    scope:optional
+    user_id:optional,integer
+    group_id:optional,integer
+    contact_info_only:optional
+    order_by:optional
+}
 
 
-set_the_usual_form_variables 0
-# maybe scope, maybe scope related variables (user_id, group_id, on_which_group, on_what_id)
-# maybe contact_info_only, maybe order_by
 ad_scope_error_check user
-set db [ns_db gethandle]
-set user_id [ad_scope_authorize $db $scope none group_member user]
 
-set scope_administrator_p [ad_scope_administrator_p $db $user_id]
+set user_id [ad_scope_authorize $scope none group_member user]
 
-set name [address_book_name $db]
+set scope_administrator_p [ad_scope_administrator_p $user_id]
+
+set name [address_book_name]
 
 if { ![info exists contact_info_only] } {
     set contact_info_only "f"
@@ -28,79 +39,78 @@ if { ![info exists order_by] } {
     set order_by "last_name, first_names"
 }
 
-ReturnHeaders
+set page_content "
 
-ns_write "
-
-[ad_scope_header "All Records for $name" $db]
-[ad_scope_page_title "All Records for $name" $db]
-[ad_scope_context_bar_ws [list "index.tcl?[export_url_scope_vars]" "Address Book"] "All Records"]
+[ad_scope_header "All Records for $name"]
+[ad_scope_page_title "All Records for $name"]
+[ad_scope_context_bar_ws [list "index?[export_url_scope_vars]" "Address Book"] "All Records"]
 <hr>
 [ad_scope_navbar]
 "
 
-
-
-set n_records [database_to_tcl_string $db "
+set n_records [db_string address_book_records_count "
 select count(*) from address_book where [ad_scope_sql]"]
 
 if { $n_records == 0 } {
     append html "
     There are currently no addresses.
     <p>
-    <a href=record-add.tcl?[export_url_scope_vars]>Add a Record</a>
+    <a href=record-add?[export_url_scope_vars]>Add a Record</a>
     "
-    ns_write "
+    append page_content "
     <blockquote>
     $html
     </blockquote>
     [ad_scope_footer]
+    <blockquote>
     "
     return
 } elseif {$n_records == 1} {
-    append html "$n_records record<br> "
+    append page_content "$n_records record<br> "
 } else {
-    append html "$n_records records<br> "
+    append page_content "$n_records records<br> "
 } 
 
 if { $contact_info_only == "t" } {
     append address_string "
-    <a href=\"records.tcl?contact_info_only=f&[export_url_scope_vars]\">Display All Info</a><p>"
+    <a href=\"records?contact_info_only=f&[export_url_scope_vars]\">Display All Info</a><p>"
 } else {
     append address_string "
-    <a href=\"records.tcl?contact_info_only=t&[export_url_scope_vars]\">Display Only Contact Info</a><p>"
+    <a href=\"records?contact_info_only=t&[export_url_scope_vars]\">Display Only Contact Info</a><p>"
 }
 
+db_foreach address_book_records_loop "select first_names, last_name,
+email, email2, line1, line2, city, usps_abbrev, zip_code, country,
+phone_home, phone_work, phone_cell, phone_other, birthday, birthmonth,
+birthyear, notes
+from address_book where [ad_scope_sql] order by :order_by" {
 
-set selection [ns_db select $db "
-select * from address_book where [ad_scope_sql] order by $order_by"]
-
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+    set set_data [ad_tcl_vars_to_ns_set first_names last_name email email2 line1 line2 city usps_abbrev zip_code country phone_home phone_work phone_cell phone_other birthday birthmonth birthyear notes]
     append address_string "
-    [address_book_record_display $selection $contact_info_only]"
+    [address_book_record_display $set_data $contact_info_only]"
     if { $contact_info_only == "f" && $scope_administrator_p } {
 	append address_string "
-	<br>\[<a href=record-edit.tcl?[export_url_scope_vars address_book_id]>edit</a> | <a href=record-delete.tcl?[export_url_scope_vars address_book_id]>delete</a>\]"
+	<br>\[<a href=record-edit?[export_url_scope_vars address_book_id]>edit</a> | <a href=record-delete?[export_url_scope_vars address_book_id]>delete</a>\]"
     }
     append address_string "<p>"
 }
 
-
-append html "
+append page_content "
 $address_string
 "
 
 if { $scope_administrator_p } {
-    append html "
+    append page_content "
     <p>
-    <a href=record-add.tcl?[export_url_scope_vars]>Add a Record</a>
+    <a href=record-add?[export_url_scope_vars]>Add a Record</a>
     "
 }
 
-ns_write "
-<blockquote>
-$html
+append page_content "
 </blockquote>
 [ad_scope_footer]
 "
+
+
+
+doc_return  200 text/html $page_content

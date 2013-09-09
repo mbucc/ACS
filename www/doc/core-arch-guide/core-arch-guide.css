@@ -1,0 +1,22 @@
+/*
+ * /www/doc/core-arch-guide.css
+ *
+ * Style sheet for the ACS Core Architecture Guide
+ *
+ * michael@arsdigita.com, 2000-06-10
+ *
+ * core-arch-guide.css,v 1.2.2.1 2000/07/11 16:53:24 jsalz Exp
+ */
+
+BODY {
+	background-color: #FFFFFF;
+	color: #000000;
+	font-family: Tahoma, Helvetica, sans-serif
+}
+CODE {
+	font-family: monospace
+}
+PRE {
+	font-family: monospace
+}
+

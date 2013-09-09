@@ -1,44 +1,40 @@
-# $Id: poll-results.tcl,v 3.0 2000/02/06 03:52:38 ron Exp $
+# poll-results.tcl,v 3.2.2.4 2000/07/21 04:03:17 ron Exp
 # poll-results.tcl -- see the results of a poll
 
-set_form_variables
-# expects poll_id
+ad_page_contract {
+    @param poll_id the ID of the poll
+    @cvs-id poll-results.tcl,v 3.2.2.4 2000/07/21 04:03:17 ron Exp
+} {
+    poll_id:naturalnum,notnull
+}
 
-validate_integer "poll_id" $poll_id
 set info [util_memoize "poll_info_internal $poll_id"]
 
 set poll_name [lindex $info 0]
 set poll_description [lindex $info 1]
 
-set db [ns_db gethandle]
-
-
-
-set selection [ns_db select $db "
+set intermediate_values [list]
+set total_count 0
+db_foreach poll_get_info "
 select pc.label, count(puc.choice_id) as n_votes
 from poll_choices pc, poll_user_choices puc
-where pc.poll_id = $poll_id
+where pc.poll_id = :poll_id
 and pc.choice_id = puc.choice_id(+)
 group by pc.label
-order by n_votes desc"]
+order by n_votes desc" {
 
 
-
-set total_count 0
 
 # rather than make Oracle do the percentage calculation,
 # we sum up the total_count and do the calcs ourselves.
 # otherwise we'd have to do a seperate count(*), which would suck.
 
-set intermediate_values [list]
 
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
     lappend intermediate_values [list $n_votes $label]
     incr total_count $n_votes
 }
 
-ns_db releasehandle $db
+db_release_unused_handles
 
 set values [list]
 
@@ -61,10 +57,9 @@ if { $total_count > 0 } {
     }
 }
 
-
-
 set header_image [ad_parameter IndexPageDecoration polls]
-set context_bar [ad_context_bar_ws_or_index [list "/poll" "Polls"] [list "/poll/one-poll.tcl?[export_url_vars poll_id]" "One Poll"] "Results" ]
+set context_bar [ad_context_bar_ws_or_index [list "/poll" "Polls"] [list "/poll/one-poll?[export_url_vars poll_id]" "One Poll"] "Results" ]
 
 ad_return_template
+
 

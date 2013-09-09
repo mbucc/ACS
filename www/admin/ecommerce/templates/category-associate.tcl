@@ -1,14 +1,21 @@
-# $Id: category-associate.tcl,v 3.0 2000/02/06 03:21:39 ron Exp $
-set_the_usual_form_variables
-# template_id
+#  www/admin/ecommerce/templates/category-associate.tcl
+ad_page_contract {
+    @param template
 
-set db [ns_db gethandle]
-set selection [ns_db 1row $db "select template_name, template from ec_templates where template_id=$template_id"]
-set_variables_after_query
+  @author
+  @creation-date
+  @cvs-id category-associate.tcl,v 3.1.6.7 2000/09/22 01:35:04 kevin Exp
+} {
+    template_id:integer
+}
 
-ReturnHeaders
 
-ns_write "[ad_admin_header "Associate with a Category"]
+
+
+db_1row get_template_data "select template_name, template from ec_templates where template_id=:template_id"
+
+
+set page_html "[ad_admin_header "Associate with a Category"]
 
 <h2>Associate with a Category</h2>
 
@@ -31,57 +38,57 @@ This template may be associated with as many categories as you like.
 "
 # see if it's already associated with any categories
 
-set n_categories_associated_with [database_to_tcl_string $db "select count(*) from ec_category_template_map where template_id=$template_id"]
+set n_categories_associated_with [db_string get_n_category_assocs "select count(*) from ec_category_template_map where template_id=:template_id"]
 
 if { $n_categories_associated_with > 0 } {
-    set selection [ns_db select $db "select m.category_id, c.category_name
-from ec_category_template_map m, ec_categories c
-where m.category_id = c.category_id
-and m.template_id = $template_id"]
+    append page_html "Currently this template is associated with the category(ies):\n<ul>\n"
+  
+    db_foreach get_each_template_assoc "select m.category_id, c.category_name
+    from ec_category_template_map m, ec_categories c
+    where m.category_id = c.category_id
+    and m.template_id = :template_id" {
 
-    ns_write "Currently this template is associated with the category(ies):\n<ul>\n"
-
-    while { [ns_db getrow $db $selection] } {
-	set_variables_after_query
-	ns_write "<li>$category_name\n"
+	append page_html "<li>$category_name\n"
     }
 
-    ns_write "</ul>\n"
+    append page_html "</ul>\n"
 
 } else {
-    ns_write " This template has not yet been associated with any categories."
+    append page_html " This template has not yet been associated with any categories."
 }
 
 # see if there are any categories left to associate it with
-set n_categories_left [database_to_tcl_string $db "select count(*)
+set n_categories_left [db_string get_n_left "select count(*)
 from ec_categories
-where category_id not in (select category_id from ec_category_template_map where template_id=$template_id)"]
+where category_id not in (select category_id from ec_category_template_map where template_id=:template_id)"]
 
 if { $n_categories_left == 0 } {
-    ns_write "All categories are associated with this template.  There are none left to add!"
+    append page_html "All categories are associated with this template.  There are none left to add!"
 } else {
 
-    ns_write "<form method=post action=category-associate-2.tcl>
+    append page_html "<form method=post action=category-associate-2>
     [export_form_vars template_id]
     
     Category: 
     <select name=category_id>
     "
     
-    set selection [ns_db select $db "select category_id, category_name
+    db_foreach get_remaining_categories "select category_id, category_name
     from ec_categories
-    where category_id not in (select category_id from ec_category_template_map where template_id=$template_id)"]
+    where category_id not in (select category_id from ec_category_template_map where template_id=:template_id)" {
     
-    while { [ns_db getrow $db $selection] } {
-	set_variables_after_query
-	ns_write "<option value=\"$category_id\">$category_name\n"
+
+	append page_html "<option value=\"$category_id\">$category_name\n"
     }
     
-    ns_write "</select>
+    append page_html "</select>
     <input type=submit value=\"Associate\">
     </form>
     "
 }
 
-ns_write "[ad_admin_footer]
+append page_html "[ad_admin_footer]
 "
+
+
+doc_return  200 text/html $page_html

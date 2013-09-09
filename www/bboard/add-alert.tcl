@@ -1,30 +1,32 @@
-# $Id: add-alert.tcl,v 3.0 2000/02/06 03:32:11 ron Exp $
+# /www/bboard/add-alert.tcl
+ad_page_contract {
+    Adds a new bboard alert.
+
+    @param topic_id the topic id of the topic
+    @param topic the name of the topic to add a user alert for
+
+    @cvs-id add-alert.tcl,v 3.2.2.5 2000/09/22 01:36:41 kevin Exp
+} {
+    topic_id:integer,notnull
+    topic:notnull
+}
+
+# -----------------------------------------------------------------------------
+
 if {[ad_read_only_p]} {
     ad_return_read_only_maintenance_message
     return
 }
 
-set_the_usual_form_variables
-
-# topic_id, topic
-
-set db [bboard_db_gethandle]
-if { $db == "" } {
-    bboard_return_error_page
-    return
-}
-
 #check for the user cookie
 
-set user_id [ad_get_user_id]
+set user_id [ad_verify_and_get_user_id]
 
 ad_maybe_redirect_for_registration
 
 if { [bboard_get_topic_info] == -1 } {
     return
 }
-
-
 
 set keyword_limit_option ""
 if { [bboard_pls_blade_installed_p] == 1 } {
@@ -39,51 +41,47 @@ when a posting matches <em>at least one</em> of the keywords.
 Keywords are matched against the subject line, message body, author
 name, and author email address. \]
 
-
 <P>
 
 "
 }
 
-
-ReturnHeaders
-
-ns_write "[bboard_header "Add Alert"]
+append page_content "[bboard_header "Add Alert"]
 
 <h2>Add an Alert</h2>
 
 [ad_context_bar_ws_or_index [list "index.tcl" [bboard_system_name]] [list [bboard_raw_backlink $topic_id $topic $presentation_type 0] $topic] "Add Alert"]
 
-
 <hr>
 
 "
-
 
 # our topic variable is about to get bashed
 set current_topic $topic
 set current_topic_id $topic_id
 
 # let's first see if this person has any existing alerts
-
-set selection [ns_db select $db "select bea.*, bea.rowid, bboard_topics.topic
-from bboard_email_alerts bea, bboard_topics
-where bea.user_id = $user_id
-and bboard_topics.topic_id = bea.topic_id
-order by frequency"]
-
 set counter 0
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
+
+db_foreach get_existing_user_alerts "
+select 
+  bea.*, 
+  bea.rowid, 
+  bboard_topics.topic
+from bboard_email_alerts bea, bboard_topics
+where bea.user_id = :user_id
+  and bboard_topics.topic_id = bea.topic_id
+order by frequency" {
+
     incr counter
     if { $valid_p == "f" } {
 	# alert has been disabled for some reason
 	set status "Disabled"
-	set action "<a href=\"alert-reenable.tcl?rowid=[ns_urlencode $rowid]\">Re-enable</a>"
+	set action "<a href=\"alert-reenable?rowid=[ns_urlencode $rowid]\">Re-enable</a>"
     } else {
 	# alert is enabled
 	set status "Enabled"
-	set action "<a href=\"alert-disable.tcl?rowid=[ns_urlencode $rowid]\">Disable</a>"
+	set action "<a href=\"alert-disable?rowid=[ns_urlencode $rowid]\">Disable</a>"
     }
     if { [bboard_pls_blade_installed_p] == 1 } {
 	append existing_alert_rows "<tr><td>$status<td>$action<td>$topic<td>$frequency<td>\"$keywords\"</tr>\n"
@@ -98,7 +96,7 @@ if  { $counter > 0 } {
     if { [bboard_pls_blade_installed_p] == 1 } {
 	set keyword_header "<th>Keywords</th>"
     }
-    ns_write "<h3>Your existing alerts</h3>
+    append page_content "<h3>Your existing alerts</h3>
 
 <blockquote>
 <table>
@@ -110,8 +108,7 @@ $existing_alert_rows
 "
 }
 
-
-ns_write "
+append page_content "
 
 <h3>Add a new alert</h3>
 
@@ -122,7 +119,7 @@ fit your interests.
 
 <p>
 
-<form method=POST action=\"add-alert-2.tcl\">
+<form method=POST action=\"add-alert-2\">
 <input name=topic type=hidden value=\"$current_topic\">
 <input name=topic_id type=hidden value=\"$current_topic_id\">
 
@@ -131,7 +128,7 @@ fit your interests.
 <P>
 
 <input name=frequency value=\"instant\" type=radio> Instantly (as soon as a posting is made)
-u
+
 <br>
 or...
 <br>
@@ -152,9 +149,11 @@ $keyword_limit_option
 
 </form>
 
-
-
 </form>
 
 [bboard_footer]
 "
+
+
+
+doc_return  200 text/html $page_content

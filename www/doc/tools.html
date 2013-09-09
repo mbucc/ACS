@@ -7,14 +7,14 @@
 <body bgcolor=#ffffff text=#000000>
 <h2>Tools</h2>
 
-part of the <a href="index.html">ArsDigita Community System</a>
+part of the <a href="index">ArsDigita Community System</a>
 by <a href="http://eveander.com/">Eve Andersson</a>
 
 <hr>
 
 <ul>
 <li>all scripts: <a href="/tools/">/tools/</a>
-<li>data model: <a href="/doc/sql/tools.sql">/doc/sql/tools.sql</a>
+<li>data model: <a href="/doc/sql/display-sql?url=/doc/sql/tools.sql">/doc/sql/tools.sql</a>
 </ul>
 
 <h3>The Big Idea</h3>
@@ -34,8 +34,8 @@ Files:
 
 <ul>
 <li>ispell-words
-<li>spell.tcl
-<li>spelling-dictionary-add-to.tcl
+<li>spell
+<li>spelling-dictionary-add-to
 <li>webspell
 </ul>
 
@@ -74,7 +74,7 @@ Say you have a form as follows, and you want the <code>email_body</code> to be s
 
 <blockquote>
 <pre>
-&lt;form method=post action="email-send.tcl"&gt;
+&lt;form method=post action="email-send"&gt;
 
 &lt;input type=text name="email_to" size=30&gt;
 &lt;input type=text name="email_subject" size=40&gt;
@@ -86,15 +86,15 @@ Say you have a form as follows, and you want the <code>email_body</code> to be s
 </pre>
 </blockquote>
 
-Change the action to <code>/tools/spell.tcl</code> and specify the 
+Change the action to <code>/tools/spell</code> and specify the 
 <code>var_to_spellcheck</code> and <code>target_url</code> as follows:
 
 <blockquote>
 <pre>
-&lt;form method=post action="/tools/spell.tcl"&gt;
+&lt;form method=post action="/tools/spell"&gt;
 
 &lt;input type=hidden name="var_to_spellcheck" value="email_body"&gt;
-&lt;input type=hidden name="target_url" value="/fullpath/email-send.tcl"&gt;
+&lt;input type=hidden name="target_url" value="/fullpath/email-send"&gt;
 
 &lt;input type=text name="email_to" size=30&gt;
 &lt;input type=text name="email_subject" size=40&gt;
@@ -120,7 +120,7 @@ Make sure that all scripts are executable and that the UNIX utility
 <p>
 
 The lovely spell checker was written by Jin Choi (<a href="mailto:jsc@arsdigita.com">jsc@arsdigita.com</a>) with some finishing touches by Eve Andersson 
-(<a href="eveander@arsdigita.com">eveander@arsdigita.com</a>).
+(<a href="mailto:eveander@arsdigita.com">eveander@arsdigita.com</a>).
 
 </ol>
 

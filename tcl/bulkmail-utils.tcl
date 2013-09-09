@@ -1,4 +1,13 @@
-util_report_library_entry
+# tcl/bulkmail-utils.tcl
+
+ad_library {
+    
+  Definitions for bulkmail multithreaded mail sending module
+  
+    @author gregh@arsdigita.com 
+    @cvs-id bulkmail-utils.tcl,v 3.4.2.2 2000/07/21 08:17:52 hqm Exp
+}
+
 
 proc_doc bulkmail_simple_checksum { string } "Computes a trivial checksum for a string.  The checksum is the sum of the ascii values for each character of the string.
 
@@ -39,7 +48,6 @@ proc_doc bulkmail_decode_key_code { key_code } "Given a key code, returns a list
     # Second piece is the simple checksum
     set checksum [lindex $code_pieces 1]
 
-
     # Compare the checksum to the checksum of the user_content.  Be careful
     # to lower the string case.
     if { [bulkmail_simple_checksum [string tolower $user_content]] != $checksum } {
@@ -57,7 +65,7 @@ proc_doc bulkmail_ansi_current_time {} "Returns the current server time in ANSI 
     return [ns_fmttime [ns_time] "%Y-%m-%d %T"]
 }
 
-proc_doc bulkmail_begin { db user_id { description "" } } "Initializes a new bulkmail instance.  Returns a bulkmail_id." {
+proc_doc bulkmail_begin { user_id { description "" } } "Initializes a new bulkmail instance.  Returns a bulkmail_id." {
     ns_share bulkmail_instances_mutex
     ns_share bulkmail_instance_mutexes_mutex
     ns_share bulkmail_instances
@@ -65,8 +73,8 @@ proc_doc bulkmail_begin { db user_id { description "" } } "Initializes a new bul
 
     ns_mutex lock $bulkmail_instances_mutex
     if { [catch {
-	set bulkmail_id [database_to_tcl_string $db "select bulkmail_id_sequence.nextval from dual"]
-	ns_db dml $db "insert into bulkmail_instances (bulkmail_id, creation_date, creation_user, description) values ($bulkmail_id, sysdate, $user_id, '[DoubleApos $description]')"
+	set bulkmail_id [db_nextval "bulkmail_id_sequence"]
+	db_dml add_new_instance "insert into bulkmail_instances (bulkmail_id, creation_date, creation_user, description) values (:bulkmail_id, sysdate, :user_id, :description])"
 	
 	ns_set put $bulkmail_instances $bulkmail_id [list 0 0]
     } errmsg] } {
@@ -85,7 +93,7 @@ proc_doc bulkmail_begin { db user_id { description "" } } "Initializes a new bul
     return $bulkmail_id
 }
 
-proc_doc bulkmail_end { db bulkmail_id } "Finalizes the info regarding the instance in bulkmail_instances" {
+proc_doc bulkmail_end {bulkmail_id } "Finalizes the info regarding the instance in bulkmail_instances" {
     ns_share bulkmail_db_flush_wait_event_mutex
     ns_share bulkmail_db_flush_wait_event
     ns_share bulkmail_instances_mutex
@@ -123,7 +131,7 @@ proc_doc bulkmail_end { db bulkmail_id } "Finalizes the info regarding the insta
 	ns_mutex unlock $bulkmail_finished_instances_mutex
 
 	# It was us, so let's finish up
-	if ![empty_string_p $n_sent] {
+#	if ![empty_string_p $n_sent] {
 	    # Remove this instance from the list of finished instances
 	    ns_mutex lock $bulkmail_finished_instances_mutex
 	    catch {
@@ -153,13 +161,13 @@ proc_doc bulkmail_end { db bulkmail_id } "Finalizes the info regarding the insta
 
 	    # Wahoo! We're all clear kid!
 	    break
-	}
+#	}
     }
 
     # Once everything is done, let's finalize the data
     # It should have already been done by the db_flush proc, but just in
     # case, let's set it here.
-    ns_db dml $db "update bulkmail_instances set end_date = sysdate where bulkmail_id = $bulkmail_id"
+    db_dml update_bulkmail_finish "update bulkmail_instances set end_date = sysdate where bulkmail_id = :bulkmail_id"
 
 }
 
@@ -443,14 +451,14 @@ proc_doc bulkmail_db_flush_wait {} "Run forever, waiting to flush message info t
 	    ns_mutex unlock $bulkmail_db_flush_queue_mutex
 
 	    if { [llength $flush_queue] > 0 } {
-		set db [ns_db gethandle]
-		ns_db dml $db "begin transaction"
+#		
+#		db_transaction {
 		foreach flushed_messages $flush_queue {
 		    foreach flush_entry $flushed_messages {
 			set bulkmail_id [lindex $flush_entry 0]
 			set user_id [lindex $flush_entry 1]
 			set sent_date [lindex $flush_entry 2]
-			ns_db dml $db "insert into bulkmail_log (bulkmail_id, user_id, sent_date) values ($bulkmail_id, $user_id, to_date('$sent_date', 'YYYY-MM-DD HH24:MI:SS'))"
+#			db_dml bulkmail_log "insert into bulkmail_log (bulkmail_id, user_id, sent_date) values ($bulkmail_id, $user_id, to_date('$sent_date', 'YYYY-MM-DD HH24:MI:SS'))"
 			
 		    }
 
@@ -468,44 +476,60 @@ proc_doc bulkmail_db_flush_wait {} "Run forever, waiting to flush message info t
 		    # We need to check if sent_count is empty.  This might occur
 		    # if bulkmail_end finished up before db_flush_wait.
 		    if ![empty_string_p $sent_count] {
-			ns_db dml $db "update bulkmail_instances set n_sent = $sent_count where bulkmail_id = $bulkmail_id"
+#			db_dml update_n_sent "update bulkmail_instances set n_sent = $sent_count where bulkmail_id = $bulkmail_id"
 		    }
 		    
 		}
-		ns_db dml $db "end transaction"
-		ns_db releasehandle $db
+#		}
+#		db_release_unused_handles
 	    }
 
 	    
 	} errmsg] } {
 	    ns_log Notice "Caught error: $errmsg in bulkmail_db_flush_wait"
-	    if { [info exists db] && ![empty_string_p $db] && [ns_db connected $db]} {
-		ns_db releasehandle $db
-	    }
-
 	}
 	# Unlock the event's mutex
 	ns_mutex unlock $bulkmail_db_flush_wait_event_mutex
     }
 }
 
-
-
 proc_doc bulkmail_get_current_host {} "Retrieves the smtp host to use and increments the index." {
     ns_share bulkmail_hosts_mutex
     ns_share bulkmail_hosts
     ns_share bulkmail_current_host_mutex
+    ns_share bulkmail_failed_hosts
+    ns_share bulkmail_failed_hosts_mutex
     ns_share bulkmail_current_host
 
+
+    set hosts_reset_p 0
+
     ns_mutex lock $bulkmail_hosts_mutex
+
     catch {
-	set current_host [lindex $bulkmail_hosts $bulkmail_current_host]
 	if {[llength $bulkmail_hosts] == 0} {
-	    ns_log Error "bulkmail_get_current_host: bulkmail_hosts is an empty list"
-	    spam_set_email_sending_p 0
+	    ns_log Error "bulkmail_get_current_host: bulkmail_hosts is an empty list. Resetting and sleeping 5 mins"
+	    
+	    set bulkmail_hosts [bulkmail_get_hostlist]
+	    
+	    catch { 
+		ns_mutex lock $bulkmail_failed_hosts_mutex
+		set bulkmail_failed_hosts [ns_set create -persist]
+		set hosts_reset_p 1
+	    }
+	    ns_mutex unlock $bulkmail_failed_hosts_mutex	    
+	    
+	    ns_mutex lock $bulkmail_current_host_mutex
+	    set bulkmail_current_host 0
+	    ns_mutex unlock $bulkmail_current_host_mutex
+
+
+	    if {$hosts_reset_p == 1} {
+		ns_sleep 300
+	    }
+
 	}
     }
-
     ns_mutex unlock $bulkmail_hosts_mutex
 
     ns_mutex lock $bulkmail_current_host_mutex
@@ -514,41 +538,58 @@ proc_doc bulkmail_get_current_host {} "Retrieves the smtp host to use and increm
 	if { $bulkmail_current_host >= [llength $bulkmail_hosts] } {
 	    set bulkmail_current_host 0
 	}
+	set current_host [lindex $bulkmail_hosts $bulkmail_current_host]
     }
     ns_mutex unlock $bulkmail_current_host_mutex
 
     return $current_host
 }
 
-# A quick hack to reset the hosts list if it is empty from too many failures -- hqm
-# This is probably the wrong place to put this code, we need
-# to better review where the loop is happening.
-proc_doc bulkmail_reset_hosts_if_needed {} {Hack to reset bulkmail hosts if list is empty} {
-   ns_share bulkmail_failed_hosts_mutex
-   ns_share bulkmail_failed_hosts
-   ns_share bulkmail_hosts_mutex
-   ns_share bulkmail_hosts
-   ns_share bulkmail_current_host
 
-    if {[llength $bulkmail_hosts] == 0} {
-	ns_log Error "bulkmail_reset_hosts_if_needed: bulkmail_hosts is an empty list!  Resetting host and failed_hosts list and sleeping 10 mins"
+proc_doc bulkmail_reset_hosts_list {} "Reset the list of mailer hosts to the default value" {
+    ns_share bulkmail_hosts_mutex
+    ns_share bulkmail_hosts
+    ns_share bulkmail_current_host_mutex
+    ns_share bulkmail_current_host
+    ns_share bulkmail_failed_hosts
+    ns_share bulkmail_failed_hosts_mutex
+
+    set hosts_reset_p 0
+
+    ns_mutex lock $bulkmail_hosts_mutex
+
+    catch {
+	ns_log Error "bulkmail_reset_hosts_list: Resetting hosts list"
+	
+	set bulkmail_hosts [bulkmail_get_hostlist]
 	
 	catch { 
-	    ns_mutex lock $bulkmail_hosts_mutex
-	    set bulkmail_hosts [bulkmail_get_hostlist]
-	}
-	ns_mutex unlock $bulkmail_hosts_mutex
-
-	catch { 
 	    ns_mutex lock $bulkmail_failed_hosts_mutex
-	    set bulkmail_failed_hosts [ns_set create -persist bulkmail_failed_hosts]
+	    set bulkmail_failed_hosts [ns_set create -persist]
+	    set hosts_reset_p 1
 	}
 	ns_mutex unlock $bulkmail_failed_hosts_mutex	    
-
+	
+	ns_mutex lock $bulkmail_current_host_mutex
 	set bulkmail_current_host 0
-	ns_sleep 600
+	ns_mutex unlock $bulkmail_current_host_mutex
     }
+    
+    ns_mutex unlock $bulkmail_hosts_mutex
+
+    ns_mutex lock $bulkmail_current_host_mutex
+    catch {
+	incr bulkmail_current_host
+	if { $bulkmail_current_host >= [llength $bulkmail_hosts] } {
+	    set bulkmail_current_host 0
+	}
+	set current_host [lindex $bulkmail_hosts $bulkmail_current_host]
+    }
+    ns_mutex unlock $bulkmail_current_host_mutex
+
+    return $current_host
 }
+
 
 proc_doc bulkmail_record_failed_host { host } "Records a host as failed.  If host has reached the acceptable failures threshhold, we delete it from the list of hosts." {
     ns_share bulkmail_failed_hosts_mutex
@@ -558,7 +599,6 @@ proc_doc bulkmail_record_failed_host { host } "Records a host as failed.  If hos
     ns_share bulkmail_current_host
 
     ns_log Notice "Processing failed host: $host"
-    bulkmail_reset_hosts_if_needed
 
     ns_mutex lock $bulkmail_failed_hosts_mutex
     catch {
@@ -597,7 +637,7 @@ proc_doc bulkmail_sweep_bounce_queue {} "Sweeps the bounce queue, handling bounc
 
     ns_log Notice "$bounce_dir\n$file_pattern"
 
-    set db [ns_db gethandle]
+    
 
     set n_bounces 0
     foreach file [glob -nocomplain $file_pattern] {
@@ -621,7 +661,7 @@ proc_doc bulkmail_sweep_bounce_queue {} "Sweeps the bounce queue, handling bounc
 	set bulkmail_id [lindex $details 0]
 	set user_id [lindex $details 1]
 	if {[catch {
-	    ns_db dml $db "insert into bulkmail_bounces (bulkmail_id, user_id) values ($bulkmail_id, $user_id)"
+	    db_dml update_bounce_info "insert into bulkmail_bounces (bulkmail_id, user_id) values ($bulkmail_id, $user_id)"
 	} errmsg] } {
 	    ns_log Notice "Error on bulkmail_bounce insert.  key_code: $key_code\ndetails: $details\n$errmsg"
 	} else {
@@ -632,7 +672,7 @@ proc_doc bulkmail_sweep_bounce_queue {} "Sweeps the bounce queue, handling bounc
     }
 
     if { $n_bounces > 0 } {
-	set rows_affected [ns_ora exec_plsql $db "declare
+	set rows_affected [db_dml handle_bounces "declare
 	counter number;
 	uid number;
 	cursor BOUNCING_IDS is
@@ -655,12 +695,12 @@ proc_doc bulkmail_sweep_bounce_queue {} "Sweeps the bounce queue, handling bounc
 	ns_log Notice "bulkmail bounce sweeper found $rows_affected bouncing ids."
     }
 
-    ns_db releasehandle $db 
+    db_release_unused_handles 
     ns_log Notice "Done sweeping bounce queue"
 }
     
 
-if { [ad_parameter BulkmailActiveP bulkmail 0] == 1 } {
+if { [ad_parameter BulkmailActiveP bulkmail] == 1 } {
 
     # start up the db_flush_wait proc
     ns_thread begindetached "bulkmail_db_flush_wait"
@@ -668,4 +708,4 @@ if { [ad_parameter BulkmailActiveP bulkmail 0] == 1 } {
 
 }
 
-util_report_successful_library_load
+

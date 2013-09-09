@@ -1,20 +1,22 @@
-# $Id: mapping-add.tcl,v 3.0 2000/02/06 03:27:43 ron Exp $
-#
 # /admin/referer/mapping-add.tcl
 #
-# by philg@mit.edu in 1998
-#
-# serves a form to the site administrator; takes no action
-#
 
-ns_return 200 text/html "[ad_admin_header "Add Lumping Pattern"]
+ad_page_contract {
+    serves a form to the site administrator; takes no action
+    @cvs-id mapping-add.tcl,v 3.3.2.4 2000/09/22 01:35:59 kevin Exp
+    @author Philip Greenspun (philg@mit.edu) in 1998
+} {
+}
+
+
+set page_content "[ad_admin_header "Add Lumping Pattern"]
 <h2>Add Lumping Pattern</h2>
 
-[ad_admin_context_bar [list "index.tcl" "Referrals"] [list "mapping.tcl" "Lumping Patterns"] "Add"]
+[ad_admin_context_bar [list "" "Referrals"] [list "mapping" "Lumping Patterns"] "Add"]
 
 <hr>
 
-<form action=mapping-add-2.tcl method=post>
+<form action=mapping-add-2 method=post>
 
 Referer headers matching the pattern: <i>(Example: http://www.altavista.com*)</i> <br>
 <input type=text name=glob_pattern size=70 maxlength=250><p>
@@ -89,12 +91,13 @@ q=(\[^& \]+)
 
 <p>
 
-
 <center>
 <input type=submit name=submit value=\"Add Pattern\">
 </center>
 </form>
 
-
 [ad_admin_footer]
 "
+
+doc_return  200 text/html $page_content
+

@@ -1,39 +1,41 @@
-# $Id: category-nuke.tcl,v 3.1 2000/03/09 22:14:56 seb Exp $
-#
-# /admin/categories/category-nuke.tcl
-#
-# by sskracic@arsdigita.com and michael@yoon.org on October 31, 1999
-#
-# confirmation page for nuking a category
-#
+# /www/admin/categories/category-nuke.tcl
+ad_page_contract {
 
-set_form_variables
+  Confirmation page for nuking a category.
 
-# category_id
+  @param category_id Category ID we're about to nuke
 
-set db [ns_db gethandle]
+  @author sskracic@arsdigita.com
+  @author michael@yoon.org 
+  @creation-date October 31, 1999
+  @cvs-id category-nuke.tcl,v 3.3.2.6 2000/09/22 01:34:27 kevin Exp
 
-if {[database_to_tcl_string $db "select count(child_category_id) from category_hierarchy where parent_category_id = $category_id"] > 0} {
+} {
+
+  category_id:naturalnum,notnull
+
+}
+
+
+if {[db_string have_children_p "select count(child_category_id) from category_hierarchy where parent_category_id = :category_id" ] > 0} {
     ad_return_error "Problem nuking category" \
 	"Cannot nuke category until all of its subcategories have been nuked."
     return
 }
 
-set category [database_to_tcl_string $db "select category from categories where category_id = $category_id"]
+set category [db_string category_name "select category from categories where category_id = :category_id" ]
 
-ns_db releasehandle $db
 
-ReturnHeaders
 
-ns_write "[ad_admin_header "Nuke category"]
+doc_return  200 text/html "[ad_admin_header "Nuke category"]
 
 <h2>Nuke category</h2>
 
-[ad_admin_context_bar [list index.tcl "Categories"] "Nuke category"]
+[ad_admin_context_bar [list index "Categories"] "Nuke category"]
 
 <hr>
 
-<form action=category-nuke-2.tcl method=post>
+<form action=category-nuke-2 method=post>
 
 [export_form_vars category_id]
 

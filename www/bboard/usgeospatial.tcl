@@ -1,28 +1,24 @@
-# $Id: usgeospatial.tcl,v 3.0 2000/02/06 03:35:13 ron Exp $
-set_the_usual_form_variables
+# /www/bboard/usgeospatial.tcl
 
-# topic, topic_id required
-
-set db [bboard_db_gethandle]
-if { $db == "" } {
-    bboard_return_error_page
-    return
-}
-
+ad_page_contract {
+    /www/bboard/usgeospatial.tcl
+    @author unknown
+    @creation-date unknown
+    @cvs-id usgeospatial.tcl,v 3.2.2.3 2000/09/22 01:36:58 kevin Exp
+} {
+    topic:trim
+    topic_id:integer
+} 
 
 if {[bboard_get_topic_info] == -1} {
     return
 }
 
-
-
-ReturnHeaders
-
-ns_write "[bboard_header "Pick a Region"]
+set page_content "[bboard_header "Pick a Region"]
 
 <h2>Pick a region</h2>
 
-for the $topic forum in <a href=\"index.tcl\">Discussion Forums</a> section of
+for the $topic forum in <a href=\"index\">Discussion Forums</a> section of
 <a href=\"[ad_pvt_home]\">[ad_system_name]</a>
 
 <hr>
@@ -36,12 +32,7 @@ for the $topic forum in <a href=\"index.tcl\">Discussion Forums</a> section of
 <p>
 "
 
-
 set region_text "<ul>\n"
-set selection [ns_db select $db "select epa_region, usps_abbrev, description 
-from bboard_epa_regions
-order by epa_region, usps_abbrev"]
-
 
 # Construct the string to display at the bottom for "Ten Geographic Regions"
 # as "region_text".
@@ -52,23 +43,33 @@ order by epa_region, usps_abbrev"]
 
 set last_region ""
 
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+db_foreach region "
+    select epa_region, 
+           usps_abbrev, 
+           description 
+    from   bboard_epa_regions
+    order by epa_region, 
+             usps_abbrev" { 
+		 
     if { $epa_region != $last_region } {
-        if { ![empty_string_p $last_region] } {
+
+
+	if { ![empty_string_p $last_region] } {
             append region_text ")\n"
         }
 	set last_region $epa_region
         set region${epa_region}_desc $description
         set region${epa_region}_url "usgeospatial-2.tcl?[export_url_vars topic topic_id epa_region]"
-	append region_text "<li><a href=\"usgeospatial-2.tcl?[export_url_vars topic_id topic epa_region]\">Region $epa_region</a>: <b>$description</b> ("
+	append region_text "<li><a href=\"usgeospatial-2?[export_url_vars topic_id topic epa_region]\">Region $epa_region</a>: <b>$description</b> ("
     }
     append region_text "$usps_abbrev "
 }
+
 append region_text "</ul>"
 
+db_release_unused_handles
 
-ns_write "
+append page_content "
           <a name=\"us_map\"><IMG USEMAP=\"#us_map\" SRC=\"graphics/forums_map.gif\"  ALT=\"US Regions\" height=314 width=548 border=0> 
           
 <map name=\"us_map\">
@@ -178,3 +179,5 @@ $region_text
 
 [bboard_footer]
 "
+doc_return  200 text/html $page_content
+

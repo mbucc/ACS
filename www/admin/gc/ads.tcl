@@ -1,13 +1,16 @@
-# $Id: ads.tcl,v 3.1 2000/03/11 00:45:10 curtisg Exp $
-# will display all ads or some number of days worth 
+# /www/admin/gc/ads.tcl
+ad_page_contract {
+    Will display all or some number of days' worth of ads.
 
-set_the_usual_form_variables
+    @author xxx
+    @creation-date unknown
+    @cvs-id ads.tcl,v 3.3.2.5 2000/09/22 01:35:17 kevin Exp
+} {
+    domain_id:integer
+    num_days:optional
+}
 
-# domain_id, optional num_days 
-
-set db [gc_db_gethandle]
-set selection [ns_db 1row $db "select * from ad_domains where domain_id = $domain_id"]
-set_variables_after_query
+db_1row all_ads_for_domain "select * from ad_domains where domain_id = :domain_id"
 
 if { ![info exists num_days] || [empty_string_p $num_days] || $num_days == "all" } {
     # all the ads 
@@ -22,13 +25,11 @@ if { ![info exists num_days] || [empty_string_p $num_days] || $num_days == "all"
     }
 }
 
-
 append html "[ad_admin_header "$domain Classified Ads"]
 
 <h2>Classified Ads</h2>
 
 [ad_admin_context_bar [list "index.tcl" "Classifieds"] [list "domain-top.tcl?domain_id=$domain_id" $full_noun] $description]
-
 
 <hr>
 
@@ -38,32 +39,39 @@ append html "[ad_admin_header "$domain Classified Ads"]
 
 "
 
-set selection [ns_db select $db "select classified_ad_id, one_line, primary_category,posted, last_modified as edited_date, originating_ip, users.user_id, email as poster_email, decode(last_modified, posted, 'f', 't') as ever_edited_p
+set items ""
+db_foreach domain_information "
+select
+  classified_ad_id,
+  one_line,
+  primary_category,posted,
+  last_modified as edited_date,
+  originating_ip,
+  users.user_id,
+  email as poster_email,
+  decode(last_modified, posted, 'f', 't') as ever_edited_p
 from classified_ads, users 
-where domain_id = $domain_id
+where domain_id = :domain_id
 and users.user_id = classified_ads.user_id
 and (sysdate <= expires or expires is null) $day_limit_clause
-order by classified_ad_id desc"]
-
-set items ""
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
+order by classified_ad_id desc" {
+    
     if { $originating_ip == "" } {
 	set ip_stuff ""
     } else {
 	set ip_stuff "(at 
-<a href=\"ads-from-one-ip.tcl?domain_id=$domain_id&originating_ip=[ns_urlencode $originating_ip]\">$originating_ip</a>)"
+<a href=\"ads-from-one-ip?domain_id=$domain_id&originating_ip=[ns_urlencode $originating_ip]\">$originating_ip</a>)"
     }
     append items "<li>$classified_ad_id $primary_category:
 $one_line<br>
 (from 
-<a href=\"ads-from-one-user.tcl?[export_url_vars domain_id user_id]\">$poster_email</a> $ip_stuff on $posted"
+<a href=\"ads-from-one-user?[export_url_vars domain_id user_id]\">$poster_email</a> $ip_stuff on $posted"
      if { $ever_edited_p == "t" } { 
 	 append items "; edited $edited_date"
      }
      append items ")
-\[<a target=another_window href=\"edit-ad.tcl?classified_ad_id=$classified_ad_id\">Edit</a> |
-<a target=another_window href=\"delete-ad.tcl?classified_ad_id=$classified_ad_id\">Delete</a> \]
+\[<a  href=\"edit-ad?classified_ad_id=$classified_ad_id\">Edit</a> |
+<a  href=\"delete-ad?classified_ad_id=$classified_ad_id\">Delete</a> \]
 
 "
 
@@ -77,5 +85,5 @@ append html "
 [ad_admin_footer]
 "
 
-ns_db releasehandle $db
-ns_return 200 text/html $html
+
+doc_return  200 text/html $html

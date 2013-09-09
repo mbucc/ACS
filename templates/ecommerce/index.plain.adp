@@ -22,7 +22,7 @@ if { $user_is_logged_on } {
 # embedded quotation marks (\") you add.)
 
 if { $gift_certificates_are_allowed } {
-    set gift_certificate_message "<a href=\"gift-certificate-order.tcl\">Order a Gift Certificate!</a>"
+    set gift_certificate_message "<a href=\"gift-certificate-order\">Order a Gift Certificate!</a>"
 } else {
     set gift_certificate_message ""
 }

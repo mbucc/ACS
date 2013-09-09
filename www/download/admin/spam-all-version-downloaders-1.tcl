@@ -1,73 +1,61 @@
-# File:     /admin/download/spam-all-version-downloaders-1.tcl
-# Date:     01/04/2000
-# Author :  ahmeds@mit.edu
-# Purpose: spams all users who downloaded this version
-#
-# $Id: spam-all-version-downloaders-1.tcl,v 3.0.6.3 2000/05/18 00:05:17 ron Exp $
+# /www/download/admin/spam-all-version-downloaders-1.tcl
+ad_page_contract {
+    spams all users who downloaded this version
+
+    @param version_id version we are spamming about
+    @param from_address the return address for the spam
+    @param subject the subject of the spam
+    @param message the spam
+    @param scope
+    @param group_id
+    
+    @author ahmeds@mit.edu
+    @creation-date 4 Jan 2000
+    @cvs-id spam-all-version-downloaders-1.tcl,v 3.7.2.5 2000/09/24 22:37:17 kevin Exp
+} {
+    version_id:integer,notnull
+    from_address:trim,notnull
+    subject:trim,notnull
+    message:trim,notnull
+    scope:optional
+    group_id:optional
+}
+
 # -----------------------------------------------------------------------------
-
-# Note: if page is accessed through /groups pages then group_id and group_vars_set are already set up in 
-#       the environment by the ug_serve_section. group_vars_set contains group related variables (group_id, 
-#       group_name, group_short_name, group_admin_email, group_public_url, group_admin_url, group_public_root_url,
-#       group_admin_root_url, group_type_url_p, group_context_bar_list and group_navbar_list)
-
-set_the_usual_form_variables
-# maybe scope, maybe scope related variables (group_id)
-# version_id from_address subject message
 
 ad_scope_error_check
 
-set db [ns_db gethandle]
-
-download_version_admin_authorize $db $version_id
+download_version_admin_authorize $version_id
 
 set exception_count 0
 set exception_text ""
 
-if { [empty_string_p $subject] && [empty_string_p $message] } {
-    incr exception_count
-    append exception_text "
-    <li>Both the subject and the body of the email can not be empty."
-}
+set email_list [list]
 
-set selection [ns_db select $db "
+db_foreach emails "
 select distinct u.email
 from  download_versions dv, download_log dl, users u
 where dl.version_id = dv.version_id
 and dl.user_id = u.user_id
-and dv.version_id = $version_id"]
-
-set counter 0
-set email_list [list]
-
-#build up the email list of receivers
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
-    
-    incr counter
+and dv.version_id = :version_id" {
 
     lappend email_list $email
-}
 
-if { $counter == 0 } {
-    # no recipients
-    incr exception_count
-    append exception_text "
-    <li>No recipients to receive this email" 
-}
-if { $exception_count > 0 } {
-    ad_scope_return_complaint $exception_count $exception_text $db
+} if_no_rows {
+
+    ad_scope_return_complaint 1 "<li>No recipients to receive this email"
     return
 }
 
-ns_db releasehandle $db
-ad_returnredirect view-one-version-report.tcl?[export_url_scope_vars version_id]
+
+db_release_unused_handles
+ad_returnredirect view-one-version-report?[export_url_scope_vars version_id]
 
 ns_conn close
 
-ns_log Notice "/download/admin/spam-all-version-downloaders-1.tcl:  sending spam"
+ns_log Notice "/download/admin/spam-all-version-downloaders-1:  sending spam"
 foreach receiver_email $email_list {
     ns_sendmail  $receiver_email $from_address $subject $message
     ns_log Notice "$receiver_email $from_address $subject $message"
 }
-ns_log Notice "/download/admin/spam-all-version-downloaders-1.tcl:  sent spam"
+ns_log Notice "/download/admin/spam-all-version-downloaders-1:  sent spam"

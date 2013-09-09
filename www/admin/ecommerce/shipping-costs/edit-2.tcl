@@ -1,15 +1,32 @@
-# $Id: edit-2.tcl,v 3.0.4.1 2000/04/28 15:08:56 carsten Exp $
-set_the_usual_form_variables
-# base_shipping_cost, default_shipping_per_item, weight_shipping_cost, add_exp_base_shipping_cost, add_exp_amount_per_item, add_exp_amount_by_weight
+#  www/admin/ecommerce/shipping-costs/edit-2.tcl
+ad_page_contract {
+    @param base_shipping_cost
+    @param default_shipping_per_item
+    @param weight_shipping_cost
+    @param add_exp_base_shipping_cost
+    @param add_exp_amount_per_item
+    @param add_exp_amount_by_weight
 
-set db [ns_db gethandle]
+  @author
+  @creation-date
+  @cvs-id edit-2.tcl,v 3.1.6.3 2000/07/21 03:57:04 ron Exp
+} { 
+    base_shipping_cost
+    default_shipping_per_item
+    weight_shipping_cost
+    add_exp_base_shipping_cost
+    add_exp_amount_per_item
+    add_exp_amount_by_weight
+}
 
-ns_db dml $db "update ec_admin_settings
-set base_shipping_cost = '$base_shipping_cost',
-default_shipping_per_item = '$default_shipping_per_item',
-weight_shipping_cost = '$weight_shipping_cost',
-add_exp_base_shipping_cost = '$add_exp_base_shipping_cost',
-add_exp_amount_per_item = '$add_exp_amount_per_item',
-add_exp_amount_by_weight = '$add_exp_amount_by_weight'"
+
+db_dml update_shipping_cost_settings "update ec_admin_settings
+set base_shipping_cost = :base_shipping_cost,
+default_shipping_per_item = :default_shipping_per_item,
+weight_shipping_cost = :weight_shipping_cost,
+add_exp_base_shipping_cost = :add_exp_base_shipping_cost,
+add_exp_amount_per_item = :add_exp_amount_per_item,
+add_exp_amount_by_weight = :add_exp_amount_by_weight"
+db_release_unused_handles
 
 ad_returnredirect "index.tcl"

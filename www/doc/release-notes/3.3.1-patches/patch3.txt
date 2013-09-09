@@ -1,0 +1,10 @@
+In this file: /tcl/ecommerce-defs.tcl
+
+Within this procedure: ec_return_product_file
+
+Change this:
+   regexp {/product-file/(.*)} $url match file_path
+to this:
+   regexp {/product-file/([^/]+/[^/]+/[^/]+)$} $url match file_path 
+   # take any ..'s out of file_path
+   regsub -all {\.\.} $file_path "" file_path

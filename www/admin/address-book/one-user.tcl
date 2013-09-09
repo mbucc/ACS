@@ -1,25 +1,29 @@
-# $Id: one-user.tcl,v 3.0 2000/02/06 02:44:50 ron Exp $
-#
-# /admin/address-book/one-user.tcl
-#
-# by philg@mit.edu on November 1, 1999
-#
-# a modified version of /address-book/records.tcl
-#  
+# /www/admin/address-book/one-user.tcl
+ad_page_contract {
+    a modified version of /address-book/records.tcl
+    note that owner_id is the user_id of the user who owns this module 
+    (when scope=user)
 
-set_the_usual_form_variables 0
+    @author philg@mit.edu
+    @creation-date 1 Nov 1999
+    @cvs-id one-user.tcl,v 3.2.2.6 2000/09/22 01:34:17 kevin Exp
 
-# user_id
-# maybe scope, maybe scope related variables (owner_id, group_id, on_which_group, on_what_id)
-# note that owner_id is the user_id of the user who owns this module (when scope=user)
+    @param user_id the user whose address book we are going to view.
+    
+} {
+    user_id:integer
+    scope:optional
+    owner_id:optional,integer
+    group_id:optional,integer
+    on_which_group:optional
+    on_what_id:optional,integer
+}
 
 
-set db [ns_db gethandle]
-
-set name [database_to_tcl_string $db "select first_names || ' ' || last_name from users where user_id=$user_id"]
+set name [db_string address_book_admin_get_names "select first_names || ' ' || last_name from users where user_id = :user_id"]
 
 append whole_page "
-[ad_admin_header "All Records owned by $name" $db ]
+[ad_admin_header "All Records owned by $name"]
 <h2> Records owned by $name </h2>
  
 [ad_admin_context_bar [list "index.tcl" "Address Book"] "One User"]
@@ -29,15 +33,21 @@ append whole_page "
 
 append whole_page "<blockquote>\n"
 
-set selection [ns_db select $db "select rowid
-from address_book 
-where user_id = $user_id 
-order by upper(last_name), upper(first_names)"]
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
-    append whole_page "[address_book_display_as_html [address_book_record_display $rowid "f"]]\n<p>\n"
-}
+set address_data [ns_set create]
+db_foreach address_book_admin_get_addresses "
+select first_names, last_name,
+       email, email2, 
+       line1, line2, 
+       city, usps_abbrev, zip_code, country,
+       phone_home, phone_work, phone_cell, phone_other, 
+       birthday, birthmonth, birthyear, 
+       notes
+from   address_book 
+where  user_id = :user_id
+order by upper(last_name), upper(first_names)" -column_set address_data {
 
+    append whole_page "[address_book_record_display $address_data "f"]\n<p>\n"
+}
 
 append whole_page "
 
@@ -46,6 +56,6 @@ append whole_page "
 [ad_footer]
 "
 
-ns_db releasehandle $db
 
-ns_return 200 text/html $whole_page
+
+doc_return  200 text/html $whole_page

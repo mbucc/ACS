@@ -1,10 +1,13 @@
-# $Id: domain-add.tcl,v 3.1 2000/03/10 23:58:49 curtisg Exp $
+# /www/gc/admin/domain-add.tcl
 
-set db [ns_db gethandle]
-set domain_id [database_to_tcl_string $db "select ad_domain_id_seq.nextval from dual"]
-ns_db releasehandle $db
+ad_page_contract {
+    @author
+    @creation-date
+    @cvs-id domain-add.tcl,v 3.3.2.9 2001/01/10 20:00:34 khy Exp
+} {}
 
-return 200 text/html "[ad_admin_header "Add a domain"]
+db_release_unused_handles
+doc_return  200 text/html "[ad_admin_header "Add a domain"]
 
 <h2>Add domain</h2>
 
@@ -12,11 +15,11 @@ return 200 text/html "[ad_admin_header "Add a domain"]
 
 <hr>
 
-<form method=post action=/user-search.tcl>
-<input type=hidden name=target value=\"/admin/gc/domain-add-2.tcl\">
-<input type=hidden name=passthrough value=\"full_noun domain\">
-<input type=hidden name=custom_title value=\"Choose a Member to Add as an Administrator\">
+<form method=post action=/user-search>
 
+<input type=hidden name=target value=\"/gc/admin/domain-add-2.tcl\">
+<input type=hidden name=passthrough value=\"domain_id full_noun domain\">
+<input type=hidden name=custom_title value=\"Choose a Member to Add as an Administrator\">
 <H3>Identity</H3>
 <table>
 <tr><td>Full domain name:<td><input type=text name=full_noun></tr>

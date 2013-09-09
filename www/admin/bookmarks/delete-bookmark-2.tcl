@@ -1,15 +1,16 @@
-# $Id: delete-bookmark-2.tcl,v 3.0.4.1 2000/04/28 15:08:24 carsten Exp $
-# delete-bookmark-2.tcl
-# admin version
-#
-# carries out the delete function
-#
-# by aure@arsdigita.com and dh@arsdigita.com
+# /www/admin/bookmarks/delete-bookmark-2.tcl
 
-set_the_usual_form_variables
-# bookmark_id
-
-
+ad_page_contract {
+    admin version
+    carries out the delete function
+    @param bookmark_id ID of bookmark to be deleted
+    @author David Hill (dh@arsdigita.com)
+    @author Aurelius Prochazka (aure@arsdigita.com)    
+    @creation-date June 1999  
+    @cvs-id delete-bookmark-2.tcl,v 3.2.2.5 2000/09/22 01:34:23 kevin Exp
+} {
+    {bookmark_id:integer}
+} 
 
 # --start error----------------------------------------
 set exception_text ""
@@ -25,24 +26,23 @@ if { $exception_count> 0 } {
     ad_return_complaint $exception_count $exception_text
     return 0
 }
+
 # -----------------------------------------------------
-
-set db [ns_db gethandle]
-
 # get the owner for this bookmark
-set owner_id [database_to_tcl_string $db "select owner_id from bm_list where bookmark_id=$bookmark_id"]
-
+set owner_id [db_string owner "select owner_id 
+                               from   bm_list 
+                               where  bookmark_id = :bookmark_id"]
 
 set sql_delete "
     delete from bm_list 
     where bookmark_id   in (select  bookmark_id
                         from    bm_list
                         connect by prior bookmark_id = parent_id
-                        start with parent_id = $bookmark_id)
-    or bookmark_id = $bookmark_id"
+                        start with parent_id = :bookmark_id)
+    or bookmark_id = :bookmark_id"
 
-if [catch {ns_db dml $db $sql_delete} errmsg] {
-    ns_return 200 text/html "<title>Error</title>
+if [catch {db_dml bm_delete $sql_delete} errmsg] {
+    doc_return  200 text/html "<title>Error</title>
     <h1>Error</h1>
     [ad_admin_contextbar [ad_admin_context_bar [list index.tcl Bookmarks] [list one-user.tcl?[export_url_vars owner_id] $owner_name's] [list edit-bookmark.tcl?[export_url_vars bookmark_id] Edit] Error]
     <hr>
@@ -57,12 +57,11 @@ if [catch {ns_db dml $db $sql_delete} errmsg] {
     return
 }
 
+# release the database handle
+db_release_unused_handles 
 
 # send the browser back to the url it was at before the editing process began
 ad_returnredirect one-user.tcl?owner_id=$owner_id
-
-
-
 
 
 

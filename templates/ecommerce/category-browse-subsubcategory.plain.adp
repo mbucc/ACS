@@ -29,7 +29,7 @@
 
 <p>
 
-<a href="mailing-list-add.tcl?category_id=<%= $the_category_id %>&subcategory_id=<%= $subcategory_id %>&subsubcategory_id=<%= $subsubcategory_id %>">Add yourself to the <%= $the_category_name %> mailing list!</a>
+<a href="mailing-list-add?category_id=<%= $the_category_id %>&subcategory_id=<%= $subcategory_id %>&subsubcategory_id=<%= $subsubcategory_id %>">Add yourself to the <%= $the_category_name %> mailing list!</a>
 
 </blockquote>
 

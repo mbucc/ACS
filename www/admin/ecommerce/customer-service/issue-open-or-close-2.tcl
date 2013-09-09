@@ -1,13 +1,29 @@
-# $Id: issue-open-or-close-2.tcl,v 3.0.4.1 2000/04/28 15:08:39 carsten Exp $
-set_the_usual_form_variables
-# issue_id, close_p, customer_service_rep
+# issue-open-or-close-2.tcl
 
-set db [ns_db gethandle]
+ad_page_contract { 
+    @param issue_id:naturalnum,notnull
+    @param close_p:notnull
+    @param customer_service_rep:naturalnum,notnull
+
+    @author
+    @creation-date
+    @cvs-id issue-open-or-close-2.tcl,v 3.1.6.4 2000/07/21 03:56:57 ron Exp
+} {
+    issue_id:naturalnum,notnull
+    close_p:notnull
+    customer_service_rep:naturalnum,notnull
+}
+# 
+
+
+
+
 
 if { $close_p == "t" } {
-    ns_db dml $db "update ec_customer_service_issues set close_date=sysdate, closed_by=$customer_service_rep where issue_id=$issue_id"
+    db_dml update_service_issue "update ec_customer_service_issues set close_date=sysdate, closed_by=:customer_service_rep where issue_id=:issue_id"
 } else {
-    ns_db dml $db "update ec_customer_service_issues set close_date=null where issue_id=$issue_id"
+    db_dml update_service_issue_state "update ec_customer_service_issues set close_date=null where issue_id=:issue_id"
 }
+db_release_unused_handles
 
 ad_returnredirect "issue.tcl?[export_url_vars issue_id]"

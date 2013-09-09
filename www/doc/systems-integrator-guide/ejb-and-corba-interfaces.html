@@ -1,0 +1,270 @@
+<html>
+
+<head>
+<title>	CORBA and EJB Interfaces to the ACS</title>
+<link rel="stylesheet" type="text/css" href="systems-integrator-guide.css">
+</head>
+
+<body>
+
+<h2>CORBA and EJB Interfaces to the ACS</h2> 
+
+by <a href='mailto:mayoff@arsdigita.com'>Rob Mayoff</a>
+
+<p>
+
+<a href="/doc/">ACS Documentation</a> :
+<a href="">Systems Integrator's Guide to the ACS </a> :
+CORBA and EJB Interfaces to the ACS
+
+<hr>
+
+<h2><font color=green face=courier>ACS4: Work In Progress</font></h2>
+
+<h3>Introduction: Why Remote Procedure Call Interfaces?</h3>
+
+The ArsDigita Community System already provides two interfaces: a web
+interface (HTML over HTTP), and a database schema.  Why would you want
+a remote procedure call interface, either CORBA or EJB?  Using a web
+interface programmatically is difficult because web interfaces are
+designed for humans.  Using the database directly is difficult because
+you must install Oracle client software wherever you wish to run your
+client.  Also, ...
+
+<p>
+
+&lt;<em>More introductory information here, e.g., the distinction
+between ACS acting as a CORBA/EJB server and ACS acting as a CORBA/EJB
+client</em>&gt;
+
+<h3>Client Scenarios</h3>
+
+The following scenarios describe how you might take advantage of the EJB
+interface for various purposes. The CORBA interface provides the same
+features.
+
+<h3>Scenario: ACS User Management</h3>
+
+You are adding an ACS to your network and you want to load it up with
+users from your other systems.  First, you'll want to look up a user by
+name or e-mail address to see if he already has an ACS user id:
+
+<blockquote><pre>
+// First try his e-mail address.
+UserRecord acs_user = <b>acs_user_home.get_user_by_email(
+    "mayoff@arsdigita.com")</b>;
+
+if (acs_user == null) {
+    // Not found; try his name.
+    acs_user = <b>acs_user_home.get_user_by_name("Rob",
+	"Mayoff")</b>;
+}
+
+if (acs_user != null) {
+    // Found him.
+    System.out.println("Rob Mayoff has user_id "
+	+ acs_user.user_id);
+}
+</pre></blockquote>
+
+If you could not find the user, then you'll want to create him:
+
+<blockquote><pre>
+if (acs_user == null) {
+    acs_user = new UserRecord();
+    acs_user.first_names = "Rob";
+    acs_user.last_name = "Mayoff";
+    acs_user.email = "mayoff@arsdigita.com";
+    acs_user.password = "dqd";
+    acs_user = <b>acs_user_home.create_user(acs_user)</b>;
+    System.out.println("Rob Mayoff has user_id "
+	+ acs_user.user_id);
+}
+</pre></blockquote>
+
+Later on, when you want to come back to the user, you can access him by
+ACS user id:
+
+<blockquote><pre>
+UserRecord acs_user = <b>acs_user_home.get_user_by_id(123)</b>;
+</pre></blockquote>
+
+<h3>Scenario: Ticket Summary</h3>
+
+You use the ACS ticket tracker as part of your customer support
+operation and you want to produce a report that includes statistics
+about tickets.
+
+<p>
+
+...
+
+<h3>Scenario: Authorization</h3>
+
+You want to use the ACS permissions system to control the actions of
+users on another system.
+
+<p>
+
+...
+
+<hr>
+
+<h3>Notes from 2000-6-5 Conference</h3>
+<ul>
+
+	<li>Higher-level: what does the interface let you do?
+	<li>Discuss performance: describe how to use our system, and how to
+	move to a higher-performance configuration
+
+	<p>
+	Interfaces:
+
+	<li>register a new user, get user_id back
+	<li>submit ticket:
+	<li>what projects are available in the ticket tracker, and what
+		subprojects?
+
+	<p>
+	<li>search for user by last name, e-mail address, etc.
+	<li>look for ad_permission_p type functions in PL/SQL
+	<li>describe scenarios: e.g. web application talking to a remote ACS
+
+	<p>
+	<li>Divide into different IDL modules for different parts of ACS
+	<li>See about getting package manager to automatically install
+	EJB/CORBA interfaces
+
+</ul>
+
+
+<hr>
+
+<h3>Package Names</h3>
+
+The Java interfaces for the ACS/CORBA interface are in the Java package
+<code>com.arsdigita.CORBA.ACS</code>. The Java interfaces for the
+ACS/EJB interface are in <code>com.arsdigita.EJB.ACS</code>.
+
+<p> We can't just use <code>com.arsdigita.ACS</code> for both, because
+we might reasonably want a <code>User</code> class in each interface,
+but the class must be defined differently under the two frameworks.
+
+<h3>Object References</h3>
+
+Although the CORBA and EJB specifications support object-based designs,
+Oracle's implementations (as of 8.1.6) are somewhat deficient. Oracle
+lacks the ability to create persistent object references (in either
+framework) that span client and server lifetimes. This means that once
+a client has obtained a reference to some remote Oracle object, it has
+no way of saving that reference such that some possibly different client
+can use it at an arbitrary time in the future to access the remote
+object.
+
+<p> Concretely, here's what you'd like:
+
+<ul>
+	<li>The client looks up the <code>/acs</code> object in the
+	registered object directory.
+	<li>The client calls <code>ad = acs.get_most_recent_ad(some_user_id)</code>
+	and gets back a reference to a ClassifiedAd.
+	<li>The client calls <code>sor = orb.object_to_string(ad)</code>, and writes
+	this stringified object reference to a file.
+	<li>The client exits.
+	<li>Time passes.
+	<li>The client runs again.
+	<li>The client reads the object reference from the file and calls
+	<code>ad = orb.string_to_object(sor)</code> on it.
+	<li>The client calls <code>one_line = ad.get_one_line()</code> to get
+	the one-line description of the ad.  If the in-memory object no longer
+	exists, the server recreates it from the database.
+</ul>
+
+This all seems logical and reasonable. Since the ClassifiedAd object is
+backed by Oracle, it shouldn't matter if, during the "time passes" step,
+you take Oracle down, move the database to new hardware, give it the old
+IP address, and fire up Oracle again.
+
+<p> There are CORBA implementations that allow this sort of behavior,
+by encoding the object's type and primary key in the object reference.
+Alas, Oracle's isn't one of them. When the client exits after its first
+run, all the remote objects it had accessed are destroyed. When you get
+to the last step, and Oracle is your server, you get an OBJECT_NOT_EXIST
+exception. Oracle's ORB is too primitive to recreate objects from object
+references.
+
+<p> Instead, the client must do this:
+
+<ul>
+	<li>The client looks up the <code>/acs</code> object in the
+	registered object directory.
+	<li>The client calls <code>ad = acs.get_most_recent_ad(some_user_id)</code>
+	and gets back a reference to a ClassifiedAd.
+	<li>The client calls <code>id = ad.get_id()</code>, and writes
+	this stringified object reference to a file.
+	<li>The client exits.
+	<li>Time passes.
+	<li>The client runs again.
+	<li>The client looks up the <code>/acs</code> object in the
+	registered object directory.
+	<li>The client reads the classified ad id from disk, calls
+	calls <code>ad = acs.get_ad_by_id(id)</code>,
+	and gets back a reference to a ClassifiedAd.
+	<li>The client calls <code>one_line = ad.get_one_line()</code> to get
+	the one-line description of the ad.
+</ul>
+
+<p> Admittedly, the sequence doesn't look all that different. But now
+the client can't just use the object reference directly in its second
+run. It must look up the factory object in the namespace when it might
+otherwise not need to, and it must call <code>get_ad_by_id</code>
+instead of <code>string_to_object</code>. Both of these are extra
+round-trips to the server (<code>string_to_object</code> does not
+require a trip to the server). The client also needs to tell the
+server how to recreate the object by using a class-specific method,
+<code>get_ad_by_id</code>.
+
+<p> Similar arguments apply for Oracle's EJB implementation. The EJB
+specification defines the concept of "entity beans", which would be
+persistent across runs, etc. But Oracle doesn't implement entity beans
+as of 8.1.6.
+
+<h3>Authentication</h3>
+
+<p> Since we don't require each user to have a separate Oracle identity,
+we can't use the Oracle CORBA security features for authentication and
+authorization. Instead, after the client has authenticated itself to
+Oracle using some shared identity, it looks up the ACS login object in
+the namespace and calls its <code>login</code> method, in an e-mail
+address and password. The <code>login</code> method raises an exception
+on authentication failure. On success, it returns a new object that
+knows the user's identity and provides methods for accessing the ACS.
+
+<h3>Dates</h3>
+
+CORBA does not define a standard way of representing dates and times.
+(In the EJB interface we can just use <code>java.util.Date</code>, which
+is serializable.)  There are basically three possibilities:
+
+<ol>
+
+	<li> Pass dates as strings in 'YYYY-MM-DD HH24:MI:SS' format.
+
+	<li> Pass dates in a structure containing separate fields for year,
+	month, day, etc.  This basically means parsing the format from #1 on
+	the server side instead of the client side.
+
+	<li> Pass dates as seconds since the UNIX epoch. This style sends the
+	least data on the wire and has direct support in the Java and C
+	standard libraries.
+
+</ol>
+
+<hr>
+
+<a href="mailto:mayoff@arsdigita.com">
+<address>mayoff@ardigita.com</address>
+</a>
+
+</body>
+</html>

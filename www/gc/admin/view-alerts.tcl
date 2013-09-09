@@ -1,18 +1,22 @@
-# $Id: view-alerts.tcl,v 3.1 2000/03/10 23:58:51 curtisg Exp $
-set_the_usual_form_variables
+# view-alerts.tcl
 
-# domain_id
+ad_page_contract {
+    @author
+    @creation-date
+    @cvs-id view-alerts.tcl,v 3.3.2.7 2000/09/22 01:38:00 kevin Exp
 
-set db [ns_db gethandle]
+    @param domain_id
+} {
+    domain_id:naturalnum,notnull
+}
 
 ad_maybe_redirect_for_registration
-
 set admin_id [ad_get_user_id]
 
-set domain [database_to_tcl_string $db "select domain
-from ad_domains where domain_id = $domain_id"]
+set domain [db_string gc_admin_view_alerts_domain_get "select domain
+                                  from ad_domains where domain_id = :domain_id"]
 
-if ![ad_administration_group_member $db "gc" $domain $admin_id] {
+if ![ad_administration_group_member "gc" $domain $admin_id] {
     ad_return_error "Unauthorized" "Unauthorized" 
     return
 }
@@ -35,20 +39,20 @@ append html "[ad_header "Alerts for $domain"]
 
 "
 
-
-set selection [ns_db select $db "select cea.*, cea.alert_id,
-decode(valid_p,'f','t','f') as not_valid_p,
-upper(email) as upper_email, email
-from classified_email_alerts cea, users
-where cea.user_id = users.user_id
-and domain_id = $domain_id
-order by not_valid_p, upper_email"]
+set sql {
+    select cea.*, cea.alert_id, decode(valid_p,'f','t','f') as not_valid_p,
+           upper(email) as upper_email, email
+    from classified_email_alerts cea, users
+    where cea.user_id = users.user_id
+    and domain_id = :domain_id
+    order by not_valid_p, upper_email
+}
 
 set seen_any_enabled_p 0
 set seen_disabled_p 0
 
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
+db_foreach gc_admin_view_alerts_list $sql {
+    
     if { $valid_p == "f" } {
 	# we're into the disabled section
 	if { $seen_any_enabled_p && !$seen_disabled_p } {
@@ -59,11 +63,11 @@ while {[ns_db getrow $db $selection]} {
 	    }
 	    set seen_disabled_p 1
 	}
-	set action "<a href=\"alert-toggle.tcl?[export_url_vars alert_id domain_id]\">Re-enable</a>"
+	set action "<a href=\"alert-toggle?[export_url_vars alert_id domain_id]\">Re-enable</a>"
     } else {
 	# alert is enabled
 	set seen_any_enabled_p 1
-	set action "<a href=\"alert-toggle.tcl?[export_url_vars alert_id domain_id]\">Disable</a>"
+	set action "<a href=\"alert-toggle?[export_url_vars alert_id domain_id]\">Disable</a>"
     }
     if { [bboard_pls_blade_installed_p] == 1 } {
 	append html "<tr><td>$email<td>$action<td>$frequency<td>\"$keywords\"</tr>\n"
@@ -81,7 +85,7 @@ system then just type these addresses into the form below and the
 alerts will be flushed from the database.  Place spaces between the
 email addresses (but no actual carriage returns).
 
-<form method=POST action=delete-email-alerts.tcl>
+<form method=POST action=delete-email-alerts>
 [export_form_vars domain_id]
 
 <textarea name=bad_addresses wrap=virtual rows=10 cols=60></textarea>
@@ -95,5 +99,5 @@ email addresses (but no actual carriage returns).
 [ad_admin_footer]
 "
 
-ns_db releasehandle $db
-ns_return 200 text/html $html
+db_release_unused_handles
+doc_return  200 text/html $html

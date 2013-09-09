@@ -1,17 +1,33 @@
-# $Id: project-close.tcl,v 3.0.4.1 2000/04/28 15:11:37 carsten Exp $
-ad_page_variables {
-    project_id
+# /www/tickets/admin/project-close.tcl
+ad_page_contract {
+    Use this page to close a project (i.e. set the end date to today.)
+    Or, use it to reopen a project.
+
+    @param project_id the projects we are closing
+    @param reopen are we secretly reopening the project
+    @param return_url where to go afterwards
+
+    @author original author unknown
+    @author Kevin Scaldeferri (kevin@caltech.edu)
+    @cvs-id project-close.tcl,v 3.1.6.5 2000/07/21 04:04:42 ron Exp
+} {
+    project_id:integer,notnull
     {reopen 0}
-    {return_url {/ticket/admin/}}
+    {return_url "/ticket/admin/"}
 }
 
-set db [ns_db gethandle]
-set user_id [ad_get_user_id]
+# -----------------------------------------------------------------------------
+
+set user_id [ad_verify_and_get_user_id]
 
 if {$reopen} {
-    ns_db dml $db "update ticket_projects set end_date = null where project_id = $project_id"
+    db_dml project_reopen "
+    update ticket_projects set end_date = NULL 
+    where project_id = :project_id" 
 } else { 
-    ns_db dml $db "update ticket_projects set end_date = sysdate where project_id = $project_id"
+    db_dml project_close "
+    update ticket_projects set end_date = sysdate 
+    where project_id = :project_id" 
 }
 
 ad_returnredirect $return_url

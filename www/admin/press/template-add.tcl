@@ -1,21 +1,32 @@
-# Add a new press release template
-#
-# Author: ron@arsdigita.com, December 1999
-#
-# $Id: template-add.tcl,v 3.0.4.1 2000/03/15 20:39:18 aure Exp $
-# -----------------------------------------------------------------------------
+# /www/admin/press/template-add.tcl
+
+ad_page_contract {
+
+    Add a new press release template
+
+    @author  Ron Henderson (ron@arsdigita.com)
+    @created December 1999
+    @cvs-id  template-add.tcl,v 3.2.2.6 2001/01/11 23:17:17 khy Exp
+} {
+}
 
 # Grab the site-default template to initialize this template
 
-set db      [ns_db gethandle]
-set default [database_to_tcl_string $db "
-select template_adp from press_templates where template_id=1"]
+set default [db_string default_template "
+select template_adp 
+from   press_templates 
+where  template_id = 1"]
 
-ns_db releasehandle $db
+# Grab a template id for double-click protection
+
+set template_id [db_string template_id "
+select press_template_id_sequence.nextval from dual"]
+
+db_release_unused_handles
 
 # Now write out the form...
 
-ns_return 200 text/html "
+doc_return  200 text/html "
 [ad_admin_header "Add a Template"]
 
 <h2>Add a Template</h2>
@@ -26,6 +37,7 @@ ns_return 200 text/html "
 
 <form method=post action=template-preview>
 <input type=hidden name=target value=template-add-2>
+[export_form_vars -sign template_id]
 <table>
 <tr>
   <td align=right><b>Template Name</b>:</td>
@@ -62,6 +74,4 @@ refer to the following variables:
 </dl>
 
 [ad_admin_footer]"
-
-
 

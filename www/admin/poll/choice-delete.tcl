@@ -1,41 +1,51 @@
-# $Id: choice-delete.tcl,v 3.1.4.1 2000/04/28 15:09:13 carsten Exp $
-# choice-delete.tcl  Nuke a choice.
-#
-# since choices are light-weight, don't require confirmation
+# /admin/poll/choice-delete.tcl
 
-
-set_form_variables
-
-# expects choice_id, poll_id
-
-set db [ns_db gethandle]
+# www/admin/poll/choice-delete.tcl
+ad_page_contract {
+    Deletes one poll choice.
+    @param choice_id the ID of the choice to be deleted
+    @param poll_id the ID of the poll selected
+    @author Michael Bryzek (mbryzek@arsdigita.com)
+    @creation-date 8 July 2000
+    @cvs-id choice-delete.tcl,v 3.4.2.5 2000/09/09 21:05:15 kevin Exp
+} {
+    choice_id:notnull,naturalnum
+    poll_id:notnull,naturalnum
+}
 
 set delete_sql "
 delete from poll_choices
-  where choice_id = $choice_id
+  where choice_id = :choice_id
 "
 
-if [catch { ns_db dml $db $delete_sql } errmsg ] {
-    ad_return_error "Error deleting choice" "Here is
-what the database returned:
-<p>
-<blockquote>
-<pre>
-$errmsg
-</pre>
-</blockquote>
+if [catch { db_dml delete_choice $delete_sql } errmsg ] {
+    if {[db_string n_votes "
+    select count(*) from poll_user_choices
+    where choice_id = :choice_id"] > 0} {
+	ad_return_complaint 1 "<li>You cannot delete a choice for which people have already voted."
+	return
+    } else {
+	#something wacky went wrong 
+	ad_return_error "Error deleting choice" "
+	Something went wrong with the delete. Here is
+	what the database returned:
+	<p>
+	<blockquote>
+	<pre>
+	$errmsg
+	</pre>
+	</blockquote>
 
-Probably this is because users have already recorded results for this
-choice.
-"
-    return
+	"
+	return
+    }
 }
+
+db_release_unused_handles
 
 # update memoized choices
 
-validate_integer "poll_id" $poll_id
 util_memoize_flush "poll_labels_internal $poll_id"
 
-ad_returnredirect "one-poll.tcl?[export_url_vars poll_id]"
-
+ad_returnredirect "one-poll?[export_url_vars poll_id]"
 

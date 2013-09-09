@@ -1,11 +1,13 @@
-# $Id: ad-antispam.tcl,v 3.1 2000/02/09 11:01:47 davis Exp $
-#
-# ad-antispam.tcl by philg@mit.edu on April 18, 1999
-#
-# utilities to block out troublesome people
-# 
+# /tcl/ad-antispam.tcl
 
-util_report_library_entry
+ad_library {
+
+    utilities to block out troublesome people
+
+    @author  philg@mit.edu
+    @created April 18, 1999
+    @cvs-id  ad-antispam.tcl,v 3.3.2.1 2000/09/14 07:36:27 ron Exp
+}
 
 proc_doc ad_spammer_ip_p {} "Calls ns_conn peeraddr and then tries to figure out if it matches the IP range of a known spammers." {
     set glob_patterns [ad_parameter_all_values_as_list IPglob antispam]
@@ -57,26 +59,31 @@ proc_doc ad_handle_spammers {} "Returns an appropriate page if we think it is a 
 	    ad_pretend_to_be_broken
 	} else {
 	    # just tell the guy
-	    ad_return_complaint 1 "<li>The computer that you're using has been blocked from photo.net (or perhaps a whole range of computers).\n"
+	    ad_return_complaint 1 "<li>The computer that you're using has been blocked from [ad_system_name] (or perhaps a whole range of computers).\n"
 	}
 	# blow out of 2 levels (i.e., terminate the caller)
 	return -code return
     } 
 }
 
-proc_doc ad_check_for_naughty_html {user_submitted_html} {Returns a human-readable explanation if the user has used any of the HTML tags marked as naughty in the antispam section of ad.ini, empty string otherwise} {
+proc_doc ad_check_for_naughty_html {user_submitted_html} {
+
+Returns a human-readable explanation if the user has used any of the
+HTML tags marked as naughty in the antispam section of ad.ini, otherwise
+returns an empty string.
+
+} {
     set tag_names [string tolower [ad_parameter_all_values_as_list NaughtyTag antispam]]
     # look for a less than sign, zero or more spaces, then the tag
     if { ! [empty_string_p $tag_names]} { 
-        set the_regexp "< *([join $tag_names "\[ \n\t\r\f\]|"]\[ \n\t\r\f\])"
-        if [regexp $the_regexp [string tolower $user_submitted_html]] {
-            return "Because of abuse by spammmers, we can't accept submission of any HTML containing any of the following tags:  <code>[join $tag_names " "]</code>"
+        if [regexp "< *([join $tag_names "\[ \n\t\r\f\]|"]\[ \n\t\r\f\])" [string tolower $user_submitted_html]] {
+            return "<p>For security reasons we do not accept the submission of any HTML 
+	    containing the following tags:</p> <code>[join $tag_names " "]</code>" 
         }
     }
+
     # HTML was okay as far as we know
-        
-    return 
+    return ""
 }
 
-util_report_successful_library_load
 

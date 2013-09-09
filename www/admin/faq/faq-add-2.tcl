@@ -1,18 +1,19 @@
 # admin/faq/faq-add-2.tcl
 #
-#  Creates a new faq in the database after checking the input
-#  use a catch around the insert so double-clicks wont give an error
-#
-# by dh@arsdigita.com, Created on Dec 20, 1999
-#
-# $Id: faq-add-2.tcl,v 3.0.4.3 2000/04/28 15:08:59 carsten Exp $
-#-----------------------------------
 
-ad_page_variables {
-    {next_faq_id}
-    {faq_name "" qq}
-    {group_id}
+ad_page_contract {
+    Creates a new faq in the database after checking the input
+    use a catch around the insert so double-clicks wont give an error
+
+    @author dh@arsdigita.com
+    @creation-date Dec 20, 1999
+    @cvs-id faq-add-2.tcl,v 3.3.2.7 2001/01/10 18:38:11 khy Exp
+} {
+    faq_id:integer,notnull,verify
+    faq_name:optional
+    group_id:integer,optional
 }
+
 
 # -- form validation ------------------
 set error_count 0
@@ -28,45 +29,29 @@ if {$error_count > 0 } {
     return
 }
 
+
 #-------------------------------------
-
-set db [ns_db gethandle]
-
-
 if { [empty_string_p $group_id] } {
     set scope "public"
 } else {
     set scope "group"
 }
 
-ns_db dml $db "begin transaction"
+db_transaction {
+    set double_click_p [db_string faq_count_get "
+    select count(*)
+    from faqs
+    where faq_id = :faq_id"]
 
-set double_click_p [database_to_tcl_string $db "
-select count(*)
-from faqs
-where faq_id = $next_faq_id"]
-
-
-if {$double_click_p == "0"} {
-    # not a double click, make the new faq in the faqs table
-    ns_db dml $db "insert into faqs 
-    (faq_id, faq_name, [ad_scope_cols_sql])
-    values
-    ($next_faq_id, '$QQfaq_name', [ad_scope_vals_sql])"
+    if {$double_click_p == "0"} {
+	# not a double click, make the new faq in the faqs table
+	db_dml faq_name_insert "insert into faqs
+	(faq_id, faq_name, [ad_scope_cols_sql])
+	values
+	(:faq_id, :faq_name, [ad_scope_vals_sql])"
+    }
 }
 
-ns_db dml $db "end transaction"
+db_release_unused_handles
 
-ns_db releasehandle $db
-
-ad_returnredirect "one?faq_id=$next_faq_id"
-
-
-
-
-
-
-
-
-
-
+ad_returnredirect "one?[export_url_vars faq_id]"

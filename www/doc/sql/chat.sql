@@ -72,3 +72,7 @@ create index chat_msgs_by_user on chat_msgs ( creation_user );
 -- tablespace photonet_index;
 create index chat_msgs_by_recipient on chat_msgs ( recipient_user, creation_date );
 
+-- create the following chained index to entirely avoid hitting the chat_msgs table 
+-- when running the proc (chat_last_post) that is hit quite often.
+-- Note that this index is unique because chat_msg_id is unique
+create unique index chat_msgs_room_approved_id_idx on chat_msgs(chat_room_id, approved_p, chat_msg_id);

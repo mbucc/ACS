@@ -1,21 +1,27 @@
-# $Id: custom-field-status-change.tcl,v 3.0.4.1 2000/04/28 15:08:50 carsten Exp $
-set_the_usual_form_variables
-# field_identifier, active_p
+#  www/admin/ecommerce/products/custom-field-status-change.tcl
+ad_page_contract {
 
-# we need them to be logged in
-set user_id [ad_verify_and_get_user_id]
-
-if {$user_id == 0} {
-    
-    set return_url "[ns_conn url]?[export_entire_form_as_url_vars]"
-
-    ad_returnredirect "/register.tcl?[export_url_vars return_url]"
-    return
+  @author Eve Andersson (eveander@arsdigita.com)
+  @creation-date Summer 1999
+  @cvs-id custom-field-status-change.tcl,v 3.1.6.2 2000/07/22 07:57:38 ron Exp
+} {
+  field_identifier:sql_identifier
+  active_p
 }
 
-set db [ns_db gethandle]
+# we need them to be logged in
+ad_maybe_redirect_for_registration
+set user_id [ad_get_user_id]
 
-ns_db dml $db "update ec_custom_product_fields set active_p='$active_p', last_modified=sysdate, last_modifying_user='$user_id', modified_ip_address='[DoubleApos [ns_conn peeraddr]]'
- where field_identifier='$field_identifier'"
+set peeraddr [ns_conn peeraddr]
+
+db_dml status_update "
+update ec_custom_product_fields
+set active_p = :active_p,
+    last_modified = sysdate,
+    last_modifying_user = :user_id,
+    modified_ip_address = :peeraddr
+where field_identifier = :field_identifier
+"
 
 ad_returnredirect custom-fields.tcl

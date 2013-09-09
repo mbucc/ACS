@@ -1,0 +1,369 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html><head><title>Installing Red Hat Linux 6.2</title></head>
+<body bgcolor="#FFFFFF">
+
+
+<table width="100%">
+<tr><td width="33%" align="left" valign="top">
+<b>Previous</b>: <a href="requirements.html">Requirements</a></td>
+<td width="34%" align="center" valign="top"><h1>Installing Red Hat Linux 6.2</h1>
+<td width="33%" align="right" valign="top">
+<b>Next</b>: <a href="oracle.html">Installing Oracle 8.1.6</a></td>
+</tr>
+</table>
+
+
+<a href="/doc/">ACS Documentation</a> :
+<a href="">ACS Installation Guide</a> :
+Installing Red Hat Linux 6.2
+
+<hr>
+<p>
+<a name="Red Hat"></a>
+
+<h3>Table of Contents</h3>
+<ol>
+<li><a href="#requirements">Linux Requirements</a>
+<li><a href="#getting">Getting the Red Hat Distribution</a>
+<li><a href="#bootc">Boot your computer</a>
+<li><a href="#type">Select Installation Type</a>
+<li><a href="#partition">Partition your drives</a>
+<li><a href="#boot">Configure boot device</a>
+<li><a href="#packages">Select packages for installation</a>
+<li><a href="#users">Configure Users</a>
+<li><a href="#networking">Configure networking</a>
+<li><a href="#x">Configure X</a>
+<li><a href="#copy">Copy Files</a>
+<li><a href="#post">Acceptance Test</a>
+<li><a href="#appendixa">Appendix A: Network Configuration</a>
+</ol>
+<p>
+
+<h3>Linux Requirements</h3>
+Red Hat Linux is our preferred Linux distribution.  With <a href="http://www.redhat.com/">
+Red Hat</a>, we can get both Oracle
+and ACS to work out of the box with no trouble.  However, you can install the
+ArsDigita Community System (ACS) to run on any recent version of Linux.  Here are some
+of the key requirements that we have identified: 
+<p>
+<table cellspacing=5>
+<tr><th>Requirement<th>Reason</tr>
+<tr><td>recent kernel<td>A recent 2.2.x kernel is required.
+<tr><td>bash<td>Bash is the standard Linux shell.  We assume you are using
+bash for these instructions.  If you're not using bash, then you will need to
+substitute your shell's conventions for setting environment variables when appropriate.
+
+<tr><td>glib 2.1 (or greater)<td>You need recent versions of these libraries for Oracle to
+work properly.</tr>
+<tr><td>perl<td>A few parts of the ACS require <a href="http://www.perl.org/">perl</a>
+ to work correctly.  If you're doing serious web work, you'll want support for this
+language anyway.  If not following these instructions, you should ensure that there 
+is a symbolic link to your perl executable at <code>/usr/local/bin/perl</code></tr>
+<tr><td>egcs (recent version)<td>Without egcs, you don't have gcc and will
+be unable to compile the necessary software.</tr>
+</table><p>
+
+This document is not intended to be a full set of information on the installation of 
+<a href="http://www.redhat.com/">Red Hat Linux</a>.  For full information, consult the Red Hat 
+<a href="http://www.redhat.com/download/howto_download.html">documentation</a>.<p>
+
+<em>Caution:</em> Before you begin, keep in mind that your hard drive(s) will be 
+formatted and all data will be erased.  Be sure to have backups of all of the drives 
+in your system (not just the ones you are formatting) before beginning.<p>
+
+  <a name="getting"></a>
+  <a href="#top">TOP</a><br><h3>Getting the Red Hat Distribution for the Installation</h3><p>
+  
+  You have the following options:<p>
+  <ul>
+      <li>Install from CDROM.<p>
+      You can order an installation CDROM from Red Hat or download an ISO image and
+      burn one yourself.  Once you have the CDROM, you need to boot the computer.
+      If you have a recent BIOS and CDROM, you should be able to boot directly to the
+      CDROM.  Check your system's BIOS to see if this is an option and make sure the CDROM
+      is set to boot before the primary hard drive.  Then insert the CDROM, boot the computer
+      and Red Hat should start.  Otherwise, you will need a boot disk.  If you bought
+      a commercial Red Hat package, the boot disk is included.  Otherwise, you can easily create
+      one using one of the standard Red Hat images.  Red Hat offers more 
+      <a href="http://www.redhat.com/download/howto_download.html#download">information</a>.<p>
+      <li>Install over the Network.<p>
+      You can run the Red Hat install over the network if you have a fast enough connection.  
+      You'll need to copy roughly 300-600 MB of data, so be prepared.  You need to prepare
+      a bootdisk with the network image.  Instructions for downloading the image is 
+<a href="http://www.redhat.com/download/howto_download.html#download">here</a>.  Read this
+section of the <a href="http://www.redhat.com/support/docs/faqs/rhl_general_faq/FAQ-4.html#ss4.12">Red Hat FAQ</a> for further information on creating the bootdisk.  Make sure you use the
+<b>bootnet.img</b> to create your boot disk.
+</ul><p>
+      During the install, you will need to configure your computer's network.  
+       Find out the following before you begin:
+     <ul>  
+         <li>The brand and model number of your network card.
+         <li>Whether or not your network supports DHCP.  If it does not, determine your
+            <ul>
+                <li>Your IP Address.
+                <li>Your subnet mask.
+                <li>Your gateway address.
+                <li>Your DNS Server IP address.
+            </ul>
+         <li>If you're doing the network install, also determine a server name
+             and a Red Hat ftp directory path to do the install from.  Make sure you can login
+             to that server using <b>ftp</b> and verify that the path is correct.
+   </ul><p>
+  <a name="bootc"></a>
+  <a href="#top">TOP</a><br><h3>Boot your computer</h3><p>
+  Before proceeding, ensure that you have either:
+  <ul>
+      <li>A bootdisk with the <b>boot.img</b> and a Red Hat CDROM.
+      <li>A bootdisk with the <b>bootnet.img</b>.
+  </ul>
+  To begin the installation process, insert your boot media and boot your computer.
+  Red Hat should load and will present you with a <code>LILO</code> prompt.  
+  Read the instructions, but it should be safe to press enter.  The Red Hat kernel will then
+  load and the installation program will start.  You will see a series of dialogs.  Make 
+  your selection using the arrow keys on your keyboard and press <code>&lt;ENTER&gt;</code>
+  to proceed.<p>
+  <ul>
+     <li>What language should be used during the installation process?<p>
+     Select your preferred language, the default is <b>English</b>.<p>
+     <li>What type of keyboard do you have?<p>
+     Unless you know otherwise, you're probably typing at a <b>us</b> keyboard,
+     the default selection.<p>
+     <li>What type of media contains the packages to be installed?<p>
+     If you are installing from the CDROM, then ensure that the CDROM is in your
+     drive and select <b>CDROM</b>.  If you are doing a net install, select 
+     <b>FTP</b> and skip ahead to <a href="#appendixa">Appendix A</a> on network configuration<p>
+     Come back to the next  section when you are done.
+</ul>
+    <a name="type"></a>
+    <a href="#top">TOP</a><br><h3>Select Installation Type</h3><p>
+  If you all has gone well, you should now see a <b>Welcome</b> screen.  Press enter
+  and move on the next dialog.  You will be prompted to select an installation type.
+  You need to specify a <strong>Custom</strong> installation type in order to ensure you 
+  get all of the necessary packages.<p>
+
+  <a name="partition"></a>
+  <a href="#top">TOP</a><br><h3>Partition your drives</h3>
+  You need to partition your system;s hard drives before you can install the operating system.
+  Changing your partition table often entails wiping out all data on the disk, so be sure
+  to have a backup before proceeding.<p>
+  We specify a minimal partitioning scheme to simplify the installation.  If you have a 
+  single drive, you should create these partitions on /dev/hda (if you have IDE) or /dev/sda (if
+you have SCSI).  If you have multiple drives, you will need to configure your system more 
+carefully.
+  Production Linux servers require careful configuration of partitions in order to optimize
+  performance.  See this <a href="http://www.linuxdoc.org/HOWTO/mini/Partition.html">HOWTO</a> 
+ for more information.  Our simple configuration for a single large (> 3 Gb) drive follows. 
+ 
+<p>
+  <table>
+  <tr><th>Partition Name</th><th>Size</th><th>Partition Type <th>Description</th></tr>
+  <tr><td>/boot</td><td>15 Mb</td><td>Linux native<td>Stores the kernel and basic boot configuration.</td></tr>
+  <tr><td>/</td><td>3000 Mb+</td><td>Linux native<td>Stores the major part of the file system.</td></tr>
+  <tr><td>&lt;swap&gt;</td><td>2x RAM or 400 Mb (whichever is greater)</td>
+      <td>Linux swap<td>Virtual memory</td></tr>
+  </table><p>
+
+After specifying a partitioning scheme,
+press <b>OK</b> to continue.  You will be asked to confirm writing the partition table to disk, again
+select <b>OK</b>.  You will be asked to confirm the formatting of your disks.  On this screen, do 
+not enable  a check for bad blocks.  Although a bad block check can identify some defects in your 
+hard drive, it will significantly increase the amount of time it takes to perform the format.  Press
+<b>OK</b> to continue and wait while your drives are completely formatted.  <p>
+
+<a name="boot"></a>
+<a href="#top">TOP</a><br><h3>Configure boot device</h3>
+In order to boot your workstation, you either need to install LILO or have a bootdisk.  The LILO
+option is recommended.  LILO (<b>LI</b>nux<b>LO</b>ader) writes some data to your hard drive's 
+master boot record (MBR)
+which allows the computer to find the operating system.  It is possible to configure LILO
+to boot multiple OSes.  Check the <a href="http://www.linuxdoc.org/HOWTO/mini/LILO.html">
+LILO documentation</a> for more information.  We recommend creating an emergency boot disk and 
+installing LILO on the master boot record (MBR) of the first hard drive
+(usually /dev/hda).<p>  Select it and press enter.
+
+
+  <a name="packages"></a>
+  <a href="#top">TOP</a><br><h3>Select packages for installation</h3>
+
+The following packages, at a minimum, should be installed.  Feel free to install
+above and beyond this.  Also, you may choose to individually select packages.  It
+is not necessary to do this, but you may do this to add files to the distribution.
+<em>You should not remove any of these packages</em>.  
+You can also install RPMs post installation, so don't feel too concerned about this phase.
+<p>
+<table>
+<tr><th>Package</th><th>Description</th><th>Why You Need This</th></tr>
+<tr><td>Printer Support<td>Allows you to print<td>If you ever want to print anything.
+<tr><td>X Windows<td>Graphical system for UNIX<td>Needed for Oracle installation.
+<tr><td>GNOME<td>X Window Manager and GUI<td>Needed to run X properly
+<tr><td>Mail/WWW/Tools<td>Tools for checking mail, accessing the web.<td>Basic user programs.
+<tr><td>Networked Workstation<td>Basic tools for configuring networking.
+     <td>Necessary for server programs.
+<tr><td>Anonymous FTP<td>A FTP server<td>Useful for serving files to the world.
+<tr><td>Emacs<td>The Ultimate Text Editor.<td>Necessary for anything.
+<tr><td>Development<td>Basic compilers and scripting languages.
+    <td>Needed to compile AOLServer and various other programs.
+<tr><td>Kernel Development<td>Source for the Linux kernel.<td>Necessary for recompiling.
+<tr><td>Utilities<td>Basic utilities for Linux.<td>Necessary for accessing the system.
+</table><p>
+
+<a name="users"></a>
+<a href="#top">TOP</a><br><h3>Configure users</h3>
+Set a password for root.  You do not need to add any more users at this time.<p>
+When asked to configure authentication information, enable <b>Shadow Passwords</b> and
+<b>MD5 Passwords</b>.  This will increase the security of your system.
+<p>
+
+
+<a name="networking"></a>
+<a href="#top">TOP</a><br><h3>Configure Networking</h3>
+You may be asked to configure networking.  If your network uses DHCP, simply select
+that.  Otherwise, see <a href="#appendix1">Appendix 1</a>.
+<p>
+
+
+<a name="x"></a>
+<a href="#top">TOP</a><br><h3>X Configuration</h3>
+Red Hat should automatically detect your graphics card.  You can configure your system
+to use a graphical login, but this is not necessary for a production system.  If your monitor is
+not listed, select a "Generic" or "Generic Multisync monitor."<p>
+
+We recommend not enabling GUI startup automatically.  X requires an enormous amount of RAM
+and this will reduce the amount of memory available to Oracle.  You will need to install X
+in order to install Oracle and to use some of its tools, but you will not need it to
+run the ArsDigita Community System.
+
+<p>
+<a name="copy"></a>
+<a href="#top">TOP</a><br><h3>Copy Files</h3>
+At this point, sit back while Red Hat copies itself over.  This usually takes from between
+10 to 30 minutes.  Following this you will be asked to reboot your computer.  Take out the
+boot disk and eject the CDROM and then do so.  You should see a <code>LILO:</code> prompt.
+Press enter and Red Hat Linux should start to boot!<p>
+
+<a name="post"></a>
+<a href="#top">TOP</a><br><h3>Acceptance Test</h3>
+After bootup, you should see a screen like this:
+<pre>
+Red Hat Linux release 6.2 (Zoot)
+Kernel 2.2.14-5.0 on an i586
+
+localhost login:
+</pre>
+If you don't see a screen that offers a login, then something has gone wrong.
+Consult the <a href="http://www.redhat.com/support/docs/rhl62.html">Red Hat support documentation
+for further information</a>.<p>
+
+Make sure you can do the following.
+<ul>
+<li>Switch Virtual Consoles<p>
+Press <code>CTRL-ALT-F2</code> to switch to virtual console number 2.  Each virtual
+console allows you to login and enter commands to the Linux system.  There should be
+6 virtual consoles, accessible with <code>F1-F6</code>.  After you start X, you can
+switch to it using <code>CRTL-ALT-F7</code>. <p>
+<li> Login as <b>root</b>.<p>  Type <code>root</code>, press enter, and then enter the password,
+followed by enter.<p>
+
+<li>Add a user that you would like to use to logon.
+<pre>
+# useradd &lt;<i>username</i>&gt;
+# passwd &lt;<i>username</i>&gt;
+# exit	                          ; this will log you out.
+</pre>
+Login as the new user you created.<p>
+
+<li> Start X.<p>
+Type <code>startx</code> and a graphical environment should start.  If you get some
+errors and X dies, login as <b>root</b> and type 
+<pre>
+# /usr/X11R6/bin/Xconfigurator
+</pre>
+Follow the instructions to configure your X server.<p>
+Remember, you can switch between virtual consoles using <code>CTRL-ALT-F[1-6]</code>.
+
+
+<li> Open a terminal in X.<p>
+If you installed GNOME, try right-clicking on the desktop to get a pop-up menu.  Then
+left click "New Terminal."<p>  You should see an additional terminal.
+Click on its title bar and you should be able to type in it.<p>
+<li>Verify that you can launch X programs.<p>
+At the prompt, type the following.
+<pre>
+$ emacs    ; This will load the emacs editor, our favorite program for just about anything.
+; Quit emacs by doing CTRL-X CTRL-C
+</pre>
+If emacs does not start, try the following commands.  In general, if any X program does not start, please try this procedure.
+<pre>
+; Open a new terminal window:
+$ xhost +localhost
+
+; Switch back to the original terminal window:
+$ export DISPLAY=localhost:0.0
+$ emacs
+</pre>
+</ul>
+
+If all of this worked, congratulations, you now have a Red Hat Linux
+server at your disposal.  On to <a href="oracle.html">Oracle 8.1.6</a>.
+
+<a name="ssh"></a>
+
+<hr>
+
+<a name="appendixa"></a>
+<a href="#top">TOP</a><br><h3>Appendix A: Network Configuration</h3>
+At some point during the install process, depending on whether you are installing from the CDROM or from the network, you will need to configure your network.<p>  This screen is identified
+as <b>TCP/IP Configuration</b>.
+If your network is configured to use DHCP, simply enable DHCP and proceed.  Contact your
+network administrator or ISP provider to determine if DHCP is available.  Otherwise, 
+you will need to configure your network manually.  Enter the following information:
+<table>
+<tr><th>Field<th>Explanation
+<tr><td>IP Address<td>The primary address for your computer.  If your network uses static IPs,
+you must contact your network administrator to determine your IP address.
+<tr><td>Netmask <td>Usually, this is <b>255.255.255.0</b>.  However, only your network
+administrator can confirm this.
+<tr><td>Default gateway (IP) <td>The gateway address is the address of the network hardware
+that enables your computer to leave its local network and access the Internet.  
+<tr><td>Primary Nameserver<td> The domain name server (DNS) is used to map between human
+readable names (such as www.redhat.com) to IP addresses (such as 127.0.0.1).  
+</table><p>
+Be absolutely certain these values are correct before proceeding with the installation.  When
+you are ready, select OK and press enter to continue.  The install program will inform
+ you if there is an error in the configuration and allow you to fix it.<p>
+If you are doing a net install, you will be presented with a new screen, <b>FTP Setup</b>.
+Enter the ftp site name and the path to the Red Hat directory on that server and press <b>OK</b>
+to continue.  You should see a message:
+<pre>
+Loading second stage ramdisk
+</pre>
+If you don't see this message, either you have an incorrect ftp site name and/or Red Hat path, or
+the server is unreachable.  Make sure that you have the correct path or consult the official
+<a href="http://www.redhat.com/mirrors.html">Red Hat mirror list</a>.
+<p>
+
+
+<hr>
+<table width="100%">
+<tr><td width="33%" align="left" valign="top">
+<b>Previous</b>: <a href="requirements.html">Requirements</a></td>
+<td width="34%" align="center" valign="top"><b>Installing Red Hat Linux 6.2</b>
+<br>part of the
+<a href="index.html">ACS Installation Guide</a>
+<td width="33%" align="right" valign="top">
+<b>Next</b>: <a href="oracle.html">Installing Oracle 8.1.6</a></td>
+</tr>
+</table>
+<hr>
+<a href="mailto:bquinn@arsdigita.com">bquinn@arsdigita.com</a>
+
+
+</body>
+</html>
+
+
+
+
+
+
+

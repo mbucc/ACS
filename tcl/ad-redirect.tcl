@@ -1,9 +1,13 @@
-# $Id: ad-redirect.tcl,v 3.2.2.1 2000/04/28 15:08:10 carsten Exp $
-# ad-redirect.tcl by philg@mit.edu January 23, 1999
+ad_library {
 
-# parse the redirect section in the ad.ini file
-# and register redirects accordingly
-# this is documented in /doc/redirect.html
+    Parse the redirect section in the ad.ini file
+    and register redirects accordingly
+    this is documented in /doc/redirect.html.
+
+    @creation-date January 23, 1999
+    @author Philip Greenspun [philg@mit.edu]
+    @cvs-id ad-redirect.tcl,v 3.4.6.1 2000/07/17 14:03:50 bquinn Exp
+}
 
 # we don't want to run this multiple times, so let's register an ns_share
 
@@ -29,19 +33,19 @@ if !$ad_redirects_installed_p {
 	set to [lindex $pair 1]
 	if { $key == "Inherit" } {
 	    ns_log Notice "/tcl/ad-redirect.tcl will send anything underneath \"$from\" to \"$to\""
-	    ns_register_proc GET $from ad_returnredirect $to
+	    ad_register_proc GET $from ad_returnredirect $to
 	} elseif { $key == "JustOne" } {
 	    ns_log Notice "/tcl/ad-redirect.tcl will send \"$from\" to \"$to\""
-	    ns_register_proc -noinherit GET $from ad_returnredirect $to
+	    ad_register_proc -noinherit t GET $from ad_returnredirect $to
 	} elseif { $key == "Pattern" } {
 	    ns_log Notice "/tcl/ad-redirect.tcl will reconstruct URLs that start with \"$from\" into URLs that start with \"$to\""
 	    # we have to supply from and to patterns to a helper proc
-	    ns_register_proc GET $from ad_redirect_pattern $value
+	    ad_register_proc GET $from ad_redirect_pattern $value
 	} elseif { $key == "PatternPost" } {
 	    ns_log Notice "/tcl/ad-redirect.tcl will reconstruct forms posted to \"$from\" into URL GETs that start with \"$to\""
 	    # we have to supply from and to patterns to a helper proc
-	    ns_register_proc POST $from ad_redirect_pattern $value
-	    ns_register_proc GET $from ad_redirect_pattern $value
+	    ad_register_proc POST $from ad_redirect_pattern $value
+	    ad_register_proc GET $from ad_redirect_pattern $value
 	} else {
 	    ns_log Error "/tcl/ad-redirect.tcl unable to do anything with $key=$value"
 	}

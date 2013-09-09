@@ -1,15 +1,28 @@
-# $Id: basic-info-update.tcl,v 3.2 2000/03/10 01:12:19 mbryzek Exp $
+# /www/pvt/basic-info-update.tcl
 
-set user_id [ad_verify_and_get_user_id]
+ad_page_contract {
+    Displays form for currently logged in user to update his/her
+    personal information
 
-set db [ns_db gethandle]
+    @param return_url An optional url to redirect the user to, once the task is completed.
 
-set selection [ns_db 1row $db "select first_names, last_name, email, url, screen_name, bio from users where user_id=$user_id"]
-set_variables_after_query
+    @author Multiple
+    @cvs-id basic-info-update.tcl,v 3.5.2.2 2000/09/22 01:39:09 kevin Exp
+} {
+    return_url:optional
+}
 
-ReturnHeaders 
+set document ""
 
-ns_write "
+set user_id [ad_maybe_redirect_for_registration]
+
+db_1row user_info {
+    select first_names, last_name, email, url, screen_name, bio 
+    from users 
+    where user_id=:user_id
+} 
+
+append document "
 [ad_header "Update Basic Information"]
 
 <h2>Update Basic Information</h2>
@@ -18,7 +31,7 @@ in [ad_site_home_link]
 
 <hr>
 
-<form method=POST action=\"basic-info-update-2.tcl\">
+<form method=POST action=\"basic-info-update-2\">
 [export_form_vars return_url]
 <table>
 <tr>
@@ -47,3 +60,5 @@ in [ad_site_home_link]
 
 [ad_footer]
 "
+
+doc_return  200 text/html $document

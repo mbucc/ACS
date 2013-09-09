@@ -1,0 +1,25 @@
+In the file: /www/doc/sql/display-sql.tcl
+
+After the first check (for *..*) has been completed, add:
+if {[exists_and_not_null package_key]} {
+    set safe_p [regexp {/?(.*)} $url package_url]
+} else {
+    set safe_p [regexp {doc/(.*)} $url doc_url]
+}
+
+if {! $safe_p} {
+    ad_return_error "Invalid file location" "Can only display files in
+package or doc directory"
+    return
+}
+
+Replace
+  ns_returnfile 200 text/plain "[ns_info pageroot]$url"
+with
+  ns_returnfile 200 text/plain "[ns_info pageroot]/$doc_url"
+
+Replace
+  ns_returnfile 200 text/plain "[acs_package_root_dir $package_key]$url"
+with
+  ns_returnfile 200 text/plain "[acs_package_root_dir
+$package_key]/$package_url"

@@ -1,8 +1,10 @@
-# $Id: test.tcl,v 3.1 2000/03/11 00:45:12 curtisg Exp $
-# let's test out our spamming system to remind people who've placed ads
-
-set db [gc_db_gethandle]
-set db_sub [ns_db gethandle orasubquery]
+ad_page_contract {
+    let's test out our spamming system to remind people who've placed ads
+    
+    @author xxx
+    @date unknown
+    @cvs-id test.tcl,v 3.2.6.5 2000/09/22 01:35:23 kevin Exp
+}
 
 append html "<ul>"
 
@@ -29,20 +31,23 @@ Thank you for using [gc_system_name]
 (at [gc_system_url]).
 "
 
-set selection [ns_db select $db "select max(poster_email) as email, max(domain_id) as domain_id, max(last_modified) as most_recent_visit, min(last_modified) as least_recent_visit, count(*) as n_ads
-from classified_ads
-where (sysdate <= expires or expires is null)
-and (wanted_p <> 't' or sysdate > (last_modified + 30))
-and sysdate > last_modified + 6
-group by poster_email"]
+db_foreach classified_ads_report "
+     select
+       max(email) as email,
+       max(domain_id) as domain_id,
+       max(last_modified) as most_recent_visit,
+       min(last_modified) as least_recent_visit,
+       count(*) as n_ads
+     from classified_ads c, users u
+     where c.user_id = u.user_id
+     and (sysdate <= expires or expires is null)
+     and (wanted_p <> 't' or sysdate > (last_modified + 30))
+     and sysdate > last_modified + 6
+     group by email
+" {
+    
+    append html "<li>$email has $n_ads, most recent edit was $most_recent_visit; oldest ad hasn't been touched since $least_recent_visit.  URL:  <a href=\"[gc_system_url]edit-ad-2?poster_email=[ns_urlencode $email]&domain_id=$domain_id\">edit them</a>\n"
 
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
-    append html "<li>$email has $n_ads, most recent edit was $most_recent_visit; oldest ad hasn't been touched since $least_recent_visit.  URL:  <a href=\"[gc_system_url]edit-ad-2.tcl?poster_email=[ns_urlencode $email]&domain_id=$domain_id\">edit them</a>\n"
-    set sub_selection [ns_db select $db_sub "select classified_ad_id, posted, last_modified, one_line, expired_p(expires) as expired_p
-from classified_ads
-where poster_email = '[DoubleApos $email]'
-order by expired_p, classified_ad_id desc"]
     if { $n_ads == 1 } {
 	set subject_line "your ad in [gc_system_name]"
     } else {
@@ -50,8 +55,19 @@ order by expired_p, classified_ad_id desc"]
     }
     set body $generic_preamble
     set expired_section_started_yet_p 0
-    while { [ns_db getrow $db_sub $sub_selection] } {
-	set_variables_after_subquery
+    
+    db_foreach your_classified_ads {
+	select
+	classified_ad_id,
+	posted,
+	last_modified,
+	one_line,
+	expired_p(expires) as expired_p
+	from classified_ads c, users u
+	where c.user_id = u.user_id
+	and email = :email
+	order by expired_p, classified_ad_id desc
+    } {
 	if { $last_modified == $posted || $last_modified == "" } {
 	    set modified_phrase ""
 	} else {
@@ -66,9 +82,8 @@ order by expired_p, classified_ad_id desc"]
 	} else {
 	    set expired_phrase ""
 	}
-        append body "${posted}${expired_phrase} : $one_line $modified_phrase
-[gc_system_url]edit-ad-3.tcl?classified_ad_id=$classified_ad_id
-"
+        append body "${posted}${expired_phrase} : $one_line $modified_phrase [gc_system_url]edit-ad-3.tcl?classified_ad_id=$classified_ad_id
+        "
     }
     if { $expired_p == "t" } {
 	# there was at least one expired ad
@@ -86,6 +101,7 @@ $body
 
 append html "</ul>"
 
-ns_db releasehandle $db
-ns_db releasehandle $db_sub
-ns_return 200 text/html $html
+doc_return  200 text/html $html
+
+
+

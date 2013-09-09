@@ -1,15 +1,17 @@
-# $Id: sessions-info.tcl,v 3.0 2000/02/06 03:25:39 ron Exp $
-# called from ../users/one-user-specific-objects.tcl
+# /admin/monitoring/cassandracle/users/sessions-info.tcl
 
-set_form_variables 0
+ad_page_contract {
+    Show information about every current database session.
+
+    @author Dave Abercrombie (abe@arsdigita.com)
+    @creation-date 08 December 1999
+    @cvs-id sessions-info.tcl,v 3.3.2.5 2000/09/22 01:35:38 kevin Exp
+} {
+}
 
 set show_sql_p "t"
 
-# get database handle, start building page
-
-ReturnHeaders
-
-ns_write "
+set page_content "
 
 [ad_admin_header "Open sessions"]
 
@@ -17,20 +19,10 @@ ns_write "
 
 [ad_admin_context_bar  [list "/admin/monitoring" "Monitoring"] [list "/admin/monitoring/cassandracle" "Cassandracle"] "Open sessions"]
 
-<!-- version 1.1, 1999-12-08, Dave Abercrombie, abe@arsdigita.com -->
 <hr>
 "
 
-# make SQL
-
-set db [ns_db gethandle]
-# set up for dynamic re-ordering
-
-set order_by [export_var order_by username]
-
 set session_sql "
--- /users/sessions-info.tcl
--- get session info
 select
      v\$session.sid,
      username,
@@ -46,11 +38,10 @@ select
      status
 from v\$session, v\$session_wait
 where v\$session.sid = v\$session_wait.sid
-order by $order_by
+order by username
 "
 
 # start building table -----------------------------------
-
 
 # specify output columns       1         2         3              4         5                6         7           8           9           10 
 set description_columns [list "Session" "Serial#"  "Oracle user" "Program" "Seconds in wait"  "Active/Inactive" "UNIX user" "UNIX pid" "Type" "tty" "Logged in" "Hours ago" ]
@@ -60,21 +51,19 @@ foreach column_heading $description_columns {
 }
 
 # begin main table
-ns_write "
+append page_content "
 <table border=1>
 <tr>$column_html</tr>
 "
 
-# run query (already have db handle) and output rows
-set selection [ns_db select $db $session_sql]
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+# run query and output rows
+db_foreach mon_session_info $session_sql {
 
     # start row
     set row_html "<tr>\n"
 
     # 1) session
-    append row_html "   <td><a href=\"one-session-info.tcl?sid=$sid\">$sid</a></td>\n"
+    append row_html "   <td><a href=\"one-session-info?sid=$sid\">$sid</a></td>\n"
 
     # 2) Serial number
     append row_html "   <td>$serial</td>"
@@ -120,15 +109,18 @@ while { [ns_db getrow $db $selection] } {
     append row_html "</tr>\n"
 
     # write row
-    ns_write "$row_html"
+    append page_content $row_html
 }
 
 # close up table
-ns_write "</table>\n
+append page_content "</table>\n
 <p>
-See <a href=http://photo.net/wtr/oracle-tips.html#sessions target=other>\"Be Wary of SQLPlus\"</a> in <a href=http://photo.net/wtr/oracle-tips.html target=other>Oracle Tips</a> for how this page be useful in killing hung database sessions.
+See <a href=http://www.arsdigita.com/asj/oracle-tips#sessions target=other>\"Be Wary of SQLPlus\"</a> in <a href=http://www.arsdigita.com/asj/oracle-tips target=other>Oracle Tips</a> for how this page can be useful in killing hung database sessions.
 (Any queries that are ACTIVE and have a high \"Seconds in wait\"
 are good canidates to consider killing.)
 
 [ad_admin_footer]
 "
+
+
+doc_return  200 text/html $page_content

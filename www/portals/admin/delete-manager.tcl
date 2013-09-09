@@ -1,18 +1,17 @@
-#
-# /portals/admin/delete-manager.tcl
-#
-# list of managers that may be delete from the list of portal managers for the group
-#
-# by aure@arsdigita.com and dh@arsdigita.com
-#
-# Last modified: 10/8/1999
-#
-# $Id: delete-manager.tcl,v 3.1.2.2 2000/04/28 15:11:17 carsten Exp $
-#
+# www/portals/admin/delete-manager.tcl
 
-ad_page_variables {group_id}
+ad_page_contract {
+    allows the user to delete managers from this portal group.
+    shows the user a list of managers. they pick the one they want to 
+    delete.
 
-set db [ns_db gethandle]
+    @author Aure aure@arsdigita.com 
+    @author Dave Hill dh@arsdigita.com
+    @param group_id
+    @cvs-id delete-manager.tcl,v 3.4.2.6 2000/09/22 01:39:03 kevin Exp
+} {
+    {group_id:naturalnum,notnull}
+}
 
 # -------------------------------------------
 # verify user
@@ -22,14 +21,15 @@ if {![info exists group_id]} {
     ad_returnredirect index
     return
 }
-set group_name [portal_group_name $db $group_id]
-portal_check_administrator_maybe_redirect $db $user_id
+set group_name [portal_group_name $group_id]
+portal_check_administrator_maybe_redirect $user_id
 # ------------------------------------------
 
-set administrator_list [database_to_tcl_list_list $db "
+
+set administrator_list [db_list_of_lists portals_delete_manager_list_name "
     select  user_id, first_names, last_name
     from    users
-    where   ad_group_member_p ( user_id, $group_id ) = 't'
+    where   ad_group_member_p ( user_id, :group_id ) = 't'
     order by last_name"]
 
 set admin_list "Choose Manager to delete:<ul>"
@@ -59,7 +59,12 @@ $admin_list
 </ul>
 [portal_admin_footer]"
 
-ns_return 200 text/html $page_content
+
+
+doc_return  200 text/html $page_content
+
+
+
 
 
 

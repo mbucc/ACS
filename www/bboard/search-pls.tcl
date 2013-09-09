@@ -1,11 +1,19 @@
-# $Id: search-pls.tcl,v 3.0 2000/02/06 03:34:36 ron Exp $
-# this is for the whole frame
+# /www/bboard/search-pls.tcl
+ad_page_contract {
+    Page to search the bboards using PLS
 
-set_form_variables
+    @param query_string the string to search on
+    @param topic the topic to search in
 
-# query_string, topic
+    @cvs-id search-pls.tcl,v 3.1.2.3 2000/09/22 01:36:54 kevin Exp
+} {
+    query_string
+    topic
+}
 
-ns_return 200 text/html "
+# -----------------------------------------------------------------------------
+
+doc_return  200 text/html "
 
 <HTML><BASE F0NTSIZE=3>
 
@@ -14,7 +22,6 @@ ns_return 200 text/html "
 <TITLE>$topic Search Results</TITLE>
 
 </HEAD>
-
 
 <FRAMESET ROWS=\"25%,*\">
 
@@ -35,16 +42,11 @@ browser.
 
 Perhaps you should consider running Netscape 2.0 or later?
 
-
 </BODY></HTML>
 
 </NOFRAME>
 
 </FRAMESET>
 
-
 "
-
-
-
 

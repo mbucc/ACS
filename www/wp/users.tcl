@@ -1,23 +1,29 @@
-# $Id: users.tcl,v 3.1 2000/03/10 20:43:18 jsalz Exp $
-# File:        users.tcl
-# Date:        18 Nov 1999
-# Author:      Jon Salz <jsalz@mit.edu>
-# Description: Displays a list of all users and the number of presentations they have.
-# Inputs:      starts_with (optional)
+# /wp/users.tcl
 
-set_the_usual_form_variables 0
+ad_page_contract {
+
+    Displays a list of all users and the number of presentations they have.
+
+    @creation-date  18 Nov 1999
+    @author  Jon Salz <jsalz@mit.edu>
+    @param starts_with is a string for user name search
+    @param bulk_copy
+    @cvs-id users.tcl,v 3.2.6.10 2000/09/22 01:39:37 kevin Exp
+} {
+    starts_with:html,optional
+    bulk_copy:naturalnum,optional
+}
 
 if { [info exists starts_with] } {
     set pretty_starts_with "[string toupper [string range $starts_with 0 0]][string tolower [string range $starts_with 1 end]]"
     set title "Authors ($pretty_starts_with)"
-    set condition "and lower(last_name) like '[string tolower $QQstarts_with]%'"
+    set condition "and lower(u.last_name) like '[string tolower $starts_with]%'"
 } else {
     set title "All Authors"
     set condition ""
 }
 
-ReturnHeaders
-ns_write "[wp_header [list "?[export_ns_set_vars url starts_with]" "WimpyPoint"] $title]
+set page_output "[wp_header [list "?[export_ns_set_vars url starts_with]" "WimpyPoint"] $title]
 
 Select an author from this list of users who have created presentations
 (number of slides created shown in parentheses):
@@ -29,8 +35,7 @@ set out ""
 set seen_real_user_p 0
 set written_fake_user_heading_p 0
 
-set db [ns_db gethandle]
-wp_select $db "
+db_foreach users_select "
     select u.user_id, u.last_name, u.first_names, u.email, sum(v.n_slides) n_slides,
            wp_real_user_p(sum(v.n_slides)) real_user_p
     from
@@ -55,7 +60,7 @@ wp_select $db "
     ) v, users u
     where u.user_id = v.user_id
     group by u.user_id, u.last_name, u.first_names, u.email
-    having sum(v.n_slides) > 0
+    having sum(v.n_slides) > 0 $condition
     order by 6 desc, upper(u.last_name), upper(u.first_names)
 " {
     if { !$seen_real_user_p && $real_user_p == "t" } {
@@ -71,7 +76,7 @@ wp_select $db "
 	set href "one-user.tcl?user_id=$user_id"
     }
     append out "<li><a href=\"$href\">$last_name, $first_names</a>,  $email ($n_slides)\n"
-} else {
+} if_no_rows {
     append out "<li>There are no authors"
     if { [info exists starts_with] } {
 	append out " with last names starting with $pretty_starts_with"
@@ -79,7 +84,9 @@ wp_select $db "
     append out ".\n"
 }
 
-ns_write "$out
+db_release_unused_handles
+
+append page_output "$out
 </ul>
 
 Note: this is not a complete list of the users.
@@ -90,3 +97,4 @@ only private presentations are excluded.
 [wp_footer]
 "
 
+doc_return  200 "text/html" $page_output

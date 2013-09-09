@@ -1,6 +1,17 @@
-# $Id: offer-delete.tcl,v 3.0 2000/02/06 03:20:24 ron Exp $
-set_the_usual_form_variables
-# deleted_p, product_id, product_name, retailer_id
+#  www/admin/ecommerce/products/offer-delete.tcl
+ad_page_contract {
+  Delete or undelete an offer.
+
+  @author Eve Andersson (eveander@arsdigita.com)
+  @creation-date Summer 1999
+  @cvs-id offer-delete.tcl,v 3.1.6.1 2000/07/22 07:57:40 ron Exp
+} {
+  deleted_p
+  product_id:integer,notnull
+  retailer_id:integer,notnull
+}
+
+set product_name [ec_product_name $product_id]
 
 if { $deleted_p == "t" } {
     set delete_or_undelete "Delete"
@@ -10,8 +21,7 @@ if { $deleted_p == "t" } {
     set deletion_or_undeletion "Undeletion"
 }
 
-ReturnHeaders
-ns_write "[ad_admin_header "Confirm $deletion_or_undeletion of Retailer Offer on $product_name"]
+doc_body_append "[ad_admin_header "Confirm $deletion_or_undeletion of Retailer Offer on $product_name"]
 
 <h2>Confirm $deletion_or_undeletion of Retailer Offer on $product_name</h2>
 
@@ -20,8 +30,8 @@ ns_write "[ad_admin_header "Confirm $deletion_or_undeletion of Retailer Offer on
 <hr>
 "
 
-ns_write "<form method=post action=offer-delete-2.tcl>
-[export_form_vars deleted_p product_id product_name retailer_id]
+doc_body_append "<form method=post action=offer-delete-2>
+[export_form_vars deleted_p product_id retailer_id]
 
 <center>
 <input type=submit value=\"Confirm\">

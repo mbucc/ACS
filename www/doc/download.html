@@ -1,6 +1,6 @@
 <html>
 <!--AD_DND-->
-<!--$Id: download.html,v 3.3.2.2 2000/04/12 09:01:29 ron Exp $-->
+<!--download.html,v 3.7 2000/06/17 18:49:04 ron Exp-->
 <head>
 <title>Download</title>
 </head>
@@ -8,7 +8,7 @@
 <body bgcolor=#ffffff text=#000000>
 <h2>Download</h2>
 
-part of the <a href="index.html">ArsDigita Community System</a>
+part of the <a href="index">ArsDigita Community System</a>
 by <a href="http://photo.net/philg/">Philip Greenspun</a>
 <br>
 implemented by <a href="mailto:ahmeds@mit.edu">Sarah Ahmed</a> and <a href="http://web.mit.edu/mobin/web">Usman Mobin</a>
@@ -16,10 +16,10 @@ implemented by <a href="mailto:ahmeds@mit.edu">Sarah Ahmed</a> and <a href="http
 
 <ul>
 <li>User-accessible directory:  <a href="/download/">/download/</a>
-<li>Site administrator directory:  <a href="/admin/download/">/admin/download/</a>
-<li>Group admin pages:  <a href="/download/admin/">/download/admin/</a>
-<li>Data model:  <a href="/doc/sql/display-sql.tcl?url=/doc/sql/download.sql">/doc/sql/download.sql</a>
-<li>Tcl procs:  /tcl/download-defs.tcl 
+<li>Site administrator directory:  <a href="/download/admin">/download/admin</a>
+<li>Group administration directory: /groups/admin/$short_name/download/admin
+<li>Data model:  <a href="/doc/sql/display-sql?url=/doc/sql/download.sql">/doc/sql/download.sql</a>
+<li>Tcl procs:  /tcl/download-defs 
 <li>Downloadable files:  /web/foobar/download/
 
 </ul>
@@ -101,7 +101,7 @@ a file on the server that is downloadable by users.
 
 As a side note, if the intended use of the Download Module
 involves documents that can be opened by a program on the 
-receiving machine (e.g. files of type .jgp, .html, .doc,
+receiving machine (e.g. files of type .jgp, , .doc,
 .pdf, etc.), then the AOLserver's .ini file (<em>not</em>
 the ACS .ini file)  must be modified
 to make AOLServer aware of these file types.  
@@ -128,7 +128,7 @@ releases.
 
 Downloads with a status of "promote" are offered on the top-level
 /download/ page.  Downloads with a status of "offer_if_asked" are
-available on a drill-down page of "/download/one.tcl" where multiple
+available on a drill-down page of "/download/one" where multiple
 versions of the same download may be offered.  Downloads with a status
 of "removed" are only shown to the site or group administrator who has
 the option of changing their status or looking at an old version.
@@ -201,7 +201,7 @@ from Oracle, e.g., what version it is, what the document is called, the
 pseudo filename, etc.  A notes file is only for sysadmins to read.
 The module never makes any use of informaiton in a notes file.
 
-<li>/web/foobar/download/groups/78/8234.html is version 1.0 of 
+<li>/web/foobar/download/groups/78/8234 is version 1.0 of 
 "How to turn your cubicle into an 8000-gallon marine fish tank", 
 a document published by user group #78 (subcommunity of saltwater
 aquarium lovers).  /web/foobar/download/groups/78/8234.notes 
@@ -212,7 +212,7 @@ contains ancillary info.
 <p>
 
 Via clever use of ns_register_proc, analogous to the static file comment
-attachment system (see /tcl/ad-html.tcl), we present URLs to the user
+attachment system (see /tcl/ad-html), we present URLs to the user
 for final downloading that look like
 /download/files/378/bloatware-2000.tar.gz (/download/files/ trips off
 the ns_register_proc; after that the format is
@@ -222,7 +222,7 @@ defaulting them with a reasonable filename to "save as".
 <h3>Deep under the hood</h3>
 
 <pre>
-create sequence download_id_sequence start with 1;
+create sequence download_id_sequence;
 
 create table downloads (
 	download_id		integer primary key,
@@ -233,10 +233,13 @@ create table downloads (
 	group_id	references user_groups on delete cascade,
 	-- e.g., "Bloatware 2000"
 	download_name	varchar(100) not null,
+	-- e.g., "bw2000" (valid UNIX directory name)
 	directory_name	varchar(100) not null,
+	-- primary description of the item
 	description		varchar(4000),
 	-- is the description in HTML or plain text (the default)
 	html_p			char(1) default 'f' check(html_p in ('t','f')),
+	-- when the download was created, who created it, etc.
 	creation_date		date default sysdate not null,
 	creation_user		not null references users(user_id),
 	creation_ip_address	varchar(50) not null,
@@ -247,47 +250,60 @@ create table downloads (
 
 create index download_group_idx on downloads ( group_id );
 
-create sequence download_version_id_sequence start with 1;
+create sequence download_version_id_sequence;
 
 create table download_versions (
-	version_id	integer primary key,
-	download_id	not null references downloads on delete cascade,
+	version_id		integer primary key,
+	download_id		not null references downloads on delete cascade,
 	-- when this can go live before the public
-	release_date	date not null,
-	pseudo_filename	varchar(100) not null,
+	release_date		date not null,
+	-- important: this is the file name that will be served up to
+	-- the user, e.g. bw2000-1.2.3.tar.gz.  This is completely up
+	-- to the administrator since we can't verify the contents of
+	-- the downloadable files.
+	pseudo_filename		varchar(100) not null,
 	-- might be the same for a series of .tar files, we'll serve
 	-- the one with the largest version_id
-	version		varchar(4000),
+	version		 	varchar(4000),
 	version_description	varchar(4000),
 	-- is the description in HTML or plain text (the default)
 	version_html_p		char(1) default 'f' check(version_html_p in ('t','f')),
-	status		varchar(30) check (status in ('promote', 'offer_if_asked', 'removed')),
+	-- status of this version
+	status			varchar(30) check (status in ('promote', 'offer_if_asked', 'removed')),
 	creation_date		date default sysdate not null ,
 	creation_user		references users on delete set null,
 	creation_ip_address	varchar(50) not null
 );
 
-create sequence download_rule_id_sequence start with 1;
+create sequence download_rule_id_sequence;
 
 create table download_rules (
 	rule_id		integer primary key,
 	-- one of the following will be not null
 	version_id	references download_versions on delete cascade,
 	download_id	references downloads on delete cascade,
-	visibility	varchar(30) check (visibility in ('all', 'registered_users', 'purchasers', 'group_members', 'previous_purchasers')),
+	-- who is allowed to view the download files?
+	visibility	varchar(30) check (visibility in 
+	                   ('all', 'registered_users', 'purchasers', 
+	                    'group_members', 'previous_purchasers')),
+	-- who is allowed to download the files?
+	availability	varchar(30) check (availability in 
+			   ('all', 'registered_users', 'purchasers',
+   			    'group_members', 'previous_purchasers')),
 	-- price to purchase or upgrade, typically NULL
 	price		number,
 	-- currency code to feed to CyberCash or other credit card system
-	currency	varchar(3) default 'USD' references currency_codes ,
-	constraint download_version_null_check check ( download_id is not null or version_id is not null)
+	currency	char(3) default 'USD' references currency_codes,
+	constraint download_version_null_check check 
+	                (download_id is not null or version_id is not null)
 );
 
 -- PL/SQL proc
--- returns 't' if a user can download, 'f' if not 
+-- returns 'authorized' if a user can view a file, 'not authorized' otherwise.
 -- if supplied user_id is NULL, this is an unregistered user and we 
 -- look for rules accordingly
 
-create or replace function download_authorized_p (v_version_id IN integer, v_user_id IN integer)
+create or replace function download_viewable_p (v_version_id IN integer, v_user_id IN integer)
      return varchar2
      IS 
 	v_visibility download_rules.visibility%TYPE;
@@ -295,8 +311,8 @@ create or replace function download_authorized_p (v_version_id IN integer, v_use
 	v_return_value varchar(30);
      BEGIN
 	select visibility into v_visibility
-	from download_rules
-	where version_id = v_version_id;
+	from   download_rules
+	where  version_id = v_version_id;
 	
 	if v_visibility = 'all' 
 	then	
@@ -304,18 +320,64 @@ create or replace function download_authorized_p (v_version_id IN integer, v_use
 	elsif v_visibility = 'group_members' then	
 
 		select group_id into v_group_id
-		from downloads d, download_versions dv
-		where dv.version_id = v_version_id
-		and dv.download_id = d.download_id;
+		from   downloads d, download_versions dv
+		where  dv.version_id  = v_version_id
+		and    dv.download_id = d.download_id;
 
 		select decode(count(*),0,'not_authorized','authorized') into v_return_value
-		from user_group_map where user_id = v_user_id 
-		and group_id = v_group_id;
+		from   user_group_map 
+                where  user_id  = v_user_id 
+		and    group_id = v_group_id;
 	
 		return v_return_value;		
 	else
 		select decode(count(*),0,'reg_required','authorized') into v_return_value
-		from users where user_id = v_user_id;
+		from   users 
+  	        where  user_id = v_user_id;
+
+		return v_return_value;
+	end if; 
+
+     END download_viewable_p;
+/
+show errors
+
+-- PL/SQL proc
+-- returns 'authorized' if a user can download, 'not authorized' if not 
+-- if supplied user_id is NULL, this is an unregistered user and we 
+-- look for rules accordingly
+
+create or replace function download_authorized_p (v_version_id IN integer, v_user_id IN integer)
+     return varchar2
+     IS 
+	v_availability download_rules.availability%TYPE;
+	v_group_id downloads.group_id%TYPE;
+	v_return_value varchar(30);
+     BEGIN
+	select availability into v_availability
+	from   download_rules
+	where  version_id = v_version_id;
+	
+	if v_availability = 'all' 
+	then	
+		return 'authorized';
+	elsif v_availability = 'group_members' then	
+
+		select group_id into v_group_id
+		from   downloads d, download_versions dv
+		where  dv.version_id  = v_version_id
+		and    dv.download_id = d.download_id;
+
+		select decode(count(*),0,'not_authorized','authorized') into v_return_value
+		from   user_group_map 
+		where  user_id  = v_user_id 
+		and    group_id = v_group_id;
+	
+		return v_return_value;		
+	else
+		select decode(count(*),0,'reg_required','authorized') into v_return_value
+		from   users 
+		where  user_id = v_user_id;
 		
 		return v_return_value;
 	end if; 
@@ -326,17 +388,16 @@ show errors
 
 -- history 
 
-create sequence download_log_id_sequence start with 1;
+create sequence download_log_id_sequence;
 
 create table download_log (
 	log_id		integer primary key,
 	version_id	not null references download_versions on delete cascade,
-	-- user_id should reference users, but that interferes with
-	-- downloadlog_user_delete_tr below.
+	-- keep track of who downloaded what
 	user_id		references users on delete set null,
 	entry_date	date not null,
 	ip_address	varchar(50) not null,
-	-- keeps track of why people downloaded this
+	-- keeps track of why people downloaded this particular item
 	download_reasons varchar(4000)
 );
 

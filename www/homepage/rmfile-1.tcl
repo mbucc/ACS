@@ -1,70 +1,45 @@
-# $Id: rmfile-1.tcl,v 3.1.4.1 2000/04/28 15:11:03 carsten Exp $
-# File:     /homepage/rmfile-1.tcl
-# Date:     Wed Jan 19 00:04:18 EST 2000
-# Location: 42°21'N 71°04'W
-# Location: 80 PROSPECT ST CAMBRIDGE MA 02139 USA
-# Author:   mobin@mit.edu (Usman Y. Mobin)
-# Purpose:  Page to delete a file
+# /homepage/rmfile-1.tcl
 
-set_the_usual_form_variables
-# filesystem_node, file_node
+ad_page_contract {
+    Allow to delete a file from the directory.
+
+    @param filesystem_node The directory the file will be deleted from.
+    @param file_node The file to delete.
+
+    @creation-date Jan 14 18:48:26 EST 2000
+    @author mobin@mit.edu
+    @cvs-id rmfile-1.tcl,v 3.3.2.4 2000/07/21 04:00:46 ron Exp
+
+} {
+    filesystem_node:notnull,naturalnum
+    file_node:notnull,naturalnum
+}
 
 # --------------------------- initialErrorCheck codeBlock ----
 
-set exception_count 0
-set exception_text ""
-
-if { ![info exists file_node] || [empty_string_p $file_node] } {
-    ad_return_error "FileSystem Target Node for deletion Missing."
-    return
-}
-
-if { ![info exists filesystem_node] || [empty_string_p $filesystem_node] } {
-    ad_return_error "FileSystem Node Information Missing"
-    return
-}
-
-if {$exception_count > 0} { 
-    ad_return_complaint $exception_count $exception_text
-    return
-}
 
 # ------------------------------ initialization codeBlock ----
 
-# First, we need to get the user_id
-set user_id [ad_verify_and_get_user_id]
-
-# If the user is not registered, we need to redirect him for
-# registration
-if { $user_id == 0 } {
-    ad_redirect_for_registration
-    return
-}
+set user_id [ad_maybe_redirect_for_registration]
 
 # ------------------------ initialDatabaseQuery codeBlock ----
 
-# The database handle (a thoroughly useless comment)
-set db [ns_db gethandle]
-
 # Checking for site-wide administration status
-set admin_p [ad_administrator_p $db $user_id]
+set admin_p [ad_administrator_p $user_id]
 
 # This query will return the quota of the user
-set sql "
-select hp_get_filesystem_child_count($file_node) as child_count,
-       hp_true_filename($file_node) as full_filename 
-from dual
-"
 
-# Extract results from the query
-set selection [ns_db 1row $db $sql]
+set sql {
+    select hp_get_filesystem_child_count(:file_node) as child_count,
+           hp_true_filename(:file_node) as full_filename 
+    from dual
+}
 
-# This will  assign the  variables their appropriate values 
-# based on the query.
-set_variables_after_query
+db_1row misc_info $sql 
 
-set access_denied_p [database_to_tcl_string $db "
-select hp_access_denied_p($file_node,$user_id) from dual"]
+set access_denied_p [db_string access_denied_p {
+    select hp_access_denied_p(:file_node,:user_id) from dual
+}]
 
 # Check to see whether the user is the owner of the filesystem node
 # for which access is requested.
@@ -87,10 +62,12 @@ if {$child_count != 0} {
 
 set file_full_name "[ad_parameter ContentRoot users]$full_filename"
 
-set dml_sql "
+db_dml file_delete {
 delete from users_files
-where file_id=$file_node
-"
+where file_id=:file_node
+} 
+
+db_release_unused_handles
 
 if [catch {file delete "$file_full_name"} errmsg] {
     if [catch {exec rm $file_full_name} errmsg2] {
@@ -100,7 +77,6 @@ if [catch {file delete "$file_full_name"} errmsg] {
 	ad_return_complaint 1 $exception_text
 	return    
     } else {
-	ns_db dml $db $dml_sql
 	ad_returnredirect index.tcl?filesystem_node=$filesystem_node
 	return
     }
@@ -109,16 +85,8 @@ if [catch {file delete "$file_full_name"} errmsg] {
     $errmsg"
     ad_return_complaint 1 $exception_text
     return
-} else {
-    ns_db dml $db $dml_sql
-}
-
-# And off with the handle!
-ns_db releasehandle $db
+} 
 
 # And let's go back to the main maintenance page
 ad_returnredirect index.tcl?filesystem_node=$filesystem_node
-
-
-
 

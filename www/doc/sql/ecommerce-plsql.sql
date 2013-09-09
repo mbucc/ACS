@@ -222,13 +222,22 @@ show errors
 create or replace function ec_tax (v_price IN number, v_shipping IN number, v_order_id IN integer) return number
 IS
 	taxes			ec_sales_tax_by_state%ROWTYPE;
+	tax_exempt_p		ec_orders.tax_exempt_p%TYPE;
 BEGIN
+	SELECT tax_exempt_p INTO tax_exempt_p
+	FROM ec_orders
+	WHERE order_id = v_order_id;
+
+	IF tax_exempt_p = 't' THEN
+		return 0;
+	END IF;	
+	
 	SELECT t.* into taxes
 	FROM ec_orders o, ec_addresses a, ec_sales_tax_by_state t
 	WHERE o.shipping_address=a.address_id
 	AND a.usps_abbrev=t.usps_abbrev(+)
 	AND o.order_id=v_order_id;
-	
+
 	IF nvl(taxes.shipping_p,'f') = 'f' THEN
 		return nvl(taxes.tax_rate,0) * v_price;
 	ELSE

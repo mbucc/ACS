@@ -101,7 +101,9 @@ public class MessageComposer {
 	throws MessagingException, IOException {
 	
 	if (parts.size() == 0) {
-	    // This should never happen.
+	    // This could happen if the body were empty.
+	    // Set content to empty string to avoid an IOException.
+	    msg.setText("");
 	    return;
 	}
 

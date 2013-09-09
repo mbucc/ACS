@@ -1,26 +1,24 @@
 # /file-storage/url-delete-2.tcl
-#
-# by aure@arsdigita.com, July 1999
-#
-# marks a file deleted (but does not actually remove anything 
-# from the database); if a folder, marks the entire subtree deleted
-#
-# modified by randyg@arsdigita.com, January, 2000 to use the 
-# general permissions module
-#
-# $Id: url-delete-2.tcl,v 3.2.2.2 2000/04/28 15:10:28 carsten Exp $
 
-ad_page_variables {
+ad_page_contract {
+    marks a file deleted (but does not actually remove anything 
+    from the database); if a folder, marks the entire subtree deleted
+
+    @author aure@arsdigita.com
+    @creation-date July 1999
+    @cvs-id url-delete-2.tcl,v 3.7.2.2 2000/07/21 22:05:17 mdetting Exp
+
+    modified by randyg@arsdigita.com, January, 2000 to use the 
+    general permissions module
+} {
     {file_id}
+    {ower_id ""}
     {group_id ""}
     {return_url}
     {source ""}
 }
 
-set user_id [ad_verify_and_get_user_id]
-ad_maybe_redirect_for_registration
-
-set db [ns_db gethandle]
+set user_id [ad_maybe_redirect_for_registration]
 
 # Determine if we are working in a Group, or our personal space
 # this is based if no group_id was sent - then we are in
@@ -34,10 +32,10 @@ if [empty_string_p $file_id] {
     append exception_text "<li>No file was specified"
 }
 
-set version_id [database_to_tcl_string $db "
-    select version_id from fs_versions_latest where file_id = $file_id"]
+set version_id [db_string version "
+    select version_id from fs_versions_latest where file_id = :file_id"]
 
-if {! [fs_check_edit_p $db $user_id $version_id $group_id]} {
+if {! [fs_check_edit_p $user_id $version_id $group_id]} {
     incr exception_count
     append exception_text "<li>You do not own this file"
 }
@@ -48,10 +46,26 @@ if { $exception_count> 0 } {
     return 0
 }
 
-ns_db dml $db "update fs_files set deleted_p = 't' where file_id = $file_id"
+db_dml url_delete "update fs_files set deleted_p = 't' where file_id = :file_id"
 
-if {[info exists group_id] && ![empty_string_p $group_id]} {
-    ad_returnredirect group?group_id=$group_id
-} else {
-    ad_returnredirect /file-storage/$source
+db_release_unused_handles
+
+switch $source {
+    "private_individual" {
+	set return_url "private-one-person?[export_url_vars owner_id]"
+    }
+    "private_group" { 
+	set return_url "private-one-group?[export_url_vars group_id]"
+    }
+    "public_individual" {
+	set return_url "public-one-person?[export_url_vars owner_id]"
+    }
+    "public_group" {
+	set return_url "public-one-group?[export_url_vars group_id]"
+    }
+    default {
+	set return_url ""
+    }
 }
+
+ad_returnredirect $return_url

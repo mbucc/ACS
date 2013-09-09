@@ -1,7 +1,12 @@
-# $Id: place-bid.tcl,v 3.2.2.1 2000/04/28 15:10:32 carsten Exp $
-set_form_variables
+# place-bid.tcl
 
-# classified_ad_id is the key
+ad_page_contract {
+    @author
+    @creation-date
+    @cvs-id place-bid.tcl,v 3.5.2.5 2001/01/10 19:05:57 khy Exp
+} {
+    classified_ad_id:integer
+}
 
 
 # check for the user cookie
@@ -13,14 +18,16 @@ if {$user_id == 0} {
 }
 
 
-set db [gc_db_gethandle]
-
-if [catch {set selection [ns_db 1row $db "select domain_id, days_since_posted(posted) as days_since_posted, users.email as poster_email, users.first_names || ' ' || users.last_name as poster_name, users.user_id as poster_id, html_p, one_line, posted, full_ad, auction_p, users.user_id as poster_user_id
-from classified_ads, users
-where users.user_id=classified_ads.user_id
-and classified_ad_id = $classified_ad_id"]} errmsg] {
+if [catch { db_1row gc_place_bid_get_ad_info {
+    select domain_id, days_since_posted(posted) as days_since_posted, users.email as poster_email, 
+           users.first_names || ' ' || users.last_name as poster_name, users.user_id as poster_id, html_p, 
+           one_line, posted, full_ad, auction_p, users.user_id as poster_user_id
+    from classified_ads, users
+    where users.user_id=classified_ads.user_id
+    and classified_ad_id = :classified_ad_id
+}   } errmsg] {
     # error getting stuff from db
-    ad_return_error "Ad missing" "from <a href=\"index.tcl\">[gc_system_name]</a>
+    ad_return_error "Ad missing" "from <a href=\"index\">[gc_system_name]</a>
 
 <p>
 
@@ -41,15 +48,13 @@ $errmsg
 
 }
 
-set_variables_after_query
 
 # now domain_id is set, so we'll get info for a backlink
 
+db_1row domain_info_get [gc_query_for_domain_info $domain_id]
 
-set selection [ns_db 1row $db [gc_query_for_domain_info $domain_id]]
-set_variables_after_query
 
-set bid_id [database_to_tcl_string $db "select classified_auction_bid_id_seq.nextval from dual"]
+set bid_id [db_string gc_place_bid_id_get "select classified_auction_bid_id_seq.nextval from dual"]
 
 switch $days_since_posted { 
     0 { set age_string "today" }
@@ -57,22 +62,22 @@ switch $days_since_posted {
     default { set age_string "$days_since_posted days ago" }
 } 
 
-ReturnHeaders
 
-ns_write "[gc_header "Bid on $one_line"]
+append doc_body "[gc_header "Bid on $one_line"]
 
 <h2>Place a Bid</h2>
 
-on <a href=\"view-one.tcl?[export_url_vars classified_ad_id]\">$one_line</a>
+on <a href=\"view-one?[export_url_vars classified_ad_id]\">$one_line</a>
 
 <hr>
 
-advertised $age_string by <a href=\"/shared/community-member.tcl?user_id=$poster_user_id\">$poster_name</a> 
+advertised $age_string by <a href=\"/shared/community-member?user_id=$poster_user_id\">$poster_name</a> 
 
 <p>
 
-<form method=post action=place-bid-2.tcl>
-[export_form_vars bid_id classified_ad_id]
+<form method=post action=place-bid-2>
+[export_form_vars -sign bid_id]
+[export_form_vars classified_ad_id]
 <table>
 <tr><th>Your Bid<td><input type=text name=bid size=10>
 <tr><th>Currency<td><input type=text name=currency value=\"US dollars\" size=10>
@@ -97,4 +102,7 @@ advertised $age_string by <a href=\"/shared/community-member.tcl?user_id=$poster
 
 [gc_footer $maintainer_email]
 "
+
+db_release_unused_handles
+doc_return 200 text/html $doc_body
 

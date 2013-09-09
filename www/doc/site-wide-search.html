@@ -7,20 +7,21 @@
 <body bgcolor=#ffffff text=#000000>
 <h2>Site-wide Search</h2>
 
-part of the <a href="index.html">ArsDigita Community System</a>
-by <a href="http://photo.net/philg/">Philip Greenspun</a>
-and Jin Choi
+part of the <a href="index">ArsDigita Community System</a>
+by <a href="http://photo.net/philg/">Philip Greenspun</a>,
+Jin Choi, and <a href=mailto:mbryzek@arsdigita.com>Michael Bryzek</a>
 
 <hr>
 
 <ul>
+<li>Documentation on working with interMedia: <a href=http://www.arsdigita.com/asj/intermedia>http://www.arsdigita.com/asj/intermedia</a>
 <li>User-accessible directory:  <a href="/search/">/search/</a>
 <li>Site administrator directory:  none
-<li>data model :  <a href="/doc/sql/display-sql.tcl?url=/doc/sql/site-wide-search.sql">/doc/sql/site-wide-search.sql</a>
+<li>data model :  <a href="/doc/sql/display-sql?url=/doc/sql/site-wide-search.sql">/doc/sql/site-wide-search.sql</a>
 
 </ul>
 
-<b>Note: this facility requires interMedia version 8.1.5.1, which you can upgrade to via a patch, or Oracle 8.1.6 (not yet available)</b>
+<b>Note: this facility requires interMedia version 8.1.5.1, which you can upgrade to via a patch, or Oracle 8.1.6.</b>
 
 
 <h3>The Big Idea</h3>
@@ -29,7 +30,7 @@ This is a system for using a full-text search engine bundled with the
 RDBMS, e.g., Oracle Intermedia, to permit site-wide searches with
 results ranked by descending relevance.  So, for example, bulletin board
 postings and classified ads are searched at the same time as static
-.html documents.
+ documents.
 
 <h3>Under the Hood</h3>
 
@@ -87,7 +88,7 @@ example, the table name for the /bboard module is "bboard" but a
 publisher might wish this presented in a search form as "Discussion
 Forums".  This is done by entering rows in the
 <code>table_acs_properties</code> table, described in 
-<a href="user-profiling.html">the user profiling documentation</a>.  We
+<a href="user-profiling">the user profiling documentation</a>.  We
 reproduce the table definition here:
 
 <blockquote>
@@ -104,7 +105,7 @@ create table table_acs_properties (
 The <code>user_url_stub</code> column holds the url necessary to direct the
 user from the search results page to the page with the content.  For
 example, for the discussion forum module, this column would contain 
-"/bboard/redirect-for-sws.tcl?msg_id=".  The search
+"/bboard/redirect-for-sws?msg_id=".  The search
 results page will append the value of <code>the_key</code> column to
 this URL stub.  
 
@@ -396,7 +397,7 @@ In practice, the themes returned by interMedia for a document are
 fairly general, and occasionally irrelevant (including things like
 HTML tags). So we throw in the <code>one_line_description</code> as
 part of the query, which seems to do a better job of bringing up
-relevant results. See <code>/search/query-by-example.tcl</code> for an
+relevant results. See <code>/search/query-by-example</code> for an
 example of query by example.
 
 <h3>Using a Separate Search Server</h3>
@@ -417,29 +418,43 @@ and forth for all search pages.
 
 If you update a table with a ConText index....  nothing happens.  The
 index doesn't get updated, unlike any other kind of index in the SQL
-world.  There are two ways to update the index:
+world. There are a few ways to update the index:
 
 <ul>
+<li>run <code>/bin/ad-context-server.pl</code> as a <code>cron</code> job every hour.
 <li>saddle your Unix system administrator with the task of making sure
 that the ctxsrv process is kept running at all times (this is in
 addition to the six Unix process that constitute a normal Oracle
 installation)
-
-<li>periodically manually sync the index with 
-<code>alter index one_index rebuild parameters('sync');</code>
+<li>create a <code>DBMS_JOB</code> to alter the indexes.
 </ul>
 
-This module supports both methods.  There is an ad.ini file parameter
-specifying the <code>ns_schedule</code> command to invoke to manually
-sync the index.  If this is left unspecified then it will never happen.
+The method used to update the index is independent of the rest of the
+site-wide search module. At ArsDigita, we most often use
+<code>ad-context-server</code> because it is easy to configure and it
+is robust enough to prevent deadlocks while updating interMedia
+indexes.
 
-<P>
+<p>
+
+If you want to manually update the index sws_ctx_index, you can execute:
+
+<blockquote>
+<pre><code>
+alter index sws_ctx_index rebuild online parameters('sync');
+</code></pre>
+</blockquote>
+
+Be careful that no other process is updating the index at the same
+time or your index may become unusable.
+
+<h3>Optimizing interMedia indexes</h3>
 
 Another thing that you might have to do periodically is 
 
 <blockquote>
 <pre><code>
-alter index one_index rebuild online 
+alter index sws_ctx_index rebuild online 
 parameters('optimize full maxtime 60');
 </code></pre>
 </blockquote>
@@ -463,3 +478,5 @@ drives, use them for the primary key index of the site_wide_index table.
 <a href="http://photo.net/philg/"><address>philg@mit.edu</address></a>
 </body>
 </html>
+
+

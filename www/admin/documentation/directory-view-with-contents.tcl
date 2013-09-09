@@ -1,7 +1,15 @@
-# $Id: directory-view-with-contents.tcl,v 3.0 2000/02/06 03:16:35 ron Exp $
-set_the_usual_form_variables
+ad_page_contract {
+    @param directory
+    @param text_p
 
-# directory, maybe text_p
+    @author ?
+    @creation-date ?
+    @cvs-id directory-view-with-contents.tcl,v 3.1.6.5 2000/09/22 01:34:42 kevin Exp
+} {
+    directory:notnull
+    text_p:optional
+}
+
 
 # if text_p = t, we are looking at pure text
 
@@ -22,9 +30,8 @@ if {$exception_count > 0} {
     return
 }
 
-ReturnHeaders
 
-ns_write "[ad_header "Contents of $directory"]
+set page_content "[ad_header "Contents of $directory"]
 
 <h2>Contents of $directory</h2>
 
@@ -37,7 +44,7 @@ foreach f [glob -nocomplain $directory/*] {
     if { [string match "*CVS" $f ] == 0 && [string match "*~*" $f] == 0 && [string match "*#*" $f] == 0 } {
 	# this is not a CVS directory or a backup file
 	if {[file isdirectory $f]} {
-	    append directory_text "<li><a href=\"directory-view-with-contents.tcl?directory=[ns_urlencode $f]&text_p=t\">$f</a>" 
+	    append directory_text "<li><a href=\"directory-view-with-contents?directory=[ns_urlencode $f]&text_p=t\">$f</a>" 
 	} else {
 	    set last_accessed [ns_fmttime [file atime $f]   "%m/%d/%Y %T"]
 	    set last_modified [ns_fmttime [file mtime $f]  "%m/%d/%Y %T"]
@@ -47,21 +54,25 @@ foreach f [glob -nocomplain $directory/*] {
 	    regsub [ns_info pageroot] $f "" f
 	    regsub {\.\./} $f "" f
 
-	    ns_write "<h2>$f</h2>Last modified: $last_modified  | Last accessed: $last_accessed | Size: $size<p>
+	    append page_content "<h2>$f</h2>Last modified: $last_modified  | Last accessed: $last_accessed | Size: $size<p>
 <p>"
             if {$text_p == "t"} {
-		ns_write "<pre>[ns_quotehtml [read $stream]]</pre>"
+		append page_content "<pre>[ns_quotehtml [read $stream]]</pre>"
 	    } else {
-		ns_write "[read $stream]"
+		append page_content "[read $stream]"
 	    }
              
 	    close $stream
 	}
     }
 }
-ns_write "
+append page_content "
 <ul>
 $directory_text
 </ul>
 [ad_admin_footer]"
+
+
+
+doc_return  200 text/html $page_content
 

@@ -1,5 +1,15 @@
 <%= [ad_header "Copyright Policy"] %>
 
+<%
+ad_page_contract {
+	@author ?
+	@creation-date ?
+	@cvs-id copyright.adp,v 3.0.12.3 2000/09/08 19:03:32 kevin Exp
+} {
+
+}
+%>
+
 <h2>Copyright Policy</h2>
 
 at <a href=/><%=[ad_system_name]%></a>,
@@ -106,3 +116,7 @@ If you like reading stuff like this, you can also check out our
 </ul>
 
 <%=[ad_footer]%>
+
+
+
+

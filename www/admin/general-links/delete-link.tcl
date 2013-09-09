@@ -1,11 +1,19 @@
 # File: /admin/general-links/delete-link.tcl
-# Date: 2/01/2000
-# Author: tzumainn@arsdigita.com 
-#
-# Purpose: 
-# Step 1 of 2 in deleting a link and everything associated with it
-#
-# $Id: delete-link.tcl,v 3.0 2000/02/06 03:23:40 ron Exp $
+
+ad_page_contract {
+    Step 1 of 2 in deleting a link and everything associated with it
+
+    @param link_id The ID of the link to delete
+    @param return_url Where to go when finished with deleting
+
+    @author Tzu-Mainn Chen (tzumainn@arsdigita.com)
+    @creation-date 2/01/2000
+    @cvs-id delete-link.tcl,v 3.1.6.6 2000/09/22 01:35:25 kevin Exp
+} {
+    link_id:notnull,naturalnum
+    {return_url "index"}
+}
+
 #--------------------------------------------------------
 
 if {[ad_read_only_p]} {
@@ -13,40 +21,27 @@ if {[ad_read_only_p]} {
     return
 }
 
-ad_page_variables {link_id {return_url "index.tcl"}}
-
-set db [ns_db gethandle]
-
-set selection [ns_db 0or1row $db "select link_id, url, link_title, link_description
+if { ![db_0or1row select_one_link_info "select link_id, url, link_title, link_description
 from general_links
-where link_id = $link_id"]
-
-if { $selection == "" } {
+where link_id = :link_id"] } {
    ad_return_error "Can't find link" "Can't find link $link_id"
    return
 }
 
-set_variables_after_query
+set sql_qry "select on_which_table, on_what_id, one_line_item_desc from site_wide_link_map where link_id = :link_id"
 
-set selection [ns_db select $db "select on_which_table, on_what_id, one_line_item_desc from site_wide_link_map where link_id = $link_id"]
-
-set n_assoc 0
 set assoc_list "<ul>"
-while {[ns_db getrow $db $selection]} {
-    incr n_assoc
-    set_variables_after_query
-    
+db_foreach print_link_info $sql_qry {
     append assoc_list "<li><b>$on_which_table</b>: $on_what_id - $one_line_item_desc"    
-}
-
-ns_db releasehandle $db
-
-if { $n_assoc == 0 } {
+} if_no_rows {
     append assoc_list "<li>This link has no associations."
 }
+
+db_release_unused_handles
+
 append assoc_list "</ul>"
 
-ns_return 200 text/html "[ad_header "Confirm Link Deletion" ]
+doc_return  200 text/html "[ad_header "Confirm Link Deletion" ]
 
 <h2>Confirm Link Deletion</h2>
 
@@ -63,7 +58,7 @@ Do you really wish to delete the following link?
 </blockquote>
 
 <ul>
-<li><a href=\"delete-link-2.tcl?[export_url_vars link_id return_url]\">Yes</a>
+<li><a href=\"delete-link-2?[export_url_vars link_id return_url]\">Yes</a>
 <li><a href=\"\">No</a>
 </ul>
 

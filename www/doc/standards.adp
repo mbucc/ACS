@@ -1,18 +1,19 @@
 <%
-#
-# /www/doc/standards.adp
-#
-# ACS standards
-#
-# michael@arsdigita.com, March 2000
-#
-# $Id: standards.adp,v 3.3.2.5 2000/03/17 08:29:54 michael Exp $
-#
+ad_page_contract {
+    /www/doc/standards.adp
+    
+    ACS standards
+    
+    @author  michael@arsdigita.com
+    @created March 2000
+    @cvs-id  standards.adp,v 3.7.2.6 2000/07/29 20:36:34 ron Exp
+}
 
-proc proc_doc_link { proc_name } {
+ad_proc proc_doc_link { proc_name } {} {
     return "<a href=\"proc-one?[export_url_vars proc_name]\"><code>$proc_name</code></a>"
 }
 %>
+
 <html>
 <head>
 
@@ -39,12 +40,11 @@ we define and adhere to standards in the following areas:
 
 <ul>
 <li><a href="#file_naming">File Naming</a>
-<li><a href="#file_header">File Headers</a>
-<li><a href="#page_input">Page Input</a>
+<li><a href="#file_header">File Headers and Page Input</a>
 <li><a href="#page_construction">Page Construction</a>
-<li><a href="#tcl_library">Tcl Library</a>
+<li><a href="#tcl_library_file">Tcl Library</a>
 <li><a href="#data_modeling">Data Modeling</a>
-<li><a href="#tcl_library_file">Documentation</a>
+<li><a href="#documentation">Documentation</a>
 </ul>
 
 <a name="file_naming"><h3>File Naming</h3></a>
@@ -58,7 +58,7 @@ href="style">Style package</a>):
 the convention:
 
 <blockquote>
-<code><em>object_type</em>-<em>verb</em>.<em>extension</em></code>
+<code><em>object</em>-<em>verb</em>.<em>extension</em></code>
 </blockquote>
 
 For example, the page to erase a user's portrait from the database is
@@ -71,7 +71,7 @@ than letting the user take a specific action), simply omit the verb,
 and use the convention:
 
 <blockquote>
-<code><em>object_type</em>.<em>extension</em></code>
+<code><em>object</em>.<em>extension</em></code>
 </blockquote>
 
 For example, the page to view the properties of an
@@ -189,68 +189,163 @@ just the directory name, for both relative links
 the page is located, use the empty string (<code>""</code>), which
 browsers will resolve correctly.
 
-<a name="file_header"><h3>File Headers</h3></a>
+<a name="file_header"><h3>File Headers and Page Input</h3></a>
 
-Include the standard header in all source files:
+Include the appropriate standard header in all scripts.  The first
+line should be a comment specifying the file path relative to the
+ACS root directory.  e.g.
+
+<pre>
+# /www/index.tcl
+</pre>
+
+or
+
+<pre>
+# /tcl/module-defs.tcl
+</pre>
+
+
+<p>For static content files (html or adp), include a CVS identification tag as a
+comment at the top of the file, e.g.  
+
+<pre>
+&lt;!-- standards.adp,v 3.7.2.6 2000/07/29 20:36:34 ron Exp --&gt;
+</pre>
+
+
+<h4>Using ad_page_contract</h4>
+
+For non-library Tcl files (those not in the private Tcl directory),  use
+<%= [proc_doc_link ad_page_contract] %>  after the file path comment
+(this supersedes <%= [proc_doc_link set_the_usual_form_variables] %> and 
+<%= [proc_doc_link ad_return_complaint] %>).
+Here is an example of using ad_page_contract, which serves both 
+documentation and page input validation purposes:
 
 <blockquote>
 <pre><code>
-# <em>path from server home</em>/<em>filename</em>
-#
-# <em>Brief description of the file's purpose</em>
-#
-# <em>author's email address</em>, <em>file creation date</em>
-#
-# <a href="http://www.loria.fr/~molli/cvs/doc/cvs_12.html#SEC93">&#36;Id&#36;</a>
+# www/register/user-login-2.tcl
+
+ad_page_contract {
+    Verify the user's password and issue the cookie.
+    
+    @param user_id The user's id in users table.
+    @param password_from_from The password the user entered.
+    @param return_url What url to return to after successful login.
+    @param persistent_cookie_p Specifies whether a cookie should be set to keep the user logged in forever.
+    @author John Doe (jdoe@arsdigita.com)
+    @cvs-id standards.adp,v 3.7.2.6 2000/07/29 20:36:34 ron Exp
+} {
+    user_id:integer,notnull
+    password_from_form:notnull
+    {return_url {[ad_pvt_home]}}
+    {persistent_cookie_p f}
+}
 </code></pre>
 </blockquote>
 
 <p>
 
-Of course, replace "<code>#</code>" with the comment delimiter
-appropriate for the language in which you are programming, e.g.,
-"<code>--</code>" for SQL and PL/SQL.
+Salient features of <code>ad_page_contract</code>:
 
+<ul>
+
+<li>A mandatory documentation string is the first argument. This has
+the standard form with javadoc-style @author, @cvs-id, etc. 
+
+<li>The second argument specifies the page
+inputs. The syntax for switches/flags (e.g. multiple-list, array,
+etc.) uses a <b>colon</b> (:) followed by any number of <b>flags</b>
+separated by commas (,),
+e.g. <code>foo:integer,multiple,trim</code>. In particular, <code>multiple</code> and
+<code>array</code> are the flags that correspond to the old
+<code>ad_page_variables</code> flags.
+
+<li>There are new flags: <code>trim</code>, <code>notnull</code> and
+<code>optional</code>. They do what you'd expect; values will not be
+trimmed, unless you mark them for it; empty strings are valid input, unless
+you specify notnull; and a specified variable will be considered required,
+unless you declare it as optional.
+
+<li>It can now do validation for you; the flags <code>integer</code>
+and <code>sql_identifier</code> will make sure that the values
+supplied are integers/sql_identifiers. The <code>integer</code> flag
+will also trim leading zeros. Note that unless you specify
+<code>notnull</code>, both will accept the empty string.
+
+<li>Note that <code>ad_page_contract</code> does not generate
+QQvariables, which were automatically created by ad_page_variables and
+set_the_usual_form_variables. The use of bind variables makes such
+previous variable syntax obsolete.
+
+</ul>
+
+<p>&nbsp;
 <p>
 
-Previously, the standard for headers in files under the page root was
-to specify a path relative to the page root, e.g.
-<code>/index.tcl</code>, unlike all other files in the ACS, where the
-path was relative to the server home directory,  e.g.
-<code>/tcl/bboard-defs.tcl</code>. The current standard eliminates
-this inconsistency, so that the path in every file header (under the
-page root or not) is relative to the server home directory:
-<code>/www/index.tcl</code> instead of <code>/index.tcl</code>.
+<h4>Using ad_library</h4>
 
-<a name="page_input"><h3>Page Input</h3></a>
 
-In addition to the standard file header, each page should start by:
+For shared Tcl library files, use <%= [proc_doc_link ad_library] %> after
+the file path comment. Its only argument is a doc_string in the standard (javadoc-style)
+format, like <code>ad_page_contract</code>. Don't forget to put the
+@cvs-id in there.  Here is an example of using ad_library:
 
-<ol>
+<blockquote>
+<pre><code>
+# tcl/wp-defs.tcl
 
-<li>specifying the input it expects (in essence, its parameter list)
-with a call to <%= [proc_doc_link ad_page_variables] %>
-(which supersedes <%= [proc_doc_link set_the_usual_form_variables] %>)
+ad_library {
+    Provides helper routines for the Wimpy Point module.
 
-<li>validating its input with a call to <%= [proc_doc_link page_validation] %>
-(which supersedes <%= [proc_doc_link ad_return_complaint] %>)
+    @author John Doe (jdoe@arsdigita.com)
+    @cvs-id standards.adp,v 3.7.2.6 2000/07/29 20:36:34 ron Exp
+}
+</code></pre>
+</blockquote>
 
-</ol>
+<p>&nbsp;
+<p>
+
+<h4>Non-Tcl Files</h4>
+
+For SQL and other non-Tcl source files, the following file header structure is recommended:
+
+<blockquote>
+<pre><code>
+-- <em>path relative to the ACS root directory</em>
+--
+-- <em>brief description of the file's purpose</em>
+--
+-- <em>author</em>
+-- <em>created</em>
+--
+-- <a href="http://www.loria.fr/~molli/cvs/doc/cvs_12.html#SEC93">&#36;Id&#36;</a>
+</code></pre>
+</blockquote>
+
+Of course, replace "<code>--</code>" with the comment delimiter
+appropriate for the language in which you are programming.
+
+<p>&nbsp;
+<p>
+
 
 <a name="page_construction"><h3>Page Construction</h3></a>
 
 Construct the page as one Tcl variable (name it
 <code>page_content</code>), and then send it back to the browser with
-one call to <code>ns_return</code>. Make sure to release any database
-handles (and any other acquired resources, e.g., filehandles) before
-the call.
+one call to <code>doc_return</code>, which will call
+db_release_unused_handles prior to executing ns_return, effectively
+combining the two operations.
 
 <p>
 
 For example:
 
 <blockquote>
-<pre>set db [ns_db gethandle]
+<pre>
 
 set page_content "[ad_header "<em>Page Title</em>"]
 
@@ -261,31 +356,28 @@ set page_content "[ad_header "<em>Page Title</em>"]
 &lt;ul&gt;
 "
 
-set selection [ns_db select $db <em>sql</em>]
-
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
-
-    append page_content "&lt;li&gt;<em>row information</em>\n"
+db_foreach get_row_info {
+    select row_information 
+    from bar
+} {
+    append page_content "&lt;li&gt;<em>row_information</em>\n"
 }
 
 append page_content "&lt;/ul&gt;
 
 [ad_footer]"
 
-ns_db releasehandle $db
-
-ns_return 200 text/html $page_content
+doc_return 200 text/html $page_content
 </pre>
 </blockquote>
 
 <p>
 
-Previously, the convention was to call <code>ReturnHeaders</code> and
+The old convention was to call <code>ReturnHeaders</code> and
 then <code>ns_write</code> for each distinct chunk of the page. This
 approach has the disadvantage of tying up a scarce and valuable
 resource (namely, a database handle) for an unpredictable amount of
-time while sending packets back to the browser, and so, it is to be
+time while sending packets back to the browser, and so it should be
 avoided in most cases. (On the other hand, for a page that requires an
 expensive database query, it's better to call
 
@@ -305,32 +397,37 @@ should be used rarely, only when they are exceedingly useful.
 All files that prepare HTML to display should end with [ad_footer] or
 [<em>module</em>_footer].  If your module requires its own footer,
 this footer should call ad_footer within it.  Why?  Because when we
-adopt the ACS to a new site, it is often the case that the client will
-want a much fancier display than ACS standard.  We like to be able to
+adapt the ACS to a new site, it is often the case that the client will
+want a much fancier display than the ACS standard.  We like to be able to
 edit ad_header (which quite possibly can start a &lt;table&gt;) and
 ad_footer (which may need to end the table started in ad_footer) to
 customize the look and feel of the entire site.
 
 <a name="tcl_library_file"><h3>Tcl Library Files</h3></a>
 
-After the file header, the first line of each Tcl library file should
-be a call to <%= [proc_doc_link util_report_library_entry] %>.
-
 <p>
 
-The last line of each Tcl library file should be a call to
-<%= [proc_doc_link util_report_successful_library_load] %>.
+Further standards for Tcl library files are under discussion; we plan to 
+include naming conventions for procs.
 
-<p>
 
-Under discussion; will include: proc naming conventions
 
 <a name="data_modeling"><h3>Data Modeling</h3></a>
 
 Under discussion; will include: standard columns, naming conventions
 for constraints.
 
-<a name="doc"><h3>Documentation</h3></a>
+<ul>
+
+<li>If you need to store the names of database tables as column values
+(e.g., in the <code>on_which_table</code> column of the
+<code>general_permissions</code> table), normalize them into upper
+case (following the convention established in the Oracle data
+dictionary).
+
+</ul>
+
+<a name="documentation"><h3>Documentation</h3></a>
 
 Under discussion.
 

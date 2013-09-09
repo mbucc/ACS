@@ -1,19 +1,20 @@
-# $Id: resolve.tcl,v 3.0 2000/02/06 03:19:41 ron Exp $
-#
-# jkoontz@arsdigita.com July 21, 1999
-# modified by eveander@arsdigita.com July 23, 1999
-#
-# This page confirms that a problems in the problem log is resolved
+#  www/admin/ecommerce/problems/resolve.tcl
 
-set_form_variables
-# problem_id
+ad_page_contract {
+  This page confirms that a problems in the problem log is resolved
 
-set db [ns_db gethandle]
+  @author Jesse Koontz (jkoontz@arsdigita.com)
+  @creation-date July 21, 1999
+  @cvs-id resolve.tcl,v 3.1.6.5 2000/09/22 01:34:58 kevin Exp
+} {
+  problem_id:integer,notnull
+}
 
-set selection [ns_db 1row $db "select * from ec_problems_log where problem_id = $problem_id"]
-set_variables_after_query
+db_1row problem_select "select problem_details, problem_date from ec_problems_log where problem_id = :problem_id"
 
-ns_return 200 text/html "[ad_admin_header "Confirm the Problem is Resolved"]
+db_release_unused_handles
+
+doc_return  200 text/html "[ad_admin_header "Confirm the Problem is Resolved"]
 
 <h2>Confirm that Problem is Resolved</h2>
 
@@ -21,7 +22,7 @@ ns_return 200 text/html "[ad_admin_header "Confirm the Problem is Resolved"]
 
 <hr>
 
-<form method=post action=\"resolve-2.tcl\">
+<form method=post action=\"resolve-2\">
 [export_form_vars problem_id]
 <blockquote>
 

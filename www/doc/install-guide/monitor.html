@@ -1,0 +1,286 @@
+<HTML>
+<HEAD>
+<TITLE>Installing the Monitors</TITLE>
+</HEAD>
+
+<BODY bgcolor=#ffffff>
+<H2>Installing the Monitors for the ACS system</H2>
+by <a href="mailto:iwashima@arsdigita.com">Hiro Iwashima</a> and <a href="mailto:ryanlee@arsdigita.com">Ryan Lee</a>
+<hr>
+
+<p>Installing all of the standard monitors for your system can be a hassle of configuration.  A small change can take hours to fix, and overall, it is not very helpful to the user.  Therefore, we have attempted to simplify the documents and show step-by-step the steps necessary for a complete monitored system and also a happy sysadmin.
+<br>
+
+<H3>Table of Contents</H3>
+<ul>
+<li><a href="#keepalive">Keepalive</a>
+<li><a href="#uptime">Uptime</a>
+<li><a href="#watchdog">Watchdog</a>
+<li><a href="#cassandrix">Cassandrix</a>
+<li><a href="#cassandracle">Cassandracle</a>
+<li><a href="#mta">MTA Monitor</a>
+</ul>
+
+<br>
+
+<a name="keepalive"></a>
+<H3>Keepalive</H3>
+<a href="http://www.arsdigita.com/free-tools/keepalive.html">Keepalive original docs</a><br>
+<p>Keepalive makes sure that your server can be accessed regularly.  If it can't, it'll perform specified actions.
+<ol>
+<li>Grab the tar file from <a href="http://www.arsdigita.com/download">Arsdigita Download page</a>
+<li>untar it and move the directory as /web/keepalive
+<li>change the ownership of the directory as nsadmin. <pre>chown -R nsadmin.nsadmin /web/keepalive</pre>
+<li>make a keepalive directory under /home/aol30/servers.  Copy another directory by using <pre>cp -pR <i>[existing server]</i> keepalive</pre>
+<li>use a text editor to make /home/aol30/keepalive.ini or grab it from <a href="http://www.arsdigita.com/install/keepalive.ini">www.arsdigita.com/install/keepalive.ini</a>.  Set the correct address and hostname under [ns/server/keepalive/module/nssock].  Make sure to remove the line concerning nsssl if you don't have it. It's the last line in the [ns/server/keepalive/modules] section.  If you are copying it from another ini file, make sure you have the following.
+  <blockquote>
+  [ns/server/keepalive/modules]<br>
+  nslog=nslog.so<br>
+  nssock=nssock.so<br>
+  nsperm=nsperm.so<br>
+  </blockquote>
+
+Also, make sure the keepalive.ini file points to the correct log locations (the file currently available at ArsDigita.com states that logs are kept in /home/nsadmin/log, whereas our installation puts logs in /home/aol30/log.  Replace occurrences of nsadmin (except User=nsadmin) with aol30)
+
+<li>Make sure you have a restart-aolserver script in your /home/aol30/bin directory. If you don't have it, it's at <a href="#restartaolserver">the bottom of the page</a>.  Also make sure that /home/aol30/bin is in the path.
+
+<li>Edit /web/keepalive/tcl/defs.tcl (update the parameters) and /web/keepalive/tcl/init.tcl (keepalive_init procedure).  In init.tcl, add monitors in the same way as the sample. The arguments are, in order:
+  <ul>
+  <li>name
+  <li>URL of test page
+  <li>expected return
+  <li>shell command to execute if failure: (restart-aolserver yourservername)
+  <li>TCL list of admin email addresses to notify
+  <li>TCL list of pager email address to notify
+  <li>(optional) number of retries before failure action is executed. This defaults to 5.
+  <li>(optional) threshold of retries below which email is sent. This defaults to the number of retries, meaning that Keepalive will send mail if there is any problem (if you feel that you're getting spammed about problems that work themselves out, set this to some lower number; we find that 4 and 2 are good numbers) 
+  </ul>
+
+  To make sure the restart-aolserver works, add /home/aol30/bin to your path in one of the start scripts, for example, /etc/profile.  Source it again by running from prompt: <pre>. /etc/profile</pre>
+
+<li>copy /web/yourservername/tcl/ad-utilities.tcl.preload into /web/keepalive/tcl/ad-utilities.tcl.preload and /web/yourservername/tcl/00-ad-preload.tcl into /web/keepalive/tcl/00-ad-preload.tcl.  It will create a few error messages in your error log because it doesn't find some of the preload files that are in your server installation, but it doesn't really matter.
+
+<li>insert keepalive into /etc/inittab to make sure it respawns.
+   <pre>nska:34:respawn:/home/aol30/bin/nsd -ic /home/aol30/keepalive.ini</pre>
+
+<li>Now, you can start the process by typing <pre>/home/aol30/bin/nsd -i -c /home/aol30/keepalive.ini</pre>
+<li>To make sure it is running, go to /web/yourservername/www/SYSTEM/.  Perform <pre>mv dbtest.tcl dbtest.tcl.moved</pre>  This should make the aolserver fail, and send you email.  Move it back when you are done. 
+</ol>
+
+
+
+<a name="uptime"></a>
+<H3>Uptime</H3>
+<a href="http://www.arsdigita.com/free-tools/uptime.html">Uptime original docs</a><br>
+
+<p>Uptime will make sure that your web server is up and running by checking it at designated intervals and performing the specified actions on it.
+
+<p>Sign up for <a href="http://uptime.arsdigita.com/uptime/about.tcl">Uptime</a><br>
+If the machine on which your service runs is down, the keepalive service on your machine will be down as well. Uptime resides on a separate server and sends alerts when your server can not be reached. You should use the forms at Uptime to register alerts to the following:
+<ul>
+<li>All the people involved with your service
+<li>noc@arsdigita.com
+</ul>
+You should break your montoring page to make sure Uptime sends an alert. Then return the page to normal.
+
+
+<a name="watchdog"></a>
+<H3>Watchdog</H3>
+<a href="http://www.arsdigita.com/free-tools/watchdog.html">Watchdog original docs</a><br>
+
+<p>Watchdog will check your error logs as designated intervals and send email of the error to the ones specified.
+
+<ol>
+<li>Grab the tarfile at <a href="http://www.arsdigita.com/download">ArsDigita Download</a>
+<li>Untar it into /web/watchdog
+<li>change the ownership of the directory as nsadmin. <pre>chown -R nsadmin.nsadmin /web/watchdog</pre>
+<li>grab the ini file from <a href="http://www.arsdigita.com/install/watchdog.ini">www.arsdigita.com/install/watchdog.ini</a> and put it in /home/aol30
+<li>modify the ini file
+ <ul>
+ <li>change the ownership of the file. <pre>chown nsadmin.nsadmin watchdog.ini</pre>
+ <li>Inside the file:  change the correct aolserver directory
+ <li>remove the ssl (same as in keepalive) if you don't have it
+ </ul>
+<li>make the server directory under /home/aol30/servers/watchdog (similar to keepalive)
+<li>insert watchdog into the /etc/inittab
+  <pre>nswd:34:respawn:/home/aol30/bin/nsd -ic /home/aol30/watchdog.ini</pre>
+<li>Goto http://yourserver:1998/ to add your server to the list.
+<li>Create some tcl errors, make sure email is sent. The email is sent to the administrator, unless specified in /web/yourserver/parameteres/yourserver.ini file under [ns/server/emp530/monitoring]
+</ol>
+
+
+<a name="cassandrix"></a>
+<H3>Cassandrix</H3>
+<a href="http://www.arsdigita.com/free-tools/cassandrix.html">Cassandrix original docs</a><br>
+
+<p>Cassandrix makes sure that you have enough disk space on your harddrive. If it starts to run out, it will send email alerts.
+
+<ol>
+<li>Grab the tarfile at <a href="http://www.arsdigita.com/download">ArsDigita Download</a>
+<li>untar it somewhere
+<li>change the ownership of the directory to be set to yourself. <pre>chown -R yourself.yourself whatever</pre>
+
+<li>Target machines:
+  <ol>
+  <li>copy the files in the Cassandrix SYSTEM directory into /web/yourservername/www/SYSTEM directory.
+  </ol>
+
+<li>Master Machines:
+  <ol>
+  <li>copy the files in the Cassandrix tcl to the server's private TCL library.  Currently, there's only cx-defs.tcl
+  <li>copy the Cassandrix directory into /web/yourservername/www/cassandrix
+  <li>Make sure adp pages are enabled. In your nsd.tcl or nsd.ini in /home/aol30, make sure you have this:
+      <pre>[ns/server/markd/adp]
+           Map=/*.adp</pre>
+  <li>feed cassandrix.sql into Oracle.
+      <pre>sqlplus orauser/orapassword < cassandrix.sql</pre>
+  <li>Restart your aolserver: <pre>restart-aolserver</pre>
+  <li>goto http://yourservername/cassandrix/index.adp and tell it which machines to monitor
+    <ul>
+    <li>Host Name : the name of the host to be monitored. This is just used for putting a name with links on the various pages, and doesn't have to be a fully-qualified domain name.
+    <li>base URL : the base url from which to construct the /SYSTEM/* urls which generl through pager gateway. It's best to make this a generic subject since (if supplied) will be used as the subject for all alerts, including the "everything's OK" alert.
+    <li>custom email body : specialized email body to use on outgoing mail. Like the custom email subject, this is used for all a filesystems that are full are appended to the body.
+    <li>notification interval : how often to send mail complaining that disks are full. It doesn't make much sense to set this to be less than the monitor interval.
+    </ul>
+  </ol>
+</ol>
+
+<a name="cassandracle"></a>
+<H3>Cassandracle</H3>
+<a href="http://www.arsdigita.com/free-tools/cassandracle.html">Cassandracle original docs</a><br>
+
+<p>Cassandracle monitors an Oracle installation.  For this monitor, we want to use a more restricted Oracle driver, namely /home/aol30/ora8cass.so that was created when you installed the drivers. If it doesn't exist, then go to the ArsDigita oracle driver installation.  
+
+<ol>
+<li>Grab the tarfile at <a href="http://www.arsdigita.com/download">ArsDigita Download</a>
+<li>untar it into /web/ce
+<li>copy /web/yourservername/tcl/ad-utilities.tcl.preload into /web/ce/tcl/ad-utilities.tcl.preload and /web/yourservername/tcl/00-ad-preload.tcl into /web/ce/tcl/00-ad-preload.tcl.  It will create a few error messages in your error log because it doesn't find some of the preload files that are in your server installation, but it doesn't really matter.
+
+<li>change users to oracle and specify to use that user's environment: <pre>su orauser -</pre> where orauser is your Oracle user
+<li>Run the following at prompt:
+   <pre>svrmgrl
+   connect internal
+   create user cassandracle identified by *password* default tablespace yourtablespace temporary tablespace temp quota unlimited on yourtablespace;
+   grant connect, resource, dba to cassandracle;
+   grant select on V_$SQLTEXT to public;
+   exit</pre>
+
+<li>run the following at prompt:
+   <pre>svrmgrl
+   connect internal
+   grant select on V_$SQLTEXT to public;
+   exit</pre>
+<li>run the procedures in /web/ce/doc/helper-procedures.sql  <pre>sqlplus orauser/orapassword < /web/ce/doc/helper-procedures.sql</pre>
+<li>get out of the oracle user
+<li><pre>su nsadmin -</pre>
+<li>make the ini file. <pre>cp /home/aol30/yourserver.ini /home/aol30/ce.ini</pre>
+<li>edit ce.ini
+  <ul>
+  <li>change ora8.so to ora8cass.so
+  <li>correct the directories, the log file, and the oracle user to cassandracle
+  <li>delete the auxconfigdir line in [ns/parameters]
+  <li>change the Pageroot to /web/ce in [ns/server/ce
+  <li>add the line <tt>Port=1999</tt> in [ns/server/keepalive/module/nssock]
+  </ul>
+<li>make the server directory under /home/aol30/servers/ce. (copy yourserver's server directory)
+<li>insert into /etc/inittab
+  <pre>nsce:34:respawn:/home/aol30/bin/nsd-oracle -ic /home/aol30/ce.ini</pre>
+<li>type <tt>init q</tt> to load it, go to http://yourserver:1999
+</ol>
+
+<a name="mta"></a>
+<H3>MTA (Mail Transport Agent) Monitor</H3>
+<a href="http://www.arsdigita.com/free-tools/mmon.html">MTA original docs</a><br>
+
+<p>This monitors a group of mail transport agents administred by one or more administrators.  It basically connects every five minutes to each SMTP port, then also try to send a little mail every 15 minutes.  If it fails, then it will send email to the appropriate email addresses.
+
+<ol>
+<li>Grab the tarfile at <a href="http://www.arsdigita.com/download">ArsDigita Download</a>
+<li>make a directory (accessable by nsadmin) /web/mmon.  untar it in that directory (the tarfile creates www, parameters, and tcl directories)
+<li>Create the AOLserver install:
+  <ul>
+  <li>copy an ini file that uses ora8.so... for example, use /home/aol30/yourserver.ini and copy it to /home/aol30/mmon.ini  If you use <pre>cp -p yourserver.ini mmon.ini</pre> it will preserve your permissions as well
+  <li>change the appropriate directories and logfiles, make sure to remove the line about ssl if you don't have it.
+  <li>use any free port... say 8888 if it's available. in [ns/server/mmon/module/nssock]
+  <li>copy one of the directories in /home/aol30/servers/, name it mmon.
+  <li>Add it to the inittab. Make sure you use nsd-oracle
+  </ul>
+<li>feed the data model into Oracle.  You can either run
+    <pre>sqlplus orauser/orapassword &lt; /web/mmon/www/doc/sql/mmon.sql</pre>
+    or visit http://yourserver:8888/mmon/data-model.tcl  (Keep your eyes on the error log to make sure it worked).  If you have problems, they you can run http://yourserver:8888/mmon/drop-everything-user-with-care.tcl
+
+<li>Edit bouncer.pl and receiver.pl in /web/mmon/www/mmon/.  Fix server's hostname or IP address and to make sure whether the Perl executable is in /usr/bin or in /usr/local/bin
+<li>Within your RedHat install, you should have sendmail.
+<li>Create a special E-mail account (usually an alias) on every monitored server which calls bouncer.pl.  You'll enter in this alias when set up a server to be monitored.  The default name is mmon_bouncer.
+<li>Create a special E-mail account on the monitoring server.  That account should be configured to spawn receiver.pl.  For example, if you are using qmail you can create a UNIX user and put in his home directory file called .qmail (not the leading dot) with a single line:
+   <pre>| /path-to/receiver.pl</pre>
+   With Sendmail you would add a line to /etc/aliases:
+   <pre>mmon-receiver: |/path-to/receiver.pl</pre>
+<li>copy /web/yourservername/tcl/ad-utilities.tcl.preload into /web/mmon/tcl/ad-utilities.tcl.preload and /web/yourservername/tcl/00-ad-preload.tcl into /web/mmon/tcl/00-ad-preload.tcl.  It will create a few error messages in your error log because it doesn't find some of the preload files that are in your server installation, but it doesn't really matter.
+<li>edit /web/mmon/parameters/mmon.ini.  For testing, you may want to set <tt>MinNotificationInterval</tt>,<tt>MinutesBetweenSMTPChecks</tt> and <tt>BounceTimeout</tt> to lower values to make sure that they work.
+<li>edit /web/mmon/tcl/mmon-defs.tcl  *****WHAT DO WE CHANGE HERE???******
+<li>edit /web/mmon/parameters/mmon.ini: change the emails
+<li>Restart AOLserver
+<li>Visit <tt>http://yourserver:8888/mmon/server-add.tcl</tt> and add the required servers you'd like to have monitored
+<li>Observe the server log and observe whether the MTA Monitor wakes up in the specified interval.  Frequently reload <tt>http://yourserver:8888/mmon/controlpanel.tcl</tt> to see what's going on
+<li>Simulate some problem with an MTA and see if the problems get reported. (i.e. change the SMTP port to a nonstandard value, or change the bouncer E-mail address to your own address) and make sure it gets reported
+</ol>  
+
+
+
+<br><br><br><br>
+<H3>Appendix<H3>
+<br>
+<a name="restartaolserver"></a>
+<H4>Restarting AOL Server</H4>
+We have a script, /home/aol30/restart-aolserver, which is necessary to run keepalive and some other things.
+
+  <blockquote>
+  <pre>  
+
+    #!/usr/local/bin/perl
+
+    ## Restarts an AOLserver. Takes as its only argument the name of the server to kill.
+
+    ## This is a perl script because it needs to run setuid root, 
+    ## and perl has fewer security gotchas than most shells.
+
+
+    $ENV{'PATH'} = '/sbin:/bin';
+
+    # uncomment this stuff if you're at an installation where a server 
+    # takes a long time to restart or keeps important state
+
+    # if (scalar(@ARGV) == 0) {
+    #     die "Don't run this without any arguments!";
+    # }
+
+    $server = shift;
+
+    $< = $>; # set realuid to effective uid (root)
+
+    sub getpids {
+        ## get the PIDs of all jobdirect servers
+        my $ps_output = `/usr/bin/ps -ef`;
+        my @pids;
+        foreach (split(/\n/, $ps_output)) {
+            next unless /^\s*\S+\s+(\d+).*nsd.*$server.ini/;
+            push(@pids, $1);
+        }
+        @pids;
+    }
+
+    @pids = &getpids;
+    print "Killing ", join(" ", @pids), "\n";
+    kill 'KILL', @pids;
+   </pre>
+   </blockquote>
+
+<p><b>Make sure</b> that you have the correct version of ps in the line that says:
+<pre>my $ps_output = `/usr/bin/ps -ef`;</pre>
+You might want to make it <pre>`/usr/ps -ef`</pre> or wherever your ps is.  If you are confused, you can find out by typing <pre>which ps</pre> at the prompt.  Also, on some systems, it might be better to use -ewf option rather than -ef to make sure that ps doesn't truncate the text.
+
+
+</BODY>
+</HTML>
+

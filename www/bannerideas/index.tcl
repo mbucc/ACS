@@ -1,28 +1,32 @@
-# $Id: index.tcl,v 3.0 2000/02/06 03:32:07 ron Exp $
-ReturnHeaders 
+# /www/bannerideas/index.tcl
+ad_page_contract {
+    Main page for banner ideas.  Presents them.
+    
+    @author xxx
+    @date unknown
+    @cvs-id index.tcl,v 3.1.2.3 2000/09/22 01:36:40 kevin Exp
+} {
 
-ns_write "[ad_header "Banner Ideas"]
+}
+
+set page_content "[ad_header "Banner Ideas"]
 
 <h2>Banner Ideas</h2>
 
 [ad_context_bar_ws_or_index "All Banner Ideas"]
 
 <hr>
-
 "
 
-set db [banner_ideas_gethandle]
-
-set selection [ns_db select $db "select idea_id, intro, more_url, picture_html
-from bannerideas"]
-
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
-    ns_write [bannerideas_present $idea_id $intro $more_url $picture_html]
+db_foreach banner_idea_list_query "select idea_id, intro, more_url, picture_html
+from bannerideas" {
+    append page_content [bannerideas_present $idea_id $intro $more_url $picture_html]
 }
 
-
-ns_write "
+append page_content "
 
 [ad_footer]
 "
+
+
+doc_return  200 text/html $page_content

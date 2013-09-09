@@ -1,9 +1,14 @@
 # /webmail/filter-delete-all.tcl
-# by jsc@arsdigita.com (2000-02-23)
 
-# Clear all the filters in effect.
+ad_page_contract {
+    Clear all the filters in effect.
 
-ad_set_client_property -persistent f "webmail" "filters" ""
+    @author Jin Choi (jsc@arsdigita.com)
+    @creation-date 2000-02-23
+    @cvs-id filter-delete-all.tcl,v 1.3.6.3 2000/08/13 20:04:25 mbryzek Exp
+} {}
 
-ad_returnredirect "index.tcl"
+ad_set_client_property -browser t "webmail" "filters" ""
+
+ad_returnredirect "index"
 

@@ -1,19 +1,19 @@
-# $Id: edit-bookmark.tcl,v 3.0 2000/02/06 03:08:35 ron Exp $
-# edit-bookmark.tcl
-# admin version
-#
-# edit a bookmark in your bookmark list
-#
-# by aure@arsdigita.com and dh@arsdigita.com
+# /www/admin/bookmarks/edit-bookmark.tcl
 
-
-set_the_usual_form_variables
-# bookmark_id
+ad_page_contract {
+    admin version
+    edit a bookmark in your bookmark list
+    @param bookmark_id 
+    @author David Hill (dh@arsdigita.com)
+    @author Aurelius Prochazka (aure@arsdigita.com)
+    @creation-date June 1999  
+    @cvs-id edit-bookmark.tcl,v 3.2.2.4 2000/09/22 01:34:24 kevin Exp
+} {
+    bookmark_id:integer
+} 
  
 set user_id [ad_verify_and_get_user_id]
 ad_maybe_redirect_for_registration
-
-
 
 # --error-checking ---------------------------
  set exception_text ""
@@ -29,26 +29,26 @@ if { $exception_count> 0 } {
     ad_return_complaint $exception_count $exception_text
     return 0
 }
+
 # -----------------------------------------------
-
-
-set db [ns_db gethandle]
-
 # get the owner_id, owner_name for this bookmark
-set selection [ns_db 1row $db "select owner_id, first_names||' '||last_name as owner_name from users, bm_list where bookmark_id=$bookmark_id 
-and owner_id = user_id"]
-
-set_variables_after_query
+db_1row owner_info "select owner_id, 
+                           first_names||' '||last_name as owner_name 
+                    from   users, bm_list 
+                    where  bookmark_id = :bookmark_id 
+                    and    owner_id = user_id"
 
 # get all the current information about this bookmark
-set selection [ns_db 1row $db "select nvl(local_title, url_title) as title, complete_url, folder_p, 
-               parent_id, private_p, bookmark_id, hidden_p
-        from   bm_list,bm_urls
-        where  bookmark_id=$bookmark_id
-        and    bm_list.url_id=bm_urls.url_id(+)"]
- 
-set_variables_after_query
-
+db_1row bm_info "select nvl(local_title, url_title) as title, 
+                        complete_url, 
+                        folder_p, 
+                        parent_id, 
+                        private_p, 
+                        bookmark_id, 
+                        hidden_p
+                 from   bm_list,bm_urls
+                 where  bookmark_id = :bookmark_id
+                 and    bm_list.url_id=bm_urls.url_id(+)"
 
 # --create the html to be served ---------------------------------------
 set page_title "Edit Bookmark"
@@ -61,7 +61,7 @@ set html "
 "
 
 # begin the form and table
-append html "<form method=post action=edit-bookmark-2.tcl><table>"
+append html "<form method=post action=edit-bookmark-2><table>"
  
 # if the bookmark that is being edited is a real bookmark, ie. not a folder
 if {$folder_p=="f"} {
@@ -72,14 +72,13 @@ if {$folder_p=="f"} {
     <tr>"
 }
 
-
 append html "
   <td align=right valign=top>Title:</td>
   <td align=left><input type=text size=40 name=local_title value=\"[philg_quote_double_quotes $title]\"></td>
 </tr>
 <tr>
   <td align=right valign=top>Parent Folder:</td>
-  <td>[bm_folder_selection $db $owner_id $bookmark_id]</td>
+  <td>[bm_folder_selection $owner_id $bookmark_id]</td>
 </tr>
   <td align=right valign=top>Privacy:</td>
   <td align=left>"
@@ -126,7 +125,7 @@ if {$folder_p=="t"} {
 append html "
 <tr>
   <td valign=top align=right>Severe Actions:</td>
-  <td><a href=delete-bookmark.tcl?[export_url_vars bookmark_id]>$delete_text</a></td>
+  <td><a href=delete-bookmark?[export_url_vars bookmark_id]>$delete_text</a></td>
 </tr>
 </table>"
 
@@ -134,15 +133,10 @@ append html "
 append html "[ad_admin_footer]"
 
 # release the database handle before serving the page
-ns_db releasehandle $db 
+db_release_unused_handles 
 
 # --serve the page ------------------------------
-ns_return 200 text/html $html 
-
-
-
-
-
+doc_return  200 text/html $html 
 
 
 

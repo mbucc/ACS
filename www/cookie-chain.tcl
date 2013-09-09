@@ -1,10 +1,19 @@
-# $Id: cookie-chain.tcl,v 3.0.4.1 2000/04/28 15:08:21 carsten Exp $
-# 1998/10/22 tea
-# fixed by philg 10/25/98
-set_form_variables
+#/www/cookie-chain.tcl
+ad_page_contract {
 
-#Requires:
-#cookie_name, cookie_value, final_page, expire_state
+    @author tea
+    @creation-date 10/22/1998
+    @param cookie_name notnull
+    @param cookie_value notnull
+    @param final_page notnull
+    @param expire_state notnull
+    @cvs-id cookie-chain.tcl,v 3.1.6.2 2000/07/21 03:55:54 ron Exp
+} {
+    {cookie_name:notnull}
+    {cookie_value:notnull}
+    {final_page:notnull}
+    {expire_state "s"}
+}
 
 # cookie_name - name of cookie
 # cookie_value - value of cookie
@@ -15,9 +24,6 @@ set_form_variables
 #     s for a session cookie (default)
 #     e to expire the cookie
 
-if ![info exists expire_state] {
-    set expire_state "s"
-}
 
 switch $expire_state {
     s   { set expire_clause "" }

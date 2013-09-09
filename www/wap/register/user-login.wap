@@ -1,0 +1,53 @@
+# /www/wap/register/user-login.wap
+
+ad_page_contract {
+    Prompt the user for email address and password.
+
+    @param return_url_stub Where to return to. (optional).
+    @author Andrew Grumet (aegrumet@arsdigita.com)
+    @creation-date Wed May 24 03:42:24 2000
+    @cvs-id user-login.wap,v 1.2.2.3 2000/07/24 14:23:32 aegrumet Exp
+} {
+    {return_url_stub {}}
+}
+
+if ![empty_string_p $return_url_stub] {
+    set return_url_stub_or_null "<postfield name=\"return_url_stub\" value=\"$return_url_stub\"/>"
+} else {
+    set return_url_stub_or_null {}
+}
+
+wml_return -no_cache "
+<wml>
+<head>
+  <meta http-equiv=\"Cache-Control\" content=\"max-age=0\"/>
+</head>
+  <card>
+    <do type=\"accept\">
+      <go href=\"#password\"/>
+    </do>
+    <p>
+    Log In to <a href=\"/wap/\">[ad_system_name]</a>
+    </p>
+    <p>
+    Email: <input type=\"text\" name=\"Email\"/>
+    </p>
+  </card>
+
+  <card id=\"password\">
+    <do type=\"accept\">
+      <go method=\"post\" href=\"user-login-2.wap\">
+        $return_url_stub_or_null
+        <postfield name=\"email\" value =\"\$(Email)\"/>
+        <postfield name=\"password_from_form\" value=\"\$(PasswordFromForm)\"/>
+      </go>
+    </do>
+    <p>
+    Password: <input type=\"password\" name=\"PasswordFromForm\"/>
+    </p>
+  </card>
+
+</wml>
+"
+
+

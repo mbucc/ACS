@@ -6,9 +6,10 @@
 # Listing of files obsoleted by each release of the ACS,
 # to be deleted when upgrading.
 #
-# $Id: obsolete.txt,v 1.1.2.3 2000/03/17 21:09:29 michael Exp $
+# obsolete.txt,v 3.2.2.3 2000/09/12 00:16:08 ron Exp
 #
-
+# -----------------------------------------------------------------------------
+#
 # ACS 3.2
 #
 /tcl/00-ad-utilities.tcl (replaced by /tcl/ad-utilities.tcl.preload)
@@ -17,3 +18,46 @@
 /tcl/ad-partner.tcl (replaced by /tcl/ad-partner-defs.tcl)
 /tcl/sql-book-defs.tcl (not part of ACS)
 /tcl/teaching-defs.tcl (not part of ACS)
+#
+# ACS 3.3
+#
+/tcl/00-ad-preload.tcl
+/tcl/00-ad-utilities-2.tcl
+/tcl/00-ad-utilities-3.tcl
+/tcl/000-aolserver-3-specific.tcl
+/tcl/ad-abstract-url.tcl
+/tcl/ad-admin.tcl
+/tcl/ad-aolserver-2.tcl.preload
+/tcl/ad-aolserver-3.tcl.preload
+/tcl/ad-custom.tcl.postload
+/tcl/ad-defs.tcl.preload
+/tcl/ad-navigation.tcl
+/tcl/ad-partner.tcl
+/tcl/ad-security.tcl
+/tcl/ad-table-display.tcl
+/tcl/ad-user-groups.tcl
+/tcl/ad-utilities.tcl.preload
+/tcl/ad-widgets.tcl
+/tcl/downtime-defs.tcl
+/tcl/glassroom-defs.tcl
+/tcl/photonet-styles.tcl
+/tcl/photodb.tcl
+#
+# ACS 3.4
+#
+/www/employee-search-form.tcl
+/www/employee-search.tcl
+/tcl/ischecker-mmon.tcl
+/tcl/ischecker-notice-table.tcl
+/tcl/ischecker-notifier.tcl 
+/tcl/ischecker-tests.tcl 
+/tcl/ischecker-ui.tcl 
+/www/admin/ischecker/tcp_manual_test.tcl
+/www/admin/ischecker/email-log.tcl
+/www/admin/ischecker/index.tcl
+/www/admin/ischecker/status-log.tcl
+/www/admin/ischecker/mail_manual_test.tcl
+/www/admin/ischecker/notify_manual_test.tcl
+/www/admin/ischecker/ping_manual_test.tcl
+/www/admin/ischecker/status.tcl
+/www/admin/ischecker/web_manual_test.tcl

@@ -1,18 +1,19 @@
-# $Id: edit-ad-2.tcl,v 3.1 2000/03/10 23:58:23 curtisg Exp $
+# edit-ad-2.tcl
+
+ad_page_contract {
+    @cvs-id edit-ad-2.tcl,v 3.2.6.4 2000/09/22 01:37:52 kevin Exp
+} {
+    domain_id:integer
+}
+
 if {[ad_read_only_p]} {
     ad_return_read_only_maintenance_message
     return
 }
 
-set_the_usual_form_variables
-
-# domain_id
-
 set user_id [ad_verify_and_get_user_id]
 
-set db [gc_db_gethandle]
-set selection [ns_db 1row $db [gc_query_for_domain_info $domain_id]]
-set_variables_after_query
+db_1row domain_info_get [gc_query_for_domain_info $domain_id]
 
 append html "[gc_header "Your Postings"]
 
@@ -26,17 +27,16 @@ append html "[gc_header "Your Postings"]
 <ul>
 "
 
-set selection [ns_db select $db "select *
+set sql "select *
 from classified_ads ca
-where domain_id = $domain_id
-and user_id=$user_id
-order by classified_ad_id desc"]
+where domain_id = :domain_id
+and user_id= :user_id
+order by classified_ad_id desc"
 
 set counter 0
 
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
-    append html "<li><a href=\"edit-ad-3.tcl?classified_ad_id=$classified_ad_id\">
+db_foreach gc_edit_ad_2_ads_list $sql -bind [ad_tcl_vars_to_ns_set domain_id user_id] {
+    append html "<li><a href=\"edit-ad-3?classified_ad_id=$classified_ad_id\">
 $one_line
 </a> (posted [util_AnsiDatetoPrettyDate $posted] in $primary_category)
 "
@@ -51,4 +51,4 @@ append html "</ul>
 
 [gc_footer $maintainer_email]"
 
-ns_return 200 text/html $html
+doc_return  200 text/html $html

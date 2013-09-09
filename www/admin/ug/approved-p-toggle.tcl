@@ -1,11 +1,15 @@
-# $Id: approved-p-toggle.tcl,v 3.0.4.1 2000/04/28 15:09:25 carsten Exp $
-set_the_usual_form_variables
+ad_page_contract {
+  
+    @param group_id the id of the group to perform the action on 
+  
+    @cvs-id approved-p-toggle.tcl,v 3.1.6.2 2000/07/21 20:20:44 ryanlee Exp
 
-# group_id
+} {
+    group_id:notnull,naturalnum
+}
 
-set db [ns_db gethandle]
 
-ns_db dml $db "update user_groups set approved_p = logical_negation(approved_p) where group_id = $group_id"
+db_dml update_approved_p "update user_groups set approved_p = logical_negation(approved_p) where group_id = :group_id"
 
-ad_returnredirect "group.tcl?group_id=$group_id"
+ad_returnredirect "group?group_id=$group_id"
 

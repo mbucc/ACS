@@ -1,15 +1,29 @@
-# $Id: category-add-2.tcl,v 3.0.4.1 2000/04/28 15:08:34 carsten Exp $
-set_the_usual_form_variables
-# category_name, category_id, prev_sort_key, next_sort_key
+
+# /www/admin/ecommerce/cat/category-add-2.tcl
+
+ad_page_contract {
+
+    @param category_name the name of the category
+    @param category_id the ID of the category
+    @param prev_sort_key the previous sort key
+    @param next_sort_key the next sort key
+
+    @cvs-id category-add-2.tcl,v 3.3.2.8 2001/01/12 17:35:51 khy Exp
+} {
+    category_name:trim,notnull
+    category_id:notnull,integer,verify
+    prev_sort_key:notnull
+    next_sort_key:notnull
+}
 
 # we need them to be logged in
 set user_id [ad_verify_and_get_user_id]
 
 if {$user_id == 0} {
     
-    set return_url "[ns_conn url]?[export_entire_form_as_url_vars]"
+    set return_url "[ad_conn url]?[export_entire_form_as_url_vars]"
 
-    ad_returnredirect "/register.tcl?[export_url_vars return_url]"
+    ad_returnredirect "/register?[export_url_vars return_url]"
     return
 }
 
@@ -17,33 +31,31 @@ if {$user_id == 0} {
 # pushed submit twice), in which case, just redirect to 
 # index.tcl
 
-set db [ns_db gethandle]
 
-set selection [ns_db 0or1row $db "select category_id from ec_categories
-where category_id=$category_id"]
 
-if { $selection != ""} {
-    ad_returnredirect "index.tcl"
+if { [db_0or1row get_category_confirmation "select category_id from ec_categories
+where category_id=:category_id"]==1} {
+    ad_returnredirect "index"
     return
 }
 
 # now make sure there's no category with that sort key already
-set n_conflicts [database_to_tcl_string $db "select count(*)
+set n_conflicts [db_string get_n_conflicts "select count(*)
 from ec_categories
-where sort_key = ($prev_sort_key + $next_sort_key)/2"]
+where sort_key = (:prev_sort_key + :next_sort_key)/2"]
 
 if { $n_conflicts > 0 } {
     ad_return_complaint 1 "<li>The category page appears to be out-of-date;
     perhaps someone has changed the categories since you last reloaded the page.
-    Please go back to <a href=\"index.tcl\">the category page</a>, push
+    Please go back to <a href=\"index\">the category page</a>, push
     \"reload\" or \"refresh\" and try again."
     return
 }
 
-ns_db dml $db "insert into ec_categories
+set peeraddr [ns_conn peeraddr]
+db_dml insert_into_ec_categories "insert into ec_categories
 (category_id, category_name, sort_key, last_modified, last_modifying_user, modified_ip_address)
 values
-($category_id, '$QQcategory_name', ($prev_sort_key + $next_sort_key)/2, sysdate, $user_id, '[DoubleApos [ns_conn peeraddr]]')"
-
-
-ad_returnredirect "index.tcl"
+(:category_id, :category_name, (:prev_sort_key + :next_sort_key)/2, sysdate, :user_id, :peeraddr)"
+db_release_unused_handles
+ad_returnredirect "index"

@@ -1,0 +1,24 @@
+In the file: /www/doc/template/show-source.tcl
+
+9a10,14
+> if { [regexp {^/} $url] || [regexp {\.\.} $url] } {
+>
+>   ns_return 200 text/html "Absolute or .. paths not allowed"
+> }
+
+
+In the file: /packages/templates/general-util-procs.tcl
+
+< # patch10.txt,v 1.1.2.1 2000/07/27 01:40:03 ron Exp
+---
+> # patch10.txt,v 1.1.2.1 2000/07/27 01:40:03 ron Exp
+312a313,320
+>   # normalize the path and ensure that it is within the page tree
+>   # of the server.
+>
+>   set path [ns_normalizepath $path]
+>   if { ! [regexp "^[ns_info pageroot]" $path] } {
+>     return "Attempt to access file outside page tree."
+>   }
+>                                                                                                                                              
+

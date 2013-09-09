@@ -1,11 +1,46 @@
-# $Id: edit-2.tcl,v 3.0.4.1 2000/04/28 15:08:57 carsten Exp $
-set_the_usual_form_variables
-# template_id, template_name, template
+#  www/admin/ecommerce/templates/edit-2.tcl
+ad_page_contract {
+    @param template_id
+    @param template_name
+    @param template
 
-set db [ns_db gethandle]
+  @author
+  @creation-date
+  @cvs-id edit-2.tcl,v 3.2.2.7 2000/09/22 01:35:04 kevin Exp
+} {
+    template_id:integer
+    template_name
+    template:allhtml
+}
 
-ns_db dml $db "update ec_templates
-set template_name='$QQtemplate_name', template='$QQtemplate'
-where template_id=$template_id"
+# check the template for the execution of functions
+
+if {[fm_adp_function_p $template]} {
+    doc_return  200 text/html "
+    <P><tt>We're sorry, but files edited here cannot
+    have functions in them for security reasons. Only HTML and 
+    <%= \$variable %> style code may be used.</tt>"
+    return
+}
+
+
+
+db_dml update_ec_templates "update ec_templates
+set template_name=:template_name, template=:template
+where template_id=:template_id"
+db_release_unused_handles
 
 ad_returnredirect index.tcl
+
+
+
+
+
+
+
+
+
+
+
+
+

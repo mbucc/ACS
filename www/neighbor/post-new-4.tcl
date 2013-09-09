@@ -1,7 +1,22 @@
-# $Id: post-new-4.tcl,v 3.0.4.1 2000/04/28 15:11:14 carsten Exp $
-set_the_usual_form_variables
+# /www/neighbor/post-new-4.tcl
+ad_page_contract {
+    Posts new entries into a given category.
 
-# subcategory_id, about, title, body, html_p
+    @author Philip Greenspun (philg@mit.edu)
+    @creation-date 1 January 1998
+    @cvs-id post-new-4.tcl,v 3.4.2.4 2000/09/22 01:38:55 kevin Exp
+    @param subcategory_id the category to post into
+    @param about what the post is about
+    @param title a short, one-line title
+    @param body the body of the post
+    @param html_p whether the body is html or plaintext
+} {
+    subcategory_id:integer,notnull
+    about:notnull
+    title:notnull
+    body:notnull,html
+    html_p:notnull
+}
 
 if {[ad_read_only_p]} {
     ad_return_read_only_maintenance_message
@@ -10,47 +25,28 @@ if {[ad_read_only_p]} {
 
 #check for the user cookie
 
-set user_id [ad_get_user_id]
-
-if {$user_id == 0} {
-   ad_returnredirect /register.tcl?return_url=[ns_urlencode "[ns_conn url]"]
-   return
-}
+set user_id [ad_maybe_redirect_for_registration]
 
 # we know who this is
-set db [ns_db gethandle]
 
-set selection [ns_db 0or1row $db "select n.category_id, n.noun_for_about, primary_category, subcategory_1, pre_post_blurb, primary_maintainer_id, u.email as maintainer_email
-from n_to_n_subcategories sc, n_to_n_primary_categories n, users u 
-where sc.category_id = n.category_id
-and n.primary_maintainer_id = u.user_id
-and sc.subcategory_id = $subcategory_id"]
 
-if [empty_string_p $selection] {
+set sql_query "
+  select n.category_id, n.noun_for_about, primary_category, subcategory_1, 
+         pre_post_blurb, primary_maintainer_id, u.email as maintainer_email
+    from n_to_n_subcategories sc, n_to_n_primary_categories n, users u 
+   where sc.category_id = n.category_id
+     and n.primary_maintainer_id = u.user_id
+     and sc.subcategory_id = :subcategory_id"
+
+if {![db_0or1row select_category $sql_query]} {
+    db_release_unused_handles
     ad_return_error "Couldn't find Subcategory $subcategory_id" "There is no subcategory
 $subcategory_id\" in [neighbor_system_name]"
     return
 }
 
-set_variables_after_query
-
 set exception_text ""
 set exception_count 0
-
-if { ![info exists about] || $about == "" } {
-    append exception_text "<li>You didn't choose an about field for your posting. (or your browser dropped it)\n"
-    incr exception_count
-}
-
-if { ![info exists title] || $title == "" } {
-    append exception_text "<li>You forgot to type a one-line summary of your story."
-    incr exception_count
-}
-
-if { ![info exists body] || ![regexp {[A-Za-z]} $body] } {
-    append exception_text "<li>You forgot to type your story!"
-    incr exception_count
-}
 
 if { [info exists title] && $title != "" && ![regexp {[a-z]} $title] } {
     append exception_text "<li>Your one line summary appears to be all uppercase.  ON THE INTERNET THIS IS CONSIDERED SHOUTING.  IT IS ALSO MUCH HARDER TO READ THAN MIXED CASE TEXT.  So we don't allow it, out of decorum and consideration for people who may be visually impaired."
@@ -63,27 +59,24 @@ if { [info exists body] && $body != "" && ![regexp {[a-z]} $body] } {
 }
 
 if { $exception_count != 0 } {
+    db_release_unused_handles
     ad_return_complaint $exception_count $exception_text
     return
 }
 
-
-
 if { $exception_count != 0 } {
-    ns_return 200 text/html [neighbor_error_page $exception_count $exception_text]
+    
+    doc_return  200 text/html [neighbor_error_page $exception_count $exception_text]
     return
 }
 
 # no exceptions
 
-ReturnHeaders
-
-ns_write "[neighbor_header "Previewing Story"]
+set page_content "[neighbor_header "Previewing Story"]
 
 <h2>Previewing Story</h2>
 
 before stuffing it into [neighbor_home_link $category_id $primary_category]
-
 
 <hr>
 
@@ -97,7 +90,7 @@ $about : $title
 "
 
 if { [info exists html_p] && $html_p == "t" } {
-    ns_write "$body
+    append page_content "$body
 </blockquote>
 
 Note: if the story has lost all of its paragraph breaks then you
@@ -106,7 +99,7 @@ your browser's Back button to return to the submission form.
 "
 
 } else {
-    ns_write "[util_convert_plaintext_to_html $body]
+    append page_content "[util_convert_plaintext_to_html $body]
 </blockquote>
 
 Note: if the story has a bunch of visible HTML tags then you probably
@@ -114,15 +107,17 @@ should have selected \"HTML\" rather than \"Plain Text\".  Use your
 browser's Back button to return to the submission form.  " 
 }
 
-ns_write "
+append page_content "
 </blockquote>
 
 "
 
-set neighbor_to_neighbor_id [database_to_tcl_string $db "select neighbor_sequence.nextval from dual"]
+set neighbor_to_neighbor_id [db_string get_id "
+  select neighbor_sequence.nextval 
+    from dual"]
 
-ns_write "
-<form method=POST action=post-new-5.tcl>
+append page_content "
+<form method=POST action=post-new-5>
 [export_form_vars neighbor_to_neighbor_id]
 [export_entire_form]
 <center>
@@ -130,6 +125,8 @@ ns_write "
 </center>
 </form>
 
-
 [neighbor_footer $maintainer_email]
 "
+
+db_release_unused_handles
+doc_return 200 text/html $page_content

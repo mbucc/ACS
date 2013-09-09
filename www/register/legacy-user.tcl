@@ -1,20 +1,23 @@
-# $Id: legacy-user.tcl,v 3.0 2000/02/06 03:54:03 ron Exp $
-set_the_usual_form_variables
+# /www/register/legacy-user.tcl
+ad_page_contract {
+    @author Unknown
+    @creation-date Unknown
+    @cvs-id legacy-user.tcl,v 3.2.2.4 2000/11/03 00:00:19 kevin Exp
+} {
+    user_id:integer,notnull
+    {return_url ""}
+}
 
-# user_id, maybe return_url
-
-set db [ns_db gethandle] 
-set selection [ns_db 0or1row $db "select user_state from users where user_id = $user_id"]
-
-if { $selection == "" } {
-    ad_return_error "Couldn't find your record" "User id $user_id is not in the database.  This is probably out programming bug."
+ 
+if ![db_0or1row user_state "
+select user_state from users where user_id = :user_id"] {
+    ad_return_error "Couldn't find your record" "User id $user_id is not in the database.  This is probably our programming bug."
     return
 }
 
-set_variables_after_query
 
 if { $user_state == "banned" } {
-    ns_return 200 text/html "[ad_header "Sorry"]
+    doc_return  200 text/html "[ad_header "Sorry"]
 
 <h2>Sorry</h2>
 
@@ -29,7 +32,7 @@ Sorry but it seems that you've been banned from [ad_system_name].
 
 # they presumably deleted themselves
 
-ns_return 200 text/html "[ad_header "Welcome"]
+doc_return 200 text/html "[ad_header "Welcome"]
 
 <h2>Welcome</h2>
 
@@ -56,7 +59,6 @@ registered members.
 
 <p>
 
-
 We need a password from you to protect your identity as you contribute
 to the Q&amp;A, discussion forums, and other community activities on this
 site:
@@ -64,7 +66,7 @@ site:
 <p>
 
 <blockquote>
-<form method=POST action=\"legacy-user-2.tcl\">
+<form method=POST action=\"legacy-user-2\">
 [export_form_vars user_id return_url]
 
 <table>

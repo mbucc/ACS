@@ -1,11 +1,18 @@
-# $Id: alert-toggle.tcl,v 3.1.2.1 2000/04/28 15:09:01 carsten Exp $
-set_form_variables
+# /www/admin/gc/alert-toggle.tcl
+ad_page_contract {
+    Allows administrator to toggle an alert (enabled/disabled).
 
-# alert_id, domain_id
+    @param domain_id which domain
+    @param alert_id which alert
 
-set db [ns_db gethandle]
+    @author philg@mit.edu
+    @cvs_id alert-toggle.tcl,v 3.2.6.3 2000/07/21 03:57:17 ron Exp
+} {
+    domain_id:integer
+    alert_id:integer
+}
 
-if [catch {ns_db dml $db "update classified_email_alerts set valid_p = logical_negation(valid_p) where alert_id = $alert_id"} errmsg] {
+if [catch {db_dml alert_toggle "update classified_email_alerts set valid_p = logical_negation(valid_p) where alert_id = :alert_id"} errmsg] {
     ad_return_error "Error Editing Alert" "Here's what the database produced:
 
 <blockquote><code>

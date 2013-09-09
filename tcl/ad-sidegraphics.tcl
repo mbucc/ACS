@@ -1,37 +1,61 @@
-# $Id: ad-sidegraphics.tcl,v 3.0 2000/02/06 03:12:46 ron Exp $
-# 
-# ad-sidegraphics.tcl
-#
-# created April 21, 1999 by philg@mit.edu
-#
+# /tcl/ad-sidegraphics.tcl
 
-proc_doc ad_image_size {graphics_url} "Returns Tcl list of WIDTH and HEIGHT of image, works for both JPEG and GIF.  We need our own proc because AOLserver is stupid and has separate API calls for JPEG and GIF." {
-    # call ns_gifsize or ns_jpegsize, as appropriate
+ad_library {
+    @author  Philip Greenspun (philg@arsdigita.com)
+    @created April 21, 1999
+    @cvs-id  ad-sidegraphics.tcl,v 3.0.14.7 2000/08/25 18:58:38 jong Exp
+}
+
+proc_doc ad_image_size {graphics_url} {
+
+    Returns a Tcl list of WIDTH and HEIGHT of image, works for both JPEG
+    and GIF.  We need our own proc because AOLserver is stupid and has
+    separate API calls for JPEG and GIF.
+
+} { 
     if [string match "http://*" [string tolower $graphics_url]] {
 	# this is a image on a foreign server, we won't be able to 
 	# figure out its size 
 	return ""
     }
-    set what_aolserver_told_us ""
-    set full_filename "[ns_info pageroot]$graphics_url"
-    set guessed_type [ns_guesstype $full_filename]
-    if { $guessed_type == "image/jpeg" } {
-	catch { set what_aolserver_told_us [ns_jpegsize $full_filename] }
-    } elseif { $guessed_type == "image/gif" } {
-	catch { set what_aolserver_told_us [ns_gifsize $full_filename] }
+
+    # call ns_gifsize or ns_jpegsize, as appropriate
+    set full_filename [ns_info pageroot]$graphics_url
+
+    switch [ns_guesstype "$full_filename"] {
+
+	image/jpeg {
+	    set what_aolserver_told_us [ns_jpegsize $full_filename]
+	}
+
+	image/gif {
+	    set what_aolserver_told_us [ns_gifsize $full_filename]
+	}
+
+	default {
+	    set what_aolserver_told_us ""
+	}
     }
+
     return $what_aolserver_told_us
 }
 
-proc_doc ad_decorate_side {} "IF side graphics are enabled AND a graphics URL is spec'd for the current THEN this returns an IMG ALIGN=RIGHT with width and height tags.  Otherwise return empty string." {
+proc_doc ad_decorate_side {} {
+
+    If side graphics are enabled and a graphics URL is spec'd for the
+    current then this returns an <img align=right> with width and height
+    tags.  Otherwise it returns an empty string.  
+
+} {
     # we use a GLOBAL variable (shared by procs in a thread) as opposed to 
     # an ns_share (shared by many threads)
     global sidegraphic_displayed_p
     if ![ad_parameter EnabledP sidegraphics 0] {
 	return ""
     }
+
     # let's see if this URL even has a side graphic
-    set graphic_url [ad_parameter [ns_conn url] sidegraphics]
+    set graphic_url [ad_parameter [ad_conn full_url] sidegraphics]
     if [empty_string_p $graphic_url] {
 	# no side graphic for this particular page
 	return ""
@@ -40,7 +64,7 @@ proc_doc ad_decorate_side {} "IF side graphics are enabled AND a graphics URL is
     # we want to get WIDTH and HEIGHT tags
     set width_height_list [util_memoize "ad_image_size $graphic_url" 900]
     if ![empty_string_p $width_height_list] {
-	set width [lindex $width_height_list 0]
+	set width  [lindex $width_height_list 0]
 	set height [lindex $width_height_list 1]
 	set extra_tags "width=$width height=$height hspace=10 vspace=10"
     } else {

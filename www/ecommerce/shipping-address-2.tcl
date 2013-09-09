@@ -1,8 +1,27 @@
-# $Id: shipping-address-2.tcl,v 3.1.2.1 2000/04/28 15:10:02 carsten Exp $
-set_the_usual_form_variables
-# attn, line1, line2, city, usps_abbrev, zip_code, phone, phone_time
+#  www/ecommerce/shipping-address-2.tcl
+ad_page_contract {
+  @param attn
+    @param line1
+    @param line2:optional
+    @param city
+    @param usps_abbrev
+    @param zip_code
+    @param phone
+    @param phone_time:optional
+  @author
+  @creation-date
+  @cvs-id shipping-address-2.tcl,v 3.2.6.7 2000/08/18 21:46:35 stevenp Exp
+} {
+    attn
+    line1
+    line2:optional
+    city
+    usps_abbrev
+    zip_code
+    phone
+    phone_time:optional
+}
 
-# attn, line1, city, usps_abbrev, zip_code, phone are mandatory
 
 set possible_exception_list [list [list attn name] [list line1 address] [list city city] [list usps_abbrev state] [list zip_code "zip code"] [list phone "telephone number"]]
 
@@ -26,9 +45,9 @@ set user_id [ad_verify_and_get_user_id]
 
 if {$user_id == 0} {
     
-    set return_url "[ns_conn url]?[export_entire_form_as_url_vars]"
+    set return_url "[ad_conn url]?[export_entire_form_as_url_vars]"
 
-    ad_returnredirect "/register.tcl?[export_url_vars return_url]"
+    ad_returnredirect "/register?[export_url_vars return_url]"
     return
 }
 
@@ -37,9 +56,9 @@ if {$user_id == 0} {
 
 set user_session_id [ec_get_user_session_id]
 
-set db [ns_db gethandle]
 
-set order_id [database_to_tcl_string_or_null $db "select order_id from ec_orders where user_session_id=$user_session_id and order_state='in_basket'"]
+
+set order_id [db_string get_order_id "select order_id from ec_orders where user_session_id=:user_session_id and order_state='in_basket'" -default ""]
 
 if { [empty_string_p $order_id] } {
     # then they probably got here by pushing "Back", so just redirect them
@@ -48,20 +67,20 @@ if { [empty_string_p $order_id] } {
     return
 }
 
-set address_id [database_to_tcl_string $db "select ec_address_id_sequence.nextval from dual"]
+set address_id [db_string get_new_address_id_from_seq "select ec_address_id_sequence.nextval from dual"]
 
-ns_db dml $db "begin transaction"
+db_transaction {
 
-ns_db dml $db "insert into ec_addresses
-(address_id, user_id, address_type, attn, line1, line2, city, usps_abbrev, zip_code, country_code, phone, phone_time)
-values
-($address_id, $user_id, 'shipping', '$QQattn', '$QQline1','$QQline2','$QQcity','$QQusps_abbrev','$QQzip_code','us','$QQphone','$QQphone_time')
-"
+    db_dml insert_new_address "insert into ec_addresses
+    (address_id, user_id, address_type, attn, line1, line2, city, usps_abbrev, zip_code, country_code, phone, phone_time)
+    values
+    (:address_id, :user_id, 'shipping', :attn, :line1,:line2,:city,:usps_abbrev,:zip_code,'us',:phone,:phone_time)
+    "
 
-ns_db dml $db "update ec_orders set shipping_address=$address_id where order_id=$order_id"
+    db_dml set_shipping_on_order "update ec_orders set shipping_address=:address_id where order_id=:order_id"
 
-ns_db dml $db "end transaction"
-
+}
+db_release_unused_handles
 if { [ad_ssl_available_p] } {
     ad_returnredirect "https://[ns_config ns/server/[ns_info server]/module/nsssl Hostname]/ecommerce/checkout-2.tcl"
 } else {

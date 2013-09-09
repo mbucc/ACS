@@ -1,13 +1,16 @@
-# $Id: show-daily-spam.tcl,v 3.4 2000/03/08 07:38:40 hqm Exp $
-# show-daily-spam.tcl
-#
-# hqm@arsdigita.com
-#
-# Show list of daily spam file locations
+# www/admin/spam/show-daily-spam.tcl
 
-ReturnHeaders
+ad_page_contract {
 
-append pagebody "[ad_admin_header "List Daily Spam Files"]
+   Show scheduled periodic spam configuration. Also shows spam dropzone directory contents.
+
+    @author hqm@arsdigita.com
+    @cvs-id show-daily-spam.tcl,v 3.8.2.5 2000/09/22 01:36:06 kevin Exp
+} {}
+
+
+
+append page_content "[ad_admin_header "List Daily Spam Files"]
 
 <h2>Daily Spam File Locations</h2>
 
@@ -22,100 +25,114 @@ To delete an entry, just enter an empty string for the filename and subject, and
 'From address' is optional; if left blank, the default spam system from-address will be used.
 
 <p>
-<a href=/doc/spam.html>Documentation for the spam system is available here.</a>
+<a href=/doc/spam>Documentation for the spam system is available here.</a>
 <p>
 
 "
 
-set db_conns [ns_db gethandle [philg_server_default_pool] 2]
-set db [lindex $db_conns 0]
-set db_sub [lindex $db_conns 1]
-
-set entries_header "
-<tr><th>User Class</th>
-<th>Subject</th>
-<th>Filename</th>
-<th>From address</th>
-<th>Frequency</th>
-<th>Template?</th>
-</tr>
-
-"
- 
 set entries ""
-
-set selection [ns_db select $db "select * from daily_spam_files"]
-
 set iter 0
 
-while { [ns_db getrow $db $selection] } { 
-    set_variables_after_query
-    append entries "
-<tr><td><select name=user_class_id_$iter>
-[db_html_select_value_options $db_sub "select user_class_id, name from user_classes order by name" $target_user_class_id]
+db_foreach periodic_spam_messages "select file_prefix,
+		    subject,
+		    target_user_class_id,
+		    user_class_description,
+		    from_address,
+		    template_p,
+		    period,
+		    day_of_week,
+		    day_of_month,
+		    day_of_year
+               from daily_spam_files" {
+
+	   append entries "
+<table border=1 cellpadding=2>
+<tr>
+<th align=right>User Class</th><td><select name=user_class_id.$iter>
+[db_html_select_value_options -select_option $target_user_class_id \
+                               user_class_select_options \
+                               "select user_class_id, name from user_classes order by name"]
 </select></td>
-<td><input name=subject_$iter type=text value=\"[philg_quote_double_quotes $subject]\" size=40></td>
-<td><input name=file_prefix_$iter type=text size=24 value=\"[philg_quote_double_quotes $file_prefix]\"></td>
-<td><input name=from_address_$iter type=text size=24 value=\"[philg_quote_double_quotes $from_address]\"></td>
+<tr><th align=right>Subject </th>
+<td><input name=subject.$iter type=text value=\"[ns_quotehtml $subject]\" size=40></td></tr>
+<tr><th align=right>Filename </th>
+<td><input name=file_prefix.$iter type=text size=24 value=\"[ns_quotehtml $file_prefix]\"></td></tr>
+<tr><th align=right>From Address </th>
+<td><input name=from_address.$iter type=text size=24 value=\"[ns_quotehtml $from_address]\"></td></tr>
 "
 
+  if {! [info exists period.$iter] || [empty_string_p [set period.$iter]] } {
+      set period.$iter "weekly"
+  }
 
-if {! [info exists frequency_$iter] } {
-    set frequency_$iter "weekly"
+  append entries "<tr><th align=right>Period </th>
+<td><select name=period.$iter>
+  [ad_generic_optionlist {Daily Weekly Monthly Yearly} {daily weekly monthly yearly} $period]
+  </select>
+
+Day of week <select name=day_of_week.$iter><option value=\"\"></option>[html_select_value_options {{1 Monday} {2 Tuesday} {3 Wednesday} {4 Thursday} {5 Friday} {6 Saturday} {7 Sunday}} $day_of_week 0 1] </select>
+
+Day of month <select name=day_of_month.$iter><option value=\"\"></option>[ad_integer_optionlist 1 31 $day_of_month]</select>
+
+</td></tr>"
+
+  append entries "<tr><th align=right>Template?</th><td>"
+  if {[string match $template_p "t"]} {
+      append entries "<input type=checkbox name=template_p.$iter value=t checked>"
+  } else {
+      append entries "<input type=checkbox name=template_p.$iter value=t>"
+  }
+  append entries "</td></tr></table>"
+
+  append entries "
+  <p>
+  "
+
+  incr iter
 }
 
-append entries "<td><select name=frequency_$iter>
-[ad_generic_optionlist {Daily Weekly Monthly Yearly} {daily weekly monthly yearly} frequency_$iter]
-</select></td>"
+append page_content "
+<form action=modify-daily-spam method=post>
 
-
-append entries "<td>"
-if {[string match $template_p "t"]} {
-    append entries "<input type=checkbox name=template_p_$iter value=t checked>"
-} else {
-    append entries "<input type=checkbox name=template_p_$iter value=t>"
-}
-append entries "</td>"
-
-
-append entries "
-</tr>
 "
-    incr iter
-}
-
-append pagebody "
-<form action=modify-daily-spam.tcl method=post>
-<table>"
 
 if {![empty_string_p $entries]} {
-    append pagebody "$entries_header
-    $entries"
+    append page_content "<h3>Periodic Email (Spam) Entries</h3><br>
+    $entries
+    <p>
+    <input type=submit value=\"Modify Spam Entries\">"
 }
 
-append pagebody "
-<tr><td colspan=3>Add new daily spam</tr>
-$entries_header
-<tr><td>
-<select name=user_class_id_$iter>
-[db_html_select_value_options $db_sub "select user_class_id, name from user_classes order by name"]
-</select>
-<td> <input name=subject_$iter type=text size=40></td>
-<td><input name=file_prefix_$iter type=text size=24></td>
-<td><input name=from_address_$iter type=text size=24></td>
-<td><select name=frequency_$iter>
+append page_content "
+<p>
+<h3>Add New Periodic Email Entry</h3>
+<table border=1 cellpadding=2>
+<tr><th align=right>User Class</th><td>
+<select name=user_class_id.$iter>
+[db_html_select_value_options user_class_select_options "select user_class_id, name from user_classes order by name"]
+</select></td></tr>
+<tr><th align=right>Subject</th><td> <input name=subject.$iter type=text size=40></td></tr>
+<tr><th align=right>Filename</th><td><input name=file_prefix.$iter type=text size=24></td></tr>
+<tr><th align=right>From Address</th><td><input name=from_address.$iter type=text size=24></td></tr>
+<tr><th align=right>Period</th><td><select name=period.$iter>
 [ad_generic_optionlist {Daily Weekly Monthly Yearly} {daily weekly monthly yearly} ""]
 </select>
-</td>
-<td><input type=checkbox name=template_p_$iter value=t></td>
-</tr>
+
+Day of week <select name=day_of_week.$iter><option value=\"\"></option>[html_select_value_options {{1 Monday} {2 Tuesday} {3 Wednesday} {4 Thursday} {5 Friday} {6 Saturday} {7 Sunday}} "" 0 1] </select>
+
+Day of month <select name=day_of_month.$iter><option value=\"\"></option>[ad_integer_optionlist 1 31]</select>
+
+</td></tr>
+<tr><th align=right>Template?</th><td><input type=checkbox name=template_p.$iter value=t></td></tr>
 </table>
 
-<input type=submit value=\"Modify Spam Entries\">
+<p>
+<input type=submit value=\"Add New Entry\">
+
 </form>
 "
 
-append pagebody "<h3>Contents of the dropzone directory <i>[spam_file_location ""]</i></h3>"
+append page_content "<h3>Contents of the dropzone directory <i>[spam_file_location ""]</i></h3>"
 
 set file_items ""
 # list the contents of the dropzone directory 
@@ -123,19 +140,19 @@ set file_items ""
 set files [lsort -ascii [glob -nocomplain [spam_file_location "*"]]]
 foreach path $files {
     set file [file tail $path]
-    append file_items "<tr><td align=left><tt><a href=view-spam-file.tcl?filename=[ns_urlencode $file]>$file</a></tt></td><td width=20></td><td><a href=delete-spam-file.tcl?filename=[ns_urlencode $file]><tt>delete</tt></a></td></tr>"
+    append file_items "<tr><td align=left><tt><a href=view-spam-file?filename=[ns_urlencode $file]>$file</a></tt></td><td width=20></td><td><a href=delete-spam-file?filename=[ns_urlencode $file]><tt>delete</tt></a></td></tr>"
 }
 
 if {[empty_string_p $file_items]} {
-    append pagebody "<i>no files in drop zone</i><br>"
+    append page_content "<i>no files in drop zone</i><br>"
 } else {
-    append pagebody "<table>$file_items</table>"
+    append page_content "<table>$file_items</table>"
 }
 
-
-
-append pagebody "
+append page_content "
 <p>
 [ad_admin_footer]"
 
-ns_write $pagebody
+
+doc_return  200 text/html $page_content
+

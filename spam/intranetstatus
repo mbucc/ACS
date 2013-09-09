@@ -1,0 +1,12 @@
+Dear $first_names, 
+
+The following is summary of the previous day at our company.  You may
+view this online at [im_url]/reports/status/
+
+You can view the entire (un-customized) status report at [im_url]/reports/status/index?custom_view_p=f
+
+You can view your status report preferences at [im_url]/reports/status/preferences-edit
+
+
+[im_status_report 1 "" "email_summary" "im_status_report_section_list" $user_id]
+

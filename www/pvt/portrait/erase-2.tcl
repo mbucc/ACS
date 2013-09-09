@@ -1,30 +1,41 @@
-# $Id: erase-2.tcl,v 3.0.4.1 2000/04/28 15:11:24 carsten Exp $
-# 
 # /pvt/portrait/erase-2.tcl
-#
-# by philg@mit.edu on September 26, 1999
-#
-# erase's a user's portrait (NULLs out columns in the database)
-#
-# the key here is to null out portrait_upload_date, which is 
-# used by pages to determine portrait existence 
-# 
 
-ad_maybe_redirect_for_registration
+ad_page_contract {
+    erase's a user's portrait (NULLs out columns in the database)
+    
+    @param operation Must be set to "Yes, I'm sure" (case-insensitive) for portrait to be erased
 
-set user_id [ad_verify_and_get_user_id]
+    @author philg@mit.edu
+    @creation-date September 26, 1999
+    @cvs-id erase-2.tcl,v 3.1.8.3 2000/08/27 19:52:10 mbryzek Exp
+} {
+    { operation:trim "" }
+    { return_url "" }
+}
 
-set db [ns_db gethandle]
+# delete from general_portraits if the user confirmed
 
-ns_db dml $db "update users
-set portrait = NULL,
-    portrait_comment = NULL,
-    portrait_client_file_name = NULL,
-    portrait_file_type = NULL,
-    portrait_file_extension = NULL,
-    portrait_original_width = NULL,
-    portrait_original_height = NULL,
-    portrait_upload_date = NULL
-where user_id = $user_id"
+if { [string equal [string toupper $operation] "YES, I'M SURE"] } {
+    set user_id [ad_maybe_redirect_for_registration]
 
-ad_returnredirect "/pvt/home.tcl"
+    db_dml portrait_erase {
+	delete from general_portraits
+	where on_what_id = :user_id
+	and on_which_table = 'USERS'
+	and approved_p = 't'
+	and portrait_primary_p = 't'
+    }
+    # default return_url to user home page (portrait/index is only for
+    # people with portaits)
+
+    if { [empty_string_p $return_url] } {
+	set return_url [ad_pvt_home]
+    }
+} else {
+    # Go back to the portrait management page (unless return_url was specified)
+    if { [empty_string_p $return_url] } {
+	set return_url "index"
+    }
+}
+
+ad_returnredirect $return_url

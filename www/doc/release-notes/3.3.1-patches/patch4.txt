@@ -1,0 +1,14 @@
+In this file: /packages/form-manager/process-procs.tcl
+
+Change
+   ad_util_set_variables $element name defaults
+to
+   ad_util_set_variables $element name defaults widget
+
+And change
+   if { [empty_string_p $value] } {
+to
+   if { [empty_string_p $value] || $widget == "none" } {
+
+
+More details: http://dev.arsdigita.com/doc/templates/security.html

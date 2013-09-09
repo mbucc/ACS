@@ -30,12 +30,10 @@ create table fs_files (
 	parent_id		integer references fs_files(file_id)
 );
 
-
--- need two indices to support CONNECT BY 
-
-create index fs_files_idx1 on fs_files(file_id, parent_id);
-create index fs_files_idx2 on fs_files(parent_id, file_id);
-
+-- Oracle appears to not like composite indices because it messes up
+-- the primary key index. We index the foreign key columns for the
+-- connect by. (richardl@arsdigita.com, 26 September 2000).
+create index fs_files_parent_id on fs_files(parent_id);
 
 -- folders are also stored in fs_versions so that general_permissions can be
 -- wrapped around the folders as well.  This way, is someone ever wants to 

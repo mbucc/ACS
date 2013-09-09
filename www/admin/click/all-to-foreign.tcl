@@ -1,12 +1,10 @@
-# $Id: all-to-foreign.tcl,v 3.0 2000/02/06 03:14:41 ron Exp $
-set_form_variables_string_trim_DoubleAposQQ
-set_form_variables
+ad_page_contract {
+    @cvs-id all-to-foreign.tcl,v 3.3.2.4 2000/09/22 01:34:30 kevin Exp
+} {
+    foreign_url
+}
 
-# foreign_url
-
-ReturnHeaders
-
-ns_write "[ad_admin_header "-&gt; $foreign_url"]
+append html "[ad_admin_header "&gt; $foreign_url"]
 
 <h3> -&gt; 
 
@@ -15,34 +13,32 @@ $foreign_url
 </a>
 </h3>
 
-[ad_admin_context_bar [list "report.tcl" "Clickthroughs"] "All to Foreign URL"]
-
-
+[ad_admin_context_bar [list "report" "Clickthroughs"] "All to Foreign URL"]
 
 <hr>
 
 <ul>
 
 "
-set db [ns_db gethandle]
 
-set selection [ns_db select $db "select entry_date, sum(click_count) as n_clicks from clickthrough_log
-where foreign_url = '[DoubleApos $foreign_url]'
+
+set sql "select entry_date, sum(click_count) as n_clicks from clickthrough_log
+where foreign_url = :foreign_url
 group by entry_date
-order by entry_date desc"]
+order by entry_date desc"
 
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
-    ns_write "<li>$entry_date : 
-<a href=\"one-foreign-one-day.tcl?foreign_url=[ns_urlencode $foreign_url]&query_date=[ns_urlencode $entry_date]\">
+db_foreach click_list $sql -bind [ad_tcl_vars_to_ns_set foreign_url] {
+    append html "<li>$entry_date : 
+<a href=\"one-foreign-one-day?foreign_url=[ns_urlencode $foreign_url]&query_date=[ns_urlencode $entry_date]\">
 $n_clicks</a>
 "
 }
 
-ns_write "
+append html "
 </ul>
 
 [ad_admin_footer]
 "
 
-
+db_release_unused_handles
+doc_return 200 text/html $html

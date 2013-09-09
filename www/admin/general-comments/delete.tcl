@@ -1,36 +1,35 @@
-# $Id: delete.tcl,v 3.0 2000/02/06 03:23:24 ron Exp $
-if {[ad_read_only_p]} {
-    ad_return_read_only_maintenance_message
+# www/admin/general-comments/delete.tcl
+
+ad_page_contract {
+    Verifies if user would like to delete a comment.
+
+    @cvs-id  delete.tcl,v 3.2.2.4 2000/09/22 01:35:24 kevin Exp
+    @param comment_id The comment to delete
+
+} {
+    comment_id:integer
+}
+
+
+set comment_exists_p \
+	[db_0or1row general_comments_properties \
+	"select comment_id, content, general_comments.html_p as comment_html_p
+         from general_comments
+         where comment_id = :comment_id"]
+if {!$comment_exists_p} {
+    db_release_unused_handles
+    ad_return_error "Can't find comment" "Can't find comment $comment_id"
     return
 }
 
-set_form_variables
-
-# comment_id
-
-set db [ns_db gethandle]
-
-set selection [ns_db 0or1row $db "select comment_id, content, general_comments.html_p as comment_html_p
-from general_comments
-where comment_id = $comment_id"]
-
-if { $selection == "" } {
-   ad_return_error "Can't find comment" "Can't find comment $comment_id"
-   return
-}
-
-set_variables_after_query
-
-ReturnHeaders
-
-ns_write "[ad_admin_header "Really delete comment" ]
+db_release_unused_handles
+doc_return 200 text/html "[ad_admin_header "Really delete comment" ]
 
 <h2>Really delete comment</h2>
 
 <hr>
 
-
-<form action=delete-2.tcl method=post>
+<form action=delete-2 method=post>
 Do you really wish to delete the following comment?
 <blockquote>
 [util_maybe_convert_to_html $content $comment_html_p]

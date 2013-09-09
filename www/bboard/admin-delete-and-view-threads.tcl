@@ -1,29 +1,24 @@
-# $Id: admin-delete-and-view-threads.tcl,v 3.0 2000/02/06 03:32:45 ron Exp $
-set_form_variables_string_trim_DoubleAposQQ
-set_form_variables
+# /www/bboard/admin-delete-and-view-threads.tcl
+ad_page_contract {
+    shows bboard threads with the option to delete them.
 
-# topic, topic_id
+    @cvs-id admin-delete-and-view-threads.tcl,v 3.2.2.4 2000/09/22 01:36:43 kevin Exp
+} {
+    topic:notnull
+    topic_id:notnull,integer
+}
 
+# -----------------------------------------------------------------------------
  
-
-
-set db [bboard_db_gethandle]
-if { $db == "" } {
-    bboard_return_error_page
+if  {[bboard_get_topic_info] == -1} {
     return
 }
 
-
-# cookie checks out; user is authorized
-
- 
-if  {[bboard_get_topic_info] == -1} {
-    return}
-
 if {[bboard_admin_authorization] == -1} {
-	return}
+    return
+}
 
-
+# -----------------------------------------------------------------------------
 
 proc compute_msg_level { sort_key } {
 
@@ -43,26 +38,23 @@ proc compute_msg_level { sort_key } {
 
     }
 
-
 }
 
-ReturnHeaders
+# -----------------------------------------------------------------------------
 
-ns_write "<html>
-<head>
-<title>Delete and View Threads for $topic</title>
-</head>
-<body bgcolor=[ad_parameter bgcolor "" "white"] text=[ad_parameter textcolor "" "black"]>
+
+append page_content "
+[bboard_header "Delete and View Threads for $topic"]
 
 <h2>Delete and View Threads for \"$topic\"</h2>
 
-a discussion group in <a href=\"index.tcl\">[bboard_system_name]</a>
+a discussion group in <a href=\"index\">[bboard_system_name]</a>
 
 <p>
 
 Personally, I don't find this interface as useful as the 
 
-<a href=\"admin-q-and-a.tcl?[export_url_vars topic topic_id]\">admin Q&A</a>
+<a href=\"admin-q-and-a?[export_url_vars topic topic_id]\">admin Q&A</a>
 
 but to each his own...
 
@@ -72,13 +64,13 @@ but to each his own...
 
 <pre>"
 
-set selection [ns_db select $db "select msg_id, one_line, sort_key from bboard
-where topic_id = $topic_id
-order by sort_key desc"]
-
-while {[ns_db getrow $db $selection]} {
-
-    set_variables_after_query
+db_foreach messages "
+select msg_id,
+       one_line, 
+       sort_key 
+from   bboard
+where  topic_id = :topic_id
+order by sort_key desc" {
 
     set n_spaces [expr 3 * [compute_msg_level $sort_key]]
 
@@ -92,11 +84,12 @@ while {[ns_db getrow $db $selection]} {
 
     }
 
-    ns_write "<a target=admin_bboard_window href=\"delete-msg.tcl?msg_id=$msg_id\">DELETE</a> $pad<a target=admin_bboard_window href=\"admin-edit-msg.tcl?msg_id=$msg_id\">$one_line</a>\n"
+    append page_content "<a target=admin_bboard_window href=\"delete-msg?msg_id=$msg_id\">DELETE</a> $pad<a target=admin_bboard_window href=\"admin-edit-msg?msg_id=$msg_id\">$one_line</a>\n"
 
 }
 
-ns_write "</pre>
-</body>
-</html>
+append page_content "</pre>
+[bboard_footer]
 "
+
+doc_return  200 text/html $page_content

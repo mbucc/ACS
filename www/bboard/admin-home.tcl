@@ -1,15 +1,20 @@
-# $Id: admin-home.tcl,v 3.0 2000/02/06 03:32:46 ron Exp $
-set_the_usual_form_variables
+# /bboard/admin-home.tcl 
 
-# topic, topic_id
-
-set db [bboard_db_gethandle]
-if { $db == "" } {
-    bboard_return_error_page
-    return
+ad_page_contract {
+    @author philg@mit.edu
+    @creation-date 1995
+    @cvs-id admin-home.tcl,v 3.4.2.7 2000/11/17 07:03:33 kevin Exp
+} {
+    topic
+    topic_id:integer,optional
 }
 
- 
+# a bboard administrator's page where that person can participate
+# in the discussion (most common usage), moderate out inappropriate
+# messages (common usage), change the bboard's properties (uncommon usage
+# that should be given much less prominence)
+
+
 if {[bboard_get_topic_info] == -1} {
     return
 }
@@ -18,34 +23,34 @@ if {[bboard_admin_authorization] == -1} {
     return
 }
 
-
 # cookie checks out; user is authorized
 
-
-if [catch {set selection [ns_db 0or1row $db "select bt.*,u.email as maintainer_email, u.first_names || ' ' || u.last_name as maintainer_name, presentation_type
- from bboard_topics bt, users u
- where bt.topic_id=$topic_id
- and bt.primary_maintainer_id = u.user_id"]} errmsg] {
+if { ![db_0or1row topic_data_get "
+select bt.*,
+       u.email as maintainer_email, 
+       u.first_names || ' ' || u.last_name as maintainer_name
+from   bboard_topics bt, users u
+where  bt.topic_id = :topic_id
+and    bt.primary_maintainer_id = u.user_id" -column_set selection] } {
     [bboard_return_cannot_find_topic_page]
     return
 }
 # we found the data we needed
-set_variables_after_query
 
 set threads_checked ""
 set q_and_a_checked ""
 set ed_com_checked ""
-set usgeospatial_checked ""
 switch $presentation_type {
     threads { set threads_checked " CHECKED" }
     q_and_a { set q_and_a_checked " CHECKED" }
-    ed_com { set ed_com_checked " CHECKED" }
-    usgeospatial { set usgeospatial_checked " CHECKED" }
+    ed_com  { set ed_com_checked " CHECKED" }
 }
 
-ReturnHeaders
+#    set usgeospatial_checked ""
+#    usgeospatial { set usgeospatial_checked " CHECKED" }
 
-ns_write "<html>
+
+append doc_body "<html>
 <head>
 <title>BBoard Admin for $topic</title>
 </head>
@@ -53,25 +58,23 @@ ns_write "<html>
 
 <h2>Administration for \"$topic\"</h2>
 
-a discussion group in <a href=\"index.tcl\">[bboard_system_name]</a>
+[ad_context_bar_ws_or_index [list "index.tcl" [bboard_system_name]] [list [bboard_raw_backlink $topic_id $topic $presentation_type 0] $topic] "Administer"]
 
 <hr>
 
 <h3>Daily Tasks</h3>
 
 <ul>
-<li>visit the user-visible page:  <a href=\"main-frame.tcl?[export_url_vars topic topic_id]\">threads</a> | 
-<a href=\"q-and-a.tcl?[export_url_vars topic topic_id]\">Q&amp;A/Editorial</a> |
-<a href=\"usgeospatial.tcl?[export_url_vars topic topic_id]\">US Geospatial</a>
+<li>visit the user-visible page:  <a href=\"main-frame?[export_url_vars topic topic_id]\">threads</a> | 
+<a href=\"q-and-a?[export_url_vars topic topic_id]\">Q&amp;A/Editorial</a> |
 
 <li>visit the administration page:  
-<a href=\"admin-delete-and-view-threads.tcl?[export_url_vars topic topic_id]\">threads</a> |
-<a href=\"admin-q-and-a.tcl?[export_url_vars topic topic_id]\">Q&amp;A/Editorial</a> |
-<a href=\"admin-usgeospatial.tcl?[export_url_vars topic topic_id]\">US Geospatial</a> 
+<a href=\"admin-delete-and-view-threads?[export_url_vars topic topic_id]\">threads</a> |
+<a href=\"admin-q-and-a?[export_url_vars topic topic_id]\">Q&amp;A/Editorial</a> |
 
-<li><a href=\"admin-expired-threads.tcl?[export_url_vars topic topic_id]\">look at expired threads</a> (a Q&A only thing)"
+<li><a href=\"admin-expired-threads?[export_url_vars topic topic_id]\">look at expired threads</a> (a Q&A only thing)
 
-ns_write "</ul>
+</ul> 
 
 <h3>Community</h3>
 
@@ -82,7 +85,7 @@ contests) the people who participate in your forum.
 
 Pick out the readers who've posted at least
 
-<form method=post action=admin-community-view.tcl>
+<form method=post action=admin-community-view>
 [export_form_vars topic topic_id]
 <input type=text name=n_postings value=1 size=4> times
 
@@ -109,29 +112,24 @@ who can't spell \"aperture\" turn out to be idiots.
 
 "
 
-# Branimir: bugfix: We need to save the result of the previous query
-#  because we'll need it
-set selection_saved [ns_set copy $selection]
-
-set selection [ns_db select $db "select * 
-from bboard_bozo_patterns 
-where topic_id = $topic_id
-order by upper(the_regexp)"]
+set sql "select * 
+         from bboard_bozo_patterns 
+         where topic_id = :topic_id
+         order by upper(the_regexp)"
 
 set bozo_items ""
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
-    append bozo_items "<li><a href=\"admin-bozo-pattern.tcl?[export_url_vars topic topic_id the_regexp]\">$the_regexp</a>\n"
+db_foreach items_list $sql {
+    append bozo_items "<li><a href=\"admin-bozo-pattern?[export_url_vars topic topic_id the_regexp]\">$the_regexp</a>\n"
 }
 
 if [empty_string_p $bozo_items] {
     set bozo_items "there aren't any bozo patterns associated with this forum right now"
 }
 
-ns_write "<ul>
+append doc_body "<ul>
 $bozo_items
 <p>
-<li><a href=\"admin-bozo-pattern-add.tcl?[export_url_vars topic topic_id]\">add pattern</a>
+<li><a href=\"admin-bozo-pattern-add?[export_url_vars topic topic_id]\">add pattern</a>
 </ul>
 
 <h3>How this BBoard is presented to users</h3>
@@ -144,9 +142,8 @@ want more customization, you'll just have to read <a
 href=\"http://photo.net/wtr/dead-trees/\">Philip Greenspun's
 book on Web service design</a>).
 
-<form method=post action=\"admin-update-topics-table.tcl\">
+<form method=post action=\"admin-update-topics-table\">
 [export_form_vars topic topic_id]
-
 
 <p>
 
@@ -171,10 +168,11 @@ Backlink Title:  <input type=text name=backlink_title size=30 value=\"$backlink_
 
 <p>
 
+Primary Maintainer: [db_string name_get "
+select first_names || ' ' || last_name || ' ' || '(' || email || ')'
+from users where user_id = :primary_maintainer_id"]
 
-Primary Maintainer: [database_to_tcl_string $db "select first_names || ' ' || last_name || ' ' || '(' || email || ')' from users where user_id = $primary_maintainer_id"]
-
-(<a href=\"admin-update-primary-maintainer.tcl?[export_url_vars topic topic_id]\">update</a>)
+(<a href=\"admin-update-primary-maintainer?[export_url_vars topic topic_id]\">update</a>)
 
 <br>
 (note:  messages from the above email address will be displayed first in a Q&A forum thread, even if the maintainer was not the first person to answer)
@@ -197,17 +195,14 @@ URL\" is different for Q&A and threads.
 <li><input type=radio name=presentation_type value=threads$threads_checked> threads - classical USENET style 
 <li><input type=radio name=presentation_type value=q_and_a$q_and_a_checked> Q&A - questions and all answers appear on one page, use for discussion groups that tend to have short messages/responses
 <li><input type=radio name=presentation_type value=ed_com$ed_com_checked> Editorial - question and answers appear on separate pages,  answers are collasped by subject line as a default, use for discussion groups that tend to have longer messages/responses 
-<li><input type=radio name=presentation_type value=usgeospatial$usgeospatial_checked> US Geospatial
 </ul>
 
 <p>
-
 
 <br>
 
 (note: I personally greatly prefer the Q&A interface; if people liked
 threads, they'd have stuck with USENET.)
-
 
 <h3>How Threads are Presented</h3>
 
@@ -226,16 +221,21 @@ Subject Line Suffix: <input type=text name=subject_line_suffix size=15 value=\"$
 Q&A threads are presented as a list.  You can choose either <p>
 "
 
+#<a href=\"usgeospatial?[export_url_vars topic topic_id]\">US Geospatial</a>
+#<a href=\"admin-usgeospatial?[export_url_vars topic topic_id]\">US Geospatial</a> 
+
+#<li><input type=radio name=presentation_type value=usgeospatial$usgeospatial_checked> US Geospatial
+
 if { $q_and_a_sort_order == "asc" } {
-    ns_write "<input type=radio name=q_and_a_sort_order value=asc CHECKED> Oldest on top
+    append doc_body "<input type=radio name=q_and_a_sort_order value=asc CHECKED> Oldest on top
 <input type=radio name=q_and_a_sort_order value=desc> Newest on top
 "} else {
-    ns_write "<input type=radio name=q_and_a_sort_order value=asc> Oldest on top
+    append doc_body "<input type=radio name=q_and_a_sort_order value=asc> Oldest on top
 <input type=radio name=q_and_a_sort_order value=desc CHECKED> Newest on top
 "
 }
 
-ns_write "
+append doc_body "
 
 <h3>Categorization</h3>
 
@@ -257,9 +257,7 @@ set raw_form_vars "Present Categorized?
 <input type=radio name=q_and_a_categorized_p value=t CHECKED> Yes
 <input type=radio name=q_and_a_categorized_p value=f> No
 
-
 <P>
-
 
 Ask User to Categorize?
 <input type=radio name=q_and_a_solicit_category_p value=t CHECKED> Yes
@@ -296,11 +294,11 @@ Show only the categories (and a count) on the top level page?
 <input type=radio name=q_and_a_show_cats_only_p value=f CHECKED> No
 "
 
-# (Branimir: bugfix: we have to use selection_saved as bozo filters
-#  query has overwritten the original selection)
-set merged_form [bt_mergepiece $raw_form_vars $selection_saved]
+# way back when, we saved this ns_set so we could perform the following
+# magic
+set merged_form [bt_mergepiece $raw_form_vars $selection]
 
-ns_write "$merged_form
+append doc_body "$merged_form
 
 <p>
 
@@ -311,7 +309,7 @@ interface.
 
 Once you've set up categorization, you can add categories in the Q&A
 admin pages (while looking at threads), or you can take an overall
-look in the <a href=\"admin-edit-categories.tcl?[export_url_vars topic topic_id]\">edit categories page</a>.
+look in the <a href=\"admin-edit-categories?[export_url_vars topic topic_id]\">edit categories page</a>.
 
 <h3>Interest Level</h3>
 
@@ -337,14 +335,13 @@ Use Interest Level System?
 "
 
 if { $q_and_a_use_interest_level_p == "t" } {
-    ns_write "<input type=radio name=q_and_a_use_interest_level_p value=t CHECKED> Yes
+    append doc_body "<input type=radio name=q_and_a_use_interest_level_p value=t CHECKED> Yes
 <input type=radio name=q_and_a_use_interest_level_p value=f> No" } else {
-    ns_write "<input type=radio name=q_and_a_use_interest_level_p value=t> Yes
+    append doc_body "<input type=radio name=q_and_a_use_interest_level_p value=t> Yes
     <input type=radio name=q_and_a_use_interest_level_p value=f CHECKED> No" 
 }
 
-
-ns_write "
+append doc_body "
 
 <h3>Policy</h3>
 
@@ -375,7 +372,6 @@ offered by default to everyone.
 
 <p>
 
-
 <textarea name=pre_post_caveat rows=5 cols=70>
 $pre_post_caveat
 </textarea>
@@ -394,13 +390,12 @@ Notify me of all new postings?
 "
 
 if { $notify_of_new_postings_p == "t" } {
-    ns_write "<input type=radio name=notify_of_new_postings_p value=t CHECKED> Yes <input type=radio name=notify_of_new_postings_p value=f> No "
+    append doc_body "<input type=radio name=notify_of_new_postings_p value=t CHECKED> Yes <input type=radio name=notify_of_new_postings_p value=f> No "
 } else {
-    ns_write "<input type=radio name=notify_of_new_postings_p value=t> Yes <input type=radio name=notify_of_new_postings_p value=f CHECKED> No "
+    append doc_body "<input type=radio name=notify_of_new_postings_p value=t> Yes <input type=radio name=notify_of_new_postings_p value=f CHECKED> No "
 }
 
-
-ns_write "<P>
+append doc_body "<P>
 
 Note that users can use the alerts feature to get instant notification
 of all postings themselves.  The From: header in this case is set to
@@ -419,8 +414,6 @@ the alerts</a> and disable the ones you think are causing bounces.
 
 </form>
 
-
-
 <h3>Things that you can't do (well, not from here)</h3>
 
 <ul>
@@ -432,9 +425,7 @@ key in the bboard messages table.
 <a href=\"mailto:[bboard_system_owner]\">send email to [bboard_system_owner]</a> 
 if you want to kill a topic.
 
-
 </ul>
-
 
 <h3>Weird stuff</h3>
 
@@ -444,12 +435,12 @@ someone wanted to put up a service with a fixed set of threads, e.g.,
 one for each U.S. state.  Users would be free to add any message they
 wanted underneath any of the threads set up by the administrator (oh
 yes, this works by removing the 
-<a href=\"q-and-a-post-new.tcl?[export_url_vars topic topic_id]\">Ask a Question</a>
+<a href=\"q-and-a-post-new?[export_url_vars topic topic_id]\">Ask a Question</a>
 link from the top level page).
 
 <p>
 
-<form method=post action=\"admin-update-topics-table.tcl\">
+<form method=post action=\"admin-update-topics-table\">
 [export_form_vars topic topic_id]
 
 Allow Users to initiate threads?
@@ -457,13 +448,13 @@ Allow Users to initiate threads?
 "
 
 if { $users_can_initiate_threads_p == "f" } {
-    ns_write "<input type=radio name=users_can_initiate_threads_p value=t> Yes
+    append doc_body "<input type=radio name=users_can_initiate_threads_p value=t> Yes
 <input type=radio name=users_can_initiate_threads_p value=f CHECKED> No" 
 } else {
-    ns_write "<input type=radio name=users_can_initiate_threads_p value=t CHECKED> Yes
+    append doc_body "<input type=radio name=users_can_initiate_threads_p value=t CHECKED> Yes
 <input type=radio name=users_can_initiate_threads_p value=f> No" } 
 
-ns_write "
+append doc_body "
 <p>
 <center>
 
@@ -476,14 +467,14 @@ ns_write "
 "
 
 if [ad_parameter FileUploadingEnabledP bboard 0] {
-    ns_write "
+    append doc_body "
 <h3>File/Image Uploading</h3>
 
 The server is configured to permit user uploads of images and other
 files.  Essentially a user can attach an arbitrary file to a message
 or, in the case of an image, have it displayed in-line with the message.
 
-<form method=GET action=\"admin-update-uploads-anticipated.tcl\">
+<form method=GET action=\"admin-update-uploads-anticipated\">
 [export_form_vars topic topic_id]
 
 Types of files you anticipate:
@@ -499,7 +490,10 @@ Types of files you anticipate:
 "
 }
 
-ns_write "
+append doc_body "
 
 [bboard_footer]
 "
+
+
+doc_return  200 text/html $doc_body

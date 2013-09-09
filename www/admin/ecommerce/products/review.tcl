@@ -1,16 +1,18 @@
-# $Id: review.tcl,v 3.0 2000/02/06 03:20:51 ron Exp $
-set_the_usual_form_variables
-# review_id
+#  www/admin/ecommerce/products/review.tcl
+ad_page_contract {
 
-set db [ns_db gethandle]
+  @author Eve Andersson (eveander@arsdigita.com)
+  @creation-date Summer 1999
+  @cvs-id review.tcl,v 3.1.6.4 2000/08/18 21:46:59 stevenp Exp
+} {
+  review_id:integer,notnull
+}
 
-set selection [ns_db 1row $db "select * from ec_product_reviews where review_id=$review_id"]
-set_variables_after_query
+db_1row review_select "select * from ec_product_reviews where review_id=:review_id"
 
 set product_name [ec_product_name $product_id]
 
-ReturnHeaders
-ns_write "[ad_admin_header "Professional Review of $product_name"]
+doc_body_append "[ad_admin_header "Professional Review of $product_name"]
 
 <h2>Professional Review of $product_name</h2>
 
@@ -41,7 +43,7 @@ ns_write "[ad_admin_header "Professional Review of $product_name"]
 
 <blockquote>
 
-<form method=post action=review-edit.tcl>
+<form method=post action=review-edit>
 [export_form_vars review_id product_id]
 
 <table>
@@ -112,11 +114,11 @@ Review<br>
 set audit_name "$product_name, Review:[ec_product_review_summary $author_name $publication $review_date]"
 set audit_id $review_id
 set audit_id_column "review_id"
-set return_url "[ns_conn url]?[export_url_vars review_id]"
+set return_url "[ad_conn url]?[export_url_vars review_id]"
 set audit_tables [list ec_product_reviews_audit]
 set main_tables [list ec_product_reviews]
 
-ns_write "<li><a href=\"/admin/ecommerce/audit.tcl?[export_url_vars audit_name audit_id audit_id_column return_url audit_tables main_tables]\">audit trail</a>
+doc_body_append "<li><a href=\"/admin/ecommerce/audit?[export_url_vars audit_name audit_id audit_id_column return_url audit_tables main_tables]\">audit trail</a>
 
 </ul>
 </blockquote>

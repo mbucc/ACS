@@ -1,13 +1,19 @@
-# $Id: tree-frame.tcl,v 3.0 2000/02/06 03:35:44 ron Exp $
-ReturnHeadersNoCache
+# /www/bookmarks/tree-frame.tcl
 
-ns_write "
+ad_page_contract {
+    @author  unknown
+    @created unknown
+    @cvs-id  tree-frame.tcl,v 3.0.12.5 2000/09/22 01:37:03 kevin Exp
+} {
+}
+
+set page_content "
 <html>
 
 <head>
-<link rel=\"stylesheet\" href=\"tree.css\">
-<script src=\"tree-static.js\"></script>
-<script src=\"tree-dynamic.tcl?time=[ns_time]\"></script>
+<link rel=stylesheet href=tree.css>
+<script src=tree-static.js></script>
+<script src=tree-dynamic?time=\"[ns_time]\"></script>
 </head>
 
 <body bgcolor=#f3f3f3>
@@ -18,3 +24,16 @@ initializeDocument()
 
 </html>
 "
+
+doc_return  200 text/html "$page_content"
+
+
+
+
+
+
+
+
+
+
+

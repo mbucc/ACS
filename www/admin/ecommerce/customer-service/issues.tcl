@@ -1,6 +1,16 @@
-# $Id: issues.tcl,v 3.0 2000/02/06 03:18:07 ron Exp $
-set_form_variables 0
-# possibly view_issue_type and/or view_status and/or view_open_date and/or order_by
+# issues.tcl
+
+ad_page_contract {
+    @author
+    @creation-date
+    @cvs-id issues.tcl,v 3.2.2.5 2000/09/22 01:34:53 kevin Exp
+} {
+    view_issue_type:optional
+    view_status:optional
+    view_open_date:optional
+    order_by:optional
+}
+
 
 if { ![info exists view_issue_type] } {
     set view_issue_type "uncategorized"
@@ -15,9 +25,9 @@ if { ![info exists order_by] } {
     set order_by "i.issue_id"
 }
 
-ReturnHeaders
 
-ns_write "[ad_admin_header "Customer Service Issues"]
+
+append doc_body "[ad_admin_header "Customer Service Issues"]
 
 <h2>Customer Service Issues</h2>
 
@@ -25,8 +35,8 @@ ns_write "[ad_admin_header "Customer Service Issues"]
 
 <hr>
 
-<form method=post action=issues.tcl>
-[export_form_vars view_issue_type view_status view_open_date order_by]
+<form method=post action=issues>
+[export_form_vars  view_status view_open_date order_by]
 
 <table border=0 cellspacing=0 cellpadding=0 width=100%>
 <tr bgcolor=ececec>
@@ -38,21 +48,20 @@ ns_write "[ad_admin_header "Customer Service Issues"]
 <td align=center><select name=view_issue_type>
 "
 
-set db [ns_db gethandle]
 
-set important_issue_type_list [database_to_tcl_list $db "select picklist_item from ec_picklist_items where picklist_name='issue_type' order by sort_key"]
 
+set important_issue_type_list [db_list get_issue_type_list "select picklist_item from ec_picklist_items where picklist_name='issue_type' order by sort_key"]
 
 set issue_type_list [concat [list "uncategorized"] $important_issue_type_list [list "all others"]]
 
 foreach issue_type $issue_type_list {
     if { $issue_type == $view_issue_type } {
-	ns_write "<option value=\"$issue_type\" selected>$issue_type"
+	append doc_body "<option value=\"$issue_type\" selected>$issue_type"
     } else {
-	ns_write "<option value=\"$issue_type\">$issue_type"
+	append doc_body "<option value=\"$issue_type\">$issue_type"
     }
 }
-ns_write "</select>
+append doc_body "</select>
 <input type=submit value=\"Change\">
 </td>
 <td align=center>
@@ -66,11 +75,11 @@ foreach status $status_list {
     if { $status == $view_status } {
 	lappend linked_status_list "<b>$status</b>"
     } else {
-	lappend linked_status_list "<a href=\"issues.tcl?[export_url_vars view_issue_type view_open_date order_by]&view_status=$status\">$status</a>"
+	lappend linked_status_list "<a href=\"issues?[export_url_vars view_issue_type view_open_date order_by]&view_status=$status\">$status</a>"
     }
 }
 
-ns_write "\[ [join $linked_status_list " | "] \]
+append doc_body "\[ [join $linked_status_list " | "] \]
 </td>
 <td align=center>
 "
@@ -83,11 +92,11 @@ foreach open_date $open_date_list {
     if {$view_open_date == [lindex $open_date 0]} {
 	lappend linked_open_date_list "<b>[lindex $open_date 1]</b>"
     } else {
-	lappend linked_open_date_list "<a href=\"issues.tcl?[export_url_vars view_issue_type view_status order_by]&view_open_date=[lindex $open_date 0]\">[lindex $open_date 1]</a>"
+	lappend linked_open_date_list "<a href=\"issues?[export_url_vars view_issue_type view_status order_by]&view_open_date=[lindex $open_date 0]\">[lindex $open_date 1]</a>"
     }
 }
 
-ns_write "\[ [join $linked_open_date_list " | "] \]
+append doc_body "\[ [join $linked_open_date_list " | "] \]
 
 </td></tr></table>
 
@@ -146,7 +155,7 @@ if { $view_issue_type == "uncategorized" } {
     and i.issue_id = m.issue_id
     $open_date_query_bit $status_query_bit
     $issue_type_query_bit
-    order by $order_by
+    order by :order_by
     "
 
 } else {
@@ -160,14 +169,13 @@ if { $view_issue_type == "uncategorized" } {
     where i.user_identification_id = id.user_identification_id
     and id.user_id = u.user_id (+)
     and i.issue_id = m.issue_id
-    and m.issue_type='[DoubleApos $view_issue_type]'
+    and m.issue_type=:view_issue_type
     $open_date_query_bit $status_query_bit
-    order by $order_by
+    order by :order_by
     "
 }
 
 set link_beginning "issues.tcl?[export_url_vars view_issue_type view_status view_open_date]"
-
 
 set table_header "<table>
 <tr>
@@ -179,17 +187,15 @@ set table_header "<table>
 <td><b><a href=\"$link_beginning&order_by=[ns_urlencode "m.issue_type"]\">Issue Type</a></b></td>
 </tr>"
 
-
-set selection [ns_db select $db $sql_query]
-
+set sql $sql_query
 
 set row_counter 0
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+db_foreach loop_through_issues $sql {
+    
     if { $row_counter == 0 } {
-	ns_write $table_header
+	append doc_body $table_header
     } elseif { $row_counter == 20 } {
-	ns_write "</table>
+	append doc_body "</table>
 	<p>
 	$table_header
 	"
@@ -202,37 +208,40 @@ while { [ns_db getrow $db $selection] } {
 	set bgcolor "ececec"
     }
 
-
-    ns_write "<tr bgcolor=\"$bgcolor\"><td><a href=\"issue.tcl?issue_id=$issue_id\">$issue_id</a></td>
+    append doc_body "<tr bgcolor=\"$bgcolor\"><td><a href=\"issue?issue_id=$issue_id\">$issue_id</a></td>
     <td>[ec_formatted_full_date $full_open_date]</td>
     <td>[ec_decode $full_close_date "" "&nbsp;" [ec_formatted_full_date $full_close_date]]</td>
     "
 
     if { ![empty_string_p $user_id] } {
-	ns_write "<td><a href=\"/admin/users/one.tcl?user_id=$user_id\">$users_last_name, $users_first_names</a></td>"
+	append doc_body "<td><a href=\"/admin/users/one?user_id=$user_id\">$users_last_name, $users_first_names</a></td>"
     } else {
-	ns_write "<td>unregistered user <a href=\"user-identification.tcl?[export_url_vars user_identification_id]\">$user_identification_id</a></td>"
+	append doc_body "<td>unregistered user <a href=\"user-identification?[export_url_vars user_identification_id]\">$user_identification_id</a></td>"
     }
 
-    ns_write "<td>[ec_decode $order_id "" "&nbsp;" "<a href=\"../orders/one.tcl?order_id=$order_id\">$order_id</a>"]</td>"
+    append doc_body "<td>[ec_decode $order_id "" "&nbsp;" "<a href=\"../orders/one?order_id=$order_id\">$order_id</a>"]</td>"
 
     if { $view_issue_type =="uncategorized" } {
-	ns_write "<td>&nbsp;</td>"
+	append doc_body "<td>&nbsp;</td>"
     } else {
-	ns_write "<td>$issue_type</td>"
+	append doc_body "<td>$issue_type</td>"
     }
 
-    ns_write "</tr>"
+    append doc_body "</tr>"
     incr row_counter
 }
 
 if { $row_counter != 0 } {
-    ns_write "</table>"
+    append doc_body "</table>"
 } else {
-    ns_write "<center>None Found</center>"
+    append doc_body "<center>None Found</center>"
 }
 
-ns_write "
+append doc_body "
 </blockquote>
 [ad_admin_footer]
 "
+
+
+
+doc_return  200 text/html $doc_body

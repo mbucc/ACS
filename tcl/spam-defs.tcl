@@ -1,4 +1,10 @@
-util_report_library_entry
+ad_library {
+    
+ Auxiliary definitions for spam daemon
+  
+    @author hqm@arsdigita.com 
+    @cvs-id spam-defs.tcl,v 3.9.2.1 2000/07/21 08:30:02 hqm Exp
+}
 
 
 proc_doc ad_removal_blurb {{subsection "" } {filetype "txt"}} "Gets the 
@@ -13,7 +19,6 @@ to outgoing email.  txt=plain, htm=html mail, aol = aol mail" {
 proc_doc ad_removal_blurb_internal {subsection filetype} "For use by ad_removal_blurb" {
     set default_blurb "------- Removal instructions ------
 [ad_url]/pvt/home.tcl"
-
 
     if {[lsearch {txt aol htm} $filetype] < 0} {
 	ad_return_error "error in input to ad_removal_blurb" "
@@ -54,13 +59,9 @@ proc_doc ad_removal_blurb_internal {subsection filetype} "For use by ad_removal_
     return $blurb
 }
 
-
-
-
 proc spam_system_default_from_address {} {
     return [ad_parameter "SpamRobotFromAddress" "spam" "email-notification@arsdigita.com"]
 }
-
 
 # Really, this should make sure to generate a boundary string that
 # does not appear in the content. +++
@@ -77,7 +78,6 @@ proc spam_content_base {} {
 proc spam_content_location {} {
     return [ad_parameter "SpamMIMEContentLocation" "spam" [ad_url]]
 }
-
 
 # Quoted printable MIME content encoder
 #
@@ -139,7 +139,6 @@ proc_doc spam_encode_quoted_printable {msg} {Returns a MIME quoted-printable RFC
     return $result
 }
 
-
 # Preserve user supplied newlines, but try to wrap text at 80 cols otherwise.
 # If a token is longer than the line length threshold, then don't break it
 # but put it on its own line (this is how we deal with long URL strings to 
@@ -150,36 +149,6 @@ proc spam_wrap_text {input {threshold 80}} {
     set result [wrap_string $text 80]
     return $result
 }
-
-
-util_report_successful_library_load
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

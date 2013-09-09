@@ -1,28 +1,32 @@
-# $Id: category-update.tcl,v 3.0 2000/02/06 03:26:01 ron Exp $
-set_form_variables 
+# /www/admin/neighbor/category-update.tcl
+ad_page_contract {
+    Updates the information about a category.
 
-# category_id
+    @author Philip Greenspun (philg@mit.edu)
+    @creation-date 1 January 1996
+    @cvs-id category-update.tcl,v 3.3.2.4 2000/09/22 01:35:41 kevin Exp
+    @param category_id the category to update
+} {
+    category_id:integer,notnull
+}
 
-set db [ns_db gethandle]
 
 # get the category information to fill in the form
 
-set selection [ns_db 1row $db "select * from n_to_n_primary_categories
-where category_id = $category_id"] 
-set_variables_after_query
+db_1row primary_category_select "
+  select * 
+    from n_to_n_primary_categories
+   where category_id = :category_id"
 
-ReturnHeaders
-
-ns_write "[neighbor_header "$primary_category values"]
+set page_content "[neighbor_header "$primary_category values"]
 
 <h2>$primary_category values</h2>
 
-[ad_admin_context_bar [list "index.tcl" "Neighbor to Neighbor"] [list "category.tcl?[export_url_vars category_id]" "One Category"] "Update Category"]
-
+[ad_admin_context_bar [list "" "Neighbor to Neighbor"] [list "category?[export_url_vars category_id]" "One Category"] "Update Category"]
 
 <hr>
 
-<form action=\"category-update-2.tcl\" method=post>
+<form action=\"category-update-2\" method=post>
 
 <h3>Category name</h3>
 What would you like to call this category?  <input type=text maxlength=100 name=primary_category [export_form_value primary_category]>
@@ -65,12 +69,12 @@ set html_form "<input type=radio name=regional_p value=\"t\">Yes
 "
 
 if { [info exists regional_p] } {
-    ns_write [bt_mergepiece $html_form $selection]
+    append page_content [bt_mergepiece $html_form [ad_tcl_vars_to_ns_set category_id primary_category top_title top_blurb primary_maintainer_id approval_policy regional_p region_type noun_for_about decorative_photo pre_post_blurb active_p]]
 } else {
-    ns_write $html_form
+    append page_content $html_form
 }
 
-ns_write "<p>If so, what type of groupings?
+append page_content "<p>If so, what type of groupings?
 <select name=region_type>
 [ad_generic_optionlist { "" Country "US State" "US County"} { "" country us_state us_country} [export_var region_type]]
 </select>
@@ -87,3 +91,6 @@ What type of approval system would you like for new postings?<br>
 </form>
 [neighbor_footer]
 "
+
+
+doc_return  200 text/html $page_content

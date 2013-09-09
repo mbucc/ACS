@@ -1,31 +1,29 @@
-# $Id: project-payments-audit.tcl,v 3.1.4.1 2000/03/17 08:23:09 mbryzek Exp $
-# File: /www/intranet/payments/project-payments-audit.tcl
-#
-# Author: mbryzek@arsdigita.com, Jan 2000
-#
-# Purpose: Shows audit trail for a project
-#
+# /www/intranet/payments/project-payments-audit.tcl
 
-set_form_variables 0
+ad_page_contract {
+    Purpose: Shows audit trail for a project
 
-# group_id
+    @param group_id Group for which to generate the audit trail
 
-ad_maybe_redirect_for_registration
+    @author mbryzek@arsdigita.com
+    @creation-date Jan 2000
 
-set db [ns_db gethandle]
+    @cvs-id project-payments-audit.tcl,v 3.5.6.7 2000/09/22 01:38:42 kevin Exp
+} {
+    group_id:naturalnum,notnull
+}
 
-set project_name [database_to_tcl_string $db "select 
-group_name from user_groups
-where group_id = $group_id"]
+
+set project_name [db_string get_project_name \
+	"select group_name 
+         from user_groups
+         where group_id = :group_id"]
 
 set page_title "Payments audit for $project_name"
-set context_bar "[ad_context_bar [list "/" Home] [list "index.tcl" "Intranet"] [list "projects.tcl" "Projects"] [list "project-info.tcl?[export_url_vars group_id]"  $project_name] [list "project-payments.tcl?[export_url_vars group_id]" "Payments"] "Audit"]"
+set context_bar [ad_context_bar_ws [list "[im_url_stub]/projects/" "Projects"] [list "[im_url_stub]/projects/view?[export_url_vars group_id]" $project_name] [list index?[export_url_vars group_id] "Payments"] "Audit trail"]
 
-ns_return 200 text/html "
-[ad_partner_header]
+set page_content [ad_audit_trail $group_id im_project_payments_audit im_project_payments group_id]
 
-[ad_audit_trail $db $group_id im_project_payments_audit im_project_payments group_id]
+doc_return  200 text/html [im_return_template]
 
 
-[ad_partner_footer]
-"

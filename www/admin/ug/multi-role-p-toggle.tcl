@@ -1,13 +1,15 @@
-# $Id: multi-role-p-toggle.tcl,v 3.0.4.1 2000/04/28 15:09:34 carsten Exp $
-# Form variables: 
-# group_id       the id of the group
+ad_page_contract {
+    @param group_id       the id of the group
+    
+    @cvs-id multi-role-p-toggle.tcl,v 3.2.2.5 2000/07/24 18:38:28 ryanlee Exp
+} {
+    group_id:notnull,naturalnum
+}
+
+db_dml update_ug_multirole_p "update user_groups set multi_role_p = logical_negation(multi_role_p) where group_id = :group_id"
+db_release_unused_handles
+
+ad_returnredirect "group?[export_url_vars group_id]"
 
 
-set_form_variables
 
-set db [ns_db gethandle]
-
-ns_db dml $db "update user_groups set multi_role_p = logical_negation(multi_role_p) where group_id = $group_id"
-
-
-ad_returnredirect "group.tcl?[export_url_vars group_id]"

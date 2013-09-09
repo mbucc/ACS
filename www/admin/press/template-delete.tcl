@@ -1,36 +1,35 @@
-# Delete a template (confirmation page)
-#
-# Author: ron@arsdigita.com, January 2000
-#
-# $Id: template-delete.tcl,v 3.0.4.1 2000/03/15 20:40:14 aure Exp $
-# -----------------------------------------------------------------------------
+# /www/admin/press/template-delete.tcl
 
-ad_page_variables {template_id}
+ad_page_contract {
 
-set db [ns_db gethandle]
+    Delete a template (confirmation page)
+
+    @author  Ron Henderson (ron@arsdigita.com)
+    @created January 2000
+    @cvs-id  template-delete.tcl,v 3.1.8.4 2000/09/22 01:35:51 kevin Exp
+} {
+    {template_id:integer}
+}
 
 # Get the template info
 
-set selection [ns_db 1row $db "
-select template_name, template_adp
+if ![db_0or1row template_info "
+select template_name, 
+       template_adp
 from   press_templates
-where  template_id=$template_id"]
+where  template_id = :template_id"] {
 
-if {[empty_string_p $selection]} {
     ad_return_complaint 1 "<li>The template you selected does not exist"
     return
-} else {
-    set_variables_after_query
 }
 
 # Verify that this template is not being used
 
-set count [database_to_tcl_string $db "
-select count(*) from press where template_id=$template_id"]
+set count [db_string template_check "select count(*) from press where template_id = :template_id"]
 
 if {$count > 0} {
     ad_return_complaint 1 "<li>The template you selected is in use by
-    $count press items"
+    $count press items and cannot be deleted"
     return
 }
 
@@ -41,11 +40,11 @@ if {$template_id == 1} {
     return
 }
 
-ns_db releasehandle $db
+db_release_unused_handles
 
 # Now put up a confirmation page just to make sure
 
-ns_return 200 text/html "
+doc_return  200 text/html "
 [ad_admin_header "Delete a template"]
 
 <h2>Delete a Template</h2>

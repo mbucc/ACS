@@ -1,6 +1,20 @@
-# $Id: actions.tcl,v 3.0 2000/02/06 03:17:28 ron Exp $
-set_form_variables 0
-# possibly view_info_used and/or view_rep and/or view_interaction_date and/or order_by
+# actions.tcl
+
+ad_page_contract {
+    @param view_info_used:optional
+    @param view_rep:optional 
+    @param view_interaction_date:optional
+    @param order_by:optional
+    @author
+    @creation-date
+    @cvs-id actions.tcl,v 3.2.2.5 2000/09/22 01:34:50 kevin Exp
+} { 
+    view_info_used:optional
+    view_rep:optional 
+    view_interaction_date:optional
+    order_by:optional
+}
+
 
 if { ![info exists view_info_used] } {
     set view_info_used "none"
@@ -16,9 +30,8 @@ if { ![info exists order_by] } {
 }
 
 
-ReturnHeaders
 
-ns_write "[ad_admin_header "Customer Service Actions"]
+append doc_body "[ad_admin_header "Customer Service Actions"]
 
 <h2>Customer Service Actions</h2>
 
@@ -26,7 +39,7 @@ ns_write "[ad_admin_header "Customer Service Actions"]
 
 <hr>
 
-<form method=post action=actions.tcl>
+<form method=post action=actions>
 [export_form_vars view_interaction_date]
 
 <table border=0 cellspacing=0 cellpadding=0 width=100%>
@@ -39,43 +52,43 @@ ns_write "[ad_admin_header "Customer Service Actions"]
 <td align=center><select name=view_info_used>
 "
 
-set db [ns_db gethandle]
 
-set important_info_used_list [database_to_tcl_list $db "select picklist_item from ec_picklist_items where picklist_name='info_used' order by sort_key"]
+
+set important_info_used_list [db_list get_picklist_items "select picklist_item from ec_picklist_items where picklist_name='info_used' order by sort_key"]
 
 set info_used_list [concat [list "none"] $important_info_used_list [list "all others"]]
 
 foreach info_used $info_used_list {
     if { $info_used == $view_info_used } {
-	ns_write "<option value=\"$info_used\" selected>$info_used"
+	append doc_body "<option value=\"$info_used\" selected>$info_used"
     } else {
-	ns_write "<option value=\"$info_used\">$info_used"
+	append doc_body "<option value=\"$info_used\">$info_used"
     }
 }
 
-ns_write "</select>
+append doc_body "</select>
 <input type=submit value=\"Change\">
 </td>
 <td align=center><select name=view_rep>
 <option value=\"all\">All
 "
 
-set selection [ns_db select $db "select i.customer_service_rep as rep, u.first_names as rep_first_names, u.last_name as rep_last_name
+set sql "select i.customer_service_rep as rep, u.first_names as rep_first_names, u.last_name as rep_last_name
 from ec_customer_serv_interactions i, users u
 where i.customer_service_rep=u.user_id
 group by i.customer_service_rep, u.first_names, u.last_name
-order by u.last_name, u.first_names"]
+order by u.last_name, u.first_names"
 
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+db_foreach get_customer_service_data $sql {
+    
     if { $view_rep == $rep } {
-	ns_write "<option value=$rep selected>$rep_last_name, $rep_first_names\n"
+	append doc_body "<option value=$rep selected>$rep_last_name, $rep_first_names\n"
     } else {
-	ns_write "<option value=$rep>$rep_last_name, $rep_first_names\n"
+	append doc_body "<option value=$rep>$rep_last_name, $rep_first_names\n"
     }
 }
 
-ns_write "</select>
+append doc_body "</select>
 <input type=submit value=\"Change\">
 </td>
 <td align=center>"
@@ -88,12 +101,11 @@ foreach interaction_date $interaction_date_list {
     if {$view_interaction_date == [lindex $interaction_date 0]} {
 	lappend linked_interaction_date_list "<b>[lindex $interaction_date 1]</b>"
     } else {
-	lappend linked_interaction_date_list "<a href=\"actions.tcl?[export_url_vars view_info_used view_rep order_by]&view_interaction_date=[lindex $interaction_date 0]\">[lindex $interaction_date 1]</a>"
+	lappend linked_interaction_date_list "<a href=\"actions?[export_url_vars view_info_used view_rep order_by]&view_interaction_date=[lindex $interaction_date 0]\">[lindex $interaction_date 1]</a>"
     }
 }
 
-
-ns_write "\[ [join $linked_interaction_date_list " | "] \]
+append doc_body "\[ [join $linked_interaction_date_list " | "] \]
 
 </td></tr></table>
 
@@ -104,7 +116,7 @@ ns_write "\[ [join $linked_interaction_date_list " | "] \]
 if { $view_rep == "all" } {
     set rep_query_bit ""
 } else {
-    set rep_query_bit "and i.customer_service_rep=[ns_dbquotevalue $view_rep]"
+    set rep_query_bit "and i.customer_service_rep=:view_rep"
 }
 
 if { $view_interaction_date == "last_24" } {
@@ -155,7 +167,7 @@ if { $view_info_used == "none" } {
     and i.user_identification_id=customer_info.user_identification_id
     and reps.user_id=i.customer_service_rep
     and a.action_id=map.action_id
-    and map.info_used='[DoubleApos $view_info_used]'
+    and map.info_used=:view_info_used
     $interaction_date_query_bit $rep_query_bit
     order by $order_by
     "
@@ -178,15 +190,15 @@ set table_header "<table>
 </tr>
 "
 
-set selection [ns_db select $db $sql_query]
+set sql $sql_query
 
 set row_counter 0
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+db_foreach get_interaction_info_maybe_rep $sql {
+    
     if { $row_counter == 0 } {
-	ns_write $table_header
+	append doc_body $table_header
     } elseif { $row_counter == 20 } {
-	ns_write "</table>
+	append doc_body "</table>
 	<p>
 	$table_header
 	"
@@ -199,24 +211,24 @@ while { [ns_db getrow $db $selection] } {
 	set bgcolor "ececec"
     }
 
-    ns_write "<tr bgcolor=\"$bgcolor\"><td>$action_id</td>
-    <td><a href=\"interaction.tcl?[export_url_vars interaction_id]\">$interaction_id</a></td>
-    <td><a href=\"issue.tcl?[export_url_vars issue_id]\">$issue_id</a></td>
+    append doc_body "<tr bgcolor=\"$bgcolor\"><td>$action_id</td>
+    <td><a href=\"interaction?[export_url_vars interaction_id]\">$interaction_id</a></td>
+    <td><a href=\"issue?[export_url_vars issue_id]\">$issue_id</a></td>
     <td>[ec_formatted_full_date $full_interaction_date]</td>
     "
     if { [empty_string_p $customer_user_id] } {
-	ns_write "<td>unregistered user <a href=\"user-identification.tcl?[export_url_vars user_identification_id]\">$user_identification_id</a></td>"
+	append doc_body "<td>unregistered user <a href=\"user-identification?[export_url_vars user_identification_id]\">$user_identification_id</a></td>"
     } else {
-	ns_write "<td><a href=\"/admin/users/one.tcl?user_id=$customer_user_id\">$customer_last_name, $customer_first_names</a></td>"
+	append doc_body "<td><a href=\"/admin/users/one?user_id=$customer_user_id\">$customer_last_name, $customer_first_names</a></td>"
     }
 
     if { ![empty_string_p $customer_service_rep] } {
-	ns_write "<td><a href=\"/admin/users/one.tcl?user_id=$customer_service_rep\">$rep_last_name, $rep_first_names</a></td>"
+	append doc_body "<td><a href=\"/admin/users/one?user_id=$customer_service_rep\">$rep_last_name, $rep_first_names</a></td>"
     } else {
-	ns_write "<td>&nbsp;</td>"
+	append doc_body "<td>&nbsp;</td>"
     }
 
-    ns_write "<td>$interaction_originator</td>
+    append doc_body "<td>$interaction_originator</td>
     <td>$interaction_type</td>
     </tr>
     "
@@ -224,12 +236,15 @@ while { [ns_db getrow $db $selection] } {
 }
 
 if { $row_counter != 0 } {
-    ns_write "</table>"
+    append doc_body "</table>"
 } else {
-    ns_write "<center>None Found</center>"
+    append doc_body "<center>None Found</center>"
 }
 
-ns_write "
+append doc_body "
 </blockquote>
 [ad_admin_footer]
 "
+
+
+doc_return  200 text/html $doc_body

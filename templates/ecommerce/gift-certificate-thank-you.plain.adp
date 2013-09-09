@@ -9,7 +9,7 @@ The lucky recipient will be notified by email shortly!
 <p>
 
 <ul>
-<li><a href="gift-certificate-order-2.tcl">Buy another gift certificate</a>
+<li><a href="gift-certificate-order-2">Buy another gift certificate</a>
 <p>
 <li><a href=<%= "\"$home_page\"" %>>Return to <%= [ad_system_name] %></a>
 </ul>

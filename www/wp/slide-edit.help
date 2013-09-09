@@ -1,0 +1,28 @@
+<%= [wp_help_header "Editing Slides"] %>
+<P>The "Create a Slide" page is used both to create and edit slides. If a slide is being edited, the information from your slides will be filled into the various fields on this page. If you are creating a new slide, all of the fields will be blank.
+<P>There are four main portions of a Wimpy Point slide:
+<ul>
+	<li>Slide Title
+		<blockquote>
+		This appears in large letters at the top of the slide.
+		</blockquote>
+	</li>
+	<li>Preamble
+		<blockquote>
+		This will appear as block of text under your title, and above any bulleted list which you have created. The creation of a preamble is optional is optional.
+		</blockquote>
+	</li>
+	<li>Bullet Items
+		<blockquote>
+		A bulleted list will be created in the middle of the slide, based on the list created here. If there are not enough lines to finish your list, you will have the opportunity to create more lines once the slide has been saved. The arrows next to each of the lines allows you to swap that line with the one that the arrow is pointing at.
+		</blockquote>
+	</li>
+	<li>Postamble
+		<blockquote>
+		This will appear as a block of text at the bottom of your page, and right under your bulleted list. Like the preamble, it is optional.
+		</blockquote>
+</ul>	
+<P>If you would like to add an image or other file, you should follow the <i>Upload Attachment</i> link. Otherwise, follow the <i>Save Slide</i> link to either save the changes made to your  slide, or to add the new slide to your presentation.</P>
+
+
+<%=[wp_footer]%>

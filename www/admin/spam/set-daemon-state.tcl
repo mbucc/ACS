@@ -1,14 +1,15 @@
-# set-daemon-state.tcl
+# www/admin/spam/set-daemon-state.tcl
 #
-# hqm@arsdigita.com
-#
-# enable or disable the dropzone scanner daemon
-#
+ad_page_contract {
 
-# form vars:
-# enable_p      enable or disable outgoing email 
+  Enable or disable the dropzone scanner daemon.
 
-set_the_usual_form_variables
+    @param enable_p boolean (t or f) to enable or disable outgoing email
+    @author hqm@arsdigita.com
+    @cvs-id set-daemon-state.tcl,v 3.2.6.3 2000/07/21 03:58:01 ron Exp
+} {
+  enable_p
+}
 
 spam_set_daemon_active $enable_p
 

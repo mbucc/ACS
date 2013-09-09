@@ -7,7 +7,7 @@
 <body bgcolor=#ffffff text=#000000>
 <h2>Chat</h2>
 
-part of the <a href="index.html">ArsDigita Community System</a>
+part of the <a href="index">ArsDigita Community System</a>
 by <a href="http://photo.net/philg/">Philip Greenspun</a>
 
 <hr>
@@ -16,8 +16,8 @@ by <a href="http://photo.net/philg/">Philip Greenspun</a>
 <li>User-accessible directory:  <a href="/chat/">/chat/</a>
 <li>Site administrator directory:  <a href="/admin/chat/">/admin/chat/</a>
 <li>Group administrator directory:  <a href="/chat/admin">/chat/admin/</a>
-<li>data model :  <a href="/doc/sql/display-sql.tcl?url=/doc/sql/chat.sql">/doc/sql/chat.sql</a>
-<li>Tcl procs:  /tcl/chat-defs.tcl
+<li>data model :  <a href="/doc/sql/display-sql?url=/doc/sql/chat.sql">/doc/sql/chat.sql</a>
+<li>Tcl procs:  /tcl/chat-defs
 </ul>
 
 
@@ -261,13 +261,13 @@ Following this operation, the chat table will be as compact as possible.
 
 Public chat rooms.  These are open to everyone in the
 <code>users_active</code> view.  For moderation, we check perms using <a
-href="permissions.html">the permissions package</a> (where module =
+href="permissions">the permissions package</a> (where module =
 "chat" and submodule = **chat_room_id**).
 
 <P>
 
 Private chat rooms.  These are open to people in particular user
-groups.  We check perms using <a href="permissions.html">the permissions
+groups.  We check perms using <a href="permissions">the permissions
 package</a>.
 
 <p>
@@ -358,7 +358,7 @@ NShortMessages=25
 NMediumMessages=50
 NLongMessages=75
 ; show a picture at the index page and in individual rooms?
-DefaultDecoration=&lt;a href="/photo/pcd0865/rachel-mouth-3.tcl"&gt;&lt;img HEIGHT=134 WIDTH=196 src="/photo/pcd0865/rachel-mouth-3.1.jpg" ALT="Mouth."&gt;&lt;/a&gt;
+DefaultDecoration=&lt;a href="/photo/pcd0865/rachel-mouth-3"&gt;&lt;img HEIGHT=134 WIDTH=196 src="/photo/pcd0865/rachel-mouth-3.1.jpg" ALT="Mouth."&gt;&lt;/a&gt;
 ; how often the javascript version should refresh itself
 JavaScriptRefreshInterval=5
 </pre>
@@ -367,12 +367,12 @@ JavaScriptRefreshInterval=5
 <h3>Linking into the system from a static page</h3>
 
 If you want to link into the chat system from a static page elsewhere on
-your site, do it by linking to "enter-room.tcl" rather than the more
-obvious "chat.tcl".  That way other users will see people coming in.
+your site, do it by linking to "enter-room" rather than the more
+obvious "chat".  That way other users will see people coming in.
 
 <blockquote>
 <pre><code>
-&lt;a href="/chat/enter-room.tcl?chat_room_id=142"&gt;Chat&lt;/a&gt;
+&lt;a href="/chat/enter-room?chat_room_id=142"&gt;Chat&lt;/a&gt;
 </code></pre>
 </blockquote>
 
@@ -385,9 +385,9 @@ a chat room and they are all polling every 2 seconds, we don't want to
 have to buy an 8-CPU computer to support 50 queries per second right
 into Oracle.  So we make heavy use of 
 <a
-href="proc-one.tcl?proc_name=util_memoize"><code>util_memoize</code></a>.
+href="proc-one?proc_name=util_memoize"><code>util_memoize</code></a>.
 When a new posting is made, we force a cache update with <a
-href="proc-one.tcl?proc_name=util_memoize_flush"><code>util_memoize_flush</code></a>.
+href="proc-one?proc_name=util_memoize_flush"><code>util_memoize_flush</code></a>.
 More than 95% of the time, a user is getting 
 results from AOLserver's virtual memory and not from the database.
 

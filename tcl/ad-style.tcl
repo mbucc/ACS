@@ -1,17 +1,10 @@
-# /tcl/ad-style.tcl
-#
-# philg@mit.edu on June 30, 1999
-#
-# $Id: ad-style.tcl,v 3.4.2.2 2000/03/18 01:19:49 ron Exp $
-# -----------------------------------------------------------------------------
-
-# 
-# establishing site-wide style conventions and supporting 
-#
-# documentation:  /doc/style.html
-#
-
-util_report_library_entry
+ad_library {
+    Establishing site-wide style conventions and supporting documentation.
+    
+    @author Phillip Greenspun [philg@arsdigita.colm]
+    @creation-date June 30, 1999
+    @cvs-id ad-style.tcl,v 3.7.2.5 2000/09/22 01:33:58 kevin Exp
+}
 
 proc_doc ad_register_styletag {tagname tag_documentation proc_body} {Defines a new site-wide style, includes an ADP tag and a procedure for use by .tcl pages (starting with "ad_style_").  The supplied procedure body should reference $string and $tagset (the variables given in the AOLserver Tcl API docs for ns_register_adptag)} {
     ns_share ad_styletag
@@ -67,15 +60,15 @@ proc ad_style_plain_fancy_from_cookie {} {
 }
 
 proc_doc ad_style_user_preferences_from_db {user_id} "Returns a list of prefer_text_only_p and language_preference from the users_preferences table; probably you should call this within a util_memoize so that you aren't kicking the stuffing out of Oracle." {
-    set db [ns_db gethandle subquery]
-    set selection [ns_db 0or1row $db "select prefer_text_only_p, language_preference from users_preferences where user_id = $user_id"]
-    if { $selection != "" } {
-	set_variables_after_query
+    if { [db_0or1row preference_select {
+	select prefer_text_only_p, language_preference 
+	from users_preferences 
+	where user_id = :user_id
+    }] } {
 	set result_list [list $prefer_text_only_p $language_preference]
     } else {
 	set result_list [list "" ""]
     }
-    ns_db releasehandle $db
     return $result_list 
 }
 
@@ -149,7 +142,6 @@ proc ad_style_sort_by_score {l1 l2} {
     }
 }
 
-
 proc_doc ad_return_template { { file_name "" } { cache_p 1 } } { Finds a template to source (looks at what templates are available, what the user prefers, and what the site defaults are), parses it in the caller's environment, and ns_return's the bytes to the user. file_name, if specified, overrides the base file name used to determine which template to use. cache_p, if specified, can disable or enable caching by altering the HTTP header.} {
     set full_url [ns_conn url]
 
@@ -163,7 +155,7 @@ proc_doc ad_return_template { { file_name "" } { cache_p 1 } } { Finds a templat
 	set file_name [file rootname [file tail $full_url]]
     }
     set template_directory "[ad_style_template_root]$just_the_dir"
-    set glob_pattern "${template_directory}/${file_name}.*.adp"
+    set glob_pattern "${template_directory}/${file_name}*.adp"
     set available_templates [glob -nocomplain $glob_pattern]
 
     if { [llength $available_templates] == 0 } {
@@ -184,13 +176,14 @@ Content-Type: text/html
 Pragma: No-Cache
 
 "
-	    eval "uplevel { ns_write \"$http_header\[ns_adp_parse -file \"$fully_qualified_template_filename\"\]\" }"
+	    ns_write $http_header
+	    ns_startcontent -type text/html
+	    eval "uplevel { ns_write \"\[ns_adp_parse -file \"$fully_qualified_template_filename\"\]\" }"
 	} else {
-	    eval "uplevel { ns_return 200 text/html \[ns_adp_parse -file \"$fully_qualified_template_filename\"\] }"
+	    eval "uplevel { doc_return  200 text/html \[ns_adp_parse -file \"$fully_qualified_template_filename\"\] }"
 	}
     }
 }
-
 
 # sample style tag
 # You will get an error if you try to register
@@ -216,7 +209,17 @@ $extra_br
 "
 }
 
-util_report_successful_library_load
+# the following style will be available in ADP pages as <BODYNOTE>
+# and in Tcl pages as [ad_style_bodynote "what you want to note"]
+#
+# RDH: moved from photonet-styles.tcl (2000-05-30)
 
-
+ad_register_styletag bodynote "A note that goes inline on a page; generally presented smaller and in a sans serif font." {
+    return "<blockquote>
+<font size=-2 face=\"verdana, arial, helvetica\">
+$string
+</font>
+</blockquote>
+"
+}
 

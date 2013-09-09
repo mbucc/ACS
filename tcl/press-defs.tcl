@@ -1,13 +1,13 @@
 # /tcl/press-defs.tcl
-#
-# Definitions for the press module
-#
-# Author: ron@arsdigita.com, December 1999
-#
-# $Id: press-defs.tcl,v 3.0.4.2 2000/03/16 20:57:02 ron Exp $
-# -----------------------------------------------------------------------------
 
-util_report_library_entry
+ad_library {
+
+    Definitions for the press module
+
+    @author ron@arsdigita.com 
+    @creation-date December 1999
+    @cvs-id press-defs.tcl,v 3.2.6.2 2000/07/25 11:27:50 ron Exp
+}
 
 # Wrappers for the press module parameters to supply default values in
 # case the site administrator leaves them out of the ACS ini file
@@ -69,11 +69,20 @@ proc press_entry_widget {name varname size {help ""} } {
     </tr>"
 }
 
-# Build a scope selection menu.  This gives the option of making press
-# coverage public or restricted to members of a certain user group.
-# The only groups offered are those for which the user is a member.
+proc_doc press_scope_widget {{default_group ""}} {
 
-proc press_scope_widget {db {default_group ""}} {
+    Build a scope selection menu.  This gives the option of making
+    press coverage public or restricted to members of a certain user
+    group. The only groups offered are those for which the user is a
+    member. 
+
+} {
+
+    if {[empty_string_p $default_group]} {
+	set scope_items "<option align=left value=\"\" selected>Public\n"
+    } else {
+	set scope_items "<option align=left value=\"\">Public\n"
+    }
 
     # Available groups are specific to each user
 
@@ -82,35 +91,27 @@ proc press_scope_widget {db {default_group ""}} {
     # For group-only administrators just offer the groups for which
     # they have administrative priviledges
 
-    if {[ad_administrator_p $db $user_id] } {
+    if {[ad_administrator_p $user_id] } {
 	set restrictions ""
     } else {
 	set restrictions "
 	and group_id in 
            (select group_id
 	    from   user_group_map
-            where  user_group_map.user_id     = $user_id
+            where  user_group_map.user_id     = :user_id
 	    and    lower(user_group_map.role) = 'administrator')"
     }
 
     # Get the list of available user groups for this user
 
-    set selection [ns_db select $db "
+    set group_sql "
     select   group_id, group_name
     from     user_groups
     where    group_type <> 'administration' 
     $restrictions
-    order by group_name"]
+    order by group_name" 
 
-    if {[empty_string_p $default_group]} {
-	set scope_items "<option align=left value=\"\" selected>Public\n"
-    } else {
-	set scope_items "<option align=left value=\"\">Public\n"
-    }
-
-    while {[ns_db getrow $db $selection]} {
-	set_variables_after_query
-
+    db_foreach group_info $group_sql {
 	if {$group_id == $default_group} {
 	    append scope_items \
 		    "<option value=$group_id selected>Restricted to $group_name\n"
@@ -129,18 +130,18 @@ proc press_scope_widget {db {default_group ""}} {
     </tr>"
 }
 
-# Build a template selection menu
+proc_doc press_template_widget {{default_template_id 1}} {
 
-proc press_template_widget {db {default_template_id 1}} {
+    Build a template selection menu
 
-    set selection [ns_db select $db "
-    select template_id, template_name
+} {
+    set template_sql "
+    select template_id, 
+           template_name
     from   press_templates
-    order  by template_name"]
-
-    set template_list ""
-    while {[ns_db getrow $db $selection]} {
-	set_variables_after_query
+    order  by template_name"
+    
+    db_foreach template_list $template_sql {
 	append template_list "
 	<option value=$template_id 
 	[expr {$template_id == $default_template_id ? "selected" : ""}]>
@@ -172,29 +173,27 @@ proc press_radio_widget {varname value description} {
     return "<input type=radio name=$varname value=\"$value\" $checked> $description"
 }
 
-# -----------------------------------------------------------------------------
+proc_doc press_template_list {} {
 
-# Build a preview list of current templates to use on add/edit pages
+    Returns a definition list of available templates
 
-proc_doc press_template_list {db} {returns a definition list of available templates} {
-
-    set selection [ns_db select $db "
-    select template_name,
-           template_adp
-    from   press_templates
-    order  by template_name"]
-
+} {
     set avail_count 0
     set avail_list ""
-    while {[ns_db getrow $db $selection]} {
-	set_variables_after_query
+
+    db_foreach template_list {
+	select template_name,
+	       template_adp
+	from   press_templates
+	order  by template_name
+    } {
 	incr avail_count
 	append avail_list "
 	<dt>$template_name</dt>
 	<dd>[press_coverage_preview $template_adp]</dd>
 	</tr>"
-    }
-    
+    } 
+
     if {$avail_count == 0} {
 	set avail_template_list "
 	There are no press coverage templates in the system."
@@ -224,7 +223,7 @@ proc_doc press_coverage { \
     if {![empty_string_p $publication_link]} {
 	if {$clickthrough_p != 0} {
 	    set publication_name \
-		    "<a href=/ct/press/index.tcl?send_to=$publication_link>$publication_name</a>"
+		    "<a href=/ct/press/index?send_to=$publication_link>$publication_name</a>"
 	} else {
 	    set publication_name "<a href=$publication_link>$publication_name</a>"
 	}
@@ -233,7 +232,7 @@ proc_doc press_coverage { \
 
     if {![empty_string_p $article_link]} {
 	if {$clickthrough_p != 0} {
-	    set article_title "<a href=/ct/press/index.tcl?send_to=$article_link>$article_title</a>"
+	    set article_title "<a href=/ct/press/index?send_to=$article_link>$article_title</a>"
 	} else {
 	    set article_title \
 		    "<a href=$article_title>$article_title</a>"
@@ -262,29 +261,37 @@ containing a template preview} {
 
 # Authorization rules
 
-proc_doc press_admin_p {db user_id group_id} {returns 1 if this user is a valid
-site-wide or group administrator for press coverage, 0 otherwise} {
-    if [ad_administrator_p $db $user_id] {
+proc_doc press_admin_p {user_id group_id} {
+
+    Returns 1 if this user is a valid site-wide or group administrator
+    for press coverage, 0 otherwise.
+
+} {  
+    if [ad_administrator_p $user_id] {
 	# this is a site-wide admin, return true always
 	return 1
     } elseif {$user_id != 0} {
 	# the person isn't a site-wide admin but maybe he can be authorized
 	# because he is a group admin (since this is for a group-specific item)
-	return [ad_user_group_authorized_admin $user_id $group_id $db]
+	return [ad_user_group_authorized_admin $user_id $group_id]
     }
     # not authorized via one of the preceding mechanisms
     return 0
 }
 
-proc_doc press_admin_any_group_p {db user_id} {returns 1 if this user
-is a valid site-wide or group administrator for any group, 0 otherwise} {
-    if {[ad_administrator_p $db $user_id]} {
+proc_doc press_admin_any_group_p {user_id} {
+
+    Returns 1 if this user is a valid site-wide or group administrator
+    for any group, 0 otherwise.
+
+} {
+    if {[ad_administrator_p $user_id]} {
 	# this is a site-wide admin, return true always
 	return 1
     } elseif {$user_id != 0} {
 	# we have an authenticated user, let's see if they have the
 	# admin role in ANY group
-	if {0 < [database_to_tcl_string $db "
+	if {0 < [db_string admin_count "
 	select count(*)
 	from   user_group_map 
 	where  user_id     = $user_id
@@ -298,4 +305,3 @@ is a valid site-wide or group administrator for any group, 0 otherwise} {
     return 0
 }
 
-util_report_successful_library_load

@@ -1,11 +1,15 @@
-# $Id: ecommerce-email.tcl,v 3.2 2000/03/07 06:07:39 eveander Exp $
-## Email procedures for the ecommerce module
-## Started April, 1999 by Eve Andersson (eveander@arsdigita.com)
-## Other ecommerce procedures can be found in ecommerce-*.tcl
+# /tcl/ecommerce-email.tcl
+ad_library {
+  Email procedures for the ecommerce module
+  Started April, 1999 by Eve Andersson (eveander@arsdigita.com)
+  Other ecommerce procedures can be found in ecommerce-*.tcl
 
+  @author Eve Andersson (eveander@arsdigita.com)
+  @creation-date Summer 1999
+  @cvs-id ecommerce-email.tcl,v 3.4.2.8 2000/11/09 19:55:18 bcalef Exp
+}
 
 proc_doc ec_sendmail_from_service { email_to reply_to email_subject email_body {additional_headers ""} {bcc ""} } "Use this when you're sending out customer service emails.  It's invoked just like ns_sendmail, except that the email will always be from the customer service email address.  The reply-to field can be used for the perl/qmail service-345-9848@whatever.com email trick (but it doesn't have to be).<p>Note: one major difference from ns_sendmail: with ns_sendmail, putting a Cc header does not actually send an extra copy of the email; it just puts Cc: whomever@wherever into the header (and then you'd have to specify whomever@wherever in the bcc argument).  This procedure does send the email to the Cc'd email addresses." {
-
 
     set extra_headers [ns_set new]
     ns_set put $extra_headers "Reply-to" $reply_to
@@ -22,20 +26,27 @@ proc_doc ec_sendmail_from_service { email_to reply_to email_subject email_body {
 
 }
 
-
 proc_doc ec_email_new_order { order_id } "Use this to send out the \"New Order\" email." {
+    db_1row email_info_select {
+	select u.email,
+	to_char(confirmed_date,'MM/DD/YY') as confirmed_date,
+	shipping_address,
+	u.user_id
+	from ec_orders, users u
+	where ec_orders.user_id = u.user_id
+	and order_id = :order_id
+    }
+
+    set item_summary [ec_item_summary_in_confirmed_order $order_id]
+
+    if { ![empty_string_p $shipping_address] } {
+	set address [ec_pretty_mailing_address_from_ec_addresses $shipping_address]
+    } else {
+	set address "not deliverable"
+    }
     
-    set db [ns_db gethandle subquery]
-
-    set selection [ns_db 1row $db "select u.email, to_char(confirmed_date,'MM/DD/YY') as confirmed_date, shipping_address, u.user_id from ec_orders, users u where ec_orders.user_id=u.user_id and order_id=$order_id"]
-    set_variables_after_query
-
-    set item_summary [ec_item_summary_in_confirmed_order $db $order_id]
-
-    set address [ec_pretty_mailing_address_from_ec_addresses $db $shipping_address]
-
-    set price_summary [ec_formatted_price_shipping_gift_certificate_and_tax_in_an_order $db $order_id]
-
+    set price_summary [ec_formatted_price_shipping_gift_certificate_and_tax_in_an_order $order_id]
+    
     set customer_service_signature [ec_customer_service_signature]
     set system_url "[ec_insecure_url]"
 
@@ -48,12 +59,14 @@ proc_doc ec_email_new_order { order_id } "Use this to send out the \"New Order\"
     regsub -all "&" $system_url {\\&} system_url
     
     # Note: template #1 is defined to be the "New Order" email
-    set selection [ns_db 1row $db "select subject as email_subject, message as email_body, issue_type_list from ec_email_templates where email_template_id=1"]
-    set_variables_after_query
+    db_1row template_select {
+	select subject as email_subject, message as email_body, issue_type_list
+	from ec_email_templates
+	where email_template_id = 1
+    }
 
     # and get rid of ctrl-M's in the body
     regsub -all "\r" $email_body "" email_body
-
 
     regsub -all "confirmed_date_here" $email_body $confirmed_date email_body
     regsub -all "item_summary_here" $email_body $item_summary email_body
@@ -62,37 +75,64 @@ proc_doc ec_email_new_order { order_id } "Use this to send out the \"New Order\"
     regsub -all "customer_service_signature_here" $email_body $customer_service_signature email_body
     regsub -all "system_url_here" $email_body $system_url email_body
 
-    ns_db dml $db "begin transaction"
+    db_transaction {
 
-    # create a customer service issue/interaction/action
-    set user_identification_and_issue_id [ec_customer_service_simple_issue $db "" "automatic" "email" "[DoubleApos "To: $email\nFrom: [ad_parameter CustomerServiceEmailAddress ecommerce]\nSubject: $email_subject"]" $order_id $issue_type_list $email_body $user_id]
+	# create a customer service issue/interaction/action
+	set user_identification_and_issue_id [ec_customer_service_simple_issue "" "automatic" "email" "To: $email\nFrom: [ad_parameter CustomerServiceEmailAddress ecommerce]\nSubject: $email_subject" $order_id $issue_type_list $email_body $user_id]
 
-    set user_identification_id [lindex $user_identification_and_issue_id 0]
-    set issue_id [lindex $user_identification_and_issue_id 1]
+	set user_identification_id [lindex $user_identification_and_issue_id 0]
+	set issue_id [lindex $user_identification_and_issue_id 1]
+	if { [empty_string_p $user_identification_id] } { 
+	    set user_identification_id 0
+	}
 
-    # add a row to the automatic email log
-    ns_db dml $db "insert into ec_automatic_email_log
-    (user_identification_id, email_template_id, order_id, date_sent)
-    values
-    ($user_identification_id, 1, $order_id, sysdate)
-    "
-
-    ns_db dml $db "end transaction"
+	# add a row to the automatic email log
+	db_dml email_log_insert {
+	    insert into ec_automatic_email_log
+	    (user_identification_id, email_template_id, order_id, date_sent)
+	    values
+	    (:user_identification_id, 1, :order_id, sysdate)
+	}
+    }
 
     set email_from [ec_customer_service_email_address $user_identification_id $issue_id]
-   
+    
     ec_sendmail_from_service "$email" "$email_from" "$email_subject" "$email_body"
-
-    ns_db releasehandle $db
+    ec_email_product_notification $order_id
+    
 }
 
+proc_doc ec_email_product_notification { order_id } "This proc sends notifications for any products in the order that require it." {
+
+  if { [ad_ssl_available_p] } {
+    set order_link "[ec_secure_url]/admin/ecommerce/orders/one?[export_url_vars order_id]"
+  } else {
+    set order_link "[ec_insecure_url]/admin/ecommerce/orders/one?[export_url_vars order_id]"
+  }
+
+  db_foreach notification_select {
+      select ep.email_on_purchase_list, ep.product_name
+      from ec_items ei, ec_products ep
+      where ei.product_id = ep.product_id
+      and ei.order_id = :order_id
+      and ep.email_on_purchase_list is not null
+      group by ep.email_on_purchase_list, ep.product_name
+  } {
+      ec_sendmail_from_service $email_on_purchase_list [ad_system_owner] "An order for $product_name" "
+A order for $product_name has been placed at [ad_system_name].
+
+The order can be viewed at:
+
+$order_link
+"
+  }
+}
 
 proc_doc ec_email_delayed_credit_denied { order_id } "Use this to send out the \"Delayed Credit Denied\" email." {
     
-    set db [ns_db gethandle subquery]
-
-    set selection [ns_db 1row $db "select u.email, u.user_id from ec_orders, users u where ec_orders.user_id=u.user_id and order_id=$order_id"]
-    set_variables_after_query
+    db_1row user_select {
+	select u.email, u.user_id from ec_orders, users u where ec_orders.user_id = u.user_id and order_id = :order_id
+    }
 
     set customer_service_signature [ec_customer_service_signature]
     set system_url "[ec_insecure_url]"
@@ -103,8 +143,9 @@ proc_doc ec_email_delayed_credit_denied { order_id } "Use this to send out the \
     regsub -all "&" $system_url {\\&} system_url
     
     # Note: template #3 is defined to be the "Delayed Credit Denied" email
-    set selection [ns_db 1row $db "select subject as email_subject, message as email_body, issue_type_list from ec_email_templates where email_template_id=3"]
-    set_variables_after_query
+    db_1row template_select {
+	select subject as email_subject, message as email_body, issue_type_list from ec_email_templates where email_template_id = 3
+    }
 
     # and get rid of ctrl-M's in the body
     regsub -all "\r" $email_body "" email_body
@@ -112,61 +153,56 @@ proc_doc ec_email_delayed_credit_denied { order_id } "Use this to send out the \
     regsub -all "customer_service_signature_here" $email_body $customer_service_signature email_body
     regsub -all "system_url_here" $email_body $system_url email_body
 
-    ns_db dml $db "begin transaction"
+    db_transaction {
 
-    # create a customer service issue/interaction/action
-    set user_identification_and_issue_id [ec_customer_service_simple_issue $db "" "automatic" "email" "[DoubleApos "To: $email\nFrom: [ad_parameter CustomerServiceEmailAddress ecommerce]\nSubject: $email_subject"]" $order_id $issue_type_list $email_body $user_id]
+      # create a customer service issue/interaction/action
+      set user_identification_and_issue_id [ec_customer_service_simple_issue "" "automatic" "email" "To: $email\nFrom: [ad_parameter CustomerServiceEmailAddress ecommerce]\nSubject: $email_subject" $order_id $issue_type_list $email_body $user_id]
 
-    set user_identification_id [lindex $user_identification_and_issue_id 0]
-    set issue_id [lindex $user_identification_and_issue_id 1]
+      set user_identification_id [lindex $user_identification_and_issue_id 0]
+      set issue_id [lindex $user_identification_and_issue_id 1]
 
-    # add a row to the automatic email log
-    ns_db dml $db "insert into ec_automatic_email_log
-    (user_identification_id, email_template_id, order_id, date_sent)
-    values
-    ($user_identification_id, 3, $order_id, sysdate)
-    "
+      # add a row to the automatic email log
+      db_dml email_log_insert {
+	  insert into ec_automatic_email_log
+	  (user_identification_id, email_template_id, order_id, date_sent)
+	  values
+	  (:user_identification_id, 3, :order_id, sysdate)
+      }
+  }
 
-    ns_db dml $db "end transaction"
-
-    
     set email_from [ec_customer_service_email_address $user_identification_id $issue_id]
    
     ec_sendmail_from_service "$email" "$email_from" "$email_subject" "$email_body"
 
-    ns_db releasehandle $db
 }
-
 
 proc_doc ec_email_order_shipped { shipment_id } "Use this to send out the \"Order Shipped\" email after a shipment is made (full or partial order)." {
     
-    set db [ns_db gethandle subquery]
-
-    set selection [ns_db 1row $db "select u.email, u.user_id, s.shipment_date, s.address_id, o.order_state, o.order_id
-    from ec_orders o, users u, ec_shipments s
-    where o.user_id = u.user_id
-    and o.order_id = s.order_id
-    and s.shipment_id=$shipment_id"]
-    set_variables_after_query
+    db_1row shipment_select {
+	select u.email, u.user_id, s.shipment_date, s.address_id, o.order_state, o.order_id
+	from ec_orders o, users u, ec_shipments s
+	where o.user_id = u.user_id
+	and o.order_id = s.order_id
+	and s.shipment_id = :shipment_id
+    }
 
     set shipped_date [util_AnsiDatetoPrettyDate $shipment_date]
 
     # get item_summary
-    set selection [ns_db select $db "select p.product_name, p.one_line_description, p.product_id, i.price_charged, i.price_name, count(*) as quantity
-from ec_items i, ec_products p
-where i.product_id=p.product_id
-and i.shipment_id=$shipment_id
-group by p.product_name, p.one_line_description, p.product_id, i.price_charged, i.price_name"]
-
     set item_list [list]
-    while { [ns_db getrow $db $selection] } {
-	set_variables_after_query
+    db_foreach item_summary_select {
+	select p.product_name, p.one_line_description, p.product_id, i.price_charged, i.price_name, count(*) as quantity
+	from ec_items i, ec_products p
+	where i.product_id=p.product_id
+	and i.shipment_id=:shipment_id
+	group by p.product_name, p.one_line_description, p.product_id, i.price_charged, i.price_name
+    } {
 	lappend item_list "Quantity $quantity: $product_name; $price_name: [ec_pretty_price $price_charged]"
     }
 
     set item_summary [join $item_list "\n"]
 
-    set address [ec_pretty_mailing_address_from_ec_addresses $db $address_id]
+    set address [ec_pretty_mailing_address_from_ec_addresses $address_id]
 
     # see whether this completes the order
     if { $order_state == "fulfilled" } {
@@ -187,8 +223,9 @@ group by p.product_name, p.one_line_description, p.product_id, i.price_charged, 
     regsub -all "&" $system_url {\\&} system_url
     
     # Note: template #2 is defined to be the "Order Shipped" email
-    set selection [ns_db 1row $db "select subject as email_subject, message as email_body, issue_type_list from ec_email_templates where email_template_id=2"]
-    set_variables_after_query
+    db_1row template_select {
+	select subject as email_subject, message as email_body, issue_type_list from ec_email_templates where email_template_id = 2
+    }
 
     # and get rid of ctrl-M's in the body
     regsub -all "\r" $email_body "" email_body
@@ -200,40 +237,34 @@ group by p.product_name, p.one_line_description, p.product_id, i.price_charged, 
     regsub -all "customer_service_signature_here" $email_body $customer_service_signature email_body
     regsub -all "system_url_here" $email_body $system_url email_body
 
-    ns_db dml $db "begin transaction"
+    db_transaction {
 
-    # create a customer service issue/interaction/action
-    set user_identification_and_issue_id [ec_customer_service_simple_issue $db "" "automatic" "email" "[DoubleApos "To: $email\nFrom: [ad_parameter CustomerServiceEmailAddress ecommerce]\nSubject: $email_subject"]" $order_id $issue_type_list $email_body $user_id]
+      # create a customer service issue/interaction/action
+      set user_identification_and_issue_id [ec_customer_service_simple_issue "" "automatic" "email" "To: $email\nFrom: [ad_parameter CustomerServiceEmailAddress ecommerce]\nSubject: $email_subject" $order_id $issue_type_list $email_body $user_id]
 
-    set user_identification_id [lindex $user_identification_and_issue_id 0]
-    set issue_id [lindex $user_identification_and_issue_id 1]
+      set user_identification_id [lindex $user_identification_and_issue_id 0]
+      set issue_id [lindex $user_identification_and_issue_id 1]
 
-    # add a row to the automatic email log
-    ns_db dml $db "insert into ec_automatic_email_log
-    (user_identification_id, email_template_id, order_id, shipment_id, date_sent)
-    values
-    ($user_identification_id, 2, $order_id, $shipment_id, sysdate)
-    "
-
-    ns_db dml $db "end transaction"
+      # add a row to the automatic email log
+      db_dml email_log_insert {
+	  insert into ec_automatic_email_log
+	  (user_identification_id, email_template_id, order_id, shipment_id, date_sent)
+	  values
+	  (:user_identification_id, 2, :order_id, :shipment_id, sysdate)
+      }
+  }
 
     set email_from [ec_customer_service_email_address $user_identification_id $issue_id]
-   
+    
     ec_sendmail_from_service "$email" "$email_from" "$email_subject" "$email_body"
-
-    ns_db releasehandle $db
+    
 }
 
-
 proc_doc ec_email_new_gift_certificate_order { gift_certificate_id } "Use this to send out the \"New Gift Certificate Order\" email after a gift certificate order is authorized." {
-    
-    set db [ns_db gethandle subquery]
-    
-    set selection [ns_db 1row $db "select g.purchased_by as user_id, u.email, g.recipient_email, g.amount
+    db_1row gift_certificate_select "select g.purchased_by as user_id, u.email, g.recipient_email, g.amount
     from ec_gift_certificates g, users u
     where g.purchased_by=u.user_id
-    and g.gift_certificate_id=$gift_certificate_id"]
-    set_variables_after_query
+    and g.gift_certificate_id=:gift_certificate_id"
     
     set system_name [ad_system_name]
     set customer_service_signature [ec_customer_service_signature]
@@ -245,8 +276,9 @@ proc_doc ec_email_new_gift_certificate_order { gift_certificate_id } "Use this t
     regsub -all "&" $customer_service_signature {\\&} customer_service_signature
     
     # Note: template #4 is defined to be the "New Gift Certificate Order" email
-    set selection [ns_db 1row $db "select subject as email_subject, message as email_body, issue_type_list from ec_email_templates where email_template_id=4"]
-    set_variables_after_query
+    db_1row template_select {
+	select subject as email_subject, message as email_body, issue_type_list from ec_email_templates where email_template_id = 4
+    }
 
     # and get rid of ctrl-M's in the body
     regsub -all "\r" $email_body "" email_body
@@ -256,41 +288,36 @@ proc_doc ec_email_new_gift_certificate_order { gift_certificate_id } "Use this t
     regsub -all "certificate_amount_here" $email_body [ec_pretty_price $amount] email_body
     regsub -all "customer_service_signature_here" $email_body $customer_service_signature email_body
 
-    ns_db dml $db "begin transaction"
+    db_transaction {
 
-    # create a customer service issue/interaction/action
-    set user_identification_and_issue_id [ec_customer_service_simple_issue $db "" "automatic" "email" "[DoubleApos "To: $email\nFrom: [ad_parameter CustomerServiceEmailAddress ecommerce]\nSubject: $email_subject"]" "" $issue_type_list $email_body $user_id "" "f" $gift_certificate_id]
+      # create a customer service issue/interaction/action
+      set user_identification_and_issue_id [ec_customer_service_simple_issue "" "automatic" "email" "To: $email\nFrom: [ad_parameter CustomerServiceEmailAddress ecommerce]\nSubject: $email_subject" "" $issue_type_list $email_body $user_id "" "f" $gift_certificate_id]
 
-    set user_identification_id [lindex $user_identification_and_issue_id 0]
-    set issue_id [lindex $user_identification_and_issue_id 1]
+      set user_identification_id [lindex $user_identification_and_issue_id 0]
+      set issue_id [lindex $user_identification_and_issue_id 1]
 
-    # add a row to the automatic email log
-    ns_db dml $db "insert into ec_automatic_email_log
-    (user_identification_id, email_template_id, gift_certificate_id, date_sent)
-    values
-    ($user_identification_id, 4, $gift_certificate_id, sysdate)
-    "
-
-    ns_db dml $db "end transaction"
+      # add a row to the automatic email log
+      db_dml email_log_insert {
+	  insert into ec_automatic_email_log
+	  (user_identification_id, email_template_id, gift_certificate_id, date_sent)
+	  values
+	  (:user_identification_id, 4, :gift_certificate_id, sysdate)
+      }
+  }
 
     set email_from [ec_customer_service_email_address $user_identification_id $issue_id]
    
     ec_sendmail_from_service "$email" "$email_from" "$email_subject" "$email_body"
 
-    ns_db releasehandle $db
 }
 
-
-
 proc_doc ec_email_gift_certificate_order_failure { gift_certificate_id } "Use this to send out the \"Gift Certificate Order Failure\" email after it is determined that a previously inconclusive auth failed." {
-    
-    set db [ns_db gethandle subquery]
-    
-    set selection [ns_db 1row $db "select g.purchased_by as user_id, u.email, g.recipient_email, g.amount, g.certificate_to, g.certificate_from, g.certificate_message
-    from ec_gift_certificates g, users u
-    where g.purchased_by=u.user_id
-    and g.gift_certificate_id=$gift_certificate_id"]
-    set_variables_after_query
+    db_1row gift_certificate_select {
+	select g.purchased_by as user_id, u.email, g.recipient_email, g.amount, g.certificate_to, g.certificate_from, g.certificate_message
+	from ec_gift_certificates g, users u
+	where g.purchased_by=u.user_id
+	and g.gift_certificate_id=:gift_certificate_id
+    }
     
     set system_name [ad_system_name]
     set system_url "[ec_insecure_url]"
@@ -318,8 +345,9 @@ proc_doc ec_email_gift_certificate_order_failure { gift_certificate_id } "Use th
     
 
     # Note: template #6 is defined to be the "Gift Certificate Order Failure" email
-    set selection [ns_db 1row $db "select subject as email_subject, message as email_body, issue_type_list from ec_email_templates where email_template_id=6"]
-    set_variables_after_query
+    db_1row template_select {
+	select subject as email_subject, message as email_body, issue_type_list from ec_email_templates where email_template_id = 6
+    }
 
     # and get rid of ctrl-M's in the body
     regsub -all "\r" $email_body "" email_body
@@ -330,43 +358,39 @@ proc_doc ec_email_gift_certificate_order_failure { gift_certificate_id } "Use th
     regsub -all "amount_and_message_summary_here" $email_body $amount_and_message_summary email_body
     regsub -all "customer_service_signature_here" $email_body $customer_service_signature email_body
 
-    ns_db dml $db "begin transaction"
+    db_transaction {
 
-    # create a customer service issue/interaction/action
-    set user_identification_and_issue_id [ec_customer_service_simple_issue $db "" "automatic" "email" "[DoubleApos "To: $email\nFrom: [ad_parameter CustomerServiceEmailAddress ecommerce]\nSubject: $email_subject"]" "" $issue_type_list $email_body $user_id "" "f" $gift_certificate_id]
+      # create a customer service issue/interaction/action
+      set user_identification_and_issue_id [ec_customer_service_simple_issue "" "automatic" "email" "To: $email\nFrom: [ad_parameter CustomerServiceEmailAddress ecommerce]\nSubject: $email_subject" "" $issue_type_list $email_body $user_id "" "f" $gift_certificate_id]
 
-    set user_identification_id [lindex $user_identification_and_issue_id 0]
-    set issue_id [lindex $user_identification_and_issue_id 1]
+      set user_identification_id [lindex $user_identification_and_issue_id 0]
+      set issue_id [lindex $user_identification_and_issue_id 1]
 
-    # add a row to the automatic email log
-    ns_db dml $db "insert into ec_automatic_email_log
-    (user_identification_id, email_template_id, gift_certificate_id, date_sent)
-    values
-    ($user_identification_id, 6, $gift_certificate_id, sysdate)
-    "
-
-    ns_db dml $db "end transaction"
+      # add a row to the automatic email log
+      db_dml email_log_insert {
+	  insert into ec_automatic_email_log
+	  (user_identification_id, email_template_id, gift_certificate_id, date_sent)
+	  values
+	  (:user_identification_id, 6, :gift_certificate_id, sysdate)
+      }
+  }
 
     set email_from [ec_customer_service_email_address $user_identification_id $issue_id]
    
     ec_sendmail_from_service "$email" "$email_from" "$email_subject" "$email_body"
 
-    ns_db releasehandle $db
 }
-
-
 
 # in this email, the recipient isn't necessarily a user of the system, so the customer service issue
 # creation code is a little different than in the other autoemails
 
 proc_doc ec_email_gift_certificate_recipient { gift_certificate_id } "Use this to send out the \"Gift Certificate Recipient\" email after it a purchased certificate is authorized." {
-    
-    set db [ns_db gethandle subquery]
-    
-    set selection [ns_db 1row $db "select g.recipient_email as email, g.amount, g.certificate_to, g.certificate_from, g.certificate_message, g.claim_check
-    from ec_gift_certificates g
-    where g.gift_certificate_id=$gift_certificate_id"]
-    set_variables_after_query
+
+    db_1row gift_certificate_select {
+	select g.recipient_email as email, g.amount, g.certificate_to, g.certificate_from, g.certificate_message, g.claim_check
+	from ec_gift_certificates g
+	where g.gift_certificate_id=:gift_certificate_id
+    }
     
     set system_name [ad_system_name]
     set system_url "[ec_insecure_url]"
@@ -394,8 +418,7 @@ proc_doc ec_email_gift_certificate_recipient { gift_certificate_id } "Use this t
     
 
     # Note: template #5 is defined to be the "Gift Certificate Recipient" email
-    set selection [ns_db 1row $db "select subject as email_subject, message as email_body, issue_type_list from ec_email_templates where email_template_id=5"]
-    set_variables_after_query
+    db_1row template_select "select subject as email_subject, message as email_body, issue_type_list from ec_email_templates where email_template_id=5"
 
     # and get rid of ctrl-M's in the body
     regsub -all "\r" $email_body "" email_body
@@ -407,44 +430,47 @@ proc_doc ec_email_gift_certificate_recipient { gift_certificate_id } "Use this t
     regsub -all "customer_service_signature_here" $email_body $customer_service_signature email_body
 
     # first let's see if the recipient is a registered user of the system
-    set user_id [database_to_tcl_string_or_null $db "select user_id from users where upper(email)='[DoubleApos [string toupper $email]]'"]
+    set user_id [db_string user_id_select "select user_id from users where upper(email)=upper(:email)" -default ""]
 
-    ns_db dml $db "begin transaction"
+    db_transaction {
 
-    # create a customer service issue/interaction/action
-    if { ![empty_string_p $user_id] } {
-	set user_identification_and_issue_id [ec_customer_service_simple_issue $db "" "automatic" "email" "[DoubleApos "To: $email\nFrom: [ad_parameter CustomerServiceEmailAddress ecommerce]\nSubject: $email_subject"]" "" $issue_type_list $email_body $user_id "" "f" $gift_certificate_id]
+      # create a customer service issue/interaction/action
+      if { ![empty_string_p $user_id] } {
+	set user_identification_and_issue_id [ec_customer_service_simple_issue "" "automatic" "email" "To: $email\nFrom: [ad_parameter CustomerServiceEmailAddress ecommerce]\nSubject: $email_subject" "" $issue_type_list $email_body $user_id "" "f" $gift_certificate_id]
 	set user_identification_id [lindex $user_identification_and_issue_id 0]
-    } else {
+      } else {
 	# check if the recipient is an unregistered user of the system
-	set user_identification_id [database_to_tcl_string_or_null $db "select user_identification_id from ec_user_identification where upper(email)='[DoubleApos [string toupper $email]]'"]
+	set user_identification_id [db_string user_identification_id_select "select user_identification_id from ec_user_identification where upper(email)=upper(:email)" -default ""]
 
 	if { [empty_string_p $user_identification_id] } {
-	    set user_identification_id [database_to_tcl_string $db "select ec_user_ident_id_sequence.nextval from dual"]
-	    ns_db dml $db "insert into ec_user_identification
-	    (user_identification_id, email)
-	    values
-	    ($user_identification_id, '[DoubleApos [string trim $email]]')
-	    "
+	  set user_identification_id [db_string user_identification_id_select "select ec_user_ident_id_sequence.nextval from dual"]
+	  set trimmed_email [string trim $email]
+
+	    db_dml user_identification_id_insert {
+		insert into ec_user_identification
+		(user_identification_id, email)
+		values
+		(:user_identification_id, :trimmed_email)
+	    }
+
 	}
 
-	set user_identification_and_issue_id [ec_customer_service_simple_issue $db "" "automatic" "email" "[DoubleApos "To: $email\nFrom: [ad_parameter CustomerServiceEmailAddress ecommerce]\nSubject: $email_subject"]" "" $issue_type_list $email_body "" $user_identification_id "f" $gift_certificate_id]
-    }
+	set user_identification_and_issue_id [ec_customer_service_simple_issue "" "automatic" "email" "To: $email\nFrom: [ad_parameter CustomerServiceEmailAddress ecommerce]\nSubject: $email_subject" "" $issue_type_list $email_body "" $user_identification_id "f" $gift_certificate_id]
+      }
 
-    set issue_id [lindex $user_identification_and_issue_id 1]
+      set issue_id [lindex $user_identification_and_issue_id 1]
 
-    # add a row to the automatic email log
-    ns_db dml $db "insert into ec_automatic_email_log
-    (user_identification_id, email_template_id, gift_certificate_id, date_sent)
-    values
-    ($user_identification_id, 5, $gift_certificate_id, sysdate)
-    "
-
-    ns_db dml $db "end transaction"
-
+      # add a row to the automatic email log
+      db_dml email_log_insert {
+	  insert into ec_automatic_email_log
+	  (user_identification_id, email_template_id, gift_certificate_id, date_sent)
+	  values
+	  (:user_identification_id, 5, :gift_certificate_id, sysdate)
+      }
+  }
+    
     set email_from [ec_customer_service_email_address $user_identification_id $issue_id]
    
     ec_sendmail_from_service "$email" "$email_from" "$email_subject" "$email_body"
 
-    ns_db releasehandle $db
 }

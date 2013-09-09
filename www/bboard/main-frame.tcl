@@ -1,16 +1,21 @@
-# $Id: main-frame.tcl,v 3.0 2000/02/06 03:33:59 ron Exp $
-set_form_variables
+ad_page_contract {
+    Main page to display a page with 2 frames (top and bottom). 
 
-# topic_id, topic required
-# feature_msg_id, start_msg_id optional
+    @param  topic_id - the topic id
+    @param  topic - the topic
+    @param  feature_msg_id - the feature msg id
+    @param  start_msg-id - start message id
 
-set db [bboard_db_gethandle]
-if { $db == "" } {
-    bboard_return_error_page
-    return
+    @cvs-id main-frame.tcl,v 3.1.2.4 2000/09/22 01:36:51 kevin Exp
+} {
+    topic_id:integer,notnull
+    topic
+    {feature_msg_id ""}
+    {start_msg_id ""}
 }
 
-if { [info exists feature_msg_id] && $feature_msg_id != "" } {
+
+if {![empty_string_p $feature_msg_id]} {
     set main_url "fetch-msg.tcl?msg_id=$feature_msg_id"
     set subject_url_appendage "&feature_msg_id=$feature_msg_id"
 } else {
@@ -19,10 +24,9 @@ if { [info exists feature_msg_id] && $feature_msg_id != "" } {
     set subject_url_appendage ""
 }
 
-if { [info exists start_msg_id] && $start_msg_id != "" } {
+if {![empty_string_p $start_msg_id]} {
     set subject_url "subject.tcl?[export_url_vars topic topic_id]&start_msg_id=$start_msg_id"
 } else {
-    # no featured msg
     set subject_url "subject.tcl?[export_url_vars topic topic_id]"
 }
 
@@ -30,42 +34,37 @@ append subject_url $subject_url_appendage
 
 # if we got here, that means the cookie checked
 
-ns_return 200 text/html "
+doc_return  200 text/html "
 
-<HTML><BASE F0NTSIZE=3>
+<html><base fontsize=3>
 
-<HEAD>
+<head>
 
-<TITLE>$topic BBoard</TITLE>
+<title>$topic bboardl</title>
 
-</HEAD>
+</head>
+<frameset rows=\"25%,*\">
+<frame scrolling=\"yes\" name=\"subject\" src=\"$subject_url\">
+<frame scrolling=\"yes\" name=\"main\" src=\"$main_url\">
+</frameset>
 
+<noframe>
 
-<FRAMESET ROWS=\"25%,*\">
+<body bgcolor=\"#ffffff\" text=\"#000000\">
 
-<FRAME SCROLLING=\"yes\" NAME=\"subject\" SRC=\"$subject_url\">
-
-<FRAME SCROLLING=\"yes\" NAME=\"main\" SRC=\"$main_url\">
-
-</FRAMESET>
-
-<NOFRAME>
-
-<BODY BGCOLOR=\"#FFFFFF\" TEXT=\"#000000\">
-
-This bulletin board system can only be used with a frames-compatible
+this bulletin board system can only be used with a frames-compatible
 browser.
 
 <p>
+perhaps you should consider running netscape 2.0 or later?
 
-Perhaps you should consider running Netscape 2.0 or later?
+</body></html>
 
+</noframel>
 
-</BODY></HTML>
-
-</NOFRAME>
-
-</FRAMESET>
-
+</frameset>
 
 "
+
+
+

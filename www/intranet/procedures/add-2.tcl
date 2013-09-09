@@ -1,18 +1,27 @@
-# $Id: add-2.tcl,v 3.0.4.2 2000/04/28 15:11:09 carsten Exp $
-# File: /www/intranet/procedures/add-2.tcl
-#
-# Author: mbryzek@arsdigita.com, Jan 2000
-#
-# Purpose: Stores a new procedure to the db
-#
+# /www/intranet/procedures/add-2.tcl
 
-set_the_usual_form_variables
-# procedure_id, name, note, user_id
+ad_page_contract {
+    Stores a new procedure to the db
 
-set creation_user [ad_verify_and_get_user_id]
-ad_maybe_redirect_for_registration
+    @param procedure_id the id of the procedure we're adding
+    @param name the name of the procedure
+    @param user_id user_id of this procedure's supervisor
+    @param note general notes about the procedure
 
-set db [ns_db gethandle]
+    @author mbryzek@arsdigita.com
+    @creation-date Jan 2000
+
+    @cvs-id add-2.tcl,v 3.2.6.11 2001/01/12 08:53:20 khy Exp
+} {
+    procedure_id:integer,verify
+    name:optional
+    note:optional,html
+    user_id:integer,optional
+
+    
+}
+
+set creation_user [ad_maybe_redirect_for_registration]
 
 set exception_count 0
 set exception_text ""
@@ -32,26 +41,43 @@ if { $exception_count > 0 } {
     return
 }
 
-ns_db dml $db "begin transaction"
+db_transaction {
 
-set insert "insert into im_procedures 
-(procedure_id, name, note, creation_date, creation_user) values
-($procedure_id, '$QQname', '$QQnote', sysdate, $creation_user)"
 
-if [catch {ns_db dml $db $insert} errmsg] {
-    if {[database_to_tcl_string $db "select count(*) from im_procedures where procedure_id = $procedure_id"] == 0} {
-        ad_return_error "Error" "Can't add procedure. Error: <PRE>$errmsg</PRE> "
-        return
-    } else {
-        ad_returnredirect procedures.tcl
-        return
+    set insert_sql "insert into im_procedures 
+    (procedure_id, name, note, creation_date, creation_user) values
+    (:procedure_id, :name, :note, sysdate, :creation_user)"
+
+    if [catch {db_dml procedure_insert $insert_sql} errmsg] {
+	if {[db_string procedure_exists "select count(*) from im_procedures where procedure_id = :procedure_id"] == 0} {
+	    ad_return_error "Error" "Can't add procedure. Error: <PRE>$errmsg</PRE> "
+	    return
+	} else {
+	    ad_returnredirect index
+	    return
+	}
     }
+
+    db_dml procedure_user_insert "insert into im_procedure_users 
+    (procedure_id, user_id, certifying_user, certifying_date) values
+    (:procedure_id, :user_id, :creation_user, sysdate)"
+
 }
 
-ns_db dml $db "insert into im_procedure_users 
-(procedure_id, user_id, certifying_user, certifying_date) values
-($procedure_id, $user_id, $creation_user, sysdate)"
 
-ns_db dml $db "end transaction"
+db_release_unused_handles
 
-ad_returnredirect index.tcl
+ad_returnredirect index
+
+
+
+
+
+
+
+
+
+
+
+
+

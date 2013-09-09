@@ -1,19 +1,24 @@
-# $Id: shopping-cart-save.tcl,v 3.0.4.1 2000/04/28 15:10:04 carsten Exp $
-# this page either redirects them to log on or asks them to confirm that
-# they are who we think they are
+#  www/ecommerce/shopping-cart-save.tcl
+ad_page_contract {
+    This page either redirects them to log on or asks them to confirm that they are who we think they are.
+
+    @author
+    @creation-date
+    @cvs-id shopping-cart-save.tcl,v 3.1.6.4 2000/07/31 17:56:40 ryanlee Exp
+} {
+}
 
 set user_id [ad_verify_and_get_user_id]
 
-set return_url "[ad_parameter EcommercePath ecommerce]shopping-cart-save-2.tcl"
+set return_url "[ad_parameter EcommercePath ecommerce]shopping-cart-save-2"
 
 if {$user_id == 0} {
-    ad_returnredirect "/register.tcl?[export_url_vars return_url]"
+    ad_returnredirect "/register?[export_url_vars return_url]"
     return
 }
 
-set db [ns_db gethandle]
-
-set user_name [database_to_tcl_string $db "select first_names || ' ' || last_name as user_name from users where user_id=$user_id"]
-set register_link "/register.tcl?[export_url_vars return_url]"
+set user_name [db_string get_full_name "select first_names || ' ' || last_name as user_name from users where user_id=:user_id"]
+set register_link "/register?[export_url_vars return_url]"
+db_release_unused_handles
 
 ad_return_template

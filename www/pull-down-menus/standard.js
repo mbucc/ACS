@@ -4,7 +4,7 @@
 //
 // (but mostly adaptation of anonymous code found on various sites)
 //
-// $Id: standard.js,v 1.1 2000/03/11 10:37:05 aure Exp $
+// standard.js,v 1.2 2000/06/08 21:15:23 randyb Exp
 
 //do browser detection here
 //placeholder for now; more robust testing to follow
@@ -16,7 +16,11 @@ if (agent.lastIndexOf('Mac')<0) isMac=false;
 else isMac=true;
 
 if (document.all){
-	isIE = true;
+	if (navigator.appName.indexOf("WebTV") != -1) {
+		isWebTV = true;
+	} else {
+		isIE = true;
+	}
 } else if (document.layers){
 	isNN = true;
 	document.captureEvents(Event.MOUSEMOVE | Event.MOUSEUP | Event.RESIZE);

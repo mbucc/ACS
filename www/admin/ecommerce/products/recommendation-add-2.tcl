@@ -1,10 +1,17 @@
-# $Id: recommendation-add-2.tcl,v 3.0 2000/02/06 03:20:34 ron Exp $
-set_the_usual_form_variables
-#product_id product_name
+#  www/admin/ecommerce/products/recommendation-add-2.tcl
+ad_page_contract {
+  Recommend a product.
 
-ReturnHeaders
+  @author Eve Andersson (eveander@arsdigita.com)
+  @creation-date Summer 1999
+  @cvs-id recommendation-add-2.tcl,v 3.1.6.2 2000/07/22 07:57:41 ron Exp
+} {
+  product_id:integer,notnull
+}
 
-ns_write "[ad_admin_header "Add a Product Recommendation"]
+set product_name [ec_product_name $product_id]
+
+doc_body_append "[ad_admin_header "Add a Product Recommendation"]
 
 <h2>Add a Product Recommendation</h2>
 
@@ -12,8 +19,8 @@ ns_write "[ad_admin_header "Add a Product Recommendation"]
 
 <hr>
 
-<form method=post action=\"recommendation-add-3.tcl\">
-[export_form_vars product_id product_name]
+<form method=post action=\"recommendation-add-3\">
+[export_form_vars product_id]
 
 <table>
 <tr>
@@ -22,14 +29,11 @@ ns_write "[ad_admin_header "Add a Product Recommendation"]
 </tr>
 <tr>
 <td>Recommended For:</td>
-"
-set db [ns_db gethandle]
-
-ns_write "<td>[ec_user_class_widget $db]</td>
+<td>[ec_user_class_widget]</td>
 </tr>
 <tr>
 <td>Display Recommendation In:</td>
-<td>[ec_category_widget $db "f" "" "t"]</td>
+<td>[ec_category_widget "f" "" "t"]</td>
 </tr>
 <tr>
 <td>Accompanying Text<br>(HTML format):</td>

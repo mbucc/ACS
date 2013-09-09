@@ -1,24 +1,29 @@
-# $Id: invite.tcl,v 3.1 2000/03/11 17:45:14 jsalz Exp $
-# File:        presentation-acl-add.tcl
-# Date:        28 Nov 1999
-# Author:      Jon Salz <jsalz@mit.edu>
-# Description: Allows an administrator to invite someone to read/write/admin a presentation.
-# Inputs:      presentation_id, role
+# /wp/invite.tcl
+ad_page_contract {
+    Allows an administrator to invite someone to read/write/admin a presentation.
+    @cvs-id invite.tcl,v 3.1.10.9 2000/09/22 01:39:30 kevin Exp
+    @creation-date  28 Nov 1999
+    @author Jon Salz <jsalz@mit.edu>
+    @param presentation_id is the ID of the presentation
+    @param role is the role of the user
+} {
+    presentation_id:naturalnum,notnull
+    role:notnull
+}
+# modified by jwong@arsdigita.com on 10 Jul 2000 for ACS 3.4 upgrade
 
-set_the_usual_form_variables
-
-set db [ns_db gethandle]
 set user_id [ad_maybe_redirect_for_registration]
-wp_check_authorization $db $presentation_id $user_id "admin"
+wp_check_authorization $presentation_id $user_id "admin"
 
-set selection [ns_db 1row $db "select * from wp_presentations where presentation_id = $presentation_id"]
-set_variables_after_query
+db_1row title_select "
+select title from wp_presentations where presentation_id = :presentation_id" 
 
-ReturnHeaders
-ns_write "[wp_header_form "action=invite-2.tcl method=post" \
-           [list "" "WimpyPoint"] [list "index.tcl?show_user=" "Your Presentations"] \
-           [list "presentation-top.tcl?presentation_id=$presentation_id" "$title"] \
-           [list "presentation-acl.tcl?presentation_id=$presentation_id" "Authorization"] "Invite User"]
+db_release_unused_handles
+
+set page_output "[wp_header_form "action=invite-2 method=post" \
+	[list "" "WimpyPoint"] [list "index?show_user=" "Your Presentations"] \
+	[list "presentation-top?presentation_id=$presentation_id" "$title"] \
+	[list "presentation-acl?presentation_id=$presentation_id" "Authorization"] "Invite User"]
 
 [export_form_vars presentation_id role]
 
@@ -36,3 +41,5 @@ to register with [ad_system_name]. The E-mail will appear to come from you, and 
 
 [wp_footer]
 "
+
+doc_return  200 "text/html" $page_output

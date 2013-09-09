@@ -1,11 +1,8 @@
-# /admin/file-storage/index.tcl
-#
-# at this point mostly by philg@mit.edu
-#
-# gives a site-admin a high-level view of who is using the file storage system
-#
-# $Id: index.tcl,v 3.1 2000/03/11 23:10:04 aure Exp $
-
+ad_page_contract {
+    at this point mostly by philg@mit.edu
+    gives a site-admin a high-level view of who is using the file storage system
+    @cvs-id index.tcl,v 3.2.2.4 2000/09/22 01:35:14 kevin Exp
+}
 
 set page_content  "
 [ad_admin_header "[ad_parameter SystemName fs] Administration"]
@@ -22,12 +19,9 @@ Documentation:  <a href=\"/doc/file-storage\">/doc/file-storage</a>
 
 Users with files/folders in their personal directories: "
 
-set db [ns_db gethandle subquery]
-
-
 # get the names of users who have stuff in their personal space
 
-set selection [ns_db select $db "
+set sql "
     select   users.user_id, users.first_names, users.last_name, 
              count(distinct fs_files.file_id) as n_files,
              round(sum(fs_versions.n_bytes)/1024) as n_kbytes
@@ -36,12 +30,11 @@ set selection [ns_db select $db "
     and      fs_files.file_id = fs_versions.file_id
     and      fs_files.group_id is NULL
     and      fs_files.deleted_p='f'
-    group by users.user_id, users.first_names, users.last_name"]
+    group by users.user_id, users.first_names, users.last_name"
 
 set persons_html "" 
 
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+db_foreach list_of_persons $sql {
     append persons_html "
         <li><a href=personal-space?owner_id=$user_id>$first_names $last_name</a>: 
         $n_files files; $n_kbytes Kbytes\n"
@@ -49,7 +42,7 @@ while { [ns_db getrow $db $selection] } {
 
 append page_content "<ul> $persons_html </ul>"
 
-set selection [ns_db select $db "
+set sql "
 select user_groups.group_id, 
        group_name, 
        round(sum(fs_versions.n_bytes)/1024) as n_kbytes,
@@ -57,12 +50,11 @@ select user_groups.group_id,
 from   user_groups, fs_files, fs_versions
 where  user_groups.group_id = fs_files.group_id
 and    fs_files.file_id = fs_versions.file_id
-group by user_groups.group_id, group_name"]
+group by user_groups.group_id, group_name"
 
 set group_html ""
 
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+db_foreach list_of_groups $sql {
     append group_html "
         <li><a href=\"group?[export_url_vars group_id]\">$group_name</a>:  
         $n_files files; $n_kbytes Kbytes\n"
@@ -75,18 +67,8 @@ if { ![empty_string_p $group_html] } {
 
 append page_content "[ad_admin_footer]"
 
-# release the database handle
-
-ns_db releasehandle $db 
-
 # serve the page
 
-ns_return 200 text/html $page_content
-
-
-
-
-
-
+doc_return  200 text/html $page_content
 
 

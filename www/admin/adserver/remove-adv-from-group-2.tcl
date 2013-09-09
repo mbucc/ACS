@@ -1,10 +1,18 @@
-# $Id: remove-adv-from-group-2.tcl,v 3.0.4.1 2000/04/28 15:08:23 carsten Exp $
-set_the_usual_form_variables
-# group_key, adv_key
+# /www/admin/adserver/remove-adv-from-group-2.tcl
 
-set db [ns_db gethandle]
+ad_page_contract {
+    @param group_key:notnull
+    @param adv_key:notnull
 
-ns_db dml $db "delete from adv_group_map where group_key = '$QQgroup_key'
-and adv_key = '$QQadv_key'"
+    @author modified 07/13/200 by mchu@arsdigita.com
+    @cvs-id remove-adv-from-group-2.tcl,v 3.1.6.5 2000/11/20 23:55:19 ron Exp
+} {
+    group_key:notnull
+    adv_key:notnull
+}
 
-ad_returnredirect "one-adv-group.tcl?group_key=$group_key"
+db_dml adv_delete_query "delete from adv_group_map where group_key = :group_key and adv_key = :adv_key"
+
+db_release_unused_handles
+
+ad_returnredirect "one-adv-group?[export_url_vars group_key]"

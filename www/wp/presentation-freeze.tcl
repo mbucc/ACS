@@ -1,24 +1,27 @@
-# $Id: presentation-freeze.tcl,v 3.0 2000/02/06 03:55:21 ron Exp $
-# File:        presentation-freeze.tcl
-# Date:        28 Nov 1999
-# Author:      Jon Salz <jsalz@mit.edu>
-# Description: Freezes the current slide set.
-# Inputs:      presentation_id
+# /wp/presentation-freeze.tcl
+ad_page_contract {
+    Freezes the current slide set.
 
-set_the_usual_form_variables
-
-set db [ns_db gethandle]
+    @param presentation_id id of the presentation to freeze
+    
+    @creation-date  28 Nov 1999
+    @author Jon Salz <jsalz@mit.edu>
+    @cvs-id presentation-freeze.tcl,v 3.0.12.9 2000/09/22 01:39:32 kevin Exp
+} {
+    presentation_id:naturalnum,notnull
+}
 
 set user_id [ad_maybe_redirect_for_registration]
-wp_check_authorization $db $presentation_id $user_id "admin"
+wp_check_authorization $presentation_id $user_id "admin"
 
-set selection [ns_db 1row $db "select * from wp_presentations where presentation_id = $presentation_id"]
-set_variables_after_query
+db_1row title_select "
+select title from wp_presentations where presentation_id = :presentation_id"
 
-ReturnHeaders
-ns_write "[wp_header_form "method=post action=presentation-freeze-2.tcl" \
-           [list "" "WimpyPoint"] [list "index.tcl?show_user=" "Your Presentations"] \
-           [list "presentation-top.tcl?presentation_id=$presentation_id" "$title"] "Freeze Presentation"]
+
+
+doc_return  200 text/html "[wp_header_form "method=post action=presentation-freeze-2" \
+           [list "" "WimpyPoint"] [list "index?show_user=" "Your Presentations"] \
+           [list "presentation-top?presentation_id=$presentation_id" "$title"] "Freeze Presentation"]
 [export_form_vars presentation_id]
 
 <p>This feature allows you to permanently preserve the current set of slides in your presentation.

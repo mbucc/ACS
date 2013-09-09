@@ -1,21 +1,30 @@
-# $Id: event-add-2.tcl,v 3.0.4.2 2000/04/28 15:11:10 carsten Exp $
-# File: /www/intranet/procedures/event-add-2.tcl
-#
-# Author: mbryzek@arsdigita.com, Jan 2000
-#
-# Purpose: Records a procedure event (Certification of another user for 
-#  the procedure)
-#
+# /www/intranet/procedures/event-add-2.tcl
 
-set_the_usual_form_variables
-# procedure_id, user_id, note, event_date
+ad_page_contract {
+    Records a procedure event (Certification of another user for the
+    procedure)
 
-set supervising_user [ad_verify_and_get_user_id]
-ad_maybe_redirect_for_registration
+    @param procedure_id the id of the procedure we're looking at
+    @param user_id user_id for whom we're recording the event
+    @param note general notes about recording this event
+    @param event_date date of the event
+    @param event_id  sequence-generated identifier for im_procedure_events
 
-set db [ns_db gethandle]
+    @author mbryzek@arsdigita.com
+    @creation-date Jan 2000
 
-if {[database_to_tcl_string $db "select count(*) from im_procedure_users where user_id = $supervising_user and procedure_id = $procedure_id"] == 0} {
+    @cvs-id event-add-2.tcl,v 3.3.2.9 2001/01/12 17:00:09 khy Exp
+} {
+    procedure_id:integer,notnull
+    user_id:integer,optional
+    note
+    event_date:array,date,optional
+    event_id:integer,notnull,verify
+}
+
+set supervising_user [ad_maybe_redirect_for_registration]
+
+if {[db_string user_verify "select count(*) from im_procedure_users where user_id = :supervising_user and procedure_id = :procedure_id"] == 0} {
     ad_return_error "Error" "You're not allowed to certify new users"
     return
 }
@@ -27,9 +36,11 @@ if {![info exists user_id] || [empty_string_p $user_id]} {
     incr exception_count
     append exception_text "<LI>Missing name of user to certify\n"
 }
-if [catch {ns_dbformvalue [ns_conn form] event_date date event_date}] {
+if { [info exists event_date(date)] } { 
+    set e_date $event_date(date)
+} else {
     incr exception_count
-    append exception_text "<LI>The date you entered isn't valid"
+    append exception_text "<LI>Error with date entered.  Please reenter date."
 }
 
 if {$exception_count > 0} {
@@ -37,15 +48,21 @@ if {$exception_count > 0} {
     return
 }
 
-ns_db dml $db "update im_procedure_events 
-set note = '$QQnote', user_id = $user_id, procedure_id = $procedure_id, 
-    event_date = '$event_date', supervising_user = $supervising_user
-where event_id = $event_id"
+db_dml update_event "update im_procedure_events 
+set note = :note, user_id = :user_id, procedure_id = :procedure_id, 
+    event_date = :e_date, supervising_user = :supervising_user
+where event_id = :event_id"
 
-if {[ns_ora resultrows $db] == 0} {
-    ns_db dml $db "insert into im_procedure_events
+#if the previous update didn't modify any rows, insert a new row with the data
+if {[db_resultrows] == 0} {
+    db_dml create_event "insert into im_procedure_events
 (event_id, user_id, procedure_id, note, supervising_user, event_date) values
-($event_id, $user_id, $procedure_id,'$QQnote', $supervising_user, '$event_date')"
+(:event_id, :user_id, :procedure_id, :note, :supervising_user, :e_date)"
 }
 
-ad_returnredirect index.tcl?[export_url_vars procedure_id]
+db_release_unused_handles
+
+ad_returnredirect info?[export_url_vars procedure_id]
+
+
+

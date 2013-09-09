@@ -1,24 +1,18 @@
-# $Id: group-shortname-edit-2.tcl,v 3.0.4.1 2000/04/28 15:09:32 carsten Exp $
-#
 # group-shortname-edit-2.tcl
-#
-# actually updates the short_name column in the user_groups table
-#
-
-set_the_usual_form_variables
-
-# group_id, short_name
-
-if [empty_string_p $QQshort_name] {
-    ad_return_complaint 1 "<li>you shouldn't change shortname of a group to the empty string!  Please type a shortname."
-    return
+ad_page_contract {
+     actually updates the short_name column in the user_groups table
+    @param group_id the ID of the group
+    @param short_name a short name of the group
+ 
+    @cvs-id group-shortname-edit-2.tcl,v 3.1.6.5 2000/07/21 03:58:15 ron Exp
+} {
+    group_id:notnull,naturalnum
+    short_name:notnull
 }
 
-set db [ns_db gethandle]
+db_dml user_group_sn_update  "update user_groups 
+set short_name = :short_name
+where group_id = :group_id"
 
-ns_db dml $db "update user_groups 
-set short_name = '$QQshort_name'
-where group_id = $group_id"
-
-ad_returnredirect "group.tcl?group_id=$group_id"
+ad_returnredirect "group?group_id=$group_id"
 

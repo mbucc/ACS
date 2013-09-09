@@ -1,0 +1,148 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+
+<head>
+<title>Bootstrapping ACS</title>
+<link rel="stylesheet" type="text/css" href="core-arch-guide.css">
+</head>
+
+<body>
+
+<h2>Bootstrapping ACS</h2>
+
+by <a href="mailto:jsalz@mit.edu">Jon Salz</a>
+
+<p>
+
+<a href="/doc/">ACS Documentation</a> :
+<a href="">ACS Core Architecture Guide</a> :
+Bootstrapping ACS
+
+<hr>
+
+<ul>
+<li>Tcl code: /tcl/0-acs-init.tcl and /packages/acs-core/bootstrap.tcl
+</ul>
+
+This document describes the startup (bootstrapping) process for an AOLserver
+running ACS.
+
+<h3>The Big Picture</h3>
+
+Before ACS 3.3, the ACS startup process was extremely simple:
+after AOLserver performed its internal initialization (reading the configuration
+file, loading shared libraries and module code, etc.) it scanned through the
+Tcl library directory (generally <code>/web/<i>yourservername</i>/tcl</code>),
+sourcing each file in sequence.
+
+<p>While this overall structure for initialization is still intact, package
+management has thrown a wrench into the works - there are a few extra things
+to do during initialization, most notably:
+
+<ul>
+<li>Examine the ACS file tree for files that should not be present in ACS
+(i.e., that were once part of the ACS distribution but have since been removed).
+<li>Scan the <code>/packages</code> directory for new packages.
+<li>Initialize enabled packages by sourcing their <code>*-procs.tcl</code>
+and <code>*-init.tcl</code> files.
+</ul>
+
+This document examines in detail each of the steps involved in AOLserver/ACS startup.
+
+<h3>The Startup Process</h3>
+
+As soon as the
+<code>nsd</code> daemon is executed by the <code>init</code> process (or otherwise),
+AOLserver reads its configuration file and <code>chroot</code>s itself if
+necessary. It then loads shared libraries indicated in the <code>.ini</code>
+file (e.g., the Oracle driver and <code>nssock</code>), and
+sources Tcl module files (generally in <code>/home/aol30/modules/tcl</code>).
+This step is, and has always been, the same for all AOLservers, regardless of
+whether they are running ACS.
+
+<p>Next AOLserver sources, in lexicographical order, each file in the
+<code>/tcl</code> directory. The first such file is <code>0-acs-init.tcl</code>,
+which doesn't
+do much directly except to determine the ACS path root (e.g.,
+<code>/web/<i>yourservername</i></code>) by trimming the final component
+from the path to the Tcl library directory (<code>/web/<i>yourservername</i>/tcl</code>).
+But <code>0-acs-init.tcl</code>'s has an important function, namely
+sourcing <code>/packages/acs-core/bootstrap.tcl</code>, which does the following:
+
+<ol>
+<li>
+<b>Initialize some NSVs used by the core</code>.
+These NSVs are documented in <code>/packages/acs-core/apm-procs.tcl</code> - no need
+to worry about them unless you're an ACS core hacker.
+</p>
+
+<li>
+<b>Verify the deletion of obsolete ACS files</code>.
+The <code>/tcl</code> directory has evolved quite a bit over the months and years,
+and a few files have come and gone. The
+<a href="/doc/removed-files.txt"><code>/www/doc/removed-files.txt</code></a> file
+contains a list of files which <i>must be deleted</i> from the AOLserver
+installation, at the risk of causing weird conflicts, e.g., having several security
+filters registered. <code>bootstrap.tcl</code> scans through this list, logging
+error messages to the log if any of these files exist.
+</p>
+
+<li>
+<b>Source <code>*-procs.tcl</code> files in the ACS core</b>.
+We source each file matching the <code>*-procs.tcl</code> glob in the
+<code>/packages/acs-core</code> directory, in lexicographical order.
+These procedure are needed to perform any of the following steps.
+</p>
+
+<li>
+<b>Ensure that the database is available</b> by
+grabbing and releasing a handle. If we can't obtain a handle, we terminate
+initialization (since ACS couldn't possibly start up the server without access
+to the database).
+</p>
+
+<li>
+<b>Register any new packages in the <code>/packages</code>
+directory</b>. In each directory inside <code>/packages</code>, we look for a
+<code>.info</code> file; if we find a package that hasn't yet been registered
+with the package manager (i.e., it's been copied there manually), we
+insert information about it into the database. (The first time ACS starts up,
+<i>no</i> packages will have been registered in the database yet, so
+this step will registers every single package in the <code>/packages</code> directory.)
+Note that packages discovered here are initially disabled; they must be
+manually enabled in the package manager before they can be used.
+</p>
+
+<li>
+<b>Ensure that the <code>acs-core</code> package is enabled</code>. If the ACS
+core isn't initialized, the server couldn't possibly be operational, so
+if there's no enabled version of the ACS core we simply mark the latest
+installed one as enabled.
+</p>
+
+<li>
+<b>Load <code>*-procs.tcl</code> files for enabled packages</b>, activating their APIs.
+</p>
+
+<li>
+<b>Load <code>*-init.tcl</code> files for enabled packages</b>, giving packages a chance
+to register filters and procedures, initialize data structures, etc.
+</p>
+
+<li>
+<b>Verify that the core has been properly initialized</b> by checking for the
+existence of an NSV created by the request processor initialization code.
+If it's not present, the server won't be operational, so we log an error.
+
+</ol>
+
+At this point, <code>bootstrap.tcl</code> is done executing. AOLserver
+proceeds to source the remaining files in the <code>/tcl</code> directory
+(i.e., unpackaged libraries) and begins listening for connections.
+
+<hr>
+
+<a href="mailto:jsalz@mit.edu"><address>jsalz@mit.edu</address></a>
+
+</body>
+</html>

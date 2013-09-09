@@ -1,33 +1,49 @@
-# $Id: edit-simple-css-2.tcl,v 3.0.4.1 2000/04/28 15:08:34 carsten Exp $
-# File:     /admin/css/edit-simple-css-2.tcl
-# Date:     12/26/99
-# Author:   gtewari@mit.edu (revised by tarik@arsdigita.com)
-# Contact:  tarik@arsdigita.com
-# Purpose:  setting up cascaded style sheet properties
-#
-# Note: if page is accessed through /groups pages then group_id and group_vars_set are already set up in 
-#       the environment by the ug_serve_section. group_vars_set contains group related variables (group_id, 
-#       group_name, group_short_name, group_admin_email, group_public_url, group_admin_url, group_public_root_url,
-#       group_admin_root_url, group_type_url_p, group_context_bar_list and group_navbar_list)
+# /www/admin/display/edit-simple-css-2.tcl
 
-set_the_usual_form_variables
-# css_bgcolor, css_textcolor, css_unvisited_link, css_visited_link, css_link_text_decoration, css_font_type
-# css_bgcolor_val, css_textcolor_val, css_unvisited_link_val, css_visited_link_val
-# maybe return_url
-# maybe scope, maybe scope related variables (group_id, user_id)
+ad_page_contract {
+
+    setting up cascaded style sheet properties
+
+    @author gtewari@mit.edu, tarik@arsdigita.com
+    @creation-date 12/26/1999
+    @param css_bgcolor 
+    @param css_textcolor 
+    @param css_unvisited_link 
+    @param css_visited_link 
+    @param css_link_text_decoration 
+    @param css_font_type 
+    @param css_bgcolor_val 
+    @param css_textcolor_val 
+    @param css_unvisited_link_val 
+    @param css_visited_link_val
+
+    @cvs-id edit-simple-css-2.tcl,v 3.2.2.7 2000/07/25 11:27:53 ron Exp
+} {
+    css_bgcolor 
+    css_textcolor 
+    css_unvisited_link 
+    css_visited_link 
+    css_link_text_decoration 
+    css_font_type 
+    css_bgcolor_val 
+    css_textcolor_val 
+    css_unvisited_link_val 
+    css_visited_link_val
+    return_url:optional
+    scope:optional
+    group_id:optional,integer
+    user_id:optional,integer
+}
 
 if { ![info exists return_url] } {
-    set return_url "edit-simple-css.tcl"
+    set return_url "edit-simple-css"
 }
 
 ad_scope_error_check
 
-set db [ns_db gethandle]
-
 append update_sql "
 update css_simple
 set "
-
 
 if { ([info exists css_bgcolor] && ![empty_string_p $css_bgcolor]) || \
 	([info exists css_bgcolor_val] && ![empty_string_p $css_bgcolor_val]) } {
@@ -62,12 +78,15 @@ append update_sql "css_link_text_decoration = '$css_link_text_decoration'
 where [ad_scope_sql]
 "
 
+db_dml display_update_query $update_sql
 
-ns_db dml $db $update_sql
-
-ns_db releasehandle $db
+db_release_unused_handles
 
 ad_returnredirect $return_url
+
+
+
+
 
 
 

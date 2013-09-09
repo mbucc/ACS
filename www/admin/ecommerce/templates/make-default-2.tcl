@@ -1,13 +1,18 @@
-# $Id: make-default-2.tcl,v 3.0.4.1 2000/04/28 15:08:57 carsten Exp $
-set_the_usual_form_variables
-# template_id
+#  www/admin/ecommerce/templates/make-default-2.tcl
+ad_page_contract {
+    @param template_id
+  @author
+  @creation-date
+  @cvs-id make-default-2.tcl,v 3.2.2.4 2000/08/16 15:15:45 stevenp Exp
+} {
+    template_id:integer
+}
 
-set db [ns_db gethandle]
 
-
-if [catch { ns_db dml $db "update ec_admin_settings set default_template = $template_id" } errmsg] {
+if [catch { db_dml update_set_default_template "update ec_admin_settings set default_template = :template_id" } errmsg] {
     ad_return_complaint 1 "<li>We couldn't change this to be the default template.  Here is the error message that Oracle gave us:<blockquote>$errmsg</blockquote>"
     return
 }
+db_release_unused_handles
 
 ad_returnredirect index.tcl

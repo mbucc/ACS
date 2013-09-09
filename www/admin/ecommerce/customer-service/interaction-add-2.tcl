@@ -1,10 +1,36 @@
-# $Id: interaction-add-2.tcl,v 3.0.4.1 2000/04/28 15:08:38 carsten Exp $
-set_the_usual_form_variables
-# If this is coming from interaction-add.tcl:
-# open_date, interaction_type, interaction_type_other, interaction_originator, and
-# (a) If it's an unknown customer: first_names, last_name, email, postal_code,
-#     other_id_info
-# (b) If it's a known customer: c_user_identification_id and issue_id
+# interaction-add-2.tcl
+ad_page_contract { 
+    @param open_date:optional
+    @param interaction_type:optional
+    @param interaction_type_other:optional
+    @param interaction_originator:optional 
+    @param first_names:optional
+    @param last_name:optional
+    @param email:optional
+    @param postal_code:optional
+    @param other_id_info:optional 
+    @param c_user_identification_id:optional
+    @param issue_id:optional
+    @param open_date
+
+    @author
+    @creation-date
+    @cvs-id interaction-add-2.tcl,v 3.3.2.11 2001/01/12 19:55:34 khy Exp
+} {
+    open_date:array,date,optional
+    interaction_type:optional
+    interaction_type_other:optional
+    interaction_originator:optional 
+    first_names:optional
+    last_name:optional
+    email:optional
+    postal_code:optional
+    other_id_info:optional 
+    c_user_identification_id:optional
+    issue_id:optional
+    insert_id:integer
+}
+
 
 # If this is coming from interaction-add-3.tcl (meaning that they are adding
 # another action to this interaction):
@@ -18,38 +44,42 @@ set_the_usual_form_variables
 # the customer service rep must be logged on
 
 set customer_service_rep [ad_get_user_id]
+if {[empty_string_p $insert_id]} {
+    set insert_id 1
+}
+if {$insert_id ==0 } { 
+
+    # YYYY-MM-DD HH24:MI:SS
+    set open_date_year  $open_date(year)
+    set open_date_month $open_date(month)
+    set open_date_day  $open_date(day)
+    set open_date_time $open_date(time)
+
+    set open_date_str "$open_date_year-$open_date_month-$open_date_day $open_date_time"
+} 
+
+if {$insert_id ==1} {
+    set open_date_str [db_string select_time "select to_char(sysdate, 'YYYY-MM-DD HH24:MI:SS') from dual"]
+
+}
+
+
+#doc_return  200 text/html "<b>year: $open_date_year <br>
+#month: $open_date_month <br>
+#day: $open_date_day<br>
+#time: $open_date_time<br></b>"
 
 if {$customer_service_rep == 0} {
-    set return_url "[ns_conn url]?[export_entire_form_as_url_vars]"
+    set return_url "[ad_conn url]?[export_entire_form_as_url_vars]"
     ad_returnredirect "/register.tcl?[export_url_vars return_url]"
     return
 }
 
 if { ![info exists interaction_id] } {
 
-    # put together open_date, and do error checking
-    
     set exception_count 0
     set exception_text ""
-    set form [ns_getform]
     
-    # ns_dbformvalue $form open_date date open_date will give an error
-    # message if the day of the month is 08 or 09 (this octal number problem
-    # we've had in other places).  So I'll have to trim the leading zeros
-    # from ColValue.open%5fdate.day and stick the new value into the $form
-    # ns_set.
-    
-    set "ColValue.open%5fdate.day" [string trimleft [set ColValue.open%5fdate.day] "0"]
-    ns_set update $form "ColValue.open%5fdate.day" [set ColValue.open%5fdate.day]
-    
-    if [catch  { ns_dbformvalue $form open_date datetime open_date} errmsg ] {
-	incr exception_count
-	append exception_text "<li>The date or time was specified in the wrong format.  The date should be in the format Month DD YYYY.  The time should be in the format HH:MI:SS (seconds are optional), where HH is 01-12, MI is 00-59 and SS is 00-59.\n"
-    } elseif { [string length [set ColValue.open%5fdate.year]] != 4 } {
-	incr exception_count
-	append exception_text "<li>The year needs to contain 4 digits.\n"
-    }
-
     if { ![info exists interaction_type] || [empty_string_p $interaction_type] } {
 	incr exception_count
 	append exception_text "<li>You forgot to specify the method of inquiry (phone/email/etc.).\n"
@@ -69,9 +99,6 @@ if { ![info exists interaction_id] } {
     # done error checking
 }
 
-set db_pools [ns_db gethandle [philg_server_default_pool] 2]
-set db [lindex $db_pools 0]
-set db_sub [lindex $db_pools 1]
 
 # Have to generate action_id
 # action_id will be used by the next page to tell whether the user pushed
@@ -80,11 +107,11 @@ set db_sub [lindex $db_pools 1]
 # exist) so that I can use the fact of its existence or lack of existence
 # to create this page's UI
 
-set action_id [database_to_tcl_string $db "select ec_action_id_sequence.nextval from dual"]
+set action_id [db_string get_interaction_id "select ec_action_id_sequence.nextval from dual"]
 
-ReturnHeaders
 
-ns_write "[ad_admin_header "One Issue"]
+
+append doc_body "[ad_admin_header "One Issue"]
 <h2>One Issue</h2>
 
 [ad_admin_context_bar [list "../index.tcl" "Ecommerce"] [list "index.tcl" "Customer Service Administration"] "One Issue (part of New Interaction)"]
@@ -93,31 +120,32 @@ ns_write "[ad_admin_header "One Issue"]
 A customer may discuss several issues during the course of one interaction.  Please
 enter the information about only one issue below:
 
-<form method=post action=interaction-add-3.tcl>
-[export_form_vars interaction_id c_user_identification_id action_id open_date interaction_type interaction_type_other interaction_originator first_names last_name email postal_code other_id_info return_to_issue]
+<form method=post action=interaction-add-3>
+[export_form_vars interaction_id c_user_identification_id open_date_str interaction_type interaction_type_other interaction_originator first_names last_name email postal_code other_id_info return_to_issue insert_id]
+
+[export_form_vars -sign action_id]
 
 <table>
 "
 
 if { [info exists c_user_identification_id] } {
-    ns_write "<tr>
+    append doc_body "<tr>
     <td>Customer:</td>
-    <td>[ec_user_identification_summary $db $c_user_identification_id "t"]"
+    <td>[ec_user_identification_summary $c_user_identification_id "t"]"
 
     if { [info exists postal_code] } {
-	ns_write "<br>
-	[ec_location_based_on_zip_code $db $postal_code]
+	append doc_body "<br>
+	[ec_location_based_on_zip_code $postal_code]
 	"
     }
 
-
-    ns_write "</td>
+    append doc_body "</td>
     </tr>
     "
 }
 
 if { ![info exists issue_id] } {
-    ns_write "<tr>
+    append doc_body "<tr>
     <td>Issue ID:</td>
     <td><input type=text size=4 name=issue_id>
     If this is a new issue, please leave this blank (a new Issue ID will be generated)</td>
@@ -130,14 +158,14 @@ if { ![info exists issue_id] } {
     </tr>
     <tr>
     <td>Issue Type: (leave blank if based on an existing issue):</td>
-    <td>[ec_issue_type_widget $db]</td>
+    <td>[ec_issue_type_widget]</td>
     </tr>
     "
 } else {
-    set order_id [database_to_tcl_string $db "select order_id from ec_customer_service_issues where issue_id=$issue_id"]
-    set issue_type_list [database_to_tcl_list $db "select issue_type from ec_cs_issue_type_map where issue_id=$issue_id"]
+    set order_id [db_string get_order_id "select order_id from ec_customer_service_issues where issue_id=:issue_id"]
+    set issue_type_list [db_list get_issue_type_list "select issue_type from ec_cs_issue_type_map where issue_id=:issue_id"]
 
-    ns_write "<tr>
+    append doc_body "<tr>
     <td>Issue ID:</td>
     <td>$issue_id[export_form_vars issue_id]</td>
     </tr>
@@ -151,13 +179,13 @@ if { ![info exists issue_id] } {
     </tr>
     "
 }
-ns_write "<tr>
+append doc_body "<tr>
 <td>Details:</td>
 <td><textarea wrap name=action_details rows=6 cols=45></textarea></td>
 </tr>
 <tr>
 <td>Information used to respond to inquiry:</td>
-<td>[ec_info_used_widget $db]</td>
+<td>[ec_info_used_widget]</td>
 </tr>
 <tr>
 <td>If follow-up is required, please specify:</td>
@@ -174,7 +202,7 @@ ns_write "<tr>
 "
 
 if { ![info exists c_user_identification_id] } {
-    ns_write "
+    append doc_body "
     <p>
     
     <b>Customer identification:</b>
@@ -190,10 +218,10 @@ if { ![info exists c_user_identification_id] } {
     
     # see if we can find their city/state from the zip code
     
-    set location [ec_location_based_on_zip_code $db $postal_code]
+    set location [ec_location_based_on_zip_code $postal_code]
 
     if { ![empty_string_p $location] } {
-	ns_write "<li>They live in $location.\n"
+	append doc_body "<li>They live in $location.\n"
     }
 
     
@@ -203,14 +231,11 @@ if { ![info exists c_user_identification_id] } {
     
     # if their email address was filled in, see if they're a registered user
     if { ![empty_string_p $email] } {
-	set selection [ns_db 0or1row $db "select first_names as d_first_names, last_name as d_last_name, user_id as d_user_id from users where upper(email) = '[string toupper $email]'"]
+	set email [string toupper $email]
+	if {  [db_0or1row get_does_row_exist_p "select first_names as d_first_names, last_name as d_last_name, user_id as d_user_id from users where upper(email) =:email "]==1 } {
 	
-	if { ![empty_string_p $selection] } {
-	    set_variables_after_query
-	}
-	
-	if { [info exists d_user_id] } {
-	    ns_write "<li>This is a registered user of the system: <a target=user_window href=\"/admin/users/one.tcl?user_id=$d_user_id\">$d_first_names $d_last_name</a>.
+
+	    append doc_body "<li>This is a registered user of the system: <a target=user_window href=\"/admin/users/one?user_id=$d_user_id\">$d_first_names $d_last_name</a>.
 	    [export_form_vars d_user_id]"
 	    set positively_identified_p 1
 	}
@@ -222,25 +247,25 @@ if { ![info exists c_user_identification_id] } {
 	
 	if { ![empty_string_p $first_names] || ![empty_string_p $last_name] } {
 	    if { ![empty_string_p $first_names] && ![empty_string_p $last_name] } {
-		set selection [ns_db select $db "select user_id as d_user_id from users where upper(first_names)='[DoubleApos [string toupper $first_names]]' and upper(last_name)='[DoubleApos [string toupper $last_name]]'"]
-		while { [ns_db getrow $db $selection] } {
-		    set_variables_after_query
-		    ns_write "<li>This may be the registered user <a target=user_window href=\"/admin/users/one.tcl?user_id=$d_user_id\">$first_names $last_name</a> (check here <input type=checkbox name=d_user_id value=$d_user_id> if this is correct).\n"
+		set sql "select user_id as d_user_id from users where upper(first_names)=upper (:first_names) and upper(last_name)=upper(:last_name)"
+		db_foreach get_user_ids $sql {
+		    
+		    append doc_body "<li>This may be the registered user <a target=user_window href=\"/admin/users/one?user_id=$d_user_id\">$first_names $last_name</a> (check here <input type=checkbox name=d_user_id value=$d_user_id> if this is correct).\n"
 		}
 	    } elseif { ![empty_string_p $first_names] } {
-		set selection [ns_db select $db "select user_id as d_user_id, last_name as d_last_name from users where upper(first_names)='[DoubleApos [string toupper $first_names]]'"]
+		set sql "select user_id as d_user_id, last_name as d_last_name from users where upper(first_names)=upper(:first_names)"
 		
-		while { [ns_db getrow $db $selection] } {
-		    set_variables_after_query
-		    ns_write "<li>This may be the registered user <a target=user_window href=\"/admin/users/one.tcl?user_id=$d_user_id\">$first_names $d_last_name</a> (check here <input type=checkbox name=d_user_id value=$d_user_id> if this is correct).\n"
+		db_foreach get_user_id_and_lname $sql {
+		    
+		    append doc_body "<li>This may be the registered user <a target=user_window href=\"/admin/users/one?user_id=$d_user_id\">$first_names $d_last_name</a> (check here <input type=checkbox name=d_user_id value=$d_user_id> if this is correct).\n"
 		}
 		
 	    } elseif { ![empty_string_p $last_name] } {
-		set selection [ns_db select $db "select user_id as d_user_id, first_names as d_first_names from users where upper(last_name)='[DoubleApos [string toupper $last_name]]'"]
+		set sql "select user_id as d_user_id, first_names as d_first_names from users where upper(last_name)=upper(:last_name)"
 		
-		while { [ns_db getrow $db $selection] } {
-		    set_variables_after_query
-		    ns_write "<li>This may be the registered user <a target=user_window href=\"/admin/users/one.tcl?user_id=$d_user_id\">$d_first_names $last_name</a> (check here <input type=checkbox name=d_user_id value=$d_user_id> if this is correct).\n"
+		db_foreach get_user_id_and_names $sql {
+		    
+		    append doc_body "<li>This may be the registered user <a target=user_window href=\"/admin/users/one?user_id=$d_user_id\">$d_first_names $last_name</a> (check here <input type=checkbox name=d_user_id value=$d_user_id> if this is correct).\n"
 		}
 		
 	    }
@@ -251,11 +276,11 @@ if { ![info exists c_user_identification_id] } {
 	
 	set already_selected_user_identification_id_list [list]
 	if { ![empty_string_p $email] } {
-	    set selection [ns_db select $db "select user_identification_id as d_user_identification_id from ec_user_identification where upper(email)='[DoubleApos [string toupper $email]]' and user_id is null"]
+	    set sql "select user_identification_id as d_user_identification_id from ec_user_identification where upper(email)=upper(:email) and user_id is null"
 	    
-	    while { [ns_db getrow $db $selection] } {
-		set_variables_after_query
-		ns_write "<li>This may be the non-registered person who has had a previous interaction with us: [ec_user_identification_summary $db_sub $d_user_identification_id "t"] (check here <input type=checkbox name=d_user_identification_id value=$d_user_identification_id> if this is correct)."
+	    db_foreach get_user_identification $sql {
+		
+		append doc_body "<li>This may be the non-registered person who has had a previous interaction with us: [ec_user_identification_summary_sub $d_user_identification_id "t"] (check here <input type=checkbox name=d_user_identification_id value=$d_user_identification_id> if this is correct)."
 		lappend already_selected_user_identification_id_list $d_user_identification_id
 	    }
 	}
@@ -267,16 +292,16 @@ if { ![info exists c_user_identification_id] } {
 	
 	if { ![empty_string_p $first_names] || ![empty_string_p $last_name] } {
 	    if { ![empty_string_p $first_names] && ![empty_string_p $last_name] } {
-		set selection [ns_db select $db "select user_identification_id as d_user_identification_id from ec_user_identification where upper(first_names)='[DoubleApos [string toupper $first_names]]' and upper(last_name)='[DoubleApos [string toupper $last_name]]' and user_id is null $additional_and_clause"]
+		set sql "select user_identification_id as d_user_identification_id from ec_user_identification where upper(first_names)=upper(:first_names) and upper(last_name)=upper(:last_name) and user_id is null $additional_and_clause"
 	    } elseif { ![empty_string_p $first_names] } {
-		set selection [ns_db select $db "select user_identification_id as d_user_identification_id from ec_user_identification where upper(first_names)='[DoubleApos [string toupper $first_names]]' and user_id is null $additional_and_clause"]
+		set sql "select user_identification_id as d_user_identification_id from ec_user_identification where upper(first_names)=upper(:first_names) and user_id is null $additional_and_clause"
 	    } elseif { ![empty_string_p $last_name] } {
-		set selection [ns_db select $db "select user_identification_id as d_user_identification_id from ec_user_identification where upper(last_name)='[DoubleApos [string toupper $last_name]]' and user_id is null $additional_and_clause"]
+		set sql "select user_identification_id as d_user_identification_id from ec_user_identification where upper(last_name)=upper(:last_name) and user_id is null $additional_and_clause"
 	    }
 	    
-	    while { [ns_db getrow $db $selection] } {
-		set_variables_after_query
-		ns_write "<li>This may be the non-registered person who has had a previous interaction with us: [ec_user_identification_summary $db_sub $d_user_identification_id "t"] (check here <input type=checkbox name=d_user_identification_id value=$d_user_identification_id> if this is correct)."
+	    db_foreach get_user_identification_info $sql {
+		
+		append doc_body "<li>This may be the non-registered person who has had a previous interaction with us: [ec_user_identification_summary_sub $d_user_identification_id "t"] (check here <input type=checkbox name=d_user_identification_id value=$d_user_identification_id> if this is correct)."
 		lappend already_selected_user_identification_id_list $d_user_identification_id
 	    }
 	}
@@ -286,11 +311,11 @@ if { ![info exists c_user_identification_id] } {
 	}
 	
 	if { ![empty_string_p $other_id_info] } {
-	    set selection [ns_db select $db "select user_identification_id as d_user_identification_id from ec_user_identification where other_id_info like '%[DoubleApos $other_id_info]%' $additional_and_clause"]
+	    set sql "select user_identification_id as d_user_identification_id from ec_user_identification where other_id_info like '%[DoubleApos $other_id_info]%' $additional_and_clause"
 	    
-	    while { [ns_db getrow $db $selection] } {
-		set_variables_after_query
-		ns_write "<li>This may be the non-registered person who has had a previous interaction with us: [ec_user_identification_summary $db_sub $d_user_identification_id "t"] (check here <input type=checkbox name=d_user_identification_id value=$d_user_identification_id> if this is correct)."
+	    db_foreach get_user_identification_info $sql {
+		
+		append doc_body "<li>This may be the non-registered person who has had a previous interaction with us: [ec_user_identification_summary_sub $d_user_identification_id "t"] (check here <input type=checkbox name=d_user_identification_id value=$d_user_identification_id> if this is correct)."
 		lappend already_selected_user_identification_id_list $d_user_identification_id
 	    }
 	    
@@ -301,24 +326,28 @@ if { ![info exists c_user_identification_id] } {
 	}
 	
 	if { ![empty_string_p $postal_code] } {
-	    set selection [ns_db select $db "select user_identification_id as d_user_identification_id from ec_user_identification where postal_code='[DoubleApos $postal_code]' $additional_and_clause"]
+	    set sql "select user_identification_id as d_user_identification_id from ec_user_identification where postal_code=:postal_code $additional_and_clause"
 	    
-	    while { [ns_db getrow $db $selection] } {
-		set_variables_after_query
-		ns_write "<li>This may be the non-registered person who has had a previous interaction with us: [ec_user_identification_summary $db_sub $d_user_identification_id "t"] (check here <input type=checkbox name=d_user_identification_id value=$d_user_identification_id> if this is correct)."
+	    db_foreach get_user_ids_by_postal_code $sql {
+		
+		append doc_body "<li>This may be the non-registered person who has had a previous interaction with us: [ec_user_identification_summary_sub $d_user_identification_id "t"] (check here <input type=checkbox name=d_user_identification_id value=$d_user_identification_id> if this is correct)."
 		lappend already_selected_user_identification_id_list $d_user_identification_id
 	    }
 	}
     }
-    ns_write "</ul>
+    append doc_body "</ul>
     <p>
     "
 }
 
-ns_write "<center>
+append doc_body "<center>
 <input type=submit name=submit value=\"Interaction Complete\">
 <input type=submit name=submit value=\"Enter Another Issue as part of this Interaction\">
 </center>
 
 [ad_admin_footer]
 "
+
+
+doc_return  200 text/html $doc_body
+

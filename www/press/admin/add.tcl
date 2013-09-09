@@ -1,19 +1,19 @@
-#
-# /admin/press/add.tcl
-#
-# Add a new press item
-#
-# Author: ron@arsdigita.com, December 1999
-#
-# $Id: add.tcl,v 3.1.2.1 2000/03/15 20:30:33 aure Exp $
-#
+# /www/press/admin/add.tcl
+
+ad_page_contract {
+
+    Add a new press item
+    
+    @author  Ron Henderson (ron@arsdigita.com)
+    @created December 1999
+    @cvs-id  add.tcl,v 3.4.2.7 2000/09/22 01:39:05 kevin Exp
+}
 
 # Verify that this user is a valid administrator
 
 set user_id [ad_verify_and_get_user_id]
-set db      [ns_db gethandle]
 
-if {![press_admin_any_group_p $db $user_id]} {
+if {![press_admin_any_group_p $user_id]} {
     ad_return_complaint 1 "<li>You are not authorized to access this page"
     return
 }
@@ -38,7 +38,7 @@ press_coverage_samples
 # -----------------------------------------------------------------------------
 # Ship it out
 
-ns_return 200 text/html "
+doc_return  200 text/html "
 [ad_header "Add a Press Item"]
 
 <h2>Add a Press Item</h2>
@@ -90,8 +90,8 @@ it's published by the press module.
   </td>
 </tr>
 
-[press_scope_widget    $db]
-[press_template_widget $db]
+[press_scope_widget]
+[press_template_widget]
 
 <tr>
   <td align=right valign=top><b>Importance</b>:</td>
@@ -119,9 +119,7 @@ it's published by the press module.
 
 <p>Press coverage templates:</p>
 
-[press_template_list $db]
+[press_template_list]
 
 [ad_footer]"
-
-
 

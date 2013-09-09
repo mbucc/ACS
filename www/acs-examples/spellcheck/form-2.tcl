@@ -1,17 +1,16 @@
-# $Id: form-2.tcl,v 3.0 2000/02/06 02:43:27 ron Exp $
-#
-# /acs-examples/spellcheck/form-2.tcl
-#
-# by philg@mit.edu, November 8, 1999
-#
-# end of spellcheck demo
-#
+ad_page_contract {
+    End of spellcheck demo.
+    
+    @author Philip Greenspun [philg@mit.edu]
+    @creation-date November 8, 1999
+    @cvs-id form-2.tcl,v 3.0.12.4 2000/09/22 01:34:10 kevin Exp
+} {
+    first_name
+    occupation
+    dream
+} 
 
-set_the_usual_form_variables
-
-# first_name, occupation, dream
-
-ns_return 200 text/html "[ad_header "The psychiatrist talks"]
+doc_return  200 text/html "[ad_header "The psychiatrist talks"]
 
 <h2>The psychiatrist talks</h2>
 

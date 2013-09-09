@@ -1,60 +1,54 @@
-# $Id: term-edit.tcl,v 3.0.4.1 2000/04/28 15:10:55 carsten Exp $
+# /www/glossary/term-edit.tcl
+
+ad_page_contract {
+    form for editing a term and its definition
+
+    @author unknown modified by walter@arsdigita.com, 2000-07-02
+    @cvs-id term-edit.tcl,v 3.3.2.7 2000/11/18 07:01:12 walter Exp
+    @param term The term to edit
+} {term}
+
 if {[ad_read_only_p]} {
     ad_return_read_only_maintenance_message
     return
 }
 
-set user_id [ad_verify_and_get_user_id]
+set user_id [ad_maybe_redirect_for_registration]
 
-if {$user_id == 0} {
-    ad_returnredirect /register/index.tcl?return_url=[ns_urlencode [ns_conn url]]?term=$term
-}
+set admin_only_p 0
 
-set exception_count 0
-set exception_text ""
-
-set_the_usual_form_variables
-# term
-
-set db [ns_db gethandle]
-
-
-if { ![info exists term] || [empty_string_p $QQterm] } {
-    incr exception_count
-    append exception_text "<li>No term to edit\n"
-} else {
-    set selection [ns_db 0or1row $db "select definition, author
-    from glossary
-    where term = '$QQterm'"]
-    # In case of someone clicking on an old window
-    if [empty_string_p $selection] {
-	ns_db releasehandle $db
-	ad_returnredirect index.tcl
-	return
+page_validation {
+    if { ![string equal -nocase "open" [ad_parameter ApprovalPolicy glossary]] } {
+	if {![ad_administrator_p]} {
+	    error "<li>Only the administrator may edit terms."
+	}
     }
-    set_variables_after_query
-    
+} {
+    set sql "select author, definition
+    from glossary
+    where term = :term"
+
+    if {![db_0or1row getterm $sql]} {
+	error "<li>Term no longer exists.\n"
+    }
+
     # check to see if ther user was the original author
     if {$user_id != $author } {
-	incr exception_count
-	append exception_text "<li>You can not edit this term because you did not author it.\n"
+	if {![ad_administrator_p]} {
+		error "<li>You can not edit this term because you did not author it.\n" 
+	}
     }
 }
 
-if { $exception_count > 0 } {
-    ad_return_complaint $exception_count $exception_text
-    return
-}
+db_release_unused_handles
 
-ReturnHeaders
-
-ns_write "[ad_header "Edit Definition" ]
+set whole_page "[ad_header "Edit Definition" ]
 
 <h2>Edit Definition</h2>
-[ad_context_bar_ws_or_index [list "index.tcl" "Glossary"] Edit]
+[ad_context_bar_ws_or_index [list "index" "Glossary"] Edit]
 <hr>
 
-<form action=term-edit-2.tcl method=post>
+<form action=term-edit-2 method=post>
 Edit your definition for
 <p>
 <b>$term</b>:<br>
@@ -69,3 +63,5 @@ Edit your definition for
 
 [ad_footer]
 "
+
+doc_return  200 text/html $whole_page

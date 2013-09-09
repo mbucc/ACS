@@ -1,61 +1,35 @@
-# $Id: spam-history.tcl,v 3.0 2000/02/06 03:46:29 ron Exp $
 # File: /groups/group/spam-history.tcl
-# Date: Fri Jan 14 19:27:42 EST 2000
-# Contact: ahmeds@mit.edu
-# Purpose: this page generates the spam history of this user
-#
-# Note: group_id and group_vars_set are already set up in the environment by the ug_serve_section.
-#       group_vars_set contains group related variables (group_id, group_name, group_short_name,
-#       group_admin_email, group_public_url, group_admin_url, group_public_root_url, group_admin_root_url, 
-#       group_type_url_p, group_context_bar_list and group_navbar_list)
+ad_page_contract {
+    @param user_id the ID of the user to look at
 
-set_the_usual_form_variables 0
-# user_id 
+    @cvs-id spam-history.tcl,v 3.4.2.6 2000/09/22 01:38:15 kevin Exp
+} {
+    user_id:naturalnum,notnull
+}   
 
 set group_name [ns_set get $group_vars_set group_name]
 
-set db [ns_db gethandle]
-ad_scope_authorize $db $scope all group_member none
 
-set exception_count 0
-set exception_text ""
+ad_scope_authorize $scope all group_member none
 
-if {[empty_string_p $user_id] && [empty_string_p $user_id]} {
-    incr exception_count
-    append exception_text "
-    <li>No user id was passed"
-}
-
-
-if {$exception_count > 0 } {
-    ad_return_complaint $exception_count $exception_text
-    return
-}
-
-set first_names [database_to_tcl_string $db "
+set first_names [db_string get_first_name "
 select first_names 
 from users
-where user_id=$user_id "]
+where user_id=:user_id "]
 
-set last_name [database_to_tcl_string $db "
+set last_name [db_string get_last_name "
 select last_name
 from users
-where user_id=$user_id "]
+where user_id=:user_id "]
 
-ReturnHeaders 
 
-ns_write "
-[ad_scope_header "Email History" $db]
-[ad_scope_page_title "Email History of $first_names $last_name" $db]
-[ad_scope_context_bar_ws_or_index [list index.tcl $group_name] [list spam-index.tcl "Email"] "History"]
+
+set page_html "
+[ad_scope_header "Email History"]
+[ad_scope_page_title "Email History of $first_names $last_name"]
+[ad_scope_context_bar_ws_or_index [list index $group_name] [list spam-index "Email"] "History"]
 <hr>
 "
-set selection [ns_db select $db "select *
-from group_spam_history
-where sender_id = $user_id
-and group_id = $group_id 
-order by creation_date desc"]
-
 set counter 0
 
 append html "
@@ -72,9 +46,15 @@ append html "
 <th><br>No. of Actual <br> Recipients</th>
 </tr>
 "    
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
-    
+
+
+db_foreach select_gs_history_details "select spam_id, send_date, approved_p, subject, sender_ip_address, from_address, send_to, creation_date, n_receivers_intended, n_receivers_actual
+from group_spam_history
+where sender_id = :user_id
+and group_id = :group_id 
+order by creation_date desc" { 
+
+
     incr counter
     
     set approved_string [ad_decode $send_date "" "N/A" $send_date]
@@ -87,8 +67,8 @@ while {[ns_db getrow $db $selection]} {
     <tr>
     <td>$sender_ip_address
     <td>$from_address
-    <td>$send_to
-    <td><a href=\"spam-item.tcl?[export_url_vars spam_id]\">$subject</a>
+    <td>[join $send_to ", "]
+    <td><a href=\"spam-item?[export_url_vars spam_id]\">$subject</a>
     <td>$creation_date
     <td>$approval_state_string
     <td align=center>$n_receivers_intended
@@ -103,17 +83,12 @@ if { $counter > 0 } {
     set html "No Email history of $first_names $last_name for $group_name group available in the database."
 }
 
-ns_write "
-
+doc_return  200 text/html  "
+$page_html
 <blockquote>
 $html
 </blockquote>
 <p><br>
 [ad_scope_footer]
 "
-
-
-
-
-
 

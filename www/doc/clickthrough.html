@@ -7,7 +7,7 @@
 <body bgcolor=#ffffff text=#000000>
 <h2>Clickthrough</h2>
 
-part of the <a href="index.html">ArsDigita Community System</a>
+part of the <a href="index">ArsDigita Community System</a>
 by <a href="http://photo.net/philg/">Philip Greenspun</a>
 
 <hr>
@@ -17,13 +17,13 @@ by <a href="http://photo.net/philg/">Philip Greenspun</a>
 <li>User-accessible directory:  none
 <li>Site administrator directory:  <a href="/admin/click/">/admin/click/</a>
 <li>data model :  within <a
-href="sql/display-sql.tcl?url=/doc/sql/community-core.sql">/doc/sql/community-core.sql</a>
-<li>Tcl procs:  /tcl/ad-clickthrough.tcl
+href="sql/display-sql?url=/community-core.sql&package_key=acs-core">/packages/acs-core/community-core.sql</a>
+<li>Tcl procs:  /tcl/ad-clickthrough
 </ul>
 
 
 Here's the data model (from <a
-href="sql/display-sql.tcl?url=/doc/sql/community-core.sql">/doc/sql/community-core.sql</a>):
+href="sql/display-sql?url=/community-core.sql&package_key=acs-core">/packages/acs-core/community-core.sql</a>):
 
 <blockquote>
 <pre><code>
@@ -46,12 +46,12 @@ like:
 
 <blockquote>
 <pre><code>
-&lt;a href="/ct/photo/where-to-buy.html?send_to=http://www.bhphotovideo.com/"&gt;B&H Photo&lt;/a&gt;
+&lt;a href="/ct/photo/where-to-buy?send_to=http://www.bhphotovideo.com/"&gt;B&H Photo&lt;/a&gt;
 </code></pre>
 </blockquote>
 
 This is a reference on the page <a
-href="http://photo.net/photo/where-to-buy.html">http://photo.net/photo/where-to-buy.html</a>,
+href="http://photo.net/photo/where-to-buy">http://photo.net/photo/where-to-buy</a>,
 sending readers over to <a href="http://www.bhphotovideo.com/">http://www.bhphotovideo.com/</a>.
 
 <p>
@@ -63,7 +63,7 @@ e.g.,
 
 <blockquote>
 <pre><code>
-&lt;a href="/ct<font color=red>/philg</font>/photo/where-to-buy.html?send_to=http://www.bhphotovideo.com/"&gt;B&H Photo&lt;/a&gt;
+&lt;a href="/ct<font color=red>/philg</font>/photo/where-to-buy?send_to=http://www.bhphotovideo.com/"&gt;B&H Photo&lt;/a&gt;
 </code></pre>
 </blockquote>
 

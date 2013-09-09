@@ -1,9 +1,31 @@
-# $Id: domain-edit-2.tcl,v 3.1.2.1 2000/04/28 15:10:35 carsten Exp $
-set_the_usual_form_variables
+# domain-edit-2.tcl
 
-# domain_id, domain, insert_form_fragments, default_expiration_days,
-# wtb_common_p, auction_p, geocentric_p
-# submit
+ad_page_contract {
+    @author
+    @creation-date
+    @cvs-id domain-edit-2.tcl,v 3.3.2.4 2000/08/01 15:52:24 psu Exp
+
+    @param domain_id
+    @param domain
+    @param full_noun
+    @param insert_form_fragments
+    @param default_expiration_days
+    @param wtb_common_p
+    @param auction_p
+    @param geocentric_p
+    @param submit
+
+} {
+    domain_id
+    domain
+    full_noun 
+    insert_form_fragments
+    default_expiration_days
+    wtb_common_p 
+    auction_p
+    geocentric_p
+    submit
+}
 
 # user error checking
 
@@ -20,7 +42,6 @@ if { ![info exists domain] || [empty_string_p $domain] } {
     append exception_text "<li>Please enter a short key."
 }
 
-
 if { [info exists insert_for_fragments] && [string length $insert_form_fragments] > 4000 } {
     incr exception_count
     append exception_text "<li>Please limit you form fragment for ad parameters to 4000 characters."
@@ -31,15 +52,15 @@ if { $exception_count > 0 } {
   return
 }
 
-set db [ns_db gethandle]
+
 
 ns_set delkey [ns_conn form] submit
 
+set sql_statement_and_bind_vars [util_prepare_update ad_domains domain_id $domain_id [ns_conn form]]
+set sql_statement [lindex $sql_statement_and_bind_vars 0]
+set bind_vars [lindex $sql_statement_and_bind_vars 1]
 
-set sql_statement  [util_prepare_update $db ad_domains domain_id $domain_id [ns_conn form]]
-
-
-if [catch { ns_db dml $db $sql_statement } errmsg] {
+if [catch { db_dml gc_admin_domain_edit_2_update $sql_statement -bind $bind_vars} errmsg] {
 	    ad_return_error "Failure to update domain information" "The database rejected the attempt:
 	    <blockquote>
 <pre>
@@ -50,4 +71,5 @@ $errmsg
     return
 }
 
-ad_returnredirect "domain-top.tcl?[export_url_vars domain]"
+db_release_unused_handles
+ad_returnredirect "domain-top.tcl?[export_url_vars domain domain_id]"

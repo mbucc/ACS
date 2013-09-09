@@ -1,0 +1,36 @@
+<template>
+
+  <name>static</name>
+  <title>Static Demo</title>
+  <author>karlg@arsdigita.com</author> 
+  <comment>This is a demo of the static datasource type</comment>
+
+  <process>
+
+  <datasource>
+
+    <name>first_name</name>
+    <type>static</type>
+    <structure>onevalue</structure>
+    <condition>Fred</condition>
+    <comment>The first name is always the same.</comment>
+
+  </datasource>
+
+  <datasource>
+
+    <name>userinfo</name>
+    <type>static</type>
+    <structure>onerow</structure>
+    <condition>
+      <social>323-32-6543</social>
+      <birthdate>09-10-1990</birthdate>
+      <maiden_name>Young</maiden_name>
+    </condition>
+    <comment>Basic information about user.</comment>
+
+  </datasource>
+
+  </process>
+
+</template>

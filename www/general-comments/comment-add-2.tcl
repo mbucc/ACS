@@ -1,23 +1,43 @@
-# $Id: comment-add-2.tcl,v 3.0 2000/02/06 03:43:52 ron Exp $
-# File:     /general-comments/comment-add-2.tcl
-# Date:     01/21/2000
-# Contact:  philg@mit.edu, tarik@mit.edu
-# Purpose:  
-#
-# Note: if page is accessed through /groups pages then group_id and group_vars_set are already set up in 
-#       the environment by the ug_serve_section. group_vars_set contains group related variables (group_id, 
-#       group_name, group_short_name, group_admin_email, group_public_url, group_admin_url, group_public_root_url,
-#       group_admin_root_url, group_type_url_p, group_context_bar_list and group_navbar_list)
+ad_page_contract {
+    @author philg@mit.edu
+    @author tarik@mit.edu
+    @creation-date 01/21/2000
+    @cvs-id comment-add-2.tcl,v 3.2.2.5 2001/01/10 20:07:41 khy Exp
+} {
+    {scope ""}
+    {user_id ""}
+    {group_id ""}
+    {on_which_group ""}
+    {on_what_id ""}
+    on_which_table
+    on_what_id
+    content:html
+    comment_id:naturalnum,notnull,verify
+    html_p
+    return_url
+    item
+    module
+    {one_line ""}
+}
+
 
 if {[ad_read_only_p]} {
     ad_return_read_only_maintenance_message
     return
 }
 
-set_the_usual_form_variables
-# maybe scope, maybe scope related variables (user_id, group_id, on_which_group, on_what_id)
-# on_which_table, on_what_id, content, comment_id, html_p, return_url, item, module
-# maybe one_line
+#####
+if {![info exists content] } {
+    ad_return_complaint 1 "content doesn't exist!?"
+    return
+}
+
+if {[empty_string_p $content]} {
+    ad_return_complaint 1 "content is empty '$content'"
+    return
+}
+###########
+
 
 # check for bad input
 if { ![info exists content] || [empty_string_p $content] } {
@@ -25,14 +45,11 @@ if { ![info exists content] || [empty_string_p $content] } {
     return
 }
 
-if { $html_p == "t" && ![empty_string_p [ad_check_for_naughty_html $content]] } {
-    ad_return_complaint 1 "<li>[ad_check_for_naughty_html $content]\n"
-    return
-}
-
-if {![info exists one_line]} {
-    set one_line ""
-}
+# this is already done by ad_page_contract 
+#if { $html_p == "t" && ![empty_string_p [ad_check_for_naughty_html $content]] } {
+#    ad_return_complaint 1 "<li>[ad_check_for_naughty_html $content]\n"
+#    return
+#}
 
 if { [info exists html_p] && $html_p == "t" } {
     set approval_text "<blockquote>
@@ -63,13 +80,12 @@ set approval_policy [ad_parameter DefaultCommentApprovalPolicy]
 # the site approval policy
 set approval_policy [ad_parameter CommentApprovalPolicy $module $approval_policy]
 
-
 # If the comment will require approval tell the user that it will not appear immediately.
 if { ![ad_parameter AcceptAttachmentsP "general-comments" 0] && [string compare $approval_policy "open"] != 0 } {
     append approval_text "<p>Your comment will be visible after it is approved by the administrator.\n"
 }
 
-ns_return 200 text/html "[ad_header "Confirm comment on $item"]
+doc_return  200 text/html "[ad_header "Confirm comment on $item"]
 
 <h2>Confirm comment on $item</h2>
 
@@ -79,11 +95,10 @@ ns_return 200 text/html "[ad_header "Confirm comment on $item"]
 
 Here is how your comment would appear:
 
-
 $approval_text
 
 <center>
-<form action=comment-add-3.tcl method=post>
+<form action=comment-add-3 method=post>
 [export_entire_form]
 <input type=submit name=submit value=\"Confirm\">
 </form>

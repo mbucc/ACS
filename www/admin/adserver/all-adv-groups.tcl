@@ -1,28 +1,34 @@
-# $Id: all-adv-groups.tcl,v 3.0 2000/02/06 02:46:09 ron Exp $
+# /www/admin/adserver/all-adv-groups.tcl
 
-set db [ns_db gethandle]
+ad_page_contract {
+    @param none
+    @author modified 07/13/200 by mchu@arsdigita.com
+    @cvs-id all-adv-groups.tcl,v 3.1.6.5 2000/11/20 23:55:16 ron Exp
+} {
+    
+}
 
-ReturnHeaders
-
-ns_write "[ad_admin_header "Manage Ad Groups"]
+set page_content "[ad_admin_header "Manage Ad Groups"]
 <h2>Manage Ad Groups</h2>
-at <A href=\"index.tcl\">AdServer Administration</a>
+at <A href=\"index\">AdServer Administration</a>
 <hr><p>
 
 <ul>
-<li> <a href=\"add-adv-group.tcl\">Add</a> a new ad group.
+<li> <a href=\"add-adv-group\">Add</a> a new ad group.
 <p>
 "
 
-set selection [ns_db select $db "select group_key, pretty_name from adv_groups"]
+set sql_query "select group_key, pretty_name from adv_groups"
 
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
-    
-    ns_write "<li> <a href=\"one-adv-group.tcl?group_key=$group_key\">$pretty_name</a>\n"
+db_foreach adv_keyname_query $sql_query {
+    append page_content "<li> <a href=\"one-adv-group?[export_url_vars group_key]\">$pretty_name</a>\n"
 }
 
-ns_write "</ul>
+db_release_unused_handles
+
+append page_content "</ul>
 <p>
 [ad_admin_footer]
 "
+
+doc_return 200 text/html $page_content

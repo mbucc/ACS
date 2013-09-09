@@ -1,21 +1,18 @@
-# $Id: add-custom-column.tcl,v 3.1 2000/03/10 20:01:58 markd Exp $
-set_the_usual_form_variables
+# add-custom-column.tcl
 
-# domain_id
+ad_page_contract {
+    @cvs-id add-custom-column.tcl,v 3.3.2.3 2000/09/22 01:34:36 kevin Exp
+} {
+    domain_id:integer
+}
 
-set db [ns_db gethandle]
+db_1row contest_data_get "select unique * from contest_domains where domain_id=:domain_id" -bind [ad_tcl_vars_to_ns_set domain_id]
 
-set selection [ns_db 1row $db "select unique * from contest_domains where domain_id='$QQdomain_id'"]
-set_variables_after_query
-
-ReturnHeaders
-
-ns_write "[ad_admin_header "Customize $pretty_name"]
+set doc_body "[ad_admin_header "Customize $pretty_name"]
 
 <h2>Customize $pretty_name</h2>
 
 [ad_admin_context_bar [list "index.tcl" "Contests"] [list "manage-domain.tcl?[export_url_vars domain_id]" "Manage Contest"] "Customize"]
-
 
 <hr>
 
@@ -38,11 +35,11 @@ information.
 # by the system
 set not_null_vars [list]
 
-set selection [ns_db select $db "select * from contest_extra_columns where domain_id = '$QQdomain_id'"]
+set sql "select * from contest_extra_columns where domain_id = :domain_id"
+
 set n_rows_found 0
 
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+db_foreach table_rows $sql {
     incr n_rows_found
     if [regexp -nocase {not null} $column_extra_sql] {
 	lappend not_null_vars $column_actual_name
@@ -51,18 +48,18 @@ while { [ns_db getrow $db $selection] } {
 }
 
 if { $n_rows_found == 0 } {
-    ns_write "No extra columns are currently defined."
+    append doc_body "No extra columns are currently defined."
 } else {
-    ns_write "<table>
+    append doc_body "<table>
 <tr><th>Pretty Name<th>Actual Name<th>Type<th>Extra SQL
 $table_rows
 </table>
 "
 }
 
-ns_write "<h3>Define a New Custom Column</h3>
+append doc_body "<h3>Define a New Custom Column</h3>
 
-<form action=\"add-custom-column-2.tcl\" method=POST>
+<form action=\"add-custom-column-2\" method=POST>
 [export_form_vars domain_id]
 
 Column Pretty Name:  <input name=column_pretty_name type=text size=30>
@@ -115,7 +112,8 @@ Any field with a \"not null\" constraint must have a value and
 therefore must be a form variable.  Currently, you have the following
 not null columns:  <b>$not_null_vars</b>.
 
-
-
 [ad_contest_admin_footer]
 "
+
+db_release_unused_handles
+doc_return 200 text/html $doc_body

@@ -66,6 +66,7 @@ create table portal_tables_audit  (
 	audit_time		date
 );
 
+
 create or replace trigger portal_tables_audit_trigger
 before update or delete  on portal_tables
   for each row
@@ -81,31 +82,4 @@ before update or delete  on portal_tables
      end;
 /
 show errors
-
--- Some nice samples by aileen@arsdigita.com
-
-insert into portal_tables (table_id, table_name, adp, admin_url, creation_user, modified_date) 
-values 
-(portal_table_id_sequence.nextval, 'Stock Quotes', '<% set html [DisplayStockQuotes $db]%><%=$html%>', '', 1, sysdate);
-
-insert into portal_tables (table_id, table_name, adp, admin_url,
-creation_user, modified_date) 
-values 
-(portal_table_id_sequence.nextval,'Current Weather', '<% set html [DisplayWeather $db]%><%=$html%>', '', 1, sysdate);
-
-insert into portal_tables (table_id, table_name, adp,
-admin_url,creation_user, modified_date) 
-values 
-(portal_table_id_sequence.nextval,'Classes', '<% set html [GetClassHomepages $db]%><%=$html%>', '', 1, sysdate);
-
-insert into portal_tables (table_id, table_name, adp,
-admin_url,creation_user, modified_date) 
-values 
-(portal_table_id_sequence.nextval,'Announcements', '<% set html [GetNewsItems $db]%><%=$html%>', '', 1, sysdate);
-
-insert into portal_tables (table_id, table_name, adp,
-admin_url,creation_user, modified_date) 
-values 
-(portal_table_id_sequence.nextval,'Calendar', '<% set html [edu_calendar_for_portal $db]%><%= $html%>', '', 1, sysdate);
-
 

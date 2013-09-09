@@ -1,18 +1,21 @@
-# $Id: expire-messages.tcl,v 3.0 2000/02/06 03:10:09 ron Exp $
-# File:     admin/chat/expire-messages.tcl
-# Date:     1998-11-18
-# Contact:  aure@arsdigita.com,philg@mit.edu, ahmeds@arsdigita.com
-# Purpose:  expires messages of a chat room
+# /admin/chat/expire-messages.tcl
 
-set_the_usual_form_variables
+ad_page_contract {
+    Delete expired messages of a chat room
 
-# chat_room_id
+    @param chat_room_id chat room identifier
+    @author Aure (aure@arsdigita.com)
+    @author Philip Greenspun (philg@mit.edu)
+    @author ahmeds@arsdigita.com
+    @creation-date 1998-11-18
+    @cvs-id expire-messages.tcl,v 3.1.2.6 2000/09/22 01:34:29 kevin Exp
+} {
+    {chat_room_id:naturalnum,notnull}
+}
 
 ad_maybe_redirect_for_registration
 
-set db [ns_db gethandle]
-
-set expiration_days [database_to_tcl_string $db "select expiration_days from chat_rooms where chat_room_id=$chat_room_id"]
+set expiration_days [db_string admin_chat_get_expiration_days {select expiration_days from chat_rooms where chat_room_id=:chat_room_id}]
 
 if {[empty_string_p $expiration_days]} {
     ad_return_complaint 1 "You haven't set expiration_days so we
@@ -20,13 +23,13 @@ couldn't possibly delete any messages"
     return
 }
 
-ns_db dml $db "delete from chat_msgs 
-where chat_room_id = $chat_room_id
-and creation_date < sysdate-$expiration_days"
+db_dml admin_chat_remove_expire_msgs {delete from chat_msgs 
+where chat_room_id = :chat_room_id
+and creation_date < sysdate-:expiration_days}
 
-set n_rows_deleted [ns_ora resultrows $db]
+set n_rows_deleted [db_resultrows]
 
-ns_return 200 text/html "[ad_admin_header "$n_rows_deleted rows were deleted"]
+set page_content "[ad_admin_header "$n_rows_deleted rows were deleted"]
 
 <h2>$n_rows_deleted rows deleted</h2>
 
@@ -38,4 +41,4 @@ ns_return 200 text/html "[ad_admin_header "$n_rows_deleted rows were deleted"]
 "
 
 
-
+doc_return  200 text/html $page_content

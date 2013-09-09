@@ -1,13 +1,46 @@
-# $Id: one.tcl,v 3.0 2000/02/06 03:21:22 ron Exp $
-set_the_usual_form_variables
-# retailer_id
+#  www/admin/ecommerce/retailers/one.tcl
+ad_page_contract {
 
-set db [ns_db gethandle]
-set selection [ns_db 1row $db "select * from ec_retailers where retailer_id=$retailer_id"]
-set_variables_after_query
+    @param retailer_id the Retailer ID numer
 
-ReturnHeaders
-ns_write "[ad_admin_header "$retailer_name"]
+  @author
+  @creation-date
+  @cvs-id one.tcl,v 3.1.6.5 2000/09/22 01:35:00 kevin Exp
+} {
+    retailer_id 
+}
+
+
+
+db_1row get_retailer_details "
+select retailer_id ,
+    retailer_name,
+    primary_contact_name,
+    secondary_contact_name,
+    primary_contact_info,
+    secondary_contact_info,
+    line1,
+    line2,
+    city ,
+    usps_abbrev,
+    zip_code,
+    phone,
+    fax,
+    url,
+    country_code,
+    reach,
+    nexus_states,
+    financing_policy,
+    return_policy,
+    
+    price_guarantee_policy,
+    delivery_policy,
+    installation_policy
+ from ec_retailers where retailer_id=:retailer_id"
+
+db_release_unused_handles
+
+set page_html "[ad_admin_header "$retailer_name"]
 
 <h2>$retailer_name</h2>
 
@@ -49,7 +82,7 @@ $secondary_contact_name<br>
 Address
 </td>
 <td>
-[ec_display_as_html [ad_pretty_mailing_address_from_args $db $line1 $line2 $city $usps_abbrev $zip_code $country_code]]
+[ec_display_as_html [ad_pretty_mailing_address_from_args $line1 $line2 $city $usps_abbrev $zip_code $country_code]]
 </td>
 </tr>
 <tr>
@@ -127,9 +160,9 @@ Installation
 </table>
 </blockquote>
 "
-ns_write "<h3>Actions</h3>
+append page_html "<h3>Actions</h3>
 <ul>
-<li><a href=\"edit.tcl?retailer_id=$retailer_id\">Edit</a>
+<li><a href=\"edit?retailer_id=$retailer_id\">Edit</a>
 "
 
 # Set audit variables
@@ -141,10 +174,21 @@ set return_url "one.tcl?[export_url_vars retailer_id]"
 set audit_tables [list ec_retailers_audit]
 set main_tables [list ec_retailers]
 
-ns_write "<li><a href=\"audit.tcl?[export_url_vars audit_name id id_column return_url audit_tables main_tables]\">Audit Trail</a>
+append page_html "<li><a href=\"/admin/ecommerce/audit?[export_url_vars audit_name id id_column return_url audit_tables main_tables]\">Audit Trail</a>
 
 </ul>
 
 [ad_admin_footer]
 "
+
+
+
+doc_return  200 text/html $page_html
+
+
+
+
+
+
+
 

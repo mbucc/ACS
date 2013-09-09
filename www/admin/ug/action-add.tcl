@@ -1,22 +1,18 @@
-# $Id: action-add.tcl,v 3.0.4.1 2000/04/28 15:09:24 carsten Exp $
-set_the_usual_form_variables
+ad_page_contract {
+    @param action the action to be performed
+    @param group_id the id of the group to perform the action on 
 
-# group_id, action
+    @cvs-id action-add.tcl,v 3.1.6.4 2000/07/25 08:19:08 kevin Exp
 
-set exception_count 0
-set exception_text ""
-
-if { ![info exists action] && [empty_string_p $action] } {
-    incr exception_count
-    append exception_text "<li>Please type in a action"
+} {
+    group_id:notnull,naturalnum
+    action:notnull
 }
 
-if { $exception_count > 0 } {
-    ad_return_complaint $exception_count $exception_text
-}
+ad_user_group_action_add $group_id $action
 
-set db [ns_db gethandle]
+ad_returnredirect "group?group_id=$group_id"
 
-ad_user_group_action_add $db $group_id $action
 
-ad_returnredirect "group.tcl?group_id=$group_id"
+
+

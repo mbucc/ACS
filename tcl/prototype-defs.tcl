@@ -1,16 +1,22 @@
-# $Id: prototype-defs.tcl,v 3.0 2000/02/06 03:13:57 ron Exp $
-# created by Rebecca Frankel (rfrankel@zurich.ai.mit.edu) in June 1999
-# modified by teadams@mit.edu 
-# procedures used by the prototype builder in /admin/prototype
+# /tcl/prototype-defs.tcl
+ad_library {
 
+    Procedures used by the prototype builder in /admin/prototype
+
+    @cvs-id prototype-defs.tcl,v 3.1.2.2 2000/07/25 11:27:50 ron Exp
+    @author Rebecca Frankel (rfrankel@zurich.ai.mit.edu) in June 1999
+    @author teadams@mit.edu 
+    @creation_date June 1999
+}
 
 proc_doc max_col_length {table col} "Returns the length of the 'col' in table 'table'" {
-    set db [ns_db gethandle subquery]
+    # Convert table name and column name to upper case.
+    set table_name [string toupper $table]
+    set column_name [string toupper $col]
 
-    set sql "select data_length from USER_TAB_COLUMNS where table_name='[string toupper $table]' and column_name = '[string toupper $col]'"
-    set table_length [database_to_tcl_string_or_null $db $sql foo]
+    set sql {select data_length from USER_TAB_COLUMNS where table_name=:table_name and column_name=:column_name}
 
-    ns_db releasehandle $db
+    set table_length [db_string get_col_length $sql -default "" ]
 
     return $table_length
 
@@ -20,8 +26,8 @@ proc_doc max_col_length {table col} "Returns the length of the 'col' in table 't
 proc_doc column_form_error {column} "Makes the forms to ask about which error-action type the user desires"  {
     set select_html "<tr align=right><th>$column:</th>\n"
 
-    set form_var $column
-    append form_var "_error_action"
+    #set form_var $column
+    set form_var "error_action.$column" 
     append select_html \
      "<td><input name=$form_var value=nothing checked type=radio>Do Nothing</td>\n"  
     append select_html \
@@ -35,8 +41,8 @@ proc_doc column_form_error {column} "Makes the forms to ask about which error-ac
 proc_doc column_form {column} "Makes the forms to ask which form-type the user desires" {
     set select_html "<tr align=right><th>$column:</th>\n"
 
-    set form_var $column
-    append form_var "_form_type"
+    #set form_var $column
+    set form_var "form_type.$column"
     append select_html \
      "<td><input name=$form_var value=none checked type=radio>None</td>\n"  
     append select_html \
@@ -57,15 +63,16 @@ proc_doc column_form {column} "Makes the forms to ask which form-type the user d
     return $select_html     
 }
 
-
 # The procs are used in tableinfo-2.tcl
-# A procedure to see if the column was listed as special:
-proc_doc check_special {col_name special_cols} "Checks to see if the column was listed as special, like a column id or pretty name, for example" {
+# A procedure to see if the column was listed as special
+proc_doc check_special {col_name special_cols} "Checks to see if the column was listed as special,  pretty name, for example" {
     set special_index [lsearch $special_cols $col_name] 
     if {$special_index == -1} {
         return 0
     } else {
-        return [expr $special_index + 1]}
+        return [expr $special_index + 1]
+    }
+
 }
 
 proc_doc column_select {columns selectname} "produces a selectbox of all the columns listed in the variable columns" {
@@ -78,20 +85,28 @@ proc_doc column_select {columns selectname} "produces a selectbox of all the col
     return $select_html
 }
 
-
 #
 proc_doc solicit_info {column form_type} "A procedure to get more info about a given form given a column and form-type. Most of the trouble is just going through all the forms types." {
     set form_html "<h4>For $column:</h4>\n"
     append form_html "Please enter the prompt text for entry into your $form_type:<br>\n"
-    set prompt_var $column
-    append prompt_var "_prompt_text"
+
+#    set prompt_var $column
+#    append prompt_var "_prompt_text"
+    set prompt_var "prompt_text.$column"
     append form_html "<input type=text size=55 name=$prompt_var><br>\n"
-    set ei_var $column
-    append ei_var "_extra_info"
-    set eitwo_var $column
-    append eitwo_var "_ei_two"
-    set eithree_var $column
-    append eithree_var "_ei_three"
+
+#    set ei_var $column
+#    append ei_var "_extra_info"
+    set ei_var "extra_info.$column"
+
+#    set eitwo_var $column
+#    append eitwo_var "_ei_two"
+    set eitwo_var "ei_two.$column"
+
+#    set eithree_var $column
+#    append eithree_var "_ei_three"
+    set eithree_var "ei_three.$column"
+
     switch $form_type {
         textbox {
             append form_html "How big a textbox do you want?<br> \
@@ -140,13 +155,19 @@ find out what kind of error action a user desires for a given column" {
         nothing {}
         complain {
             append form_html "If the user fails to enter input, what error message do you desire?<br>\n"
-            set error_var $column
-            append error_var "_error_message"
+
+#            set error_var $column
+#            append error_var "_error_message"
+	    set error_var "error_message.$column"
+
             append form_html "<input type=text size=55 name=$error_var><br>\n"}
         fixit {
             append form_html "What value do you wish to set as the default?<br>\n"
-            set error_var $column
-            append error_var "_default"
+
+#            set error_var $column
+#            append error_var "_default"
+	    set error_var "default.$column"
+
             if [string compare $form_type "date"] {
                 append form_html "<input type=text size=55 name=$error_var><br>\n"
             } else {

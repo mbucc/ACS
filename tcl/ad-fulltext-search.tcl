@@ -1,35 +1,40 @@
-# $Id: ad-fulltext-search.tcl,v 3.0 2000/02/06 03:12:18 ron Exp $
-# definitions having to do with full text searches
-# (typically carried out with Oracle Context (not free) 
-# or PLS from http://www.pls.com (free))
+# /tcl/ad-fulltext-search.tcl
 
-# standard error message for bad context searches
+ad_library {
 
-proc ad_return_context_error {errmsg} {
+    Site wide search private tcl
+    definitions having to do with full text searches
+    (typically carried out with Oracle Context (not free) 
+    or PLS from http://www.pls.com (free))
+
+    @creation-date ?
+    @author ?
+    @cvs-id ad-fulltext-search.tcl,v 3.1.2.2 2000/07/13 17:57:19 bquinn Exp
+}
+
+
+ad_proc ad_return_context_error {errmsg} {standard error message for bad context searches} {
 
     return "There aren't any results because something about
-your query string has made Oracle Context unhappy:
-<pre>
-$errmsg
-</pre>
-In general, ConText does not like special characters.  It does not like
-to see common words such as \"AND\" or \"a\" or \"the\".  
-I haven't completely figured this beast out.
+            your query string has made Oracle Context unhappy:
+            <pre>
+            $errmsg
+            </pre>
+            In general, ConText does not like special characters.  It does not like
+            to see common words such as \"AND\" or \"a\" or \"the\".  
+            I haven't completely figured this beast out.
 
-Back up and try again!"
+            Back up and try again!"
 }
 
 # CONTEXT PROCEDURES
 
-
-# stadard formation of the context query -- assumes
-# that the variable query_string and $QQquery_string exists
-
-
-proc ad_context_query_string {} {
+ad_proc ad_context_query_string {} {
+    Standard formation of the context query -- assumes that the variable query_string exists
+} {
     uplevel {
-	regsub -all {@} [string trim $QQquery_string] {\@} QQquery_string
-	regsub -all { +} [string trim $QQquery_string] "," query_string_for_ctx
+	regsub -all {@} [string trim $query_string] {\@} query_string
+	regsub -all { +} [string trim $query_string] "," query_string_for_ctx
 	
 	# we've separated the words with commas (sometimes more than one if the
 	# user typed multiple spaces)
@@ -53,14 +58,15 @@ proc ad_context_query_string {} {
 }
 
 
-# standard context message for searches with no results 
-# if the user can expand the search, this will return
-# the appropriate string
-# you must set the variable search_items before this is called
-# user output --- ie "messages", "classified ads"
-# also assumes this follows the standard search pattern
 
-proc ad_context_no_results {} {
+ad_proc ad_context_no_results {} {
+    standard context message for searches with no results 
+    if the user can expand the search, this will return
+    the appropriate string
+    you must set the variable search_items before this is called
+    user output --- ie "messages", "classified ads"
+    also assumes this follows the standard search pattern
+} {
     uplevel {
 	
 	if ![info exists url] {
@@ -88,11 +94,10 @@ There are two basic ways in which we can expand your search:
     return 
 }
 
-
-# determines if the search results are irrelevent and
-# if the output should be aborted
-
-proc ad_context_end_output_p {counter the_score max_score} {
+ad_proc ad_context_end_output_p {counter the_score max_score} {
+    determines if the search results are irrelevent and
+    if the output should be aborted
+} {
 
     if { ($counter > 25) && ($the_score < [expr 0.3 * $max_score] ) } {
 	# we've gotten more than 25 rows AND our relevance score

@@ -1,15 +1,16 @@
-# $Id: delete-bookmark.tcl,v 3.0 2000/02/06 03:08:35 ron Exp $
-# delete-bookmark.tcl
-# admin version
-#
-# the delete utility of the bookmarks system
-#
-# by dh@arsdigita.com and aure@arsdigita.com
+# /www/admin/bookmarks/delete-bookmark.tcl
 
-set_the_usual_form_variables 
-# bookmark_id
-
-
+ad_page_contract {
+    admin version
+    the delete utility of the bookmarks system
+    @param bookmark_id ID of bookmark to be deleted
+    @author David Hill (dh@arsdigita.com)
+    @author Aurelius Prochazka (aure@arsdigita.com)    
+    @creation-date June 1999  
+    @cvs-id delete-bookmark.tcl,v 3.2.2.4 2000/09/22 01:34:23 kevin Exp
+} {
+    {bookmark_id:integer}
+} 
 
 # -- error-checking ------------------------------------
 set exception_text ""
@@ -27,13 +28,15 @@ if { $exception_count> 0 } {
 }
 
 # ---------------------------------------------------------
-
-set db [ns_db gethandle]
-
 # get local_title and folder_p
-set selection  [ns_db 1row $db "select local_title, folder_p, first_names||' '||last_name as owner_name, owner_id  from bm_list,users where bookmark_id=$bookmark_id
-and user_id = owner_id"]
-set_variables_after_query
+db_1row bm_info "
+          select local_title, 
+                        folder_p, 
+                 first_names||' '||last_name as owner_name, 
+                 owner_id  
+          from   bm_list, users 
+          where  bookmark_id = :bookmark_id
+          and user_id = owner_id"
 
 set title "Delete One"
 
@@ -44,37 +47,32 @@ set folder_html "
 <hr>
 "
 
-
-
 if {$folder_p=="t"} { 
     
-    set number_to_delete [database_to_tcl_string $db "select count(*)
-    from   bm_list
-    connect by prior bookmark_id=parent_id
-    start with parent_id=$bookmark_id "]
+    set number_to_delete [db_string bm_count "select count(*)
+                                              from   bm_list
+                                              connect by prior bookmark_id=parent_id
+                                              start with parent_id = :bookmark_id "]
     
     append folder_html " 
     Removing this folder will result in deleting $number_to_delete subfolders and/or bookmarks. <p>"
 }
+ 
+# release the database handle
+db_release_unused_handles 
 
 append folder_html "Are you sure you want to delete \"$local_title\"?<P>"
 
-
 append folder_html " 
-    <form action=delete-bookmark-2.tcl method=post >
+    <form action=delete-bookmark-2 method=post >
     <input type=submit value=\"Yes, Delete!\" >
     [export_form_vars bookmark_id] 
     </form>
     [ad_admin_footer]
     "
 
-
 # --serve the page --------------------------
-ns_return 200 text/html $folder_html
-
-
-
-
+doc_return  200 text/html $folder_html
 
 
 

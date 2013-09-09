@@ -1,13 +1,20 @@
-# $Id: renamenh-1.tcl,v 3.0.4.1 2000/04/28 15:11:03 carsten Exp $
 # File:     /homepage/renamenh-1.tcl
-# Date:     Thu Jan 27 01:52:07 EST 2000
-# Location: 42ÅÅ∞21'N 71ÅÅ∞04'W
-# Location: 80 PROSPECT ST CAMBRIDGE MA 02139 USA
-# Author:   mobin@mit.edu (Usman Y. Mobin)
-# Purpose:  Page to rename a neighborhood
 
-set_form_variables
-# neighborhood_node, rename_node
+ad_page_contract {
+    Page to rename a neighborhood
+
+    @param neighborhood_node System variable to get us back to the start
+    @param rename_node ID of what to rename
+
+    @author Usman Y. Mobin (mobin@mit.edu)
+    @creation-date Thu Jan 27 01:52:07 EST 2000
+    @cvs-id renamenh-1.tcl,v 3.3.2.9 2000/09/22 01:38:18 kevin Exp
+} {
+    neighborhood_node:notnull,naturalnum
+    rename_node:notnull,naturalnum
+}
+
+
 
 # ------------------------------ initialization codeBlock ----
 
@@ -23,17 +30,19 @@ if { $user_id == 0 } {
 
 # ------------------------------ htmlGeneration codeBlock ----
 
-set db [ns_db gethandle]
-set neighborhood_name [database_to_tcl_string $db "
-select neighborhood_name from users_neighborhoods
-where neighborhood_id=$rename_node"]
 
-set pretty_name [database_to_tcl_string $db "
+set neighborhood_name [db_string select_neighborhood_name "
+select neighborhood_name from users_neighborhoods
+where neighborhood_id=:rename_node"]
+
+set pretty_name [db_string select_rename_pretty_name "
 select description from users_neighborhoods
-where neighborhood_id=$rename_node"]
+where neighborhood_id=:rename_node"]
+
+db_release_unused_handles
 
 set dialog_body "Please choose a new name for `$neighborhood_name' \
-<form method=post action=renamenh-2.tcl> \
+<form method=post action=renamenh-2> \
   <input type=hidden name=neighborhood_node value=$neighborhood_node> \
   <input type=hidden name=rename_node value=$rename_node> \
   <table cellpadding=0 border=0> \
@@ -46,28 +55,25 @@ set dialog_body "Please choose a new name for `$neighborhood_name' \
   </table> \
   <table border=0 cellpadding=0> \
   <tr><td><input type=submit value=Okay></form></td> \
-      <td><form method=get action=neighborhoods.tcl> \
+      <td><form method=get action=neighborhoods> \
           <input type=hidden name=neighborhood_node value=$neighborhood_node> \
           <input type=submit value=Cancel></form></td> \
   </tr></table>"
 
-
-ad_returnredirect "dialog-class.tcl?title=Neighborhood Management&text=$dialog_body"
+ad_returnredirect "dialog-class?title=Neighborhood Management&text=$dialog_body"
 return
-
-ReturnHeaders
 
 set title "Rename File/Folder"
 
-ns_write "
+set page_content "
 [ad_header $title]
 <h2>$title</h2>
 [ad_context_bar_ws_or_index \
-        [list "neighborhoods.tcl?neighborhood_node=$neighborhood_node" "Homepage Maintenance"] $title]
+        [list "neighborhoods?neighborhood_node=$neighborhood_node" "Homepage Maintenance"] $title]
 <hr>
 <blockquote>
 
-<form method=post action=renamenh-2.tcl>
+<form method=post action=renamenh-2>
   <input type=hidden name=neighborhood_node value=$neighborhood_node>
   <input type=hidden name=rename_node value=$rename_node>
   <p><br>
@@ -84,3 +90,6 @@ ns_write "
 </blockquote>
 [ad_footer]
 "
+
+# Return page for viewing
+doc_return  200 text/html $page_content

@@ -1,13 +1,22 @@
-# $Id: delete-2.tcl,v 3.0.4.1 2000/04/28 15:08:57 carsten Exp $
-set_the_usual_form_variables
-# template_id
+#  www/admin/ecommerce/templates/delete-2.tcl
+ad_page_contract {
+    @param template_id
+
+  @author
+  @creation-date
+  @cvs-id delete-2.tcl,v 3.1.6.7 2000/08/18 21:47:00 stevenp Exp
+} {
+    template_id:integer
+}
+
+
 
 # check if this is the template that the admin has assigned as the default
 # in which case they'll have to select a new default before they can delete
 # this one
 
-set db [ns_db gethandle]
-set default_template_id [database_to_tcl_string $db "select default_template
+
+set default_template_id [db_string get_default_template "select default_template
 from ec_admin_settings"]
 
 if { $template_id == $default_template_id } {
@@ -20,17 +29,30 @@ if { $template_id == $default_template_id } {
     return
 }
 
-ns_db dml $db "begin transaction"
+set user_id [ad_verify_and_get_user_id]
+
+if {$user_id == 0} {
+    
+    set return_url "[ad_conn url]?[export_url_vars template_id]"
+
+    ad_returnredirect "/register.tcl?[export_url_vars return_url]"
+    return
+}
+
+
+db_transaction {
 
 # we have to first remove all references to this template in ec_products and ec_category_template_map
 
-ns_db dml $db "update ec_products set template_id=null, last_modified=sysdate, last_modifying_user='$user_id', modified_ip_address='[DoubleApos [ns_conn peeraddr]]' where template_id=$template_id"
+db_dml delete_product_refs "update ec_products set template_id=null, last_modified=sysdate, last_modifying_user=:user_id, modified_ip_address='[DoubleApos [ns_conn peeraddr]]' where template_id=:template_id"
 
-ns_db dml $db "delete from ec_category_template_map where template_id=$template_id"
+db_dml delete_from_ec_template_map "delete from ec_category_template_map where template_id=:template_id"
 
-ns_db dml $db "delete from ec_templates where template_id=$template_id"
-ad_audit_delete_row $db [list $template_id] [list template_id] ec_templates_audit
+db_dml delete_from_ec_templates "delete from ec_templates where template_id=:template_id"
+ad_audit_delete_row [list $template_id] [list template_id] ec_templates_audit
 
-ns_db dml $db "end transaction"
+}
+db_release_unused_handles
+
 ad_returnredirect index.tcl
 

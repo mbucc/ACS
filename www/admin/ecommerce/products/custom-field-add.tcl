@@ -1,7 +1,14 @@
-# $Id: custom-field-add.tcl,v 3.0 2000/02/06 03:19:52 ron Exp $
-ReturnHeaders
+#  www/admin/ecommerce/products/custom-field-add.tcl
+ad_page_contract {
+  Add a custom product field.
 
-ns_write "[ad_admin_header "Add a Custom Field"]
+  @author Eve Andersson (eveander@arsdigita.com)
+  @creation-date Summer 1999
+  @cvs-id custom-field-add.tcl,v 3.1.6.1 2000/07/22 07:57:37 ron Exp
+} {
+}
+
+doc_body_append "[ad_admin_header "Add a Custom Field"]
 
 <h2>Add a Custom Field</h2>
 
@@ -9,7 +16,7 @@ ns_write "[ad_admin_header "Add a Custom Field"]
 
 <hr>
 
-<form method=post action=custom-field-add-2.tcl>
+<form method=post action=custom-field-add-2>
 
 <table noborder>
 

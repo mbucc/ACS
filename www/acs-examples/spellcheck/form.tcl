@@ -1,13 +1,14 @@
-# $Id: form.tcl,v 3.0 2000/02/06 02:43:27 ron Exp $
-#
-# /acs-examples/spellcheck/form.tcl
-#
-# by philg@mit.edu, November 8, 1999
-#
-# beginning of spellcheck demo
-#
+ad_page_contract {
+    
+    Beginning of spellcheck demo.
 
-ns_return 200 text/html "[ad_header "Talk to the psychiatrist"]
+    @author Philip Greenspun [philg@mit.edu]
+    @creation-date November 8, 1999
+    @cvs-id form.tcl,v 3.1.6.3 2000/09/22 01:34:11 kevin Exp
+} { 
+}
+
+doc_return  200 text/html "[ad_header "Talk to the psychiatrist"]
 
 <h2>Talk to the psychiatrist</h2>
 
@@ -15,7 +16,7 @@ ns_return 200 text/html "[ad_header "Talk to the psychiatrist"]
 
 <hr>
 
-<form method=post action=\"/tools/spell.tcl\">
+<form method=post action=\"/tools/spell\">
 <!-- here is the magic stuff we need for the spellcheck tool -->
 <input type=hidden name=\"var_to_spellcheck\" value=\"dream\">
 <input type=hidden name=\"target_url\" value=\"/acs-examples/spellcheck/form-2.tcl\">

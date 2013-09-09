@@ -7,13 +7,13 @@
 <body bgcolor=#ffffff text=#000000>
 <h2>Abstract URL System</h2>
 
-a layer underneath the <a href="index.html">ArsDigita Community System</a>
+a layer underneath the <a href="index">ArsDigita Community System</a>
 by <a href="http://photo.net/philg/">Philip Greenspun</a> and <a href="mailto:jsalz@mit.edu">Jon Salz</a>
 
 <hr>
 
 <ul>
-<li>procedures: in tcl/ad-abstract-url.tcl
+<li>Tcl procedures: /packages/acs-core/ad-abstract-url-procs.tcl
 </ul>
 
 <h3>The Problem</h3>
@@ -33,8 +33,7 @@ Right now (February 2000), we happen to use AOLserver and one of the
 following kinds of pages:
 
 <ul>
-<li>a .html file
-<li>a .tcl file
+<li>a  file
 <li>a .adp template 
 <li>a .spec file that implies further evaluation of templates
 <li>a lot of files containing things like JPEGs or videos where there is
@@ -45,42 +44,42 @@ Think about it: when the SAP guys started up in 1972 they probably did a
 of of things for which they are now sorry.  In 30 years we will probably
 still have some vestiges of our data model and workflow.  But the
 specific languages and systems being used today will likely change.  In
-fact, we've already talked about building version fo the ACS that (a)
+fact, we've already talked about building versions of the ACS that (a)
 run inside Oracle using their embedded Java Web server, (b) run with
 Microsoft Active Server Pages, (c) run inside Apache mod_perl.  If a
 publisher swaps out AOLserver for one of these other systems or if we,
-in an ACS version upgrade, swap in .spec templating for .tcl, why should
+in an ACS version upgrade, swap in .spec templating, why should
 the user have to update his bookmarks?
 
 <h3>The Solution</h3>
 
 We register a procedure that
 will, given a URL with no extension, dig around in the file system to
-find the right actual files to deliver/execute.  This is analogous to
+find the right files to deliver/execute.  This is analogous to
 what AOLserver already does when it gets a directory name.  There is
 also an Apache module that does some of this (see 
-<a href="http://www.apache.org/docs/content-negotiation.html">http://www.apache.org/docs/content-negotiation.html</a>).  Here's an example of the
+<a href="http://www.apache.org/docs/content-negotiation">http://www.apache.org/docs/content-negotiation</a>).  Here's an example of the
 algorithm:
 
 <ol>
-<li>is there a .spec file, indicating usage of the super-whizzy
+<li>Is there a .spec file, indicating usage of the super-whizzy
 templating system?  If so, evaluate it.  If not, proceed to next step.
 
-<li>is there a .tcl file, indicating old-style code or code that will
+<li>Is there a  file, indicating old-style code or code that will
 look for a .adp template?  If so, evaluate it.  If not, proceed to next
 step.
 
-<li>does the user's session indicate that he or she wants WML for a
+<li>Does the user's session indicate that he or she wants WML for a
 wireless device?  If so, try to find a .wml file and serve it.  If no
 session info or no .wml file, proceed to next step.
 
-<li>look for a .html file
+<li>Look for a  file
 
-<li>look for a .txt file
+<li>Look for a .txt file
 
-<li>look for a .jpeg
+<li>Look for a .jpeg
 
-<li>look for a .gif
+<li>Look for a .gif
 
 </ol>
 
@@ -105,14 +104,14 @@ If such a file exists, deliver it.
 </ol>
 
 We are likely to add some steps at the very beginning of this to perform
-scoping, e.g., check if the URL begins with a group name (and optional group type),
+scoping, e.g. check if the URL begins with a group name (and optional group type),
 and if so set scope variables in the environment and munge the URL accordingly.
 
 <p>Note that we perform a lookup even if a URL with an extension is
 provided. This is so we can eventually perform content negotation even within the
-content-type domain, e.g., serve up a document in French (<tt>foobar.html.fr</tt>)
-or the King's English (<tt>foobar.html.en.uk</tt>) as opposed to the
-default Yankeespeak (<tt>foobar.html</tt> or <tt>foobar.html.en.us</tt>) depending
+content-type domain, e.g. serve up a document in French (<tt>foobar.fr</tt>)
+or the King's English (<tt>foobar.en.uk</tt>) as opposed to the
+default Yankeespeak (<tt>foobar</tt> or <tt>foobar.en.us</tt>) depending
 on the browser's <tt>Accept-Language</tt> setting.
 
 <p>Open questions:
@@ -120,14 +119,14 @@ on the browser's <tt>Accept-Language</tt> setting.
 <ul>
 <li>Is there any value in abstracting URLs for big ugly binary files
 such as JPEG, video, PowerPoint, Word docs, etc.? (I think so - this
-enables us to change resource types more easily [i.e., replace GIFs with
-JPEGs or Word documents with HTML files], which is a primary goal of
+enables us to change resource types more easily, i.e. replace GIFs with
+JPEGs or Word documents with HTML files, which is a primary goal of
 this system in the first place. Our ultimate goal should be the removal
 of <i>all</i> extensions from URLs throughout ACS. -JS)
 
 <li>Is it worth caching all of these file system probes? (My gut reaction
 is that it is not; caching will take place in the OS's file system layer anyway,
-and it would be tricky [although not <i>that</i> tricky] to properly support
+and it would be tricky, although not <i>that</i> tricky, to properly support
 the addition/removal of files from the file system without explicitly flushing
 the caches. In any case, caching is not part of the current implementation
 although it could certainly be added in a future version. -JS)
@@ -144,10 +143,6 @@ URLs
 will not be put off by the mere URLs
 
 </ul>
-
-
-
-
 
 <hr>
 

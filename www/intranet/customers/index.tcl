@@ -1,56 +1,82 @@
-# $Id: index.tcl,v 3.2.2.1 2000/03/17 08:22:52 mbryzek Exp $
-# File: /www/intranet/customers/index.tcl
-#
-# Author: mbryzek@arsdigita.com, Jan 2000
-#
-# Shows all customers. Lots of dimensional sliders
-# 
+# /www/intranet/customers/index.tcl
 
-set user_id [ad_verify_and_get_user_id]
-ad_maybe_redirect_for_registration
+ad_page_contract {
+    Shows all customers. Lots of dimensional sliders
 
-set_form_variables 0
-# optional: status_id
+    @param status_id if specified, limits view to those of this status
+    @param type_id   if specified, limits view to those of this type
+    @param order_by  Specifies order for the table
+    @param view_type Specifies which customers to see
+
+    @author mbryzek@arsdigita.com
+    @creation-date Jan 2000
+    @cvs-id index.tcl,v 3.20.2.7 2000/09/22 01:38:28 kevin Exp
+
+} {
+    { status_id:integer "" }
+    { type_id:integer "0" }
+    { order_by "Customer" }
+    { view_type "all" }
+}
+
+set user_id [ad_maybe_redirect_for_registration]
 
 if { ![exists_and_not_null status_id] } {
     # Default status is Current - select the id once and memoize it
-    set status_id [ad_partner_memoize_one \
+    set status_id [im_memoize_one select_customer_status_id \
 	    "select customer_status_id 
                from im_customer_status
-              where upper(customer_status) = 'CURRENT'" customer_status_id]
-}
-if { ![exists_and_not_null order_by] } {
-    set order_by "Customer"
+              where upper(customer_status) = 'CURRENT'"]
 }
 
-if { ![exists_and_not_null mine_p] } {
-    set mine_p "t"
-}
-set view_types [list "t" "Mine" "f" "All"]
+set view_types [list "mine" "Mine" "all" "All" "unassigned" "Unassigned"]
 
 
 # status_types will be a list of pairs of (project_status_id, project_status)
-set status_types [ad_partner_memoize_list_from_db \
+set status_types [im_memoize_list select_customer_status_types \
 	"select customer_status_id, customer_status
            from im_customer_status
-          order by display_order, lower(customer_status)" [list customer_status_id customer_status]]
+          order by lower(customer_status)"]
 lappend status_types 0 All
+
+
+# customer_types will be a list of pairs of (customer_type_id, customer_type)
+set customer_types [im_memoize_list select_customers_types \
+	"select customer_type_id, customer_type
+           from im_customer_types
+          order by lower(customer_type)"]
+lappend customer_types 0 All
+
+
 
 # Now let's generate the sql query
 set criteria [list]
 
+set bind_vars [ns_set create]
 if { ![empty_string_p $status_id] && $status_id != 0 } {
-    lappend criteria "c.customer_status_id=$status_id"
+    ns_set put $bind_vars status_id $status_id
+    lappend criteria "c.customer_status_id=:status_id"
 }
 
+
+if { $type_id > 0 } {
+    ns_set put $bind_vars type_id $type_id
+    lappend criteria "c.customer_type_id=:type_id"
+}
+
+
 set extra_tables [list]
-if { [string compare $mine_p "t"] == 0 } {
-    lappend criteria "ad_group_member_p ( $user_id, g.group_id ) = 't'"
+if { [string compare $view_type "mine"] == 0 } {
+    ns_set put $bind_vars user_id $user_id
+    lappend criteria "ad_group_member_p ( :user_id, g.group_id ) = 't'"
+} elseif { [string compare $view_type "unassigned"] == 0 } {
+    ns_set put $bind_vars user_id $user_id
+    lappend criteria "not exists (select 1 from user_group_map where user_group_map.group_id = g.group_id)"
 }
 
 set order_by_clause ""
 switch $order_by {
-    "Phone" { set order_by_clause "order by upper(work_phone), upper(group_name)" }
+    "Phone" { set order_by_clause "order by upper(phone_work), upper(group_name)" }
     "Email" { set order_by_clause "order by upper(email), upper(group_name)" }
     "Status" { set order_by_clause "order by upper(customer_status), upper(group_name)" }
     "Contact Person" { set order_by_clause "order by upper(last_name), upper(first_names), upper(group_name)" }
@@ -68,53 +94,50 @@ if { ![empty_string_p $where_clause] } {
 }
 
 set page_title "Customers"
-set context_bar [ad_context_bar [list "/" Home] [list ../index.tcl "Intranet"] $page_title]
+set context_bar [ad_context_bar_ws $page_title]
+set page_focus "im_header_form.keywords"
 
-set db [ns_db gethandle]
-set selection [ns_db select $db \
-	"select c.group_id as customer_id, g.group_name, c.primary_contact_id, status.customer_status,
-                u.last_name||', '||u.first_names as name, u.email, uc.work_phone
-           from user_groups g, im_customers c, im_customer_status status, users u, users_contact uc$extra_table
-          where c.group_id = g.group_id
-            and c.primary_contact_id=u.user_id(+)
-            and c.primary_contact_id=uc.user_id(+)
-            and c.customer_status_id=status.customer_status_id $where_clause $order_by_clause"]
+set sql "select c.group_id as customer_id, g.group_name, c.primary_contact_id, status.customer_status,
+                ab.last_name||', '||ab.first_names as name, ab.email, ab.phone_work
+           from user_groups g, im_customers c, 
+           im_customer_status status, im_customer_types customer_type,
+           address_book ab $extra_table
+          where c.group_id = g.group_id(+)
+            and c.primary_contact_id=ab.address_book_id(+)
+            and c.customer_type_id = customer_type.customer_type_id (+)
+            and c.customer_status_id=status.customer_status_id(+) $where_clause $order_by_clause"
             
 
 set results ""
 set bgcolor(0) " bgcolor=\"[ad_parameter TableColorOdd Intranet white]\""
 set bgcolor(1) " bgcolor=\"[ad_parameter TableColorEven Intranet white]\""
 set ctr 0
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+db_foreach customer_select $sql -bind $bind_vars {
     append results "
 <tr$bgcolor([expr $ctr % 2])>
-  <td valign=top>[ad_partner_default_font]<a href=view.tcl?group_id=$customer_id>$group_name</a></font></td>
-  <td valign=top>[ad_partner_default_font]$customer_status</font></td>
-  <td valign=top>[ad_partner_default_font][util_decode $name ", " "&nbsp;" $name]</font></td>
-  <td valign=top>[ad_partner_default_font][util_decode $email "" "&nbsp;" "<a href=mailto:$email>$email</a>"]</font></td>
-  <td valign=top>[ad_partner_default_font][util_decode $work_phone "" "&nbsp;" $work_phone]</font></td>
+  <td valign=top><a href=view?group_id=$customer_id>$group_name</a></td>
+  <td valign=top>$customer_status</td>
+  <td valign=top>[util_decode $name ", " "&nbsp;" $name]</td>
+  <td valign=top>[util_decode $email "" "&nbsp;" "<a href=mailto:$email>$email</a>"]</td>
+  <td valign=top>[util_decode $phone_work "" "&nbsp;" $phone_work]</td>
 </tr>
 "
     incr ctr
 }
 
+set column_headers [list Customer Status "Contact Person" Email Phone]
+set table "<table width=100% cellpadding=1 cellspacing=2 border=0>\n"
 
 if { [empty_string_p $results] } {
-    set results "<ul><li><b> There are currently no customers</b></ul>\n"
+    set results "<tr><td><ul><li><b> There are currently no customers</b></ul></td></tr>\n"
 } else {
-    set column_headers [list Customer Status "Contact Person" Email Phone]
-    set url "index.tcl"
+    set url "index?"
+
     set query_string [export_ns_set_vars url [list order_by]]
-    if { [empty_string_p $query_string] } {
-	append url "?"
-    } else {
-	append url "?$query_string&"
+    if { ![empty_string_p $query_string] } {
+	append url "$query_string&"
     }
-    set table "
-<table width=100% cellpadding=1 cellspacing=2 border=0>
-<tr bgcolor=\"[ad_parameter TableColorHeader intranet white]\">
-"
+    append table "<tr bgcolor=\"[ad_parameter TableColorHeader intranet white]\">\n"
     foreach col $column_headers {
 	if { [string compare $order_by $col] == 0 } {
 	    append table "  <th>$col</th>\n"
@@ -123,7 +146,6 @@ if { [empty_string_p $results] } {
 	}
     }
     set results "
-<br>
 $table
 </tr>
 $results
@@ -132,20 +154,36 @@ $results
 }
 
 
-
-
 set page_body "
-[ad_partner_default_font "size=-1"]
-Customer status: [im_slider status_id $status_types]
-<br>View: [im_slider mine_p $view_types]
-</font>
-<p>
+<table width=100% border=0 cellspacing=1 cellpadding=0>
+  <tr bgcolor=eeeeee>
+    <th valign=top><font size=-1>View</font></th>
+    <th valign=top><font size=-1>Customer status</font></th>
+    <th valign=top><font size=-1>Customer type</font></th>
+    <th valign=top><font size=-1>Search</font></th>
+  </tr>
+  <tr>
+    <td align=center valign=top><font size=-1>
+       [im_slider view_type $view_types "" [list start_idx]]
+       </font></td>
+    <td align=center valign=top><font size=-1>
+       [im_slider status_id $status_types "" [list start_idx]]
+       </font></td>
+    <td align=center valign=top><font size=-1>
+       [im_slider type_id $customer_types "" [list start_idx]]
+       </font></td>
+    <td align=center valign=top><font size=-1>
+       [im_default_nav_header "" "" "search"]
+    </font></td>
+  </tr>
+</table>
+
 $results
 
-<p><a href=ae.tcl>Add a customer</a>
+<p><a href=ae>Add a customer</a>
 "
 
-ns_db releasehandle $db
+
 
  
-ns_return 200 text/html [ad_partner_return_template]
+doc_return  200 text/html [im_return_template]

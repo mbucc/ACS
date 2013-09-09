@@ -1,6 +1,6 @@
-<ec_header>Enter a Shipping Address</ec_header>
+<ec_header>Enter Your Address</ec_header>
 <ec_header_image></ec_header_image><br clear=all>
-<h2>Enter a Shipping Address</h2>
+<h2>Enter Your Address</h2>
 
 <form method=post action=shipping-address-2.tcl>
 <blockquote>

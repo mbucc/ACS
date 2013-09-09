@@ -1,26 +1,36 @@
-# $Id: order.tcl,v 3.0.4.1 2000/04/28 15:10:01 carsten Exp $
-set_the_usual_form_variables
-# order_id
-# possibly usca_p
+#  www/ecommerce/order.tcl
+ad_page_contract {
+    Displays an order for the user
+    @param order_id:integer
+    @param usca_p:optional
+  @author
+  @creation-date
+  @cvs-id order.tcl,v 3.2.2.6 2000/08/18 21:46:34 stevenp Exp
+} {
+    order_id:integer
+    usca_p:optional
+
+}
+
+
 
 # we need them to be logged in
 set user_id [ad_verify_and_get_user_id]
 
 if {$user_id == 0} {
     
-    set return_url "[ns_conn url]"
+    set return_url "[ad_conn url]"
 
-    ad_returnredirect "/register.tcl?[export_url_vars return_url]"
+    ad_returnredirect "/register?[export_url_vars return_url]"
     return
 }
 
 # user session tracking
 set user_session_id [ec_get_user_session_id]
 
-set db [ns_db gethandle]
+
 
 ec_create_new_session_if_necessary [export_url_vars order_id]
-
 
 ec_log_user_as_user_id_for_this_session
 
@@ -29,10 +39,10 @@ Order #:
 $order_id
 
 Status:
-[ec_order_status $db $order_id]
+[ec_order_status $order_id]
 </pre>
 
-[ec_order_summary_for_customer $db $order_id $user_id "t"]
+[ec_order_summary_for_customer $order_id $user_id "t"]
 "
 
 ad_return_template

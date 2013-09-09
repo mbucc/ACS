@@ -1,21 +1,24 @@
-# $Id: css-view.tcl,v 3.0 2000/02/06 03:54:53 ron Exp $
-# File:        style-view.tcl
-# Date:        13 Nov 1999
-# Author:      Jon Salz <jsalz@mit.edu>
-# Description: Shows the CSS code for a style.
-# Inputs:      style_id (if editing)
+# /wp/style-view.tcl
+ad_page_contract {
+    Shows the CSS code for a style.
+    @cvs-id css-view.tcl,v 3.0.12.7 2000/09/22 01:39:30 kevin Exp
+    @creation-date  13 Nov 1999
+    @author  Jon Salz <jsalz@mit.edu>
+    @param  style_id (if editing)
+} {
+    style_id:naturalnum,optional
+}
+# modified by jwong@arsdigita.com on 13 Jul 2000 for ACS 3.4 upgrade
 
-set_the_usual_form_variables 0
-set db [ns_db gethandle]
 set user_id [ad_maybe_redirect_for_registration]
 
-wp_check_style_authorization $db $style_id $user_id
+wp_check_style_authorization $style_id $user_id
 
-set selection [ns_db 1row $db "select * from wp_styles where style_id = $style_id"]
-set_variables_after_query
+db_1row css_select "select css from wp_styles where style_id = :style_id"
 
-ReturnHeaders "text/plain"
-ns_write $css
+
+
+doc_return  200 "text/plain" "$css\n"
 
 #ReturnHeaders
 #ns_write "[wp_header_form "name=f action=style-edit-2.tcl method=post enctype=multipart/form-data" \

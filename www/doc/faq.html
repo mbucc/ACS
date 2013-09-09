@@ -7,7 +7,7 @@
 <body bgcolor=#ffffff text=#000000>
 <h2>FAQ System</h2>
 
-part of the <a href="index.html">ArsDigita Community System</a>
+part of the <a href="index">ArsDigita Community System</a>
 by <a href="mailto:dh@arsdigita.com">David Hill</a>
 
 <hr>
@@ -16,8 +16,8 @@ by <a href="mailto:dh@arsdigita.com">David Hill</a>
 <li>User directory:  <a href="/faq/">/faq/</a>
 <li>Site Administrator directory:  <a href="/admin/faq/">/admin/faq/</a>
 <li>Per-FAQ Administration directory:  <a href="/faq/admin/">/faq/admin/</a>
-<li>data model:  <a href="/doc/sql/display-sql.tcl?url=/doc/sql/faq.sql">/doc/sql/faq.sql</a> (also see subsection within) 
-<li>procedures:  in tcl/faq-defs.tcl
+<li>data model:  <a href="/doc/sql/display-sql?url=/doc/sql/faq.sql">/doc/sql/faq.sql</a> (also see subsection within) 
+<li>procedures:  in tcl/faq-defs
 
 </ul>
 
@@ -99,7 +99,7 @@ From the Maintainers admin pages at <a href="/faq/admin">/faq/admin</a> or
  <li>Create a public FAQ
  <li>Create a private FAQ for Group X
  <ul>
-  <li>Visit /admin/ug/index.tcl and make sure that the group_type of which group X is a member is associated with the FAQ module.
+  <li>Visit /admin/ug/index and make sure that the group_type of which group X is a member is associated with the FAQ module.
  </ul>
  <li>Visit /faq/ and click on the public faq
  <li>Click on Maintain this FAQ 
@@ -119,7 +119,7 @@ From the Maintainers admin pages at <a href="/faq/admin">/faq/admin</a> or
 </ul>
 <h3>Future Improvements</h3>
 <ul>
-<li>The ablility to have questions and answers appear on separate pages, so that one-faq.tcl could just be the list of questions that each link to a page with just the one question (repeated) and the answer on it.  This would be necessary for a very large faq. The current faq page just uses anchors to link to questions.
+<li>The ablility to have questions and answers appear on separate pages, so that one-faq could just be the list of questions that each link to a page with just the one question (repeated) and the answer on it.  This would be necessary for a very large faq. The current faq page just uses anchors to link to questions.
 
 <li>Currently all questions and answers are assumed to be html when posted by a faq maintainer, the option of html/text would be nice here.
 

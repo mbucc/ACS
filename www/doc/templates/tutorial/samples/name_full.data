@@ -1,0 +1,46 @@
+<template>
+
+  <name>lesson2</name>
+  <title>Template Two</title>
+  <author>karlg@arsdigita.com</author>
+  <comment>This is a sample template specification.</comment>
+
+  <process>
+
+  <datasource>
+
+    <name>user_id</name>
+    <type>param</type>
+    <comment>The unique ID number of a user.</comment>
+
+  </datasource>
+
+  <datasource>
+
+    <name>user_info</name>
+    <type>query</type>
+    <structure>onerow</structure>
+    <condition>
+	select 
+	  first_name, last_name 
+	from 
+	  ad_template_sample_users 
+	where 
+	  user_id = ${user_id}
+    </condition>
+    <comment>The user's information</comment>
+
+      <variable>
+        <name>first_name</name>
+        <comment>The user's first name</comment>
+      </variable>
+      <variable>
+        <name>last_name</name>
+        <comment>The user's last name</comment>
+      </variable>
+
+  </datasource>
+
+  </process>
+
+</template>

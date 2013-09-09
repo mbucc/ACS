@@ -1,63 +1,61 @@
-# $Id: payroll.tcl,v 3.2.2.3 2000/04/28 15:11:06 carsten Exp $
-#
-# File: /www/intranet/employees/payroll.tcl
-#
-# Author: mbryzek@arsdigita.com, Jan 2000
-#
-# Shows payroll information about one employee
-#
-# Mar 15 2000 mbryzek: Removed ns_writes
+# /www/intranet/employees/payroll.tcl
 
-ad_maybe_redirect_for_registration
+ad_page_contract {
+    Shows payroll information about one employee
+Mar 15 2000 mbryzek
 
-set_form_variables 0
-# user_id 
-# return_url (optional)
+    @param user_id     whose payroll we're examining
+    @param return_url  where to redirect to 
 
+    @author mbryzek@arsdigita.com
+    @creation-date Jan 2000
 
-if { ![exists_and_not_null user_id] } {
-    set user_id [ad_verify_and_get_user_id]
+    @cvs-id payroll.tcl,v 3.9.2.9 2000/09/22 01:38:31 kevin Exp
+} {
+    {user_id:integer [ad_maybe_redirect_for_registration] }
+    return_url:optional
 }
+
+#set caller_user_id [ad_maybe_redirect_for_registration]
 
 set caller_user_id $user_id 
 
-set db [ns_db gethandle]
+
 
 # This page is restricted to only site/intranet admins
-if { $caller_user_id != [ad_verify_and_get_user_id] && ![im_is_user_site_wide_or_intranet_admin $db] } {
+if { $caller_user_id != [ad_verify_and_get_user_id] && ![im_is_user_site_wide_or_intranet_admin] } {
     ad_returnredirect ../
     return
 }
 
 set default_value "<em>(No information)</em>"
 
-set selection [ns_db 0or1row $db "
-select 
+set employee_details_sql "select 
   u.first_names, 
   u.last_name, 
   u.email, 
   (sysdate - info.first_experience)/365 as total_years_experience,
   info.*
 from users u, im_employee_info info
-where u.user_id = $user_id
+where u.user_id = :user_id
 and u.user_id = info.user_id(+)
-and ad_group_member_p ( u.user_id, [im_employee_group_id] ) = 't'"]
+and ad_group_member_p ( u.user_id, [im_employee_group_id] ) = 't'"
 
-if [empty_string_p $selection] {
+if {[db_0or1row employee_details $employee_details_sql] == 0} {
     ad_return_error "Error" "That user doesn't exist"
     return
-}
-set_variables_after_query
+}  
+
 
 set page_title "$first_names $last_name"
-set context_bar [ad_context_bar [list "/" Home] [list ../index.tcl "Intranet"] [list index.tcl "Employees"] [list ../users/view.tcl?user_id=$caller_user_id "One employee"] "Payroll information"]
+set context_bar [ad_context_bar_ws [list ./ "Employees"] [list ../users/view?user_id=$caller_user_id "One employee"] "Payroll information"]
 
-ns_db releasehandle $db
+db_release_unused_handles
 
 if [empty_string_p $salary] {
     set salary "<em>(No information)</em>"
 } else {
-    set salary [im_display_salary $salary $salary_period]
+    set salary [im_display_salary $salary [im_salary_period_input]]
 }
 if [empty_string_p $total_years_experience] {
     set total_years_experience "<em>(No information)</em>"
@@ -75,7 +73,6 @@ if [empty_string_p $birthdate] {
 } else {
     set birthdate "[util_AnsiDatetoPrettyDate $birthdate]"
 }
-
 
 set page_body "
 <b>Salary:</b> $salary
@@ -127,7 +124,9 @@ set page_body "
 
 </ul>
 
-(<a href=payroll-edit.tcl?user_id=$caller_user_id&[export_url_vars return_url]>edit</a>)
+(<a href=payroll-edit?user_id=$user_id&[export_url_vars return_url]>edit</a>)
 "
 
-ns_return 200 text/html [ad_partner_return_template]
+doc_return  200 text/html [im_return_template]
+
+

@@ -1,25 +1,22 @@
-# $Id: recommendation-text-edit.tcl,v 3.0 2000/02/06 03:20:44 ron Exp $
-# recommendation-text-edit.tcl
-#
-# by philg@mit.edu on July 18, 1999
-#
-# entry form to let user edit the HTML text of a recommendation
-# 
+#  www/admin/ecommerce/products/recommendation-text-edit.tcl
+ad_page_contract {
+  Entry form to let user edit the HTML text of a recommendation.
 
-set_the_usual_form_variables
+  @author philg@mit.edu on 
+  @creation-date July 18, 1999
+  @cvs-id recommendation-text-edit.tcl,v 3.1.6.5 2000/09/22 01:34:59 kevin Exp
+} {
+  recommendation_id:integer,notnull
+}
 
-# recommendation_id
-
-set db [ns_db gethandle]
-set selection [ns_db 1row $db "select r.*, p.product_name
+db_1row recommendation_select "select r.*, p.product_name
 from ec_product_recommendations r, ec_products p
 where recommendation_id=$recommendation_id
-and r.product_id=p.product_id"]
-set_variables_after_query
 
-ns_db releasehandle $db 
+and r.product_id=p.product_id"
 
-ns_return 200 text/html "[ad_admin_header "Edit Product Recommendation Text"]
+ 
+doc_return  200 text/html "[ad_admin_header "Edit Product Recommendation Text"]
 
 <h2>Edit Recommendation Text</h2>
 
@@ -30,7 +27,7 @@ ns_return 200 text/html "[ad_admin_header "Edit Product Recommendation Text"]
 Edit text for the recommendation of $product_name:
 
 <blockquote>
-<form method=GET action=\"recommendation-text-edit-2.tcl\">
+<form method=GET action=\"recommendation-text-edit-2\">
 [export_form_vars recommendation_id]
 <textarea name=recommendation_text rows=10 cols=70 wrap=soft>
 [ns_quotehtml $recommendation_text]

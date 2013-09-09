@@ -1,14 +1,19 @@
-# set-spam-status.tcl
-# 
-# hqm@arsdigita.com
-#
-# force spam into a specific state
+# www/admin/spam/set-spam-status.tcl
 
-set_the_usual_form_variables
+ad_page_contract {
 
-# spam_id,status
+ Force spam into a specific state.
 
-set db [ns_db gethandle] 
-ns_db dml $db "update spam_history set status = '$status' where spam_id = $spam_id"
+    @param spam_id the id of the message
+    @param status the state of the spam message (status column in spam_history)
+    @author hqm@arsdigita.com
+    @cvs-id set-spam-status.tcl,v 3.2.6.4 2000/07/21 03:58:01 ron Exp
+} {
+  spam_id:integer
+  status
+}
+
+db_dml set_spam_status "update spam_history set status = :status where spam_id = :spam_id"
 
 ad_returnredirect "old.tcl?spam_id=$spam_id"
+

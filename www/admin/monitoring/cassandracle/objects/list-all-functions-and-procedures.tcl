@@ -1,70 +1,88 @@
-# $Id: list-all-functions-and-procedures.tcl,v 3.0 2000/02/06 03:25:26 ron Exp $
-set page_name "PL/SQL Functions and Procedures by User"
-ReturnHeaders
-set db [cassandracle_gethandle]
+# www/admin/monitoring/cassandracle/list-all-functions-and-procedures.tcl
 
-ns_write "
+ad_page_contract {
+
+queries Oracle for all Functions and Procedures by user.
+
+    @author Michael Bryzek (mbryzek@arsdigita.com)
+    @cvs-id list-all-functions-and-procedures.tcl,v 3.3.2.7 2000/09/22 01:35:36 kevin Exp
+
+} {
+
+}
+
+set page_name "PL/SQL Functions and Procedures by User"
+set num_rows_in_table 25
+
+set page_content "
 [ad_admin_header $page_name]
 <h2>$page_name</h2>
 
-[ad_admin_context_bar [list "/admin/monitoring" "Monitoring"] [list "/admin/monitoring/cassandracle" "Cassandracle"] "All Functions and Procedures"]
-
+[ad_admin_context_bar [list "/admin/monitoring" "Monitoring"] \
+	[list "/admin/monitoring/cassandracle" "Cassandracle"] \
+	"All Functions and Procedures"]
 
 <hr>
-<table>
-<tr><th>Owner</th><th>Object Name</th><th>Object Type</th><th>Date Created</th><th>Status</th></tr>
+<p>
+<table width=90%>
 "
 
-set object_info [database_to_tcl_list_list $db "
+set table_fragment "<tr bgcolor=eeeeee><th>Owner</th><th>Object Name</th><th>Object Type</th><th>Date Created</th><th>Status</th></tr>\n"
+
+# replace with a doc_body_flush in new document api
+
+#ad_return_top_of_page $page_content
+
+set sql_query "
 select
   owner, object_name, object_type, created, status
 from
   dba_objects
 where
   (object_type='FUNCTION' or object_type='PROCEDURE')
-group by
-  owner, object_type, object_name, created, status
 order by
-  owner, object_name"]
+  owner, object_name"
+
+set object_info [db_list_of_lists mon_dba_objects $sql_query ]
+
 
 if {[llength $object_info]==0} {
-    ns_write "<tr><td>No objects found!</td></tr>"
+    append page_content "<tr><td colspan=5>No Procedures or Functions found! for $owner</td></tr>\n"
 } else {
-    set current_user ""
-    
+    set tableP 0
+    set ctr 0
+    set current_owner ""
     foreach row $object_info {
-    if {$current_user==""} {
-	set current_user [lindex $row 0]
-	ns_write "<tr><td valign=top align=left>[lindex $row 0]</td><td valign=top align=left><a href=\"detail-function-or-procedure.tcl?owner=$current_user&object_name=[lindex $row 1]\">[lindex $row 1]</a></td><td valign=top align=right>[lindex $row 2]</td><td valign=top align=right>[lindex $row 3]</td><td valign=top align=right>[lindex $row 4]</td></tr>\n"
-	continue
-   }
-   if {[lindex $row 0]!=$current_user} {
-       set current_user [lindex $row 0]
-       ns_write "<tr><td valign=top align=left>[lindex $row 0]</td><td valign=top align=left><a href=\"detail-function-or-procedure.tcl?owner=$current_user&object_name=[lindex $row 1]\">[lindex $row 1]</a></td><td valign=top align=right>[lindex $row 2]</td><td valign=top align=right>[lindex $row 3]</td><td valign=top align=right>[lindex $row 4]</td></tr>\n"
-    } else {
-	ns_write "<tr><td>&nbsp;</td><td valign=top align=left><a href=\"detail-function-or-procedure.tcl?owner=$current_user&object_name=[lindex $row 1]\">[lindex $row 1]</a></td><td valign=top align=right>[lindex $row 2]</td><td valign=top align=right>[lindex $row 3]</td><td valign=top align=right>[lindex $row 4]</td></tr>\n"
+	incr ctr
+	if { $ctr==1 || $current_owner != [lindex $row 0 ] } {
+	    set current_owner [lindex $row 0 ]
+	    if { $tableP } {
+		append page_content "</table>\n"
+		#ns_write $page_content
+	    }
+		
+	    append page_content "<table width=90%>$table_fragment\n<tr><td valign=top align=left>[lindex $row 0]</td><td valign=top align=left><a href=\"detail-function-or-procedure?owner=[lindex $row 0]&object_name=[lindex $row 1]\">[lindex $row 1]</a></td><td valign=top align=right>[lindex $row 2]</td><td valign=top align=right>[lindex $row 3]</td><td valign=top align=right>[lindex $row 4]</td></tr>\n"
+	    set tableP 1
+	} else {
+	    append page_content "<tr><td>&nbsp;</td><td valign=top align=left><a href=\"detail-function-or-procedure?owner=[lindex $row 0]&object_name=[lindex $row 1]\">[lindex $row 1]</a></td><td valign=top align=right>[lindex $row 2]</td><td valign=top align=right>[lindex $row 3]</td><td valign=top align=right>[lindex $row 4]</td></tr>\n"
+	}
+	if { $ctr > $num_rows_in_table } {
+	    set ctr 0
+	}
     }
+    append page_content "</table>\n"
 }
-}
-ns_write "
-</table>
 
+append page_content "
 <p>
 
 The SQL:
 
 <pre>
-select
-  owner, object_name, object_type, created, status
-from
-  dba_objects
-where
-  (object_type='FUNCTION' or object_type='PROCEDURE')
-group by
-  owner, object_type, object_name, created, status
-order by
-  owner, object_name
+$sql_query
 </pre>
-
 [ad_admin_footer]
 "
+
+doc_return  200 text/html $page_content
+

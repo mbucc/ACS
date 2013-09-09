@@ -1,36 +1,28 @@
-# /press/admin/delete-2.tcl
-# 
-# Author: ron@arsdigita.com, December 1999
-#
-# (cleaned up by philg@mit.edu, January 7, 2000)
-#
-# Delete an existing press item
-#
-# $Id: delete-2.tcl,v 3.0.4.3 2000/04/28 15:11:19 carsten Exp $
-# -----------------------------------------------------------------------------
+# /www/press/admin/delete-2.tcl
 
-ad_page_variables {press_id}
+ad_page_contract {
+    
+    Delete an existing press item
 
-set user_id  [ad_verify_and_get_user_id]
-set db       [ns_db gethandle]
-
-# Get the group restrictions for this press item
-
-set group_id [database_to_tcl_string $db "
-select group_id 
-from   press 
-where  press_id = $press_id"]
-
-# Verify that this user is authorized to do the deletion
-
-if {![press_admin_p $db $user_id $group_id]} {
-    ad_return_complaint 1 "<li>Sorry but you're not authorized to
-    delete an item of this scope." 
-    return
+    @author  Ron Henderson (ron@arsdigita.com)
+    @created December 1999
+    @cvs-id  delete-2.tcl,v 3.3.6.5 2000/09/16 19:05:49 ron Exp
+} {
+    press_items:notnull
 }
 
-# Delete this press item and redirect to the admin page
+set dbl_clk_ck [db_string press_del_dclk "
+select count(*) from press where press_id in ([join $press_items ","])"]
 
-ns_db dml $db "delete from press where press_id=$press_id"
+if {$dbl_clk_ck == 0} {
+    ad_return_warning "Press Items Do Not Exist" "The press items
+    you select do not exist.  Perhaps you already deleted them?"
+    return 
+}
+
+# Delete the press items and redirect to the admin page
+
+db_dml press_items_delete "delete from press where press_id in ([join $press_items ","])"
+db_release_unused_handles
 
 ad_returnredirect ""

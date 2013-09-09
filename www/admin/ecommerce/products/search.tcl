@@ -1,19 +1,25 @@
-# $Id: search.tcl,v 3.0 2000/02/06 03:21:02 ron Exp $
-set_the_usual_form_variables
+#  www/admin/ecommerce/products/search.tcl
+ad_page_contract {
+  Search for a product based on name or id.
 
-# product_id or product_name
+  @author Eve Andersson (eveander@arsdigita.com)
+  @creation-date Summer 1999
+  @cvs-id search.tcl,v 3.2.2.2 2000/07/22 07:57:45 ron Exp
+} {
+  product_id:integer,notnull,optional
+  product_name:optional
+}
 
 if { [info exists product_id] } {
-    set additional_query_part "product_id=[ns_dbquotevalue $product_id number]"
+    set additional_query_part "product_id=:product_id"
     set description "Products with id #$product_id:"
 } else {
-    set additional_query_part "upper(product_name) like '%[string toupper $QQproduct_name]%'"
+    set product_name_search $product_name
+    set additional_query_part "upper(product_name) like '%' || upper(:product_name_search) || '%'"
     set description "Products whose name includes \"$product_name\":"
 }
 
-ReturnHeaders
-
-ns_write "[ad_admin_header "Product Search"]
+doc_body_append "[ad_admin_header "Product Search"]
 
 <h2>Product Search</h2>
 
@@ -26,23 +32,15 @@ $description
 <ul>
 "
 
-
-set db [ns_db gethandle]
-set selection [ns_db select $db "select product_id, product_name from ec_products where $additional_query_part"]
-
 set product_counter 0
-while {[ns_db getrow $db $selection]} {
+db_foreach product_search_select "select product_id, product_name from ec_products where $additional_query_part" {
     incr product_counter
-    set_variables_after_query
-    ns_write "<li><a href=\"one.tcl?[export_url_vars product_id]\">$product_name</a>\n"
+    doc_body_append "<li><a href=\"one?[export_url_vars product_id]\">$product_name</a>\n"
+} if_no_rows {
+    doc_body_append "No matching products were found.\n"
 }
 
-if { $product_counter == 0 } {
-    ns_write "No matching products were found.\n"
-}
-
-ns_write "</ul>
-
+doc_body_append "</ul>
 
 [ad_admin_footer]
 "

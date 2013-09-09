@@ -1,15 +1,12 @@
-# $Id: bboard-defs.tcl,v 3.2.2.3 2000/05/17 10:02:14 carsten Exp $
-#
-# bboard-defs.tcl
-#
-# by philg@mit.edu originally sometime in the mid-1990s (1996?)
-# 
+# /tcl/bboard-defs.tcl
 
-util_report_library_entry
+ad_library {
+    Tcl procedure definitions for the discussion forum system, generally parked in /bboard
 
-
-# Tcl procedures definitions for the discussion forum system,
-# generally parked in /bboard
+    @author Philip Greenspun (philg@mit.edu)
+    @creation-date originally sometime in the mid-1990s (1996?)
+    @cvs-id bboard-defs.tcl,v 3.13.2.18 2000/11/17 07:10:31 kevin Exp
+}
 
 proc bboard_partial_url_stub {} {
     return [ad_parameter PartialUrlStub bboard]
@@ -18,7 +15,6 @@ proc bboard_partial_url_stub {} {
 proc bboard_hardwired_url_stub {} {
     return "[ad_url][bboard_partial_url_stub]"
 }
-
 
 proc bboard_system_url {} {
     return "[ad_url][bboard_partial_url_stub]"
@@ -117,14 +113,14 @@ proc bboard_raw_backlink {topic_id topic presentation_type {include_hostname_p 1
 
 proc bboard_msg_url { presentation_type msg_id topic_id {topic ""}} {
     if { $presentation_type == "q_and_a" } {
-	return "q-and-a-fetch-msg.tcl?[export_url_vars msg_id topic_id topic]"
+	return "q-and-a-fetch-msg?[export_url_vars msg_id topic_id topic]"
     } elseif { $presentation_type == "ed_com" } {
-	return "ed-com-msg.tcl?[export_url_vars msg_id topic_id topic]"
+	return "ed-com-msg?[export_url_vars msg_id topic_id topic]"
     } elseif { $presentation_type == "usgeospatial" } {
-	return "usgeospatial-fetch-msg.tcl?[export_url_vars msg_id topic_id topic]"
+	return "usgeospatial-fetch-msg?[export_url_vars msg_id topic_id topic]"
     }  else {
-	# this is a frames (bleah) board
-	return "main-frame.tcl?[export_url_vars topic_id topic]&feature_msg_id=$msg_id&start_msg_id=$msg_id"
+	# This is a framed board
+	return "main-frame?[export_url_vars topic_id topic]&feature_msg_id=$msg_id&start_msg_id=$msg_id"
     }
 }
 
@@ -135,13 +131,13 @@ proc bboard_complete_backlink {topic_id topic presentation_type {include_partial
 	set directory_stub ""
     }
     if { $presentation_type == "ed_com" } {
-	set complete_backlink "<a href=\"${directory_stub}q-and-a.tcl?[export_url_vars topic_id topic]\">$topic forum</a>"
+	set complete_backlink "<a href=\"${directory_stub}q-and-a?[export_url_vars topic_id topic]\">$topic forum</a>"
     } elseif { $presentation_type == "usgeospatial"} {
-	set complete_backlink "<a href=\"${directory_stub}usgeospatial.tcl?[export_url_vars topic_id topic]\">$topic forum</a>"
+	set complete_backlink "<a href=\"${directory_stub}usgeospatial?[export_url_vars topic_id topic]\">$topic forum</a>"
     } elseif { $presentation_type == "threads"} {
-	set complete_backlink "<a href=\"${directory_stub}main-frame.tcl?[export_url_vars topic_id topic]\">$topic</a>"
+	set complete_backlink "<a href=\"${directory_stub}main-frame?[export_url_vars topic_id topic]\">$topic</a>"
     } else  { 
-	set complete_backlink "<a href=\"${directory_stub}q-and-a.tcl?[export_url_vars topic_id topic]\">$topic Q&A forum</a>"
+	set complete_backlink "<a href=\"${directory_stub}q-and-a?[export_url_vars topic_id topic]\">$topic Q&A forum</a>"
 
     } 
     return $complete_backlink
@@ -151,7 +147,7 @@ proc bboard_header {title} {
     return "<html>
 <head>
 <title>$title</title>
-<head>
+</head>
 <body bgcolor=[ad_parameter bgcolor "" "white"] text=[ad_parameter textcolor "" "white"]>
 "
 }
@@ -188,21 +184,58 @@ $extra_br
 # Returns -1 if user is not authorized to view the page
 # Returns 1 on if user is OK to view the page
 #
+# Note that a lot of .tcl files in bboard which
+# claim to need both a topic_id and a topic
+# can really do fine with one or the other because
+# they call this procedure.
 #
-proc bboard_get_topic_info { } {
+# Also note that this procedure validates user input
+# by calling validate_integer and DoubleApos as needed,
+# because most of the pages in bboard do not do this.
+#
+proc_doc bboard_get_topic_info { } {
+    Find info about a topic.
+
+    This uplevel bit is a pretty nasty way to do this.
+
+    The "select * ..." is unfortunate, but necessary as long as
+    we do things this way.
+} {
+    
+
     uplevel { 
-	if {!([info exists topic_id] && ![catch {set selection [ns_db 1row $db "select t.*,  u.email as maintainer_email, u.first_names || ' ' || u.last_name as maintainer_name, primary_maintainer_id
-from bboard_topics t, users u
-where topic_id=$topic_id
-and t.primary_maintainer_id = u.user_id"]} errmsg])
-	    && !([info exists topic] && ![catch {set selection [ns_db 1row $db "select t.*, u.email as maintainer_email, u.first_names || ' ' || u.last_name as maintainer_name, primary_maintainer_id
-from bboard_topics t, users u
-where topic = '$QQtopic'
-and t.primary_maintainer_id = u.user_id"]} errmsg]) } {
+
+	if {[exists_and_not_null topic_id]} {
+
+	    if {![db_0or1row get_topic_info_from_id  "
+	    select t.*,  
+	    	   u.email as maintainer_email, 
+	    	   u.first_names || ' ' || u.last_name as maintainer_name
+	    from   bboard_topics t, users u
+	    where  topic_id=:topic_id
+	    and    t.primary_maintainer_id = u.user_id"]} {
+		bboard_return_cannot_find_topic_page
+		return -1
+	    } 
+	} elseif {[info exists topic]} {
+	    if {![db_0or1row get_topic_info_from_name "
+	    select t.*, 
+	    	   u.email as maintainer_email, 
+	    	   u.first_names || ' ' || u.last_name as maintainer_name
+	    from   bboard_topics t, users u
+	    where  topic = :topic
+	    and    t.primary_maintainer_id = u.user_id"]} {
+
+		bboard_return_cannot_find_topic_page
+		return -1
+	    }
+
+        } else {
+	    # no topic or topic_id
 	    bboard_return_cannot_find_topic_page
 	    return -1
-        }
-	set_variables_after_query
+	}
+
 	set user_id [ad_verify_and_get_user_id]
 	# Check read-access of this topic
 	if {[string compare $read_access "any"] == 0} {
@@ -211,69 +244,84 @@ and t.primary_maintainer_id = u.user_id"]} errmsg]) } {
        } elseif {[string compare $read_access "public"] == 0} {
 	   # "public" means user must be logged in to read this topic
 	   if {$user_id == 0} { 
-	       ad_returnredirect /register.tcl?return_url=[ns_urlencode "[bboard_hardwired_url_stub]admin-home.tcl?[export_url_vars topic_id]"]
+	       ad_returnredirect /register?return_url=[ns_urlencode "[bboard_hardwired_url_stub]admin-home?[export_url_vars topic_id]"]
 	       return -1
 	   } else {
 	       return 1
 	   }
        } elseif {[string compare $read_access "group"] == 0} {
+
 	   # "group" means the user must belong to one of the topic's groups.
            # branimir 2000-02-04
-	   # Check if user belongs to any of topic's groups in adminstration_info
-	   if {[ad_permission_p $db bboard $topic_id "" $user_id]} {
-	       ns_db flush $db
+	   
+	   # lars 2000-04-27: first we check the group associated with the topic
+	   if {[ad_user_group_member $group_id $user_id]} {
 	       return 1
-	   } else {
+	   } 
+
+	   # Check if user belongs to any of topic's groups in adminstration_info
+#	   if {[ad_permission_p $bboard $topic_id "" $user_id]} {
+#	       return 1
+#	   } else {
 	       # Well, the user isn't in any of the topic's groups. But.. 
 	       # If they are site admin group member, let's let them in anyway. 
 	       # default to group is private (read_access = group)
-	       if {[ad_administration_group_member $db "site_wide" "" $user_id]} {
+	       if {[ad_administration_group_member "site_wide" "" $user_id]} {
 		   # user is site admin, let them look at the bboard
 		   return 1
 	       } else {
-		   ns_return 200 text/html "[bboard_header "Unauthorized"]
-   <h2>Unauthorized</h2>
-   <hr>
-
-   You are either not logged into <A href=\"[ad_url]\">[ad_system_name]</a>
-   or not authorized to view the $topic forum.
-
-   [bboard_footer]"
-		  return -1
-	     }
-	 }
-     }
+		   doc_return  200 text/html "[bboard_header "Unauthorized"]
+		   <h2>Unauthorized</h2>
+		   <hr>
+		   
+		   You are either not logged into <A href=\"[ad_url]\">[ad_system_name]</a>
+		   or not authorized to view the $topic forum.
+		   
+		   [bboard_footer]"
+		   return -1
+	       }
+#	   }
+       }
    }
 }
 
-
-
-# Verify if current user is allowed to view this topic. 
-# Returns 0 if user is not authorized, and sends appropriate error message page
-# or redirect to client.
-proc bboard_user_has_view_authorization {} {
+# +++ THIS IS DEAD CODE, do not use without fixing first! -- dee [7/2/2000]
+ad_proc -private -deprecated bboard_user_has_view_authorization {} {
+    Verify if current user is allowed to view this topic. 
+    Returns 0 if user is not authorized, and sends appropriate error 
+    message page or redirect to client.
+} {
+    # Returning 0 until somebody decides to finish this function
+    return 0
     uplevel {
+	validate_integer "topic_id" $topic_id
 	set user_id [ad_verify_and_get_user_id]
 	# Check to see if read access on this topic matches with user's group memberships
 
-	set read_access [database_to_tcl_string $db "select read_access from bboard_topics where topic_id = $topic_id"]
+	set read_access [db_string bboard_topic_read_access "
+	select read_access from bboard_topics where topic_id = :topic_id"]
+
 	# Anyone can read
     }
     ## +++ NOT FINISHED YET +++
 }
+# ++++++++++++++++
 
+ad_proc -private -deprecated bboard_topic_user_password_p_internal {
+    topic
+} {
+    gets the user password
 
+    +++ THIS MUST BE DEAD CODE, it refers to bboard_topics.user_password, 
+    which looks like it has not existed for awhile -- hqm [9/16/1999]
+} {
 
-
-# +++ THIS MUST BE DEAD CODE, it refers to bboard_topics.user_password, which looks 
-# like it has not existed for awhile -- hqm [9/16/1999]
-proc bboard_topic_user_password_p_internal {db topic} {
-    set selection [ns_db 0or1row $db "select unique user_password from bboard_topics where topic = '[DoubleApos $topic]'"]
-    if { $selection == "" } {
+    if {![db_0or1row get_user_password_for_bboard_topic "
+    select unique user_password from bboard_topics where topic = :topic"} {
 	# couldn't find the topic, they'll err out high up the chain
 	return 0
     } else {
-	set user_password [ns_set value $selection 0]
+
 	if { $user_password == "" } {
 	    return 0
 	} else {
@@ -384,11 +432,11 @@ proc bboard_compute_msg_level { sort_key } {
 
     }
 
-
 }
 
+# This procedure is now obsolete with the new db API in 3.4
 proc bboard_db_gethandle {} {
-    if [catch {set db [ns_db gethandle]} errmsg] {
+    if [catch {} errmsg] {
     # something wrong with the NaviServer/db connection
 	ad_notify_host_administrator "please fix [ns_conn location]" "please fix [ns_conn location] so that it can talk to Oracle
 
@@ -406,13 +454,15 @@ inside [ns_conn location]
 }
 
 proc bboard_return_cannot_find_topic_page {} {
-    set_form_variables
-    if { [info exists topic] } {
-	set topic_blurb $topic
+    # uplevel and upvar are nasty, 
+    # but not as nasty as the set_form_variables 
+    # that used to be here.
+    if { [uplevel {info exists topic}] } {
+	upvar topic topic_blurb
     } else {
 	set topic_blurb "No Topic Variable Supplied"
     }
-    ns_return 200 text/html "[bboard_header "Cannot Find Topic"]
+    doc_return  200 text/html "[bboard_header "Cannot Find Topic"]
 
 <h2>Cannot Find Topic</h2>
 <hr>
@@ -425,7 +475,7 @@ is seriously wrong with the [bboard_system_name] system.
 <p>
 
 You can probably find the page that you need by starting from the 
-<a href=\"index.tcl\" target=\"_top\">[bboard_system_name] home page</a>.
+<a href=\"index\" target=\"_top\">[bboard_system_name] home page</a>.
 
 <hr>
 <a href=\"mailto:[bboard_system_owner]\">[bboard_system_owner]</a>
@@ -434,7 +484,7 @@ You can probably find the page that you need by starting from the
 }
 
 proc bboard_return_error_page {} {
-    ns_return 500 text/html "<html>
+    doc_return  500 text/html "<html>
 <head>
 <title>Server is Having Trouble</title>
 </head>
@@ -473,7 +523,6 @@ proc bboard_spam_weekly {} {
 
 ns_share -init {set bboard_spam_scheduled 0} bboard_spam_scheduled
 
-
 if { !$bboard_spam_scheduled && ![philg_development_p]} {
 
     set bboard_spam_scheduled 1
@@ -508,27 +557,27 @@ proc ugly_frequency {pretty_frequency} {
 
 proc bboard_spam {frequency} {
     set ugly_frequency [ugly_frequency $frequency]
-    # ***** subquery was [philg_server_default_pool]
-    set db_pools [ns_db gethandle subquery 2]
-    set db [lindex $db_pools 0]
-    set db_sub [lindex $db_pools 1]
     # we could just update bboard_email_alerts_updates
     # right now but we don't because we might get interrupted
-    set start_time [database_to_tcl_string $db "select to_char(sysdate,'YYYY-MM-DD HH24:MI:SS') from dual"]
+    set start_time [db_string sysdate "
+    select to_char(sysdate,'YYYY-MM-DD HH24:MI:SS') from dual"]
     ns_log Notice "Started doing $frequency bboard email alerts at $start_time"
 
     # we want the OID to give the user the option to instantly disable the alert
-    set selection [ns_db select $db "select bea.*,bea.rowid, users_alertable.email, bboard_topics.topic
-from bboard_email_alerts bea,  users_alertable, bboard_topics
-where valid_p <> 'f'
-and bea.user_id = users_alertable.user_id
-and bboard_topics.topic_id = bea.topic_id
-and frequency = '$frequency'"]
     set mail_counter 0
+    db_foreach user_alert "
+    select bea.keywords,
+    	   bea.rowid, 
+    	   users_alertable.email, 
+    	   bboard_topics.topic,
+           bboard_topics.topic_id
+    from   bboard_email_alerts bea,  users_alertable, bboard_topics
+    where  valid_p <> 'f'
+    and    bea.user_id = users_alertable.user_id
+    and    bboard_topics.topic_id = bea.topic_id
+    and    frequency = :frequency" {
 
-    while {[ns_db getrow $db $selection]} {
     # this is the outer loop where each row is an alert for one email address
-	set_variables_after_query
 	ns_log Notice "checking $rowid alert for $email ... ($topic,$keywords)"
 	set msg_body ""
 	if { $keywords != "" && [bboard_pls_blade_installed_p] == 0 } {
@@ -536,69 +585,98 @@ and frequency = '$frequency'"]
 	    # isn't installed, so we'll have to do this very stupidly
 	    set keyword_list [split $keywords " "]
 	    set keyword_clauses [list]
+	    set keyword_num 0
 	    foreach keyword $keyword_list {
-		lappend keyword_clauses "message like '%[DoubleApos $keyword]%'"
+		set keyword_base_${keyword_num} "%$keyword%"
+		lappend keyword_clauses "message like :keyword_base_${keyword_num}"
+		incr keyword_num
 	    }
 	    if { [llength $keyword_clauses] == 0 } {
 		set final_keyword_clause ""
 	    } else {
 		set final_keyword_clause "and ([join $keyword_clauses " OR "])"
 	    }
-	    set sql "select * from bboard 
-where topic_id = $topic_id
-$final_keyword_clause
-and posting_time > (select unique $ugly_frequency from bboard_email_alerts_updates)
-order by posting_time"
+	    set sql "
+	    select sort_key,
+	           one_line,
+	           posting_time,
+	           message,
+	           html_p
+	    from   bboard 
+	    where  topic_id = :topic_id
+	    $final_keyword_clause
+	    and    posting_time > (select unique $ugly_frequency 
+	                           from bboard_email_alerts_updates)
+	    order by posting_time"
 	} elseif { $keywords == "" } {
 	    # user wants everything
-	    set sql "select bboard.*, first_names || ' ' || last_name as name,
-email from bboard, users 
-where topic_id = $topic_id
-and posting_time > (select unique $ugly_frequency from bboard_email_alerts_updates)
-and users.user_id = bboard.user_id
-order by posting_time"
-        } else {
+	    set sql "
+	    select bboard.sort_key,
+	           bboard.one_line,
+	           bboard.posting_time,
+	           bboard.message,
+	           bboard.html_p,
+	           first_names || ' ' || last_name as from_name,
+	           email as from_email
+	    from   bboard, users 
+	    where  topic_id = :topic_id
+	    and    posting_time > (select unique $ugly_frequency 
+	                           from bboard_email_alerts_updates)
+	    and    users.user_id = bboard.user_id
+	    order by posting_time"
+	} else {
 	    # user spec'd keywords 
 	    regsub -all {,+} $keywords " " keywords
-	    set sql "select bboard.* , first_names || ' ' || last_name as name,
-email from bboard, users 
-where topic_id = $topic_id
-and bboard.user_id = users.user_id
-and posting_time > (select unique $ugly_frequency from bboard_email_alerts_updates)
-and bboard_contains(email, first_names || last_name, one_line, message,'[DoubleApos $keywords]') > 0
-order by posting_time"
+	    set sql "
+	    select bboard.sort_key,
+	           bboard.one_line,
+	           bboard.posting_time,
+	           bboard.message, 
+	           bboard.html_p
+	           first_names || ' ' || last_name as from_name,
+	           email as from_email
+	    from   bboard, 
+	           users 
+	    where  topic_id = :topic_id
+	    and    bboard.user_id = users.user_id
+	    and    posting_time > (select unique $ugly_frequency 
+	                           from bboard_email_alerts_updates)
+	    and    bboard_contains(email, first_names || last_name, one_line, 
+	                           message, :keywords) > 0
+	    order by posting_time"
         }
-	# at this point, SQL is set or we've skipped to the next loop iteration
-	if [catch {set sub_selection [ns_db select $db_sub $sql]} errmsg] {
-	    # probably ConText coughed up an error
-	    ns_log Notice "error trying to send an alert:  $errmsg"
-	    # just to the next loop iteration (i.e., the next alert)
-	    continue
-	}
-	while {[ns_db getrow $db_sub $sub_selection]} {
-	    # this is the inner loop where each row is a bboard posting
-	    set from_email [ns_set get $sub_selection email]
-	    set from_name [ns_set get $sub_selection name]
-	    set one_line [ns_set get $sub_selection one_line]
-	    set message [ns_set get $sub_selection message]
-	    set posting_time [ns_set get $sub_selection posting_time]
-	    append msg_body "From: $from_name <$from_email>
-Subject: $one_line
-Date: $posting_time
 
-[ns_striphtml $message]
+	db_foreach send_alery $sql {
+
+	    set msg_id [string range $sort_key 0 5]
+
+	    # this is the inner loop where each row is a bboard posting
+	    append msg_body "
+From    : $from_name <$from_email>
+Subject : $one_line
+Date    : $posting_time
+To reply: [bboard_url_stub]bboard/q-and-a-fetch-msg.tcl?[export_url_vars msg_id]
+
+[ad_convert_to_text -html_p $html_p --  $message]
 
 --------------
 "
 
 	}
-	if { $msg_body != "" } {
+
+	ns_write $msg_body
+
+	if { ![empty_string_p $msg_body] } {
 	    # we have something to send
-	    set sub_selection [ns_db 1row $db_sub "select first_names || ' ' || last_name as maintainer_name, email as maintainer_email, presentation_type 
-from bboard_topics, users
-where topic_id = $topic_id and
-bboard_topics.primary_maintainer_id = users.user_id"]
-            set_variables_after_subquery
+	    db_1row maintainer_info "
+	    select first_names || ' ' || last_name as maintainer_name, 
+	           email as maintainer_email, 
+	           presentation_type 
+	    from   bboard_topics, 
+	           users
+	    where topic_id = :topic_id 
+	    and   bboard_topics.primary_maintainer_id = users.user_id"
+
 	    append msg_body "
 The maintainer email is $maintainer_email.
 This message was sent because you asked the [bboard_system_name] system
@@ -610,7 +688,7 @@ to which you can return at
 If you are annoyed by this message then just enter the following URL
 into a browser and you'll disable the alert that generated this mail:
 
-[bboard_hardwired_url_stub]alert-disable.tcl?rowid=$rowid
+[bboard_hardwired_url_stub]alert-disable?rowid=[ns_urlencode $rowid]
 
 "
             # we don't want a bad email address terminating the program
@@ -625,9 +703,10 @@ into a browser and you'll disable the alert that generated this mail:
 	}
     }
     # we've finished looping through the alerts 
-    ns_db dml $db "update bboard_email_alerts_updates 
-set $ugly_frequency = to_date('$start_time','YYYY-MM-DD HH24:MI:SS'),
-$ugly_frequency\_total = $ugly_frequency\_total + $mail_counter"
+    db_dml alerts_update "
+    update bboard_email_alerts_updates 
+    set    $ugly_frequency = to_date(:start_time,'YYYY-MM-DD HH24:MI:SS'),
+           $ugly_frequency\_total = $ugly_frequency\_total + $mail_counter"
     set stop_time [ns_localsqltimestamp]
     ns_log Notice "Finished doing $frequency bboard email alerts at $stop_time"
 
@@ -636,7 +715,6 @@ $ugly_frequency\_total = $ugly_frequency\_total + $mail_counter"
 ###
 #  Helper functions for insert-msg.tcl
 #
-
 
 proc increment_char_digit {old_char} {
 
@@ -796,7 +874,6 @@ proc new_sort_key {refers_to_key last_key} {
 
     }
 
-
 }
 
 proc bboard_convert_plaintext_to_html {raw_string} {
@@ -810,23 +887,32 @@ proc bboard_convert_plaintext_to_html {raw_string} {
 
 }
 
-# recursive procedure that keeps building a list of people to whom
-# notifications have been sent (so that duplicates aren't sent to
-# people who appear in the same thread twice)
 
-proc notify_if_requested {db new_msg_id notify_msg_id from subject_line body already_notified} {
+# doesn't seem to be used anymore - kevin, 17 July 2000
 
-    set selection [ns_db 1row $db "select email,refers_to,notify
+ad_proc -deprecated notify_if_requested {
+    new_msg_id 
+    notify_msg_id 
+    from 
+    subject_line 
+    body 
+    already_notified
+} {
+    recursive procedure that keeps building a list of people to whom
+    notifications have been sent (so that duplicates aren't sent to
+    people who appear in the same thread twice)
+} {
+
+    db_1row notify_email "
+select email,refers_to,notify
  from bboard, users
  where bboard.user_id = users.user_id
- and msg_id = '$notify_msg_id'"]
-
-    set_variables_after_query
+ and msg_id = :notify_msg_id"]
 
     if { $notify == "t" && [lsearch -exact $already_notified $email] == -1 } {
 	# user asked to be notified and he has not already been for this posting
 
-	set shut_up_url "[bboard_url_stub]shut-up.tcl?msg_id=$notify_msg_id"
+	set shut_up_url "[bboard_url_stub]shut-up?msg_id=$notify_msg_id"
 
 	# we use a Tcl Catch system function
 	# in case some loser typed in "dogbreath 78 @ aol.com" 
@@ -863,7 +949,7 @@ Note:  this message was sent by a robot.
 
 	# recurse with all the same args except NOTIFY_MSG_ID
 
-	notify_if_requested $db $new_msg_id $refers_to $from $subject_line $body $already_notified
+	notify_if_requested $new_msg_id $refers_to $from $subject_line $body $already_notified
 
     }
 
@@ -872,9 +958,7 @@ Note:  this message was sent by a robot.
 # for flaming postings
 
 proc bboard_pretend_to_be_broken {full_anchor maintainer_email} {
-    ReturnHeaders
-
-    ns_write "<html>
+    ad_return_top_of_page "<html>
 <head>
 <title>Inserting Message</title>
 </head>
@@ -934,7 +1018,6 @@ OK, after all of that blather, we're going to try the insert now...
 
    ns_write "<h3>Ouch!!</h3>
 
-
 Here was the bad news from the database:
 <pre>
 
@@ -954,25 +1037,23 @@ over the head with a (Unix) tire iron; this takes 3 minutes from the time of fir
 </html>
 "
 
-
 }
 
 proc bboard_compute_categories_with_count {topic_id} {
-    set db [ns_db gethandle subquery]
-    set selection [ns_db select $db "select category, count(*) as n_threads
+    set result ""
+
+    db_foreach category_count "select category, count(*) as n_threads
 from bboard 
 where refers_to is null
-and topic_id = $topic_id
+and topic_id = :topic_id
 and category is not null
 and category <> 'Don''t Know'
 group by category 
-order by 1"]
-     set result ""
-     while {[ns_db getrow $db $selection]} {
-	 set_variables_after_query
-	 append result "<li><a href=\"q-and-a-one-category.tcl?[export_url_vars topic_id]&category=[ns_urlencode $category]\">$category</a> ($n_threads)\n"
+order by 1" {
+
+	 append result "<li><a href=\"q-and-a-one-category?[export_url_vars topic_id]&category=[ns_urlencode $category]\">$category</a> ($n_threads)\n"
      }
-     ns_db releasehandle $db
+
      return $result
 }
 
@@ -991,25 +1072,35 @@ proc dependent_sort_key_form {old_sort_key} {
     }
 }
 
-proc bboard_delete_messages_and_subtrees_where {db where_clause} {
-    set sort_keys [database_to_tcl_list $db "select sort_key 
+ad_proc -private bboard_delete_messages_and_subtrees_where {
+    {-bind ""}
+    where_clause
+} {
+    A procedure that deletes based on an arbitrary passed in
+    SQL clause.  Yikes!
+} {
+    set sort_keys [db_list sort_key "select sort_key 
 from bboard 
-where $where_clause"]
+where $where_clause" -bind $bind]
     foreach sort_key $sort_keys {
 	# this should kill off an individual message or a whole
 	# subtree if there are dependents
-	ns_db dml $db "delete from bboard where sort_key like '${sort_key}%'"
+	set sort_key_base "$sort_key%"
+	db_dml bboard_delete "
+	delete from bboard where sort_key like :sort_key_base"
     }
 }
 
-
 # Verify that user is an admin for a group which is associated with topic_id.
 # Returns 1 if true, 0 otherwise.
-proc bboard_user_is_admin_for_topic {db user_id topic_id} {
-    return [expr [database_to_tcl_string $db "select count(*) 
+proc bboard_user_is_admin_for_topic {user_id topic_id} {
+    validate_integer "user_id" $user_id
+    validate_integer "topic_id" $topic_id
+
+    return [expr [db_string admin_count "select count(*) 
 from bboard_topics
-where primary_maintainer_id = $user_id
-and topic_id = $topic_id"] || [ad_administration_group_member $db "bboard" $topic_id $user_id]]
+where primary_maintainer_id = :user_id
+and topic_id = :topic_id"] || [ad_administration_group_member "bboard" $topic_id $user_id] || [ad_administrator_p $user_id]]
 }
 
 # Verify if a user is allowed to view this topic.
@@ -1021,19 +1112,19 @@ and topic_id = $topic_id"] || [ad_administration_group_member $db "bboard" $topi
 # - The read_access is 'group' and the user is a member of
 #   one of the groups that the topic belongs to.
 # 
-proc bboard_user_can_view_topic_p {db user_id topic_id} {
-    set read_access [database_to_tcl_string $db "select read_access from bboard_topics where topic_id = $topic_id"]
+proc bboard_user_can_view_topic_p {user_id topic_id} {
+    validate_integer "user_id" $user_id
+    validate_integer "topic_id" $topic_id
+
+    db_1row read_access "
+    select read_access from bboard_topics where topic_id = :topic_id"
     if {[string compare $read_access "any"] == 0 || [string compare $read_access "public"] == 0} {
 	return 1
     } else {
-	set selection [ns_db 0or1row  $db "select user_id from user_group_map 
-	where user_id = $user_id 
-	and group_id in (select group_id from bboard_topic_group_map where topic_id = $topic_id)"]
-	if { [empty_string_p $selection] } {     
-	    return 0
-	} else {
-	    return 1
-	}
+	return [db_0or1row user_okay "select user_id from user_group_map 
+	where user_id = :user_id 
+	and group_id in (select group_id from bboard_topic_group_map 
+	where topic_id = :topic_id)"]
     }
 }
 
@@ -1047,15 +1138,15 @@ proc bboard_admin_authorization {} {
 
 	if {$user_id == 0} {
 
-	    ad_returnredirect /register.tcl?return_url=[ns_urlencode "[bboard_hardwired_url_stub]admin-home.tcl?[export_url_vars topic_id]"]
+	    ad_returnredirect /register?return_url=[ns_urlencode "[bboard_hardwired_url_stub]admin-home?[export_url_vars topic_id]"]
 	    return -1
 	}
 
 	# Check to see if user is an admin in the topic's group.
 
-        if { [bboard_user_is_admin_for_topic $db $user_id $topic_id]== 0 } {
+        if { [bboard_user_is_admin_for_topic $user_id $topic_id]== 0 } {
 	    
-	    ns_return 200 text/html "[bboard_header "Unauthorized"]
+	    doc_return  200 text/html "[bboard_header "Unauthorized"]
 
 	    <h2>Unauthorized</h2>
 	    <hr>
@@ -1080,18 +1171,18 @@ proc bboard_check_any_admin_role {} {
 
 	if {$user_id == 0} {
 
-	    ad_returnredirect /register.tcl?return_url=[ns_urlencode "[bboard_hardwired_url_stub]admin-home.tcl?[export_url_vars topic_id]"]
-	    return
+	    ad_returnredirect /register?return_url=[ns_urlencode "[bboard_hardwired_url_stub]admin-home?[export_url_vars topic_id]"]
+	    return -1
 	}
 
 	# Check to see if user is an admin in the topic's group.
 
-	set n_rows [database_to_tcl_string $db "select count(user_id)
+	set n_rows [db_string n_rows "select count(user_id)
 	from user_group_map ugm
-	where ugm.user_id = $user_id
+	where ugm.user_id = :user_id
 	and ugm.role = 'administrator'"]
 	if { $n_rows <= 0 } {
-	    ns_return 200 text/html "[bboard_header "Unauthorized"]
+	    doc_return  200 text/html "[bboard_header "Unauthorized"]
 
 	    <h2>Unauthorized</h2>
 	    <hr>
@@ -1105,11 +1196,6 @@ proc bboard_check_any_admin_role {} {
     }
 }
 
-
-
-
-
-
 # stuff just for usgeospatial
 
 proc usgeo_n_spaces {n} {
@@ -1120,29 +1206,28 @@ proc usgeo_n_spaces {n} {
     return $result
 }
 
-proc bboard_usgeospatial_about_link {db msg_id} {
-    set selection [ns_db 0or1row $db "select one_line, zip_code, bboard.fips_county_code, bboard.usps_abbrev, bboard.epa_region, users.user_id as poster_id,  users.first_names || ' ' || users.last_name as name, bboard.tri_id, facility, fips_county_name, rel_search_st.state_name
-from bboard, users, rel_search_fac, rel_search_co, rel_search_st
-where bboard.user_id = users.user_id
-and bboard.tri_id = rel_search_fac.tri_id(+)
-and bboard.fips_county_code = rel_search_co.fips_county_code(+)
-and bboard.usps_abbrev = rel_search_st.state
-and msg_id = '$msg_id'"]
-    set_variables_after_query
-    if { ![empty_string_p $tri_id] && ![empty_string_p $facility] } {
-	# we have a facility
-	set about_text $facility
-    } elseif { ![empty_string_p $zip_code] } {
+proc bboard_usgeospatial_about_link {msg_id} {
+    db_0or1row geospatial_info "
+select one_line, zip_code, bboard.fips_county_code, bboard.usps_abbrev, 
+       bboard.epa_region, users.user_id as poster_id,  
+       users.first_names || ' ' || users.last_name as name,
+       fips_county_name, states.state_name
+from   bboard, users, counties, states
+where  bboard.user_id = users.user_id
+and    bboard.fips_county_code = counties.fips_county_code(+)
+and    bboard.usps_abbrev = states.usps_abbrev
+and    msg_id = :msg_id"
+
+    if { ![empty_string_p $zip_code] } {
 	set about_text "Zip Code $zip_code"
     } elseif { ![empty_string_p $fips_county_code] } {
 	set about_text "$fips_county_name County"
     } elseif { ![empty_string_p $usps_abbrev] } {
 	set about_text "$state_name"
     }
-    set about_link "<a href=\"usgeospatial-fetch-msg.tcl?msg_id=$msg_id\">$one_line (about $about_text)</a>"
+    set about_link "<a href=\"usgeospatial-fetch-msg?msg_id=$msg_id\">$one_line (about $about_text)</a>"
     return $about_link
 }
-
 
 # on the main page, we list out the forums grouped my
 # their moderation policy.  This procedure gives the order
@@ -1164,13 +1249,11 @@ proc bboard_moderation_title {moderation_policy} {
     } 
 }
 
-
 proc bboard_private_error {topic name email} {
-    ReturnHeaders
-    ns_write "
+    doc_return  200 text/html "
     [bboard_header "Private discussion group"]
     <h2>$topic</h2>
-is a private discussion group in <A HREF=\"index.tcl\">[bboard_system_name]</a> 
+is a private discussion group in <A HREF=\"index\">[bboard_system_name]</a> 
 <hr>
 <p>
 You are not permitted to enter this topic because 
@@ -1189,22 +1272,27 @@ it is private. Please contact <A HREF=\"mailto:$email\">$name</a> if you would l
 # calling it in an ns_atclose so the list gets expanded
 
 proc bboard_delete_uploaded_files args {
-    # Tcl is too stupid to allow N args unless you call them "args"
-    set list_of_files $args
+
     ns_log Error "bboard_delete_uploaded_files asked to delete 
-[join $list_of_files "\n"]
+[join $args "\n"]
 \n
 "
     # Let's not do more work than we need to do.
-    if {[llength $list_of_files] == 0} {
+    if {[llength $args] == 0} {
 	return
     }
-    
+
+    set count 0
+    foreach file $args {
+	set file_$count $file
+	lappend list_of_files ":file_$count"
+	incr count
+    }
+	
     # let's double check to make sure that none are in the database
-    set db [ns_db gethandle subquery]
-    set count [database_to_tcl_string $db "select count(*) 
+    set count [db_string file_count "select count(*) 
 from bboard_uploaded_files
-where filename_stub IN ('[join [DoubleApos $list_of_files] "','"]')"]
+where filename_stub IN ([join $list_of_files ","])"]
 
     # If any file is still there, don't do anything
     if {$count > 0} {
@@ -1219,7 +1307,7 @@ but at least one was still on record in the bboard_uploaded_files table."
 	ns_log Notice "bboard_delete_uploaded_files removing $full_path"
 	ns_unlink $full_path
     }
-    ns_db releasehandle $db
+
 }
 
 ##################################################################
@@ -1232,25 +1320,24 @@ if { ![info exists ad_new_stuff_module_list] || [lsearch -glob $ad_new_stuff_mod
     lappend ad_new_stuff_module_list [list "Bboard" bboard_new_stuff]
 }
 
-proc bboard_new_stuff {db since_when only_from_new_users_p purpose} {
+proc bboard_new_stuff {since_when only_from_new_users_p purpose} {
     if { $only_from_new_users_p == "t" } {
 	set query "select bt.topic, bt.presentation_type, count(*) as n_messages
 from bboard, bboard_topics bt, users_new
-where posting_time > '$since_when'
+where posting_time > :since_when
 and bboard.user_id = users_new.user_id
 and bboard.topic_id = bt.topic_id
 group by bt.topic, bt.presentation_type"
     } else {
 	set query "select bt.topic_id, bt.topic, bt.presentation_type, count(*) as n_messages
 from bboard, bboard_topics bt
-where posting_time > '$since_when'
+where posting_time > :since_when
 and bboard.topic_id = bt.topic_id
 group by bt.topic_id, bt.topic,  bt.presentation_type"
     }
     set result_items ""
-    set selection [ns_db select $db $query]
-    while { [ns_db getrow $db $selection] } {
-	set_variables_after_query
+    db_foreach new_stuff {
+
 	switch $purpose {
 	    web_display {
 		append result_items "<li>[bboard_complete_backlink $topic_id $topic $presentation_type 1] ($n_messages new messages)\n" }
@@ -1284,21 +1371,22 @@ if { ![info exists ad_user_contributions_summary_proc_list] || [util_search_list
     lappend ad_user_contributions_summary_proc_list [list "/bboard postings" bboard_user_contributions 0]
 }
 
-proc_doc bboard_user_contributions {db user_id purpose} {Returns list items, one for each bboard posting} {
+proc_doc bboard_user_contributions {user_id purpose} {Returns list items, one for each bboard posting} {
     if { $purpose == "site_admin" } {
 	set restriction_clause ""
     } else {
 	set restriction_clause "\nand (bboard_topics.read_access in ('any', 'public'))\n"
     }
-    set selection [ns_db select $db "select one_line, msg_id,  posting_time, sort_key, bboard_topics.topic, bboard_topics.topic_id, presentation_type 
-from bboard, bboard_topics 
-where bboard.user_id = $user_id
-and bboard.topic_id = bboard_topics.topic_id $restriction_clause
-order by posting_time desc"]
 
     set bboard_items ""
-    while { [ns_db getrow $db $selection] } {
-	set_variables_after_query
+    db_foreach user_contribs "
+    select one_line, msg_id,  posting_time, sort_key, bboard_topics.topic, 
+           presentation_type 
+    from   bboard, bboard_topics 
+    where  bboard.user_id = :user_id
+    and    bboard.topic_id = bboard_topics.topic_id $restriction_clause
+    order by posting_time asc" { 
+
 	if { [string first "." $sort_key] == -1 } {
 	    # there is no period in the sort key so this is the start of a thread
 	    set thread_start_msg_id $sort_key
@@ -1306,8 +1394,9 @@ order by posting_time desc"]
 	    # strip off the stuff before the period
 	    regexp {(.*)\..*} $sort_key match thread_start_msg_id
 	}
-	append bboard_items "<li>[util_AnsiDatetoPrettyDate $posting_time]: <a href=\"/bboard/[bboard_msg_url $presentation_type $thread_start_msg_id $topic_id $topic]\">$one_line</a>\n"
+	append bboard_items "<li>[util_AnsiDatetoPrettyDate $posting_time]: <a href=\"/bboard/[bboard_msg_url $presentation_type $thread_start_msg_id $topic]\">$one_line</a>\n"
     }
+
     if [empty_string_p $bboard_items] {
 	return [list]
     } else {
@@ -1318,7 +1407,7 @@ order by posting_time desc"]
 # stuff added for Sharenet (urgent messages)
 # modified by Branimir (bd) to comply with Henry's topic_id stuff
 
-proc_doc bboard_urgent_message_items {db {archived_p "f"} {show_min 0} {show_max 50000} {skip_first 0}} "Returns a string of <LI> with hyperlinks to the current bboard items that are marked urgent." {
+proc_doc bboard_urgent_message_items {{archived_p "f"} {show_min 0} {show_max 50000} {skip_first 0}} "Returns a string of <LI> with hyperlinks to the current bboard items that are marked urgent." {
 
     if {$archived_p == "t"} {
 	set archived_qual "and sign(bboard.posting_time + [ad_parameter DaysConsideredUrgent bboard] - sysdate) < 1"
@@ -1334,7 +1423,11 @@ proc_doc bboard_urgent_message_items {db {archived_p "f"} {show_min 0} {show_max
 # I wanted to get rid of the annoying Oracle error message
 # in the log file "Warning of a NULL column in an aggregate function"
 
-    set selection [ns_db select $db "select bboard.msg_id, 
+    set urgent_items ""
+    set count 0
+
+    db_foreach urgent_messages "
+select bboard.msg_id, 
 bboard.one_line,  sort_key, bboard.topic_id, bboard_topics.topic, bboard_topics.presentation_type,
 users.email, users.first_names || ' ' || last_name as name, users.user_id,
 bboard.posting_time, sign(bboard.posting_time + [ad_parameter DaysConsideredUrgent bboard] - sysdate) as urgent_sign,
@@ -1349,14 +1442,10 @@ and bboard.urgent_p = 't'
 $archived_qual
 group by bboard.msg_id, bboard.one_line, bboard.topic_id, 
 bboard_topics.topic, bboard_topics.presentation_type, sort_key, users.user_id, users.first_names || ' ' || last_name, email, bboard.posting_time
-order by $sort_key"]
+order by $sort_key" {
 
     # Siemens wants to display, at a minimum, the last 3 urgent
 
-    set urgent_items ""
-    set count 0
-    while { [ns_db getrow $db $selection] } {
-	set_variables_after_query
 	if { [string first "." $sort_key] == -1 } {
 	    # there is no period in the sort key so this is the start of a thread
 	    set thread_start_msg_id $sort_key
@@ -1366,7 +1455,7 @@ order by $sort_key"]
 	}
 	if {$count < $show_max && ($urgent_sign == 1 || $archived_p == "t" || $count < $show_min)} {
 	    if {$count >= $skip_first} {
-	          append urgent_items "<li><a href=\"/bboard/[bboard_msg_url $presentation_type $thread_start_msg_id $topic]\">$one_line</a> <i>(<a href=\"/shared/community-member.tcl?[export_url_vars user_id]\">$name</a> on $posting_time in $topic"
+	          append urgent_items "<li><a href=\"/bboard/[bboard_msg_url $presentation_type $thread_start_msg_id $topic]\">$one_line</a> <i>(<a href=\"/shared/community-member?[export_url_vars user_id]\">$name</a> on $posting_time in $topic"
                   if {"$last_response" != "0001-01-01"} {
 	         	append urgent_items ", last response on $last_response"
 	          }
@@ -1379,7 +1468,6 @@ order by $sort_key"]
     }
     return $urgent_items
 }
-
 
 proc bboard_one_line_suffix {selection subject_line_suffix} {
    # subject_line_suffix is a list containig any combination of keywords:
@@ -1401,7 +1489,7 @@ proc bboard_one_line_suffix {selection subject_line_suffix} {
    set suffix ""
    foreach column $subject_line_suffix {
 	if { $column == "name" && $name != "" } {
-	   append suffix " by <a href=\"/shared/community-member.tcl?user_id=$poster_id\">$name</a>"
+	   append suffix " by <a href=\"/shared/community-member?user_id=$poster_id\">$name</a>"
         }
 	if { $column == "email" && $email != "" } {
 	   append suffix " ($email)"
@@ -1413,11 +1501,52 @@ proc bboard_one_line_suffix {selection subject_line_suffix} {
    if { [ad_parameter UrgentMessageEnabledP "bboard" 0] && [info exists urgent_p] && $urgent_p == "t" } {
        append suffix " <font color=red>urgent!</font> "
        if { $poster_id == $user_id } {
-   	  append suffix " <A href=\"msg-urgent-toggle.tcl?[export_url_vars msg_id]&return_url=[ns_urlencode q-and-a.tcl?[export_url_vars topic_id]]\">Make unurgent</a> "
+   	  append suffix " <A href=\"msg-urgent-toggle?[export_url_vars msg_id]&return_url=[ns_urlencode q-and-a?[export_url_vars topic_id]]\">Make unurgent</a> "
        }
    }
    return $suffix
 }
 
+# Serve the abstract URL 
+# /bboard/download-file/<upload_id>/<client_filename>
+#
+# For backward compatibility, we also support
+# /bboard/download-file/<client_filename>?bboard_upload_id=<upload_id>
 
-util_report_successful_library_load
+proc bboard_get_attachment {} {
+    set url "[ns_conn url]?[ns_conn query]"
+
+    if { ![regexp {bboard_upload_id=(.+)$} $url match upload_id] } {
+	if { ![regexp {([^/]+)/[^/]+$} $url match upload_id] } {
+	    ad_return_error "Malformed Attachment Request" \
+		"Your request for a file attachment was malformed."
+	    return
+	}
+    }
+
+    validate_integer "upload_id" $upload_id
+
+    if ![db_0or1row file_stub "
+    select filename_stub from bboard_uploaded_files
+    where bboard_upload_id = :upload_id"] {
+	ad_return_error "Not Found" \
+	    "This file might be associated with a thread that was deleted by the forum moderator"
+	return
+    }
+
+    ad_returnfile 200 [ns_guesstype $filename_stub] "[bboard_file_path]/$filename_stub"
+}
+
+ad_proc bboard_validate_msg_id { msg_id } {
+Validates that this is a legitimate message ID.
+Throws an error if invalid, returns msg_id if valid.
+} {
+    if { ![regexp {^[0-9a-zA-Z]+$} $msg_id]} {
+	error "Invalid characters in message ID"
+    } elseif {[string length $msg_id] > 6} {
+	error "Message ID too long"
+    }
+    return $msg_id
+}
+
+ad_register_proc GET /bboard/download-file/* bboard_get_attachment

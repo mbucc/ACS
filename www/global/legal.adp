@@ -1,5 +1,14 @@
 <%= [ad_header "Legal Notes"] %>
 
+<% 
+ad_page_contract {
+	@author ?
+	@creation-date ?
+	@cvs-id legal.adp,v 3.0.12.3 2000/09/08 19:03:33 kevin Exp
+}
+%>
+
+
 <h2>Legal Notes</h2>
 
 at <a href=/><%=[ad_system_name]%></a>

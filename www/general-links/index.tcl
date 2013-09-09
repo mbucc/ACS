@@ -1,24 +1,25 @@
-# File: /general-links/index.tcl
-# Date: 2/01/2000
-# Author: tzumainn@arsdigita.com 
-#
-# Purpose: 
-#  Displays a hierarchy of the links
-#  the variable  "category_select" determines if all the
-#  the links are displayed or just a subset
-#
-# $Id: index.tcl,v 3.2 2000/03/09 00:23:08 tzumainn Exp $
-#--------------------------------------------------------
+# /general-links/index.tcl
 
-ad_page_variables {{category_select "all"} {search_query ""}}
+ad_page_contract  {
+    Displays a hierarchy of the links.  (Note: there appears to be the ability to search by category in this page, but it isn't used)
 
-set db [ns_db gethandle]
+    @param category_select the type of category selection to perform
+    @param search_query the query to use for searching
+
+    @author Tzu-Mainn Chen (tzumainn@arsdigita.com)
+    @creation-date 2/01/2000
+    @cvs-id index.tcl,v 3.3.6.6 2000/09/22 01:38:03 kevin Exp
+} {
+    {category_select "all"} 
+    {search_query ""}
+}
+
 
 if { $category_select == "all" } {
 
     set start_with_clause "start with parent_category_id is null"
 
-    ad_return_top_of_page "
+    set page_content "
     [ad_header "General Links"]
     
     <h2>General Links</h2>
@@ -28,13 +29,13 @@ if { $category_select == "all" } {
     <hr>
     "
 } else {
-    set category_select_name [database_to_tcl_string_or_null $db "select 
+    set category_select_name [db_string select_category_select_name "select 
     category as category_select_name 
     from  categories c 
-    where c.category_id = '$category_select'"]
-    set start_with_clause "start with child_category_id = $category_select"
+    where c.category_id = :category_select" -default ""]
+    set start_with_clause "start with child_category_id = :category_select"
 
-    ad_return_top_of_page "
+    set page_content "
     [ad_header "$category_select_name"]
     
     <h2>$category_select_name</h2>
@@ -49,31 +50,32 @@ if { $category_select == "all" } {
 if { $category_select == "all" } {
     set where_clause_for_section ""
 } else {
-    set category_select_name [database_to_tcl_string_or_null $db "
+    set category_select_name [db_string select_category "
     select category 
     from categories 
-    where category_id = '$category_select'"]
+    where category_id = :category_select" -default ""]
    
-    set where_clause_for_section "and c.category_id = $category_select"
+    set where_clause_for_section "and c.category_id = :category_select"
 }
 
 if { [empty_string_p $search_query] } {
     set where_clause_for_search_query ""
 } else {
-    set QQsearch_query [DoubleApos $search_query]
+    set sql_search_query "%[string toupper $search_query]%"
+
     set where_clause_for_search_query " 
     and (
-           upper(meta_keywords) like '%[string toupper $QQsearch_query]%' 
-         or upper(meta_description) like '%[string toupper $QQsearch_query]%' 
-         or upper(link_description) like '%[string toupper $QQsearch_query]%' 
-         or upper(link_title) like '%[string toupper $QQsearch_query]%'
+           upper(meta_keywords) like :sql_search_query
+         or upper(meta_description) like :sql_search_query
+         or upper(link_description) like :sql_search_query
+         or upper(link_title) like :sql_search_query
         )"
 }
 
-set individual_section_options [ad_db_optionlist $db "
-select category, category_id 
+set individual_section_options [db_html_select_value_options -select_option $category_select select_ind_sct_opts "select category, category_id 
 from categories
-order by upper(category)" $category_select]
+order by upper(category)"]
+
 
 if { $category_select == "all" } {
     set all_sections_option "<option value=\"all\" SELECTED>All Categories</option>\n"
@@ -85,8 +87,10 @@ set n_links 0
 set link_list "<ul>"
 
 ### category hierarchy
+set current_category_name ""
+set current_indent 0
 
-set selection [ns_db select $db "select c.category_id, ch.tree_level - 1 as indent, 
+db_foreach bookmark_hierarchy "select c.category_id, ch.tree_level - 1 as indent, 
 c.category, c.category_type, link_id, url, link_title, n_ratings, avg_rating
 from categories c, general_links gl,
 (select child_category_id, rownum as tree_rownum, level as tree_level
@@ -100,12 +104,8 @@ and exists (select 1 from site_wide_category_map swm
             and swm.on_which_table = 'general_links'
             and swm.category_id = c.category_id)
 $where_clause_for_search_query
-order by ch.tree_rownum, link_title"]
-
-set current_category_name ""
-set current_indent 0
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
+order by ch.tree_rownum, link_title" {
+ 
     incr n_links
     set category_name $category
     if {![empty_string_p $category_type]} {
@@ -131,7 +131,7 @@ while {[ns_db getrow $db $selection]} {
 	    append link_list "\n<ul>"
 	}
 
-	append link_list "<li><a href=\"index.tcl?category_select=$category_id&search_query=[ns_urlencode $search_query]\"><b>$current_category_name</b></a>\n<ul>"
+	append link_list "<li><a href=\"index?category_select=$category_id&search_query=[ns_urlencode $search_query]\"><b>$current_category_name</b></a>\n<ul>"
     }
 
     if {[ad_parameter ClickthroughP general-links] == 1} {
@@ -142,7 +142,7 @@ while {[ns_db getrow $db $selection]} {
 	set exact_link "$url"
     }
 
-    append link_list "\n<li><a href=\"$exact_link\">$link_title</a> - Average Rating: $avg_rating; Number of Ratings: $n_ratings - <a href=\"one-link.tcl?[export_url_vars link_id]\">more</a>"
+    append link_list "\n<li><a href=\"$exact_link\">$link_title</a> - Average Rating: $avg_rating; Number of Ratings: $n_ratings - <a href=\"one-link?[export_url_vars link_id]\">more</a>"
 }
 
 ### wrap up last ul/blockquote
@@ -159,17 +159,14 @@ set uncategorized_link_list ""
 if { $category_select == "all" } {
     
     set n_uncategorized 0
-    set selection [ns_db select $db "select link_id, url, link_title, n_ratings, avg_rating from general_links gl
+    db_foreach links_uncategorized "select link_id, url, link_title, n_ratings, avg_rating from general_links gl
     where not exists (select 1 from site_wide_category_map swm
                      where gl.link_id = swm.on_what_id
                      and swm.on_which_table = 'general_links')
           and gl.approved_p = 't'
-    "]
+    " {
     
-    while {[ns_db getrow $db $selection]} {
-	set_variables_after_query
-
-	incr n_links
+    	incr n_links
 	incr n_uncategorized
 
 	if {[ad_parameter ClickthroughP general-links] == 1} {
@@ -180,7 +177,7 @@ if { $category_select == "all" } {
 	    set exact_link "$url"
 	}
 
-	append uncategorized_link_list "<li> <a href=\"$exact_link\">$link_title</a> - Average Rating: $avg_rating; Number of Ratings: $n_ratings - <a href=\"one-link.tcl?[export_url_vars link_id]\">more</a>"
+	append uncategorized_link_list "<li> <a href=\"$exact_link\">$link_title</a> - Average Rating: $avg_rating; Number of Ratings: $n_ratings - <a href=\"one-link?[export_url_vars link_id]\">more</a>"
     }
     
     if { $n_uncategorized != 0 } {
@@ -193,7 +190,7 @@ if { $n_links == 0 } {
     append link_list "<li>No links available."
 }
 
-ns_db releasehandle $db
+db_release_unused_handles
 
 append link_list $uncategorized_link_list
 
@@ -203,11 +200,11 @@ set suggest_link ""
 
 if {[ad_parameter AllowSuggestionsP general-links] == 1} {
     # users can suggest links to the hotlist
-    set suggest_link "<ul><li><p><a href=\"link-add-without-assoc.tcl\">suggest a link</a></ul>"
+    set suggest_link "<ul><li><p><a href=\"link-add-without-assoc\">suggest a link</a></ul>"
 }
 
-ns_write "
-<form method=post action=\"index.tcl\">
+append page_content "
+<form method=post action=\"index\">
 <input type=text size=40 name=search_query value=\"$search_query\">
 <input type=submit value=\"Search\">
 </form>
@@ -216,4 +213,12 @@ $suggest_link
 
 [ad_footer]
 "
+
+
+doc_return  200 text/html $page_content
+
+
+
+
+
 

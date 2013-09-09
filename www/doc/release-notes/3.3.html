@@ -1,0 +1,111 @@
+<html>
+<!--AD_DND-->
+<!--3.3.html,v 1.4 2000/07/07 23:34:43 ron Exp-->
+<head>
+<title>ACS 3.3 Release Notes</title>
+</head>
+
+<body bgcolor=white>
+
+<h2>ACS 3.3 Release Notes</h2>
+
+by <a href=mailto:ron@arsdigita.com>ron@arsdigita.com</a> and Richard Li
+
+<hr>
+
+<p>This release of the ArsDigita Community System is the first step in
+a major improvement in the core architecture.  With ACS 3.3 we are
+introducing the following key changes:
+
+<ul>
+<li> <a href=/doc/core-arch-guide/apm>Package Management</a>, which has caused a
+number of <a href="/doc/acs-3-3-and-beyond">structural changes</a> to
+ACS startup, the file system, and more
+<li><a href="/doc/core-arch-guide/request-processor">Request-Processing Pipeline</a>
+</ul>
+
+<p>We highly suggest that anyone upgrading to ACS 3.3 read <i><a
+href="/doc/acs-3-3-and-beyond">ACS 3.2 Developer's Guide to ACS 3.3
+and Beyond</a></i>, which discusses the many fundamental and
+far-reaching changes to the ACS architecture.</p>
+
+<p>Both installations using a clean database and upgrades from ACS
+3.2.3 have been tested using Oracle 8.1.6, <a
+href="http://www.arsdigita.com/aol3/">AOLserver 3+ad2</a> in a <a
+href="/doc/security">chrooted environment</a>, and Tcl 8.3.  With ACS
+3.3 we have dropped all backwards-compatibilities with AOLserver 2. We
+do not guarantee that ACS 3.3 works with AOLserver 2.3. This release
+marks the first time that we used a formal QA process, which included
+internal alpha and beta releases, dedicated testers, and daily fresh
+installs and upgrades of the latest version of the code tree. For the
+next release, we plan on opening this process to the ACS community,
+with a dedicated ticket tracker and postings of alpha and beta
+releases of ACS. In the meantime, please email <a href="mailto:
+bugs@arsdigita.com">bugs@arsdigita.com</a> with any critical bugs
+(along with any patches you may have), including a description of the
+problem, the file(s) that exhibit the problem, and any other
+information that you feel is relevant.</p>
+
+<p>Other new features, enhancements, and changes:
+
+<ul>
+<li>Reorganized, updated, and more user-friendly <a
+href=/doc/>documentation</a>
+<li>a <a href="/doc/core-arch-guide/database-access-api">Database API</a>
+<li>a preliminary version of the <a href="/doc/documents">Documents
+API</a>
+<li>the <a href="/doc/template/">dynamic publishing system</a> (not an ACS
+standard yet, but available for those who wish to use it)
+<li><a href="/doc/wap">support for WAP</a>
+<li>Many, many bug fixes, including the following fixes you may want
+to apply to your older ACS installation, even if you don't want to
+upgrade the entire installation:
+    <ul>
+    <li>fix for the <a href="/doc/admin-guide/server-cluster">server
+    clustering module</a> (older version causes huge load on servers
+    due to thread issues)
+    <li>fix for <tt>return</tt> commands inside procedures
+    (fixed with the introduction of <a
+    href="/doc/proc-one?proc_name=ad%5fscript%5fabort"><tt>ad_script_abort</tt></a>;
+    see <a href="/doc/programming-with-aolserver">programming with
+    AOLserver</a> for details). Note that using <tt>ad_script_abort</tt> in older ACS implementations (pre-RPP) is non-trivial because you will need to implement some mechanism to catch the error thrown by <tt>ad_script_abort</tt>.
+    <li>replacement of <tt>ns_returnredirect</tt> with
+    <a
+    href="/doc/proc-one?proc_name=ad%5freturnredirect"><tt>ad_returnredirect</tt></a>
+    <li>the entire ACS now uses the <a
+    href="/doc/abstract-url">abstract URL system</a>
+    </ul>
+<li>ns_register_filter and ns_register_proc have been obsoleted and
+disabled; they are replaced by <tt><a
+href="/doc/proc-one?proc_name=ad%5fregister%5ffilter">ad_register_filter</a></tt>
+and <tt><a
+href="/doc/proc-one?proc_name=ad%5fregister%5fproc">ad_register_proc</a></tt>
+as documented in the <a href="/doc/core-arch-guide/request-processor">Request
+Processor documentation</a>
+</ul>
+
+Known issues:
+
+<ul>
+<li>Nuking user groups and users doesn't work. This will be fixed in
+a future release of ACS. Meanwhile, we suggest that you ban users
+instead of nuking them.
+<li>Users who have saved their authentication information in a cookie
+will need to relogin to the web site, since cookies are not backwards
+compatible.
+<li>top requires access to /proc and /dev/kmem in order to operate;
+this is a security risk in a chroot environment. One possible way to
+maintain chroot security and enable the top monitoring page is to
+create a separate user that writes the results of top to a text file,
+and have the page read that text file.
+<li>Users running InterMedia 8.1.6 and using UTF-8 encoding will need
+to obtain a patch from Oracle support in order to get Intermedia to
+work.
+</ul>
+
+<hr>
+<address>
+<a href=mailto:ron@arsdigita.com>ron@arsdigita.com</a>
+</address>
+</body>
+</html>

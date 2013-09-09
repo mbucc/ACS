@@ -1,31 +1,26 @@
 # /file-storage/version-upload-2.tcl
-#
-# by aure@arsdigita.com mid-1999
-#
-# extended in January 2000 by randyg@arsdigita.com
-# to accomodate general permission system
-#
-# $Id: version-upload.tcl,v 3.1 2000/03/11 07:59:48 aure Exp $
-
-ad_page_variables {
+ad_page_contract {
+    @author aure@arsdigita.com
+    @creation_date mid-1999
+    @cvs-id version-upload.tcl,v 3.4.2.5 2000/09/22 01:37:49 kevin Exp
+   
+    extended in January 2000 by randyg@arsdigita.com
+    to accomodate general permission system
+} {
     {return_url}
-    {file_id}
-    {group_id ""}
+    {file_id:naturalnum}
+    {group_id:naturalnum ""}
 }
 
-set db [ns_db gethandle]
-
-set user_id [ad_verify_and_get_user_id]
-
-ad_maybe_redirect_for_registration
+set user_id [ad_maybe_redirect_for_registration]
 
 set exception_text ""
 set exception_count 0
 
-set version_id [database_to_tcl_string $db "
-    select version_id from fs_versions_latest where file_id = $file_id"]
+set version_id [db_string unused "
+    select version_id from fs_versions_latest where file_id = :file_id"]
 
-if ![fs_check_write_p $db $user_id $version_id $group_id] {
+if ![fs_check_write_p $user_id $version_id $group_id] {
     incr exception_count
     append exception_text "<li>You can't write into this file"
 }
@@ -41,19 +36,15 @@ if { $exception_count> 0 } {
     return 0
 }
 
-set title "Upload New Version of [database_to_tcl_string $db "select file_title from fs_files where file_id=$file_id"]"
+set title "Upload New Version of [db_string unused "select file_title from fs_files where file_id=:file_id"]"
 
 set navbar [ad_context_bar_ws [list "" [ad_parameter SystemName fs]] "Upload New Version"]
 
-set version_id [database_to_tcl_string $db "select fs_version_id_seq.nextval from dual"]
-
-# release the database handle
-
-ns_db releasehandle $db
+set version_id [db_string unused "select fs_version_id_seq.nextval from dual"]
 
 # serve the page
 
-ns_return 200 text/html "
+doc_return  200 text/html "
 
 [ad_header $title]
 
@@ -61,10 +52,9 @@ ns_return 200 text/html "
 
 $navbar
 
-<hr>
+<hr align=left>
 <form enctype=multipart/form-data method=POST action=version-upload-2>
 
-<form  method=POST action=version-upload-2>
 [export_form_vars file_id version_id return_url]
 
 <table>
@@ -97,5 +87,4 @@ Version Notes:</td>
 </form>
 
 [ad_footer [fs_system_owner]]"
-
 

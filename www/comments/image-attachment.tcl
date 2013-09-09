@@ -1,25 +1,32 @@
-# $Id: image-attachment.tcl,v 3.0 2000/02/06 03:37:16 ron Exp $
-# Present a pretty page with caption and image info with an IMG tag.
-# This page should only get called for image attachments; any other
-# attachments should be sent directly to 
-# /comments/attachment/[comment_id]/[filename]
+# www/comments/image-attachment.tcl
 
-# Stolen from general_comments.
+ad_page_contract {
+    Present a pretty page with caption and image info with an IMG tag.
 
-set_the_usual_form_variables
-# comment_id
+    @param comment_id
+    @cvs-id image-attachment.tcl,v 3.1.6.5 2000/09/22 01:37:16 kevin Exp
+} {
+    {comment_id:naturalnum,notnull}
+}
 
-set db [ns_db gethandle]
 
-set selection [ns_db 1row $db "select url_stub, nvl(page_title, url_stub) as page_title, file_type, caption, original_width, original_height, client_file_name, users.user_id, users.first_names, users.last_name, users.email
-from comments, users, static_pages
-where comment_id = $comment_id
-and users.user_id = comments.user_id
-and static_pages.page_id = comments.page_id"]
+set selection [db_0or1row comments_image_attach_comment_data_get {
+    select url_stub, nvl(page_title, url_stub) as page_title, file_type, caption, 
+           original_width, original_height, client_file_name, 
+           users.user_id, users.first_names, users.last_name, users.email
+    from comments, users, static_pages
+    where comment_id = :comment_id
+    and users.user_id = comments.user_id
+    and static_pages.page_id = comments.page_id
+}]
 
-set_variables_after_query
+if {$selection == 0} {
+    ad_return_complaint "Invalid comment id" "Command id could not be found."
+    db_release_unused_handles
+    return
+}
 
-ns_return 200 text/html "[ad_header "Image Attachment"]
+doc_return  200 text/html "[ad_header "Image Attachment"]
 
 <h2>Image Attachment</h2>
 
@@ -34,7 +41,7 @@ for comment on <a href=\"$url_stub\">$page_title</a>
 </center>
 
 <hr>
-<a href=\"/shared/community-member.tcl?user_id=$user_id\">$first_names $last_name</a>
+<a href=\"/shared/community-member?user_id=$user_id\">$first_names $last_name</a>
 </body>
 </html>
 "

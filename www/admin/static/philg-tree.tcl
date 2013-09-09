@@ -1,19 +1,25 @@
-# $Id: philg-tree.tcl,v 3.0 2000/02/06 03:30:25 ron Exp $
-set db [ns_db gethandle]
+# /www/admin/static/philg-tree.tcl
 
-set selection [ns_db select $db "select page_id, url_stub, page_title, accept_comments_p, accept_links_p from static_pages order by url_stub"]
+ad_page_contract {
+    Prints out every 100th url stub
 
-ReturnHeaders
+    @author philg@mit.edu
+    @creation-date Jul 8 2000
+
+    @cvs-id philg-tree.tcl,v 3.0.12.4 2000/09/22 01:36:09 kevin Exp
+} {
+
+}
+
+set sql_query "select page_id, url_stub, page_title, accept_comments_p, accept_links_p from static_pages order by url_stub"
 
 set count 0
 set whole_page ""
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+db_foreach url_stub_loop $sql_query {
     incr count
     if { [expr $count%100] == 0 } {
 	append whole_page "$url_stub<br>"
     }
 }
 
-ns_write $whole_page
-
+doc_return  200 text/html $whole_page

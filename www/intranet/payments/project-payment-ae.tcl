@@ -1,49 +1,71 @@
-# $Id: project-payment-ae.tcl,v 3.1.4.1 2000/03/17 08:23:08 mbryzek Exp $
-# File: /www/intranet/payments/project-payment-ae.tcl
-#
-# Author: mbryzek@arsdigita.com, Jan 2000
-#
-# Purpose: form to enter payments for a project
-#
+# /www/intranet/payments/project-payment-ae.tcl
 
-set_the_usual_form_variables 0
+ad_page_contract {
+    Purpose: form to enter payments for a project
 
-# group_id
-# maybe payment_id
+    @param group_id Must have this if we're adding a payment
+    @param payment_id Must have this if we're editing a payment
 
-set caller_id [ad_verify_and_get_user_id]
-ad_maybe_redirect_for_registration
+    @author mbryzek@arsdigita.com
+    @creation-date Jan 2000
+
+    @cvs-id project-payment-ae.tcl,v 3.7.2.7 2001/01/12 19:56:23 khy Exp
+} {
+    { group_id:naturalnum "" }
+    { payment_id:naturalnum "" }
+}
+
+if { [empty_string_p $payment_id] && [empty_string_p $group_id] } {
+    ad_return_error "Missing parameter" "Either group_id or payment_id must be specified"
+    return
+}
+
+set caller_id [ad_maybe_redirect_for_registration]
 
 set fee_type_list [ad_parameter FeeTypes intranet]
 
-set db [ns_db gethandle]
+if {[empty_string_p $payment_id]} {
+    set project_name [db_string get_project_name \
+	    "select ug.group_name 
+               from user_groups ug
+              where ug.group_id = :group_id"]
 
-set project_name [database_to_tcl_string $db "select 
-group_name from user_groups ug
-where group_id = $group_id"]
-
-
-if {![info exists payment_id] || [empty_string_p $payment_id]} {
-    set payment_id [database_to_tcl_string $db "select im_project_payment_id_seq.NEXTVAL from dual"]
+    set add_delete_text 0
+    set payment_id [db_nextval "im_project_payment_id_seq"]
     set page_title "Add payment  for $project_name" 
+    set context_bar [ad_context_bar_ws [list [im_url_stub]/projects/ "Projects"] [list [im_url_stub]/projects/view?[export_url_vars group_id] "One project"] [list index?[export_url_vars group_id] Payments] "Add payment"]
     set button_name "Add payment"
 
+    # Let's default start_block to something close to today
+    if { ![db_0or1row nearest_start_block_select {
+	select to_char(min(sb.start_block),'Month DD, YYYY') as start_block
+	  from im_start_blocks sb
+	where sb.start_block >= trunc(sysdate)}] } {
+	    ad_return_error "Start block error" "The intranet start blocks are either undefined or we do not have a start block for this week or later into the future."
+	    return
+	}
+	   
 } else {
-    set selection [ns_db 0or1row $db "select * from im_project_payments where
-payment_id = $payment_id"] 
-    if ![empty_string_p $selection] {
-        set_variables_after_query
-    }
+    db_0or1row get_payment_info \
+	    "select ug.group_name as project_name, ug.group_id,
+               to_char(p.start_block,'Month DD, YYYY') as start_block, 
+               p.fee, p.fee_type, p.note
+             from user_groups ug, im_project_payments p
+             where p.group_id = ug.group_id
+             and p.payment_id = :payment_id"
+ 
+    set add_delete_text 1
     set page_title "Edit payment for $project_name"
+    set context_bar [ad_context_bar_ws [list [im_url_stub]/projects/ "Projects"] [list [im_url_stub]/projects/view?[export_url_vars group_id] "One project"] [list index?[export_url_vars group_id] Payments] "Edit payment"]
     set button_name "Update"
 }
 
-set context_bar "[ad_context_bar [list "/" Home] [list "../index.tcl" "Intranet"] [list "../projects/index.tcl" "Projects"] [list "../projects/view.tcl?[export_url_vars group_id]"  "One project"] "Payment"]"
 
 set page_body "
 
-<form action=project-payment-ae-2.tcl method=post>
-[export_form_vars group_id payment_id]
+<form action=project-payment-ae-2 method=post>
+[export_form_vars group_id]
+[export_form_vars -sign payment_id]
 
 <TABLE CELLPADDING=5>
 
@@ -51,7 +73,10 @@ set page_body "
 <TD ALIGN=RIGHT>Start date of work:</TD>
 <TD> 
 <select name=start_block>
-[ad_db_optionlist $db "select to_char(start_block,'Month DD, YYYY'), start_block from im_start_blocks order by start_block asc" [value_if_exists start_block]]
+[db_html_select_options -select_option $start_block start_date_list \
+	"select to_char(start_block,'Month DD, YYYY'), start_block 
+         from im_start_blocks 
+         order by start_block asc"] 
 </select>
 </TD>
 </TR>
@@ -63,7 +88,6 @@ set page_body "
 </td>
 </tr>
 
-
 <TR>
 <TD ALIGN=RIGHT>Fee type:</TD>
 <TD><select name=fee_type>
@@ -72,14 +96,12 @@ set page_body "
 </TD>
 </TR>
 
-
-
-
 </TABLE>
 
 <P>Note:<BR>
 <BLOCKQUOTE>
-<TEXTAREA NAME=note COLS=45 ROWS=5 wrap=soft>[ns_quotehtml [value_if_exists note]]</TEXTAREA>
+<TEXTAREA NAME=note COLS=45 ROWS=5 wrap=soft>[ad_quotehtml [value_if_exists note]]
+</TEXTAREA>
 </BLOCKQUOTE>
 
 <P><CENTER>
@@ -87,8 +109,12 @@ set page_body "
 </CENTER>
 
 </FORM>
+
+[util_decode $add_delete_text 0 "" "<ul>
+  <li> <a href=delete?[export_url_vars payment_id]>Delete this payment</a>
+</ul>
+"]
+
 "
 
-ns_db releasehandle $db
-
-ns_return 200 text/html [ad_partner_return_template]
+doc_return  200 text/html [im_return_template]

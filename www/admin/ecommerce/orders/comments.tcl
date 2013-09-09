@@ -1,19 +1,23 @@
-# $Id: comments.tcl,v 3.0 2000/02/06 03:18:56 ron Exp $
-set_the_usual_form_variables
-# order_id
+#  www/admin/ecommerce/orders/comments.tcl
+ad_page_contract {
+  Add and edit comments for an order.
 
-set db [ns_db gethandle]
+  @author Eve Andersson (eveander@arsdigita.com)
+  @creation-date Summer 1999
+  @cvs-id comments.tcl,v 3.1.6.3 2000/08/16 16:28:51 seb Exp
+} {
+  order_id:integer,notnull
+}
 
-ReturnHeaders
-ns_write "[ad_admin_header "Comments"]
+doc_body_append "[ad_admin_header "Comments"]
 
 <h2>Comments</h2>
 
-[ad_admin_context_bar [list "../" "Ecommerce"] [list "index.tcl" "Orders"] [list "one.tcl?order_id=$order_id" "One Order"] "Comments"]
+[ad_admin_context_bar [list "../" "Ecommerce"] [list "index" "Orders"] [list "one?[export_url_vars order_id]" "One Order"] "Comments"]
 
 <hr>
 
-<form method=post action=comments-edit.tcl>
+<form method=post action=comments-edit>
 [export_form_vars order_id]
 
 Please add or edit comments below:
@@ -21,7 +25,7 @@ Please add or edit comments below:
 <br>
 
 <blockquote>
-<textarea name=cs_comments rows=15 cols=50 wrap>[database_to_tcl_string $db "select cs_comments from ec_orders where order_id=$order_id"]</textarea>
+<textarea name=cs_comments rows=15 cols=50 wrap>[db_string comments_select "select cs_comments from ec_orders where order_id=:order_id"]</textarea>
 </blockquote>
 
 <p>

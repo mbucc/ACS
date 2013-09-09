@@ -1,0 +1,118 @@
+<html><head><title>The Hitchikers Guide to the ACS</title></head>
+<body bgcolor=#ffffff>
+<table>
+<tr>
+<td>
+<a href="http://photo.net/photo/pcd0074/josh-7.tcl">
+    <img src="http://photo.net/photo/pcd0074/josh-7.1.jpg"></a>
+<td>
+
+<h2>The Hitchhiker's Guide to the ACS</h2>
+by <a href="mailto:bquinn@arsdigita.com">Bryan Quinn</a>,
+<a href="mailto:docwolf@arsdigita.com">Adam Farkas</a>,
+<a href="mailto:dhoffman@arsdigita.com">Doug Hoffman</a>, 
+<a href="mailto:iwashima@mit.edu">Hiroyoshi Iwashima</a>,
+<a href="mailto:ryanlee@mit.edu">Ryan Lee</a> and
+<a href="mailto:rjasuja@arsdigita.com">Ravi Jasuja</a>,
+</tr>
+</table>
+<hr>
+
+<! -- Insert text here>
+<a name="ACS"></a>
+<h3>Installing the ArsDigita Community System</h3>
+
+<ol>
+
+  <li>Download the following components from the ArsDigita <a href="http://www.arsdigita.com/download/" >download</a> page to the web home directory:<p>
+  <ul>
+
+    <li>ArsDigita Community System<p>
+
+  </ul>
+
+  <li>Uncompress the downloaded components<p>
+
+  <ul>
+<pre>
+$ tar -xzf acs-3.2.3.tar.gz
+</pre>
+
+    <li>You should have a <em>acs</em> directory tree in the web home directory.<p>
+
+  </ul>
+
+  <li>copy the acs tree to /webroot/{service_name} for every ACS server run on this system<p>
+
+  <ul>
+    <li>Example:  To set up two acs comunities:   www.arfdigita.org and dev.arfdigita.org we need two seperate acs dirs under <em>/webroot</em>.  The dir names, {service_name}, used under webroot are simply names to distinquish services from eachother
+<pre>
+$ cp -r acs /webroot/alex
+$ cp -r acs /webroot/alex-dev
+</pre>
+
+    <li><b>Note:</b>  You will have to create another oracle account, tablespace beyond what we did for web to support multiple servers on the same system.<p>
+
+  </ul>
+
+  <li>Create <em>/webroot/aol30/{service_name}.ini</em> files for each server.<p>
+
+  <ul>
+
+    <li>Start with the <a href="http://www.arsdigita.com/install/service-name.ini" >service-name.ini</a> template and copy it to /webroot/aol30/{service_name}.ini<p>
+
+    <li>Change each occurance of User=service_name to:<p>
+    <ul>
+      <li>User=web in alex.ini<p>
+      <li>User=web-dev in alex-dev.ini ( remember this oracle account needs to be created! )<p>
+
+      <li><b>Note:</b> we should really change this in the template to service_database_username...<p>
+    </ul>
+    <li>Change each occurance of Password=service_database_password to:<p>
+    <ul>
+      <li>User=web in alex.ini<p>
+      <li>User=web-dev in alex-dev.ini ( or whatever oracle password was assigned to web-dev! )<p>
+    </ul>
+    <li>Change each occurance of Hostname=service_domain to:<p>
+    <ul>
+      <li>Hostname=www.arfdigita.org in alex.ini<p>
+      <li>Hostname=dev.arfdigita.org in alex-dev.ini<p>
+
+      <li><b>Note:</b> we should really change this in the template to service_ipname...<p>
+    </ul>
+    <li>Change each occurance of service_name=service_domain community system to:<p>
+    <ul>
+      <li>service_name=Alex's community system in alex.ini<p>
+      <li>service_name=Alex-Dev's community system in alex-dev.ini<p>
+
+      <li><b>Note:</b> we should really change this in the template to service_pretty_name_for_acs...<p>
+    </ul>
+
+    <li>Change each occurance of ServerLog=/home/nsadmin/log/service_name-error.log to:<p>
+    <ul>
+      <li>ServerLog=/webroot/aol30/log/alex-error.log in alex.ini<p>
+      <li>ServerLog=/webroot/aol30/log/alex-dev--error.log in alex-dev.ini<p>
+
+    </ul>
+
+    <li><b>Note:</b> this needs to be automated!!!!<p>
+  </ul>
+
+  <li>Feed the geography tables into oracle via sqlloader
+
+  <ul>
+
+    <li> make sure your bashrc is correct for the web account!!!<p>
+
+    <li>cd /webroot/alex/www/install<p>
+
+    <li>./load-geo-tables web/web ( for each server with the right accnts...  =) <p>
+
+    <li>cd /webroot/alex/www/doc/sql<p>
+
+    <li>./load-site-wide-search web web changeme
+
+</ul>
+
+</body>
+</html>

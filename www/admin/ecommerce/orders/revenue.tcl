@@ -1,11 +1,18 @@
-# $Id: revenue.tcl,v 3.0 2000/02/06 03:19:30 ron Exp $
-ReturnHeaders
+# /www/admin/ecommerce/orders/revenue.tcl
+ad_page_contract {
+  Financial reports.
 
-ns_write "[ad_admin_header "Financial Reports"]
+  @author Eve Andersson (eveander@arsdigita.com)
+  @creation-date Summer 1999
+  @cvs-id revenue.tcl,v 3.1.2.3 2000/08/17 15:19:15 seb Exp
+} {
+}
+
+doc_body_append "[ad_admin_header "Financial Reports"]
 
 <h2>Financial Reports</h2>
 
-[ad_admin_context_bar [list "../" "Ecommerce"] [list "index.tcl" "Orders"] "Financial Reports"]
+[ad_admin_context_bar [list "../" "Ecommerce"] [list "index" "Orders"] "Financial Reports"]
 
 <hr>
 
@@ -13,26 +20,20 @@ ns_write "[ad_admin_header "Financial Reports"]
 <tr><td><b>Period</b><td colspan=2><b>Revenue</b> <sup>1</sup></td></tr>
 "
 
-
-set db [ns_db gethandle]
-
-set selection [ns_db select $db "select to_char(inserted_date,'YYYY') as transaction_year, to_char(inserted_date,'Q') as transaction_quarter, sum(decode(transaction_type,'charge',transaction_amount,-1*transaction_amount)) as revenue
+set revenue_sum 0
+db_foreach reportable_transactions_select "select to_char(inserted_date,'YYYY') as transaction_year, to_char(inserted_date,'Q') as transaction_quarter, sum(decode(transaction_type,'charge',transaction_amount,-1*transaction_amount)) as revenue
 from ec_fin_transactions_reportable
 group by to_char(inserted_date,'YYYY'), to_char(inserted_date,'Q')
-order by to_char(inserted_date,'YYYY') || to_char(inserted_date,'Q')"]
-
-set revenue_sum 0
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+order by to_char(inserted_date,'YYYY') || to_char(inserted_date,'Q')" {
     set revenue_sum [expr $revenue_sum + $revenue]
-    ns_write "<tr><td>$transaction_year Q$transaction_quarter<td align=right>[ec_pretty_price $revenue]</td><td></td></tr>\n"
+    doc_body_append "<tr><td>$transaction_year Q$transaction_quarter<td align=right>[ec_pretty_price $revenue]</td><td></td></tr>\n"
     if { $transaction_quarter == "4" } {
-	ns_write "<tr><td>total for $transaction_year<td align=right><font size=+1 color=green>[ec_pretty_price $revenue_sum]</td><td></td></tr>\n"
+	doc_body_append "<tr><td>total for $transaction_year<td align=right><font size=+1 color=green>[ec_pretty_price $revenue_sum]</td><td></td></tr>\n"
 	set revenue_sum 0
     }
 }
 
-ns_write "<tr><td>&nbsp;</td><td></td><td></td></tr>
+doc_body_append "<tr><td>&nbsp;</td><td></td><td></td></tr>
 
 <tr><td><b>Period<td colspan=2><b>Product Sales</b> <sup>2</sup></tr>
 "
@@ -49,79 +50,73 @@ ns_write "<tr><td>&nbsp;</td><td></td><td></td></tr>
 # of P & A's Guide to Web Publishing).
 # Then, group this stuff by year & quarter for display purposes.
 
-set selection [ns_db select $db "select to_char(shipment_date,'YYYY') as shipment_year,
+set price_sum 0
+set shipping_sum 0
+set tax_sum 0
+
+db_foreach money_select "select to_char(shipment_date,'YYYY') as shipment_year,
 to_char(shipment_date,'Q') as shipment_quarter,
 nvl(sum(bal_price_charged),0) as total_price_charged,
 nvl(sum(bal_shipping_charged + decode(mv.shipment_id,(select min(s2.shipment_id) from ec_shipments s2 where s2.order_id=mv.order_id),(select nvl(o.shipping_charged,0)-nvl(o.shipping_refunded,0) from ec_orders o where o.order_id=mv.order_id),0)),0) as total_shipping_charged,
 nvl(sum(bal_tax_charged + decode(mv.shipment_id,(select min(s2.shipment_id) from ec_shipments s2 where s2.order_id=mv.order_id),(select nvl(o.shipping_tax_charged,0)-nvl(o.shipping_tax_refunded,0) from ec_orders o where o.order_id=mv.order_id),0)),0) as total_tax_charged
 from ec_items_money_view mv
 group by to_char(shipment_date,'YYYY'), to_char(shipment_date,'Q')
-order by to_char(shipment_date,'YYYY') || to_char(shipment_date,'Q')"]
-
-set price_sum 0
-set shipping_sum 0
-set tax_sum 0
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+order by to_char(shipment_date,'YYYY') || to_char(shipment_date,'Q')" {
     set price_sum [expr $price_sum + $total_price_charged]
     set shipping_sum [expr $shipping_sum + $total_shipping_charged]
     set tax_sum [expr $tax_sum + $total_tax_charged]
-    ns_write "<tr><td>$transaction_year Q$transaction_quarter<td align=right>Price: [ec_pretty_price $total_price_charged] | Shipping: [ec_pretty_price $total_shipping_charged] | Tax [ec_pretty_price $total_tax_charged]</td><td></td></tr>\n"
+    doc_body_append "<tr><td>$transaction_year Q$transaction_quarter<td align=right>Price: [ec_pretty_price $total_price_charged] | Shipping: [ec_pretty_price $total_shipping_charged] | Tax [ec_pretty_price $total_tax_charged]</td><td></td></tr>\n"
     if { $transaction_quarter == "4" } {
-	ns_write "<tr><td>total for $transaction_year<td align=right><font size=+1 color=green>Price: [ec_pretty_price $price_sum] | Shipping [ec_pretty_price $shipping_sum] | Tax [ec_pretty_price $tax_sum]</td><td></td></tr>\n"
+	doc_body_append "<tr><td>total for $transaction_year<td align=right><font size=+1 color=green>Price: [ec_pretty_price $price_sum] | Shipping [ec_pretty_price $shipping_sum] | Tax [ec_pretty_price $tax_sum]</td><td></td></tr>\n"
 	set price_sum 0
 	set shipping_sum 0
 	set tax_sum 0
     }
 }
 
-ns_write "<tr><td>&nbsp;</td><td></td><td></td></tr>
+doc_body_append "<tr><td>&nbsp;</td><td></td><td></td></tr>
 
 <tr><td><b>Period<td colspan=2><b>Gift Certificate Sales</b> <sup>3</sup></tr>
 "
 
-set selection [ns_db select $db "select to_char(issue_date,'YYYY') as issue_year,
+set amount_sum 0
+
+db_foreach gift_certificates_select "select to_char(issue_date,'YYYY') as issue_year,
 to_char(issue_date,'Q') as issue_quarter,
 nvl(sum(amount),0) as amount
 from ec_gift_certificates where gift_certificate_state in ('authorized_plus_avs','authorized_minus_avs')
 group by to_char(issue_date,'YYYY'), to_char(issue_date,'Q')
-order by to_char(issue_date,'YYYY') || to_char(issue_date,'Q')"]
-
-set amount_sum 0
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+order by to_char(issue_date,'YYYY') || to_char(issue_date,'Q')" {
     set amount_sum [expr $amount_sum + $amount]
-    ns_write "<tr><td>$issue_year Q$issue_quarter<td align=right>[ec_pretty_price $amount]</td><td></td></tr>\n"
+    doc_body_append "<tr><td>$issue_year Q$issue_quarter<td align=right>[ec_pretty_price $amount]</td><td></td></tr>\n"
     if { $issue_quarter == "4" } {
-	ns_write "<tr><td>total for $issue_year<td align=right><font size=+1 color=green>[ec_pretty_price $amount_sum]</td><td></td></tr>\n"
+	doc_body_append "<tr><td>total for $issue_year<td align=right><font size=+1 color=green>[ec_pretty_price $amount_sum]</td><td></td></tr>\n"
 	set amount_sum 0
     }
 }
 
-ns_write "<tr><td>&nbsp;</td><td></td><td></td></tr>
+doc_body_append "<tr><td>&nbsp;</td><td></td><td></td></tr>
 
 <tr><td><b>Period<td colspan=2><b>Gift Certificates Issued</b> <sup>4</sup></td></tr>
 "
 
-set selection [ns_db select $db "select to_char(issue_date,'YYYY') as issue_year,
+set amount_sum 0
+
+db_foreach gift_certificates_select "select to_char(issue_date,'YYYY') as issue_year,
 to_char(issue_date,'Q') as issue_quarter,
 nvl(sum(amount),0) as amount
 from ec_gift_certificates where gift_certificate_state = 'authorized'
 group by to_char(issue_date,'YYYY'), to_char(issue_date,'Q')
-order by to_char(issue_date,'YYYY') || to_char(issue_date,'Q')"]
-
-set amount_sum 0
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+order by to_char(issue_date,'YYYY') || to_char(issue_date,'Q')" {
     set amount_sum [expr $amount_sum + $amount]
-    ns_write "<tr><td>$issue_year Q$issue_quarter<td align=right>[ec_pretty_price $amount]</td><td></td></tr>\n"
+    doc_body_append "<tr><td>$issue_year Q$issue_quarter<td align=right>[ec_pretty_price $amount]</td><td></td></tr>\n"
     if { $issue_quarter == "4" } {
-	ns_write "<tr><td>total for $issue_year<td align=right><font size=+1 color=green>[ec_pretty_price $amount_sum]</td><td></td></tr>\n"
+	doc_body_append "<tr><td>total for $issue_year<td align=right><font size=+1 color=green>[ec_pretty_price $amount_sum]</td><td></td></tr>\n"
 	set amount_sum 0
     }
 }
 
-ns_write "<tr><td>&nbsp;</td><td></td><td></td></tr>
+doc_body_append "<tr><td>&nbsp;</td><td></td><td></td></tr>
 
 <tr><td><b>Expires<td colspan=2><b>Gift Certificates Outstanding</b> <sup>5</sup></tr>
 "
@@ -139,25 +134,23 @@ ns_write "<tr><td>&nbsp;</td><td></td><td></td></tr>
 # (since that's the part that would be reinstated if part of the order were
 # unable to be shipped)
 
-set selection [ns_db select $db "select to_char(expires,'YYYY') as expires_year,
+set amount_outstanding_sum 0
+
+db_foreach gift_certificates_approved_select "select to_char(expires,'YYYY') as expires_year,
 to_char(expires,'Q') as expires_quarter,
 nvl(sum(gift_certificate_amount_left(gift_certificate_id)),0) + nvl(sum(ec_gift_cert_unshipped_amount(gift_certificate_id)),0) as amount_outstanding
 from ec_gift_certificates_approved
 group by to_char(expires,'YYYY'), to_char(expires,'Q')
-order by to_char(expires,'YYYY') || to_char(expires,'Q')"]
-
-set amount_outstanding_sum 0
-while { [ns_db getrow $db $selection] } {
-    set_variables_after_query
+order by to_char(expires,'YYYY') || to_char(expires,'Q')" {
     set amount_outstanding_sum [expr $amount_outstanding_sum + $amount_outstanding]
-    ns_write "<tr><td>$expires_year Q$expires_quarter<td align=right>[ec_pretty_price $amount_outstanding]</td><td></td></tr>\n"
+    doc_body_append "<tr><td>$expires_year Q$expires_quarter<td align=right>[ec_pretty_price $amount_outstanding]</td><td></td></tr>\n"
     if { $expires_quarter == "4" } {
-	ns_write "<tr><td>total for $expires_year<td align=right><font size=+1 color=green>[ec_pretty_price $amount_outstanding_sum]</td><td></td></tr>\n"
+	doc_body_append "<tr><td>total for $expires_year<td align=right><font size=+1 color=green>[ec_pretty_price $amount_outstanding_sum]</td><td></td></tr>\n"
 	set amount_sum 0
     }
 }
 
-ns_write "</table>
+doc_body_append "</table>
 
 <p>
 <br>

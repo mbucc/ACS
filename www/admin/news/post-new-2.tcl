@@ -1,113 +1,79 @@
+# /www/admin/news/post-new-2.tcl
 #
-# /www/news/admin/post-new-2.tcl
-#
-# process the input form for the new news item
-#
-# Author: jkoontz@arsdigita.com March 8, 2000
-#
-# $Id: post-new-2.tcl,v 3.1.2.2 2000/04/28 15:09:12 carsten Exp $
 
-set_the_usual_form_variables 0
-# maybe return_url, name
-# news_item_id, title, body, html_p, AOLserver ns_db magic vars that can be 
-# kludged together to form release_date and expiration_date
+ad_page_contract {
+    process the input form for the new news item
 
-if { ![info exists return_url] } {
-    set return_url "index.tcl"
-}
-
-set db [ns_db gethandle]
-set user_id [ad_verify_and_get_user_id $db]
-set creation_ip_address [ns_conn peeraddr]
-
-set exception_count 0
-set exception_text ""
-
-
-if [catch  {
-    ns_dbformvalue [ns_conn form] release_date date release_date
-    ns_dbformvalue [ns_conn form] expiration_date date expiration_date} errmsg] {
-    incr exception_count
-    append exception_text "<li>Please make sure your dates are valid."
-} else {
-
-    set expire_laterthan_future_p [database_to_tcl_string $db "select to_date('$expiration_date', 'yyyy-mm-dd')  - to_date('$release_date', 'yyyy-mm-dd')  from dual"]
-    if {$expire_laterthan_future_p <= 0} {
-	incr exception_count
-	append exception_text "<li>Please make sure the expiration date is later than the release date."
+    @author jkoontz@arsdigita.com
+    @creation-date March 8, 2000
+    @cvs-id post-new-2.tcl,v 3.5.2.15 2001/01/09 22:02:59 khy Exp
+} {
+    {return_url ""}
+    news_item_id:verify,integer,notnull
+    title:html,notnull
+    body:html,notnull
+    html_p:notnull
+    {scope "public"}
+    {group_id:integer ""}
+    release_date:array,date
+    expiration_date:array,date
+} -validate {
+    expire_after_release -requires {release_date expiration_date} {
+	if {[string compare $release_date(date) $expiration_date(date)] >= 0} {
+	    ad_complain "Please make sure the expiration date is later than the release date."
+	}
     }
 }
 
 
-if { ![info exists title] || [empty_string_p $title]} {
-    incr exception_count
-    append exception_text "<li>Please enter a title."
-}
-if { ![info exists body] || [empty_string_p $body]} {
-    incr exception_count
-    append exception_text "<li>Please enter the full story."
-}
+set user_id [ad_verify_and_get_user_id]
+set creation_ip_address [ns_conn peeraddr]
 
-if {$exception_count > 0} { 
-    ad_return_complaint $exception_count $exception_text
-    return
-}
-
-if { ![exists_and_not_null scope] } {
-    set scope "public"
-}
 
 set additional_clause ""
 if { [string match $scope "group"] && ![empty_string_p $group_id] } {
-    set additional_clause "and group_id = $group_id"
+    set additional_clause "and group_id = :group_id"
 }
 
-# Get the newsgroup_id for this board
-set newsgroup_id [database_to_tcl_string_or_null $db "select newsgroup_id 
-from newsgroups
-where scope = '$scope' $additional_clause"]
 
 # Check if there is no news group for this scope
-if { [empty_string_p $newsgroup_id] } { 
+if { ![db_0or1row news_id_get "select newsgroup_id 
+from newsgroups where scope = :scope $additional_clause"]} {
     # Create the newsgroup for the group
-    ns_db dml $db "insert into newsgroups (newsgroup_id, scope, group_id) values (newsgroup_id_sequence.nextval, '$scope', $group_id)"
+    set newsgroup_id [db_nextval newsgroup_id_sequence]
+    db_dml news_id_insert "insert into newsgroups (newsgroup_id, scope, group_id) values (:newsgroup_id, :scope, :group_id)"
 }
 
 # Let's use data pipeline here to handle the clob for body, and the double click situation
-set form_setid [ns_getform]
-ns_set put $form_setid dp.news_items.news_item_id $news_item_id
-ns_set put $form_setid dp.news_items.newsgroup_id $newsgroup_id
+set form_setid [ns_set create]
+ns_set put $form_setid dp.news_items.news_item_id.int $news_item_id
+ns_set put $form_setid dp.news_items.newsgroup_id.int $newsgroup_id
 ns_set put $form_setid dp.news_items.title $title
 ns_set put $form_setid dp.news_items.body.clob $body
 ns_set put $form_setid dp.news_items.html_p $html_p
 ns_set put $form_setid dp.news_items.approval_state approved
 ns_set put $form_setid dp.news_items.approval_date.expr sysdate
 ns_set put $form_setid dp.news_items.approval_ip_address $creation_ip_address
-ns_set put $form_setid dp.news_items.release_date $release_date
-ns_set put $form_setid dp.news_items.expiration_date $expiration_date
+ns_set put $form_setid dp.news_items.release_date $release_date(date)
+ns_set put $form_setid dp.news_items.expiration_date $expiration_date(date)
 ns_set put $form_setid dp.news_items.creation_date.expr sysdate
-ns_set put $form_setid dp.news_items.creation_user $user_id
+ns_set put $form_setid dp.news_items.creation_user.int $user_id
 ns_set put $form_setid dp.news_items.creation_ip_address $creation_ip_address
 
-if [catch { dp_process -db $db -where_clause "news_item_id=$news_item_id" } errmsg] {
-    ns_log Error "/admin/news/post-edit-2.tcl choked:  $errmsg"
-    ad_return_error "Insert Failed" "The Database did not like what you typed.  This is probably a bug in our code.  Here's what the database said:
-<blockquote>
-<pre>
-$errmsg
-</pre>
-</blockquote>
-"
-   return
+
+if [catch { dp_process -set_id $form_setid -where_clause "news_item_id=:news_item_id" } errmsg] {
+    ns_log Error "/admin/news/post-edit-2 choked:  $errmsg"
+    ad_return_error "Insert Failed" "The Database did not like what you typed.
+    This is probably a bug in our code.  Here's what the database said:
+    <blockquote>
+    <pre>
+    $errmsg
+    </pre>
+    </blockquote>
+    "
+    return
 }
 
+db_release_unused_handles
 
-# ad_dbclick_check_dml $db news news_id $news_id $return_url "
-# insert into news
-# (news_id, title, body, html_p, approved_p, release_date, expiration_date, creation_date, creation_user, creation_ip_address, scope) 
-# values 
-# ($news_id, '$QQtitle', '$QQbody', '$html_p', 't', '$release_date', '$expiration_date', sysdate, $user_id, '$creation_ip_address', 'public')
-# "
-
-
-ad_returnredirect "index.tcl"
+ad_returnredirect $return_url

@@ -1,101 +1,100 @@
-# $Id: place-ad-3.tcl,v 3.1 2000/03/10 23:58:29 curtisg Exp $
+# /www/gc/place-ad-3.tcl
+
+ad_page_contract {
+    @cvs_id place-ad-3.tcl,v 3.3.2.10 2001/01/10 19:03:10 khy Exp
+} {
+    domain_id:naturalnum
+    primary_category
+    one_line:notnull,nohtml
+    full_ad:html,notnull
+    html_p
+    expires:array,date
+    {state ""}
+    {country ""}
+    {wanted_p ""}
+    {ad_auction_p ""}
+    {manufacturer ""}
+    {model "" }
+    {item_size "" }
+    {color "" }
+    {us_citizen_p "" }
+} -validate {
+    full_ad_3600 -requires { full_ad } {
+	if {[string length $full_ad] > 3600} {
+	    ad_complain 
+	}
+    }
+
+    full_ad_uppercase -requires { full_ad } {
+	if {[ad_parameter DisallowAllUppercase gc 1] && [gc_shouting_p $full_ad] } {
+	    ad_complain 
+	}
+    }
+
+    one_line_uppercase -requires { one_line } {
+	if {[ad_parameter DisallowAllUppercase gc 1] && [gc_shouting_p $one_line] } {
+	    ad_complain 
+	}
+    }
+
+    one_line_reduced -requires { one_line } {
+	if { [ad_parameter DisallowReducedInSubject gc 0] && [string first "reduced" [string tolower $one_line]] != -1 } {
+	    ad_complain 
+	}
+    }
+
+    one_line_exclamation_point -requires { one_line } {
+	if { [ad_parameter DisallowExclamationPointInSubject gc 0] && [string first "!" [string tolower $one_line]] != -1 } {
+	    ad_complain 
+	}
+    }
+
+    one_line_ebay -requires { one_line } {
+	if { [ad_parameter DisalloweBay gc ] && ([string first "ebay" [string tolower $one_line]] != -1) } {
+	    ad_complain 
+	}
+    }
+
+    full_ad_ebay -requires { full_ad } {
+	if { [ad_parameter DisalloweBay gc ] && ([string first "ebay" [string tolower $one_line]] != -1) } {
+	    ad_complain 
+	}
+    }
+} -errors {
+    primary_category {Category is NULL.  It looks like your browser isn't passing through all the variables.  The AOL browser has been known to screw up like this.  Probably it is time to get Netscape...}
+    one_line {Your ad must contain a one line summary.}
+    one_line:notnull {Your ad must contain a one line summary.}
+    full_ad {The ad must contain description text.}
+    full_ad:notnull {The ad must contain description text.}
+    full_ad_3600 {Please limit your ad to 3600 characters.}
+    expires {You must indicate an expiration date.}
+    one_line:nohtml {Please don't put any &lt; or &gt; characters in the subject line; you risk screwing up the entire forum by adding HTML tags to the subject.}
+    full_ad_uppercase {Your ad appears to be all uppercase.  ON THE INTERNET THIS IS CONSIDERED SHOUTING.  IT IS ALSO MUCH HARDER TO READ THAN MIXED CASE TEXT.  So we don't allow it, out of decorum and consideration for people who may be visually impaired.}
+    one_line_uppercase {Your one line appears to be all uppercase.  ON THE INTERNET THIS IS CONSIDERED SHOUTING.  IT IS ALSO MUCH HARDER TO READ THAN MIXED CASE TEXT.  So we don't allow it, out of decorum and consideration for people who may be visually impaired.}
+    one_line_reduced {Your ad contains the word "reduced" in the subject line.  Since you're posting an ad for the first time, it is difficult to see how the price could have been reduced.  Also, it is unclear as to why any buyer would care.  The price is either fair or not fair.  Whether you were at one time asking a higher price doesn't matter}
+    one_line_exclamation_point {Your ad contains an exclamation point.  That isn't really consistent with the design of this Web service, which is attempting to be subtle.}
+    one_line_ebay {Your one line description contains the string "ebay".  We assume that you're talking about the eBay auction Web service.  That's a wonderful service and we're very happy that you're using it.  But presumably the other people using this service are doing so because they aren't thrilled with eBay.} 
+    full_ad_ebay {Your ad contains the string "ebay".  We assume that you're talking about the eBay auction Web service.  That's a wonderful service and we're very happy that you're using it.  But presumably the other people using this service are doing so because they aren't thrilled with eBay.}   
+}
+
 if {[ad_read_only_p]} {
     ad_return_read_only_maintenance_message
     return
 }
 
-set_the_usual_form_variables
-
-
-# domain_id, primary_category, html_p, lots of others
 
 set user_id [ad_verify_and_get_user_id]
 
-set db [gc_db_gethandle]
+# This selects domain, full_noun, domain_type, auction_p, geocentric_p,
+# wtb_common_p, primary_maintainer_id, maintainer_email
 
-set selection [ns_db 1row $db [gc_query_for_domain_info $domain_id]]
-set_variables_after_query
+db_1row domain_info_get [gc_query_for_domain_info $domain_id]
 
-# OK, let's check the input
+set sql "select * from ad_integrity_checks where domain_id = :domain_id"
 
-set exception_text ""
 set exception_count 0
-
-if { ![info exists primary_category] || [empty_string_p $primary_category] } {
-    append exception_text "<li>Category is NULL.  It looks like your browser isn't passing through all the variables."
-    incr exception_count
-}
-
-
-if [catch  { ns_dbformvalue [ns_conn form] expires date expires } errmsg] {
-    incr exception_count
-    append exception_text "<li>Please make sure your expiration date is valid."
-}
-
-
-if { ![info exists expires] || $expires == "" } {
-    append exception_text "<li>Please type in an expiration date."
-    incr exception_count
-}
-
-if { [info exists full_ad] && ([empty_string_p $full_ad] || ![regexp {[A-Za-z]} $full_ad]) } {
-    append exception_text "<li>You forget to type anything for your ad"
-    incr exception_count
-}
-
-
-if { [info exists full_ad] && [string length $full_ad] > 3600} {
-    append exception_text "<li>Please limit your ad to 3600 characters"
-    incr exception_count
-}
-
-if { [info exists one_line] && [string match "*<*" $one_line] } {
-    append exception_text "<li>Please don't put any &lt; or &gt; characters in the subject line; you risk screwing up the entire forum by adding HTML tags to the subject.\n"
-    incr exception_count
-}
-
-if { [info exists one_line] && ([empty_string_p $one_line] || ![regexp {[A-Za-z]} $one_line]) } {
-    append exception_text "<li>You forget to type anything for your one-line summary.  So your ad won't be viewable from the main page."
-    incr exception_count
-}
-
-set disallow_uppercase_p [ad_parameter DisallowAllUppercase gc 1]
-
-if { $disallow_uppercase_p && [info exists full_ad] && $full_ad != "" && ![regexp {[a-z]} $full_ad] } {
-    append exception_text "<li>Your ad appears to be all uppercase.  ON THE INTERNET THIS IS CONSIDERED SHOUTING.  IT IS ALSO MUCH HARDER TO READ THAN MIXED CASE TEXT.  So we don't allow it, out of decorum and consideration for people who may be visually impaired."
-    incr exception_count
-}
-
-if { $disallow_uppercase_p && [info exists one_line] && $one_line != "" && ![regexp {[a-z]} $one_line] } {
-    append exception_text "<li>Your one line summary appears to be all uppercase.  ON THE INTERNET THIS IS CONSIDERED SHOUTING.  IT IS ALSO MUCH HARDER TO READ THAN MIXED CASE TEXT.  So we don't allow it, out of decorum and consideration for people who may be visually impaired."
-    incr exception_count
-}
-
-if { [ad_parameter DisallowReducedInSubject gc 0] && [info exists one_line] && [string first "reduced" [string tolower $one_line]] != -1 } {
-    append exception_text "<li>Your ad contains the word \"reduced\" in the subject line.  Since you're posting an ad for the first time, it is difficult to see how the price could have been reduced.  Also, it is unclear as to why any buyer would care.  The price is either fair or not fair.  Whether you were at one time asking a higher price doesn't matter."
-    incr exception_count
-}
-
-if { [ad_parameter DisallowExclamationPointInSubject gc 0] && [info exists one_line] && [string first "!" [string tolower $one_line]] != -1 } {
-    append exception_text "<li>Your ad contains an exclamation point.  That isn't really consistent with the design of this Web service, which is attempting to be subtle."
-    incr exception_count
-}
-
-set ebay_note "<li>You ad contains the string \"ebay\".  We assume that you're talking about the eBay auction Web service.  That's a wonderful service and we're very happy that you're using it.  But presumably the other people using [gc_system_name] are doing so because they aren't thrilled with eBay."
-
-if { [ad_parameter DisalloweBay gc 0] && [info exists one_line] && ([string first "ebay" [string tolower $one_line]] != -1) } {
-    append exception_text $ebay_note
-    incr exception_count
-}
-
-if { [ad_parameter DisalloweBay gc 0] && [info exists full_ad] && ([string first "ebay" [string tolower $full_ad]] != -1) } {
-    append exception_text $ebay_note
-    incr exception_count
-}
-
-set selection [ns_db select $db "select * from ad_integrity_checks where domain_id = $domain_id"]
-while {[ns_db getrow $db $selection]} {
-    set_variables_after_query
+set exception_text ""
+db_foreach integrity_check $sql -bind [ad_tcl_vars_to_ns_set domain_id] {
     # the interesting ones are $check_code (a piece of Tcl to be
     # executed) and $error_message, in case the code returns true
     if $check_code {
@@ -109,16 +108,13 @@ if { $exception_count > 0 } {
     return
 }
 
-
 append html "[gc_header "Approve Ad"]
 
 <h2>Approve Ad</h2>
 
-
 [ad_context_bar_ws_or_index [list "index.tcl" [gc_system_name]] [list "domain-top.tcl?[export_url_vars domain_id]" $full_noun] "Place Ad, Step 3"]
 
 <hr>
-
 
 <h3>One-line Summary</h3>
 
@@ -141,7 +137,6 @@ Here's what folks will see:
 
 </blockquote>"
 
-
 if { [info exists html_p] && $html_p == "t" } {
 
     append html "Note: if the story has lost all of its paragraph breaks then you
@@ -153,7 +148,6 @@ your browser's Back button to return to the submission form.
     append html " Note: if the story has a bunch of visible HTML tags then you probably should have selected \"HTML\" rather than \"Plain Text\".  Use your browser's Back button to return to the submission form.  " 
 }
 
-
 append html "<p>"
 
 if {$geocentric_p == "t"} {
@@ -161,11 +155,11 @@ if {$geocentric_p == "t"} {
     <blockquote>"
     
     if {[string length $state] > 0} {
-	append html "State: [ad_state_name_from_usps_abbrev $db $state] <br>"
+	append html "State: [ad_state_name_from_usps_abbrev $state] <br>"
     }
     
     if {[string length $country] > 0} {
-	append html "Country: [ad_country_name_from_country_code $db $country] <br>"
+	append html "Country: [ad_country_name_from_country_code $country] <br>"
     }
 }
 
@@ -185,17 +179,20 @@ will be placed.
 <p>
 <center>
 
-<form method=post action=\"place-ad-4.tcl\">
+<form method=post action=\"place-ad-4\">
 
 "
 
 # generate ad_id here so that we can trap double submissions
-set classified_ad_id [database_to_tcl_string $db "select classified_ad_id_sequence.nextval from dual"]
+set classified_ad_id [db_string ad_id_get "select classified_ad_id_sequence.nextval from dual"]
+
+set expires.month $expires(month)
+set expires.year $expires(year)
+set expires.day $expires(day)
 
 append html "
-<input type=hidden name=classified_ad_id value=\"$classified_ad_id\">
-[export_form_vars expires]
-[export_entire_form]
+[export_form_vars -sign classified_ad_id]
+[export_form_vars domain_id primary_category one_line full_ad html_p manufacturer model item_size color us_citizen_p state country wanted_p ad_auction_p expires.month expires.year expires.day]
 
 <input type=submit value=\"Place Ad\">
 </form>
@@ -205,4 +202,5 @@ append html "
 [gc_footer $maintainer_email]
 "
 
-ns_return 200 text/html $html
+doc_return  200 text/html $html
+
