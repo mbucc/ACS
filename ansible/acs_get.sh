@@ -8,22 +8,26 @@ VERS=$(grep ACS_VERSION acs_vars.yml | cut -d ':' -f 2 | tr -d ' ')
 DEST=acs
 
 DIRS="
-../bin
-../parameters
-../tcl
-../templates
-../www
+bin
+data
+packages
+parameters
+spam
+tcl
+templates
+users
+www
 "
 
 FILES="
-../readme.txt
+readme.txt
 "
 
 if [ ! -f acs-${VERS}.tgz ]; then 
     rm -rf $DEST
     mkdir $DEST
-    for d in $DIRS ; do cp -Rp $d $DEST; done
-    for f in $FILES; do cp -Rp $d $DEST; done
+    for d in $DIRS ; do cp -Rp ../$d $DEST; done
+    for f in $FILES; do cp -Rp ../$f $DEST; done
     tar czvf acs-${VERS}.tgz ./acs
     rm -rf $DEST
 fi

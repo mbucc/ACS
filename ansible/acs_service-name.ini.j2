@@ -48,7 +48,7 @@ SystemScope=on
 CacheADP=on
 
 [ns/server/{{ ACS_SERVICE_NAME }}]
-PageRoot={{ AOL_SERVER_WEBROOT }}/{{ DOMAIN_NAME }}/www
+PageRoot={{ AOL_SERVER_WEBROOT }}/{{ ACS_DOMAIN_NAME }}/www
 DirectoryFile=index.tcl, index.adp, index.html, index.htm 
 Webmaster={{ ACS_ADMINISTRATOR_EMAIL }}
 NoticeBgColor=#ffffff
@@ -102,7 +102,7 @@ NoExtension=text/plain
 .prc=application/x-pilot
 
 [ns/server/{{ ACS_SERVICE_NAME }}/tcl]
-Library={{ AOL_SERVER_WEBROOT }}/{{ DOMAIN_NAME }}/tcl
+Library={{ AOL_SERVER_WEBROOT }}/{{ ACS_DOMAIN_NAME }}/tcl
 
 [ns/servers]
 {{ ACS_SERVICE_NAME }}={{ ACS_DOMAIN_NAME }} community system
