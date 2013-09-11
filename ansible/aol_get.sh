@@ -2,12 +2,12 @@
 # Get AOL Server from BitBucket and build tarball.
 # Created: Tue Aug 27 18:52:34 EDT 2013
 
-ATAG=3.3
+ATAG=$(grep AOL_VERSION aol_vars.yml | cut -d ':' -f 2 | tr -d ' ')
 #ATAG=3.5-pre1
 #ACHECKOUT=aolserver_v35_bp
 #ACHECKOUT=aolserver_v35_b11  # didn't have include/Makefile.global.in
-#ACHECKOUT=aolserver_v35_pre1
-ACHECKOUT=aolserver3_3
+ACHECKOUT=aolserver_v35_pre1
+#ACHECKOUT=aolserver3_3
 
 if [ ! -d aolserver ]; then 
   git clone https://github.com/aolserver/aolserver.git

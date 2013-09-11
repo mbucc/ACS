@@ -2,12 +2,15 @@
 # Copy over and extract the ACS sources.
 # Created: Mon Sep  2 15:30:28 EDT 2013
 
+- name: Make sure /web/acs directory does not already exist.
+  file: path={{ AOL_SERVER_WEBROOT }}/acs state=absent
+
+- name: Make sure /web/acs directory does not already exist.
+  file: path={{ AOL_SERVER_WEBROOT }}/{{ ACS_DOMAIN_NAME }} state=absent
+
 - name: Copy the ACS source tarball to the destination host.
   copy: src=acs-{{ ACS_VERSION }}.tgz dest=/tmp
           owner={{ AOL_SERVER_USER }} group={{ AOL_SERVER_USER }} mode=644
-
-- name: Make sure /web/acs directory does not already exist.
-  file: path={{ AOL_SERVER_WEBROOT }}/acs state=absent
 
 - name: Extract the ACS sources.
   command: tar -zxf /tmp/acs-{{ ACS_VERSION }}.tgz -C {{ AOL_SERVER_WEBROOT }}
