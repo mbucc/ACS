@@ -2,17 +2,11 @@
 # Install AOL server.
 # ref: http://www.eveandersson.com/arsdigita/acs-install/aolserver
 
-# XXX: Figure out how to build tarball if needed.
-# Output from the following was:
-#     failed: [192.168.67.10] => {"failed": true, "item": "", "parsed": false}
-#     invalid output was: [sudo via ansible, key=jyinfugcmdnbbiirxftevlslhnjgvkbz] password:
-#     Sorry, try again.
-#- name: Check if we need to fetch tarball.
-#  command: test -f aolserver-3.3.0.tgz
-#  delegate_to: 127.0.0.1
-#  register: need_tarball
-#  ignore_errors: True
-
+#---------------------------------------------------------------------------
+#
+#                       U S E R S   A N D   G R O U P S
+#
+#---------------------------------------------------------------------------
 - name: Add nsadmin group
   group: name={{ AOL_SERVER_USER }} state=present
 
@@ -84,7 +78,46 @@
           owner={{ AOL_SERVER_USER }} group={{ AOL_SERVER_USER }} mode=644
 
 - name: Apply patch for "multiple definition of `_init'" linker error.
-  shell: /usr/bin/patch -p0 < aol_fix_duplicate__init.diff chdir=/tmp/{{ AOL_TARBALL_BASENAME }}
+  shell: /usr/bin/patch -p0 < aol_fix_duplicate__init.diff 
+      chdir=/tmp/{{ AOL_TARBALL_BASENAME }}
+
+- name: Copy over ns_cache tarball.
+  copy: src=nscache-1.5.tar.gz dest=/tmp
+          owner={{ AOL_SERVER_USER }} group={{ AOL_SERVER_USER }} mode=644
+
+- name: Extract ns_cache tarball into
+  command: tar -zxf /tmp/nscache-1.5.tar.gz -C /tmp/{{ AOL_TARBALL_BASENAME }}
+
+- name: Copy over ns_openssl tarball.
+  copy: src=nsopenssl-2.1a.tar.gz dest=/tmp
+          owner={{ AOL_SERVER_USER }} group={{ AOL_SERVER_USER }} mode=644
+
+- name: Extract ns_openssl tarball into
+  command: tar -zxf /tmp/nsopenssl-2.1a.tar.gz -C /tmp/{{ AOL_TARBALL_BASENAME }}
+
+- name: Copy over patch to fix paths to OpenSSL.
+  copy: src=aol_nsopenssl_build.diff
+        dest=/tmp/{{ AOL_TARBALL_BASENAME }}/nsopenssl-2.1a
+        owner={{ AOL_SERVER_USER }} group={{ AOL_SERVER_USER }} mode=644
+
+- name: Apply patch to fix paths to OpenSSL.
+  shell: /usr/bin/patch -p0 < aol_nsopenssl_build.diff
+        chdir=/tmp/{{ AOL_TARBALL_BASENAME }}/nsopenssl-2.1a
+
+- name: Copy over ns_sha1 tarball.
+  copy: src=nssha1-0.1.tar.gz dest=/tmp
+          owner={{ AOL_SERVER_USER }} group={{ AOL_SERVER_USER }} mode=644
+
+- name: Extract ns_sha1 tarball into
+  command: tar -zxf /tmp/nssha1-0.1.tar.gz -C /tmp/{{ AOL_TARBALL_BASENAME }}
+
+- name: Copy over patch to add modules to Makefile.
+  copy: src=aol_add_modules.diff
+          dest=/tmp/{{ AOL_TARBALL_BASENAME }} 
+          owner={{ AOL_SERVER_USER }} group={{ AOL_SERVER_USER }} mode=644
+
+- name: Apply patch to add modules to Makefile.
+  shell: /usr/bin/patch -p0 < aol_add_modules.diff chdir=/tmp/{{ AOL_TARBALL_BASENAME }}
 
 - name: Configure AOL Server
   shell: ./configure --with-tcl={{ AOL_SERVER_PREFIX }}/lib --prefix={{ AOL_SERVER_PREFIX }} 
@@ -92,21 +125,6 @@
 
 - name: Make and install AOL Server
   shell: make install chdir=/tmp/{{ AOL_TARBALL_BASENAME }}
-
-
-#tclIntDecls.h
-#tclIntPlatDecls.h
-#tclPlatDecls.h
-
-#- name: Copy over AOL patch so build uses TCL 8.4.20.
-#  copy: src=aol_tcl8.4.20.patch
-#          dest=/tmp/aolserver owner={{ AOL_SERVER_USER }} group={{ AOL_SERVER_USER }} mode=644
-
-#- name: Apply AOL/TCL patch.
-#  shell: /usr/bin/patch -p0 < aol_tcl8.4.20.patch chdir=/tmp/aolserver
-#
-#- name: Compile and install AOL Server.
-#  shell: make install chdir=/tmp/aolserver
 
 - name: Change user.group back to nsadmin.web
   file: path=/usr/local/aolserver state=directory

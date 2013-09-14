@@ -1,40 +1,21 @@
 #! /bin/sh -e
-# Get AOL Server from BitBucket and build tarball.
+# Get AOL Server tarballs from Sourceforge.
 # Created: Tue Aug 27 18:52:34 EDT 2013
 
-ATAG=$(grep AOL_VERSION aol_vars.yml | cut -d ':' -f 2 | tr -d ' ')
-#ATAG=3.5-pre1
-#ACHECKOUT=aolserver_v35_bp
-#ACHECKOUT=aolserver_v35_b11  # didn't have include/Makefile.global.in
-ACHECKOUT=aolserver_v35_pre1
-#ACHECKOUT=aolserver3_3
+files="
+http://downloads.sourceforge.net/project/aolserver/nssha1/nssha1-0.1/nssha1-0.1.tar.gz
+http://downloads.sourceforge.net/project/aolserver/nscache/nscache-1.5/nscache-1.5.tar.gz
+http://downloads.sourceforge.net/project/aolserver/nsopenssl/nsopenssl-2.1a/nsopenssl-2.1a.tar.gz
+http://downloads.sourceforge.net/project/aolserver/AOLserver/AOLserver-3.5.11/aolserver-3.5.11-src.tar.gz
+"
 
-if [ ! -d aolserver ]; then 
-  git clone https://github.com/aolserver/aolserver.git
-fi
-
-if [ ! -f aolserver-${ATAG}.tgz ]; then 
-  (cd aolserver; git checkout ${ACHECKOUT})
-  tar czvf aolserver-${ATAG}.tgz ./aolserver
-fi
-
-TK=tk8.4.20-src.tar.gz
-TCL=tcl8.4.20-src.tar.gz
-if [ ! -f ${TCL} ]; then 
-  ftp -a ftp://ftp.tcl.tk/pub/tcl/tcl8_4/${TCL} -o ${TCL}
-fi
-if [ ! -f ${TK} ]; then 
-  ftp -a ftp://ftp.tcl.tk/pub/tcl/tcl8_4/${TK} -o ${TK}
-fi
-
-
-# Get the Oracle driver.  Version is in README.
-OTAG=2.7
-if [ ! -d nsoracle ]; then
-  git clone https://github.com/aolserver/nsoracle.git
-fi
-if [ ! -f nsoracle-${OTAG}.tgz ]; then
-  tar czvf nsoracle-${OTAG}.tgz ./nsoracle
-  rm -rf nsoracle
-fi
-
+for f in $files; do
+  fn=$(echo $f | awk -F "/" '{print $NF}')
+  if [ ! -f $fn ] ; then 
+    echo "curl -L $f > $fn"
+    curl -L $f > t.tar.gz
+    mv t.tar.gz $fn
+  else
+    echo $fn already downloaded.
+  fi
+done

@@ -1,0 +1,54 @@
+--- /tmp/Makefile	2013-09-14 14:05:38.000000000 -0700
++++ ./Makefile	2013-09-14 16:02:02.000000000 -0700
+@@ -12,34 +12,36 @@
+ NSHOME ?= ../aolserver
+ endif
+ 
++OPENSSL_LIB=/usr/lib/openssl
++OPENSSL_INCLUDE=/usr/include/openssl
++
+ MOD      =  nsopenssl.so
+ OBJS     =  nsopenssl.o config.o init.o ssl.o thread.o tclcmds.o
+ HDRS     =  nsopenssl.h tclcmds.h config.h thread.h
+ 
+ ifdef BSAFE
+-    MODLIBS  =  -L$(OPENSSL)/lib -L$(BSAFE)/lib -lssl -lcrypto \
++    MODLIBS  =  -L$(OPENSSL_LIB) -L$(BSAFE)/lib -lssl -lcrypto \
+                 -lBSAFEglue -lcrypto -lbsafe -lBSAFEglue
+ else
+-    MODLIBS  =  -L$(OPENSSL)/lib -lssl -lcrypto 
++    MODLIBS  =  -L$(OPENSSL_LIB) -lssl -lcrypto 
+ endif
+ 
+-CFLAGS   +=  -I$(OPENSSL)/include
++CFLAGS   +=  -I$(OPENSSL_INCLUDE)
+ 
+ include  $(NSHOME)/include/Makefile.module
+ 
+-nsopenssl.h: check-env
++#nsopenssl.h: check-env
+ 
+-.PHONY: check-env
+-check-env:
+-	@if [ "$(OPENSSL)" = "" ]; then \
+-	    echo "** "; \
+-	    echo "** OPENSSL variable not set."; \
+-	    echo "** nsopenssl.so will not be built."; \
+-	    echo "** Usage: make OPENSSL=/path/to/openssl"; \
+-	    echo "** Usage: make install OPENSSL=/path/to/openssl INST=/path/to/aolserver"; \
+-	    echo "** "; \
+-	    exit 1; \
+-	fi
++#.PHONY: check-env
++#check-env:
++#	@if [ "$(OPENSSL)" = "" ]; then \
++#	    echo "** "; \
++#	    echo "** OPENSSL variable not set."; \
++#	    echo "** nsopenssl.so will not be built."; \
++#	    echo "** Usage: make OPENSSL=/path/to/openssl"; \
++#	    echo "** Usage: make install OPENSSL=/path/to/openssl INST=/path/to/aolserver"; \
++#	    echo "** "; \
++#	fi
+ 
+ #################################################################
+ # NOTE!!! Solaris users *might* need the following, 
