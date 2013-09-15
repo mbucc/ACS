@@ -23,6 +23,8 @@ Status
 
         * The ACS parameter file needs some attention.
 
+        * The data backup scripts are not installed.
+
 Setup
 
     1. Set up vagrant box and point ansible to the box.
