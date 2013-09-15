@@ -77,7 +77,7 @@ is normal because some users have very slow connections.
 If you see the same  or .adp file often, especially with the longest wait times, it is likely that the script is extremely slow or is hogging database handles. You should
 <ul>
 <li>Examine and fix the page
-<li>User <a href=proc-one?proc_name=ad_return_if_another_copy_is_running>ad_return_if_another_copy_is_running</a> to limit the number of times the page can concurrently run (limit to a few less than your total db pool).  
+<li>User <a href=/doc/proc-one?proc_name=ad_return_if_another_copy_is_running>ad_return_if_another_copy_is_running</a> to limit the number of times the page can concurrently run (limit to a few less than your total db pool).  
 This will prevent multiple executions of that page from destroying your whole web service.
 </ul>
 <p>
