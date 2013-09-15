@@ -912,10 +912,10 @@ ClickthroughP = 1
 
 [ns/server/{{ ACS_SERVICE_NAME }}/acs/monitoring]
 ; People to email for alerts
-; PersontoNotify=nerd1@{{ DOMAIN_NAME }}
+PersontoNotify={{ ACS_WATCHDOG_EMAIL }}
 ; PersontoNotify=nerd2@{{ DOMAIN_NAME }}
 ; location of the watchdog perl script
-WatchDogParser=/web/{{ ACS_SERVICE_NAME }}/bin/aolserver-errors.pl
+WatchDogParser=/web/{{ ACS_DOMAIN_NAME }}/bin/aolserver-errors.pl
 ; watchdog frequency in minutes
 WatchDogFrequency=15
 

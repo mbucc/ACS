@@ -10,6 +10,7 @@ ACS_IP_ADDRESS: 192.168.67.10
 ACS_PORT: 8000
 ACS_DOMAIN_NAME: example.com
 ACS_ADMINISTRATOR_EMAIL: admin@$ACS_DOMAIN_NAME
+ACS_WATCHDOG_EMAIL: admin@$ACS_DOMAIN_NAME
 
 # According to ../www/doc/architecture-install.html, this should
 # be on a different mount point from the Oracle system data files
