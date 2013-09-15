@@ -15,7 +15,7 @@ Status
 
         * Email is not configured.
 
-        * ecommerce and clickthrough modules not installed.
+        * ecommerce, clickthrough and CRM modules are not installed.
 
         * SSL not working (ns module built, just not configured).
 
