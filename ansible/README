@@ -21,6 +21,8 @@ Status
 
         * Search is not working (Oracle Text is installed).
 
+        * The ACS parameter file needs some attention.
+
 Setup
 
     1. Set up vagrant box and point ansible to the box.
