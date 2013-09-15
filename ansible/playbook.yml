@@ -15,4 +15,5 @@
   - include: acs_sources.yml
   - include: acs_load_geo_data.yml
   - include: acs_load_data.yml
+  - include: acs_enable_cassandracle.yml
   - include: acs_setup_service.yml

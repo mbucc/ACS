@@ -90,12 +90,12 @@ Address={{ ACS_IP_ADDRESS }}
 Hostname={{ ACS_IP_ADDRESS }}
 Port={{ ACS_PORT }}
 
-# XXX: Read readme.txt in ns_openssl-2.1a tarball.
-#[ns/server/{{ ACS_SERVICE_NAME }}/module/nsopenssl]
-#Address={{ ACS_IP_ADDRESS }}
-#Hostname={{ ACS_IP_ADDRESS }}
-#CertFile={{ AOL_HOME }}/cert.pem
-#KeyFile={{ AOL_HOME }}/key.pem
+; XXX: Read readme.txt in ns_openssl-2.1a tarball.
+;[ns/server/{{ ACS_SERVICE_NAME }}/module/nsopenssl]
+;Address={{ ACS_IP_ADDRESS }}
+;Hostname={{ ACS_IP_ADDRESS }}
+;CertFile={{ AOL_HOME }}/cert.pem
+;KeyFile={{ AOL_HOME }}/key.pem
 
 [ns/server/{{ ACS_SERVICE_NAME }}/modules]
 nsperm=nsperm.so
@@ -103,7 +103,7 @@ nssock=nssock.so
 nslog=nslog.so
 nssha1=nssha1.so
 nscache=nscache.so
-#nsopenssl=nsopenssl.so
+;nsopenssl=nsopenssl.so
 
 [ns/server/{{ ACS_SERVICE_NAME }}/MimeTypes]
 Default=text/plain

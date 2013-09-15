@@ -11,8 +11,6 @@ Status
 
     Known issues (there probably are others):
 
-        * Cassandracle monitoring queries don't work.
-
         * Email is not configured.
 
         * ecommerce, clickthrough and CRM modules are not installed.

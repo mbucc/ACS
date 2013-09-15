@@ -1,0 +1,10 @@
+---
+# Run SQL to allow the ACS to run the Oracle monitoring reports.
+
+- name: Copy over SQL to create the ad_cassandracle role.
+  template: src=acs_enable_cassandra.sql.j2
+      dest=/home/oracle/enable_cassandracle.sql 
+      owner=oracle group=oracle
+
+- name: Run SQL to create the ad_cassandracle role.
+  command: su - oracle -c "sqlplus /nolog @enable_cassandracle.sql" 
