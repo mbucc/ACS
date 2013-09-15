@@ -1,7 +1,10 @@
 ---
-# The VirtualBox appliance supplied by Oracle includes a database
-# with sid "orcl" that we don't need.  This play deletes that db.
+# The VirtualBox Oracle includes a database with sid "orcl" that
+# we don't need.  This play deletes that db.
 #
+# You can download the Oracle per-built VM from here:
+#    http://www.oracle.com/technetwork/community/developer-vm/index.html
+# I used the "Database App Development VM"
 
 # Only run these commands if the directory exists.
 - command: /usr/bin/test -d {{ ORACLE_BASE }}/oradata/orcl
