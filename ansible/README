@@ -27,6 +27,8 @@ Status
 
         * Install target is a VM, not a real-live GNU/Linux box.
 
+        * Configure system so AOL (and ACS?) man pages are on MANPATH.
+
 Setup
 
     1. Set up vagrant box and point ansible to the box.
