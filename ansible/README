@@ -9,7 +9,7 @@ Status
         * AOLServer 3.5.11
         * Oracle Linux (
 
-    Known issues (there probably are others):
+    TODO:
 
         * The data backup scripts are not installed.
 
@@ -26,6 +26,8 @@ Status
         * Playbooks should setup ACS to restart on reboot.
 
         * Install target is a VM, not a real-live GNU/Linux box.
+
+        * Run against Oracle Express, not the full 11.2g.
 
         * Configure system so AOL (and ACS?) man pages are on MANPATH.
 
