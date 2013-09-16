@@ -23,6 +23,8 @@ Status
 
         * The ACS parameter file needs some attention.
 
+        * Playbooks should setup ACS to restart on reboot.
+
         * Install target is a VM, not a real-live GNU/Linux box.
 
 Setup
