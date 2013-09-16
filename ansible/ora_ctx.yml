@@ -3,19 +3,19 @@
 # Created: Mon Sep  2 10:40:15 EDT 2013
 
 - name: Copy over shell script that tests if Oracle Text is configured.
-  template: src=is_user_in_oracle.sh.j2 dest=/home/oracle/is_user_in_oracle.sh
-      owner=oracle group=oracle mode=755
+  template: src=is_user_in_oracle.sh.j2 dest={{ ORACLE_OWNER_HOME }}/is_user_in_oracle.sh
+      owner={{ ORACLE_OWNER }}  group={{ ORACLE_OWNER }}  mode=755
 
 - name: Check if CTX is configured and save result.
-  command: su - oracle -c "./is_user_in_oracle.sh CTXSYS"
+  command: su - {{ ORACLE_OWNER }}  -c "./is_user_in_oracle.sh CTXSYS"
   register: ctx_configured
   ignore_errors: True
 
 - name: Copy over SQL to configure Oracle Text component.
-  template: src=ora_configure_ctx.sql.j2 dest=/home/oracle/configure_ctx.sql 
-      owner=oracle group=oracle
+  template: src=ora_configure_ctx.sql.j2 dest={{ ORACLE_OWNER_HOME }}/configure_ctx.sql 
+      owner={{ ORACLE_OWNER }}  group={{ ORACLE_OWNER }} 
   when: ctx_configured|failed
 
 - name: Run SQL to configure Oracle text.
-  command: su - oracle -c "sqlplus sys/{{ ORA_SYS_PASSWORD }} as sysdba @configure_ctx" 
+  command: su - {{ ORACLE_OWNER }}  -c "sqlplus sys/{{ ORA_SYS_PASSWORD }} as sysdba @configure_ctx" 
   when: ctx_configured|failed

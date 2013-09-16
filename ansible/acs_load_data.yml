@@ -3,7 +3,7 @@
 # Created: Mon Sep  2 17:05:12 EDT 2013
 
 #- name: Check if CTX is configured and save result.
-#  command: su - oracle -c "./is_user_in_oracle.sh CTXSYS"
+#  command: su - {{ ORACLE_OWNER }}  -c "./is_user_in_oracle.sh CTXSYS"
 #  register: ctx_configured
 #  ignore_errors: True
 

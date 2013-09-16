@@ -1,7 +1,11 @@
 ---
 # Oracle variables
-ORACLE_BASE: /home/oracle/app/oracle
+ORACLE_OWNER: oracle
+ORACLE_OWNER_HOME: /home/$ORACLE_OWNER
+ORACLE_BASE: $ORACLE_OWNER_HOME/app/oracle
 ORACLE_HOME: $ORACLE_BASE/product/11.2.0/dbhome_2
+
+
 SID: ora11
 ROOT_DIR: /$SID
 DATA_DIR: $ROOT_DIR/u01/app/oracle/oradata/$SID
