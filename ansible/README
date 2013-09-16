@@ -11,17 +11,17 @@ Status
 
     Known issues (there probably are others):
 
+        * The data backup scripts are not installed.
+
         * Email is not configured.
-
-        * ecommerce, clickthrough and CRM modules are not installed.
-
-        * SSL not working (ns module built, just not configured).
 
         * Search is not working (Oracle Text is installed).
 
-        * The ACS parameter file needs some attention.
+        * SSL not working (ns module built, just not configured).
 
-        * The data backup scripts are not installed.
+        * ecommerce, clickthrough and CRM modules are not installed.
+
+        * The ACS parameter file needs some attention.
 
 Setup
 
