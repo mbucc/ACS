@@ -23,6 +23,8 @@ Status
 
         * The ACS parameter file needs some attention.
 
+        * Install target is a VM, not a real-live GNU/Linux box.
+
 Setup
 
     1. Set up vagrant box and point ansible to the box.
