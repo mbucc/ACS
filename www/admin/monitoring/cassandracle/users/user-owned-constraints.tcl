@@ -131,7 +131,7 @@ if { [string compare $at_least_one_row_already_retrieved "t"]==0 } {
 append page_content "
 <hr>
 <H4>More information:</h4>
-<p>See Oracle documentation about view <a target=second href=\"http://oradoc.photo.net/ora81/DOC/server.815/a67790/ch2.htm#1175\">dba_constraints</a> on which this page is based.</p>
+<p>See Oracle documentation about view <a target=second href=\"http://docs.oracle.com/cd/E11882_01/server.112/e40402/statviews_3120.htm#sthref1912\">dba_constraints</a> on which this page is based.</p>
 [ad_admin_footer]
 "
 

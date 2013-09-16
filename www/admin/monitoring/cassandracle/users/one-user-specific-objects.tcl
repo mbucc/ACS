@@ -109,7 +109,7 @@ if {[llength $object_ownership_info]==0} {
 append page_content "</table>
 <hr>
 <H4>More information:</h4>
-<p>See Oracle documentation about view <a target=second href=\"http://oradoc.photo.net/ora81/DOC/server.815/a67790/ch2.htm#51392\">dba_objects</a> on which this page is based.</p>
+<p>See Oracle documentation about view <a target=second href=\"http://docs.oracle.com/cd/E11882_01/server.112/e40402/statviews_4157.htm#sthref2301\">dba_objects</a> on which this page is based.</p>
 [ad_admin_footer]
 "
 

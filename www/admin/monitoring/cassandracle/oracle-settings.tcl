@@ -16,12 +16,12 @@ set page_content "
 [ad_admin_context_bar  [list "/admin/monitoring" "Monitoring"] [list "/admin/monitoring/cassandracle" "Cassandracle"] "Initialization Parameters" ]
 <hr>
 <p>These initialization parameter values come from 
-the <a href=\"http://oradoc.photo.net/ora81/DOC/server.815/a67790/ch3.htm#8319\">v\$parameter</a> dynamic 
+the <a href=\"http://docs.oracle.com/cd/E11882_01/server.112/e40402/dynviews_2087.htm#sthref3485\">v\$parameter</a> dynamic 
 performance view. Some parameters can be changed with 
-the <a href=\"http://oradoc.photo.net/ora81/DOC/server.815/a67779/ch4c.htm#34075\">ALTER SYSTEM</a> 
-or <a href=\"http://oradoc.photo.net/ora81/DOC/server.815/a67779/ch4c.htm#42646\">ALTER SESSION</a> commands. Note that if you want to change these settings for your specific service (as opposed to changing it system-wide), the ALTER SESSION command takes effect for only the duration of the db handle i.e., you have to execute ALTER SESSION commands each time you grab the db handle.
+the <a href=\"http://docs.oracle.com/cd/E11882_01/server.112/e41084/statements_2014.htm#sthref3285\">ALTER SYSTEM</a> 
+or <a href=\"http://docs.oracle.com/cd/E11882_01/server.112/e41084/statements_2013.htm#sthref3228\">ALTER SESSION</a> commands. Note that if you want to change these settings for your specific service (as opposed to changing it system-wide), the ALTER SESSION command takes effect for only the duration of the db handle i.e., you have to execute ALTER SESSION commands each time you grab the db handle.
 Others can only be changed by editing
-the <a href=\"http://oradoc.photo.net/ora81/DOC/server.815/a67790/ch1.htm#1188\">initialization file</a>
+the <a href=\"http://docs.oracle.com/cd/E11882_01/server.112/e25494/create.htm#ADMIN11099\">initialization file</a>
 and restarting Oracle. You can also get these same parameters by executing the SHOW PARAMETERS command from inside SQL*Plus.
 </p>
 <table border=1>
