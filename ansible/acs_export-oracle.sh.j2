@@ -25,7 +25,15 @@ DATABASE_PASSWORD={{ ORA_SYSTEM_PASSWORD }}
 # http://docs.oracle.com/cd/E11882_01/server.112/e22490/dp_export.htm#i1006259
 # http://docs.oracle.com/cd/E11882_01/server.112/e22490/dp_overview.htm#i1009520
 exportdir={{ ORACLE_HOME }}/rdbms/log/
-file=$exportdir/expdat.dmp
-mv -f $file.gz $file.old.gz
+
+
+file=$exportdir/expdat.dmp 
+
+rm -f $file
+
+if [ -f $file.gz ]; then 
+  mv -f $file.gz $file.old.gz 
+fi
+
 su - $ORA_OWNER --command="expdp SYSTEM/oracle FULL=YES"
 gzip $file

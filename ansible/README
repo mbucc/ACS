@@ -11,8 +11,6 @@ Status
 
     TODO:
 
-        * The data backup scripts are not installed.
-
         * Email is not configured.
 
         * Search is not working (Oracle Text is installed).
@@ -30,6 +28,9 @@ Status
         * Run against Oracle Express, not the full 11.2g.
 
         * Configure system so AOL (and ACS?) man pages are on MANPATH.
+
+        * The playbooks are sometimes clumsy about idempotency; for example,
+          AOL Server is recompiled every run, which is stupid.
 
 Setup
 

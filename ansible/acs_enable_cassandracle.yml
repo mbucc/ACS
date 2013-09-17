@@ -1,10 +1,22 @@
 ---
-# Run SQL to allow the ACS to run the Oracle monitoring reports.
+# Run SQL to allow the ACS to run the Oracle monitoring reports.  If the role
+# ad_cassandracle is already created, we assume this has run successfully.
+
+- name: Copy over script that tests if the role is already created.
+  template: src=is_role_in_oracle.sh.j2 dest={{ ORACLE_OWNER_HOME }}/is_role_in_oracle.sh
+      owner={{ ORACLE_OWNER }}  group={{ ORACLE_OWNER }}  mode=755
+
+- name: Check if CTX is configured and save result.
+  command: su - {{ ORACLE_OWNER }}  -c "./is_role_in_oracle.sh AD_CASSANDRACLE"
+  register: role_exists
+  ignore_errors: True
 
 - name: Copy over SQL to create the ad_cassandracle role.
   template: src=acs_enable_cassandra.sql.j2
       dest={{ ORACLE_OWNER_HOME }}/enable_cassandracle.sql 
       owner={{ ORACLE_OWNER }}  group={{ ORACLE_OWNER }} 
+  when: role_exists|failed
 
 - name: Run SQL to create the ad_cassandracle role.
   command: su - {{ ORACLE_OWNER }}  -c "sqlplus /nolog @enable_cassandracle.sql" 
+  when: role_exists|failed
