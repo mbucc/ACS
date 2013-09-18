@@ -21,8 +21,6 @@ Status
 
         * The ACS parameter file needs some attention.
 
-        * Playbooks should setup ACS to restart on reboot.
-
         * Install target is a VM, not a real-live GNU/Linux box.
 
         * Run against Oracle Express, not the full 11.2g.

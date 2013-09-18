@@ -2,8 +2,8 @@
 # Configure ACS service.
 # Created: Thu Sep  5 18:04:53 EDT 2013
 
-- name: Create service-name.ini for the ACS.
-  template: src=acs_service-name.ini.j2 dest={{ AOL_HOME }}/service-name.ini
+- name: Create acs.ini for the ACS.
+  template: src=acs_acs.ini.j2 dest={{ AOL_HOME }}/{{ ACS_SERVICE_NAME }}.ini
       owner={{ AOL_SERVER_USER }} group={{ AOL_SERVER_USER }}
       mode=644
 

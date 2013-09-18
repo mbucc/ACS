@@ -9,6 +9,8 @@ AOL_SERVER_USER: nsadmin
 AOL_SERVER_WEBROOT: /web
 WEB_GROUP: web
 
+AOL_PID_FILE: $AOL_HOME/log/aolserver.pid
+
 AOL_ORACLEDRIVER_TAG: 2.7
 
 AOL_TCL: tcl8.4.20
