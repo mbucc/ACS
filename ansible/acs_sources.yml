@@ -20,6 +20,10 @@
 
 # XXX: figure out what mode to give to files and directories
 - name: Change permissions on extracted file to AOL server user.
-  file: path={{ AOL_SERVER_WEBROOT }}/{{ ACS_DOMAIN_NAME }} state=directory 
-          owner={{ AOL_SERVER_USER }} group={{ WEB_GROUP }} 
-          recurse=yes
+  file: path={{ AOL_SERVER_WEBROOT }}/{{ ACS_DOMAIN_NAME }} state=directory
+      owner={{ AOL_SERVER_USER }} group={{ WEB_GROUP }}
+      recurse=yes
+
+- name: Make programs in bin executable.
+  file: path={{ AOL_SERVER_WEBROOT }}/{{ ACS_DOMAIN_NAME }}/bin state=directory
+      mode=0744 recurse=yes
