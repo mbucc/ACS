@@ -11,6 +11,14 @@ Status
 
     TODO:
 
+        * nsoracle.so doesn't work when started from inittab:
+            Warning: modload: failed to load
+            '/usr/local/aolserver/bin/nsoracle.so': 'libclntsh.so.11.1:
+            cannot open shared object file: No such file or directory'
+
+        * Error: Watchdog(wd_errors): couldn't execute
+          "/web/example.com/bin/aolserver-errors.pl": permission denied
+
         * Email is not configured.
 
         * Search is not working (Oracle Text is installed).
@@ -23,7 +31,7 @@ Status
 
         * Install target is a VM, not a real-live GNU/Linux box.
 
-        * Run against Oracle Express, not the full 11.2g.
+        * Provision with Oracle Express, not the full 11.2g.
 
         * Configure system so AOL (and ACS?) man pages are on MANPATH.
 
