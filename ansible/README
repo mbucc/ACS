@@ -11,9 +11,6 @@ Status
 
     TODO:
 
-        * Add symbolic link in /usr/local/bin/perl (to /usr/bin/perl) so ACS
-          bin scripts work.
-
         * Email is not configured.
 
         * Search is not working (Oracle Text is installed).

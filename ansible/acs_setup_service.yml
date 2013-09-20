@@ -29,3 +29,6 @@
       dest={{ AOL_SERVER_WEBROOT }}/{{ ACS_SERVICE_NAME }}/parameters/{{ ACS_SERVICE_NAME }}.ini
       owner={{ AOL_SERVER_USER }} group={{ AOL_SERVER_USER }}
       mode=644
+
+- name: Create symlink to perl in /usr/local/bin so ACS scripts work.
+  file: src=/usr/bin/perl dest=/usr/local/bin/perl owner=root group=root state=link

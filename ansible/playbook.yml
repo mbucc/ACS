@@ -17,5 +17,5 @@
 #  - include: acs_load_data.yml
 #  - include: acs_enable_cassandracle.yml
 #  - include: acs_setup_oracle_export.yml
-#  - include: acs_setup_service.yml
-  - include: acs_restart_server.yml
+  - include: acs_setup_service.yml
+#  - include: acs_restart_server.yml
