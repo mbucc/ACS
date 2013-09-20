@@ -19,7 +19,7 @@ Status
 
         * ecommerce module is not installed.
 
-        * The ACS parameter file needs attention.
+        * The ACS parameter file needs some love.
 
         * Install target is a VM, not a real-live GNU/Linux box.
 
@@ -27,7 +27,7 @@ Status
 
         * Configure system so AOL (and ACS?) man pages are on MANPATH.
 
-        * The playbooks are sometimes clumsy about idempotency; for example,
+        * The playbooks are clumsy about idempotency; for example,
           AOL Server is recompiled every run, which is stupid.
 
 Setup
@@ -35,7 +35,9 @@ Setup
     1. Set up vagrant box and point ansible to the box.
        http://mbucc.blogspot.com/2013/08/setup-oracle-112g-virtualbox-for-ansible.html
 
-    2. Run: ansible-playbook playbook.yml.
+    2. Adjust *_vars.yml files to your liking.
+
+    3. Run: ansible-playbook playbook.yml.
 
         $ ansible-playbook -v playbook.yml
 
