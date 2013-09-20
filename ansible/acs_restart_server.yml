@@ -1,5 +1,5 @@
 ---
-# Make AOL Server restart if it quits.
+# Start AOL Server on boot and restart if it crashes.
 # Created: Tue Sep 17 21:39:11 EDT 2013
 
 # Done manually, downloaded package from 
@@ -15,9 +15,14 @@
       owner=root group={{ WEB_GROUP }}
       mode=4750
 
+- name: Copy over script that (re)spawns AOLserver.
+  template: src=acs_spawn-aolserver.j2 dest=/sbin/spawn-aolserver
+      owner=root group=wheel
+      mode=0750
+
 - name: Make sure inittab has the respawn line.
   lineinfile: dest=/etc/inittab regexp="^nsd" 
-      line="nsd:2345:respawn:{{ AOL_SERVER_PREFIX }}/bin/nsd -i -c {{ AOL_HOME }}/{{ ACS_SERVICE_NAME}}.ini"
+     line="nsd:2345:respawn:/sbin/spawn-aolserver"
 
 - name: Tell init to re-read the /etc/inittab.  This will start AOL server
   command: /sbin/init q

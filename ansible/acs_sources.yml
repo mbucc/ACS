@@ -8,6 +8,12 @@
 - name: Make sure /web/acs directory does not already exist.
   file: path={{ AOL_SERVER_WEBROOT }}/{{ ACS_DOMAIN_NAME }} state=absent
 
+#- name: Copy over file that adds Oracle to dynamic linker library path.
+#  template: src=oracle.conf.j2 dest=/etc/ld.so.conf.d/oracle.conf mode=0644
+
+#- name: Rebuild dynamic linker path cache.
+#  command: /sbin/ldconfig
+
 - name: Copy the ACS source tarball to the destination host.
   copy: src=acs-{{ ACS_VERSION }}.tgz dest=/tmp
           owner={{ AOL_SERVER_USER }} group={{ AOL_SERVER_USER }} mode=644

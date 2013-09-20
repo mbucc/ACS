@@ -7,17 +7,12 @@ Status
         * Arsdigita Community System (version 3.4.10)
         * Oracle 11.2g
         * AOLServer 3.5.11
-        * Oracle Linux (
+        * Oracle Linux
 
     TODO:
 
-        * nsoracle.so doesn't work when started from inittab:
-            Warning: modload: failed to load
-            '/usr/local/aolserver/bin/nsoracle.so': 'libclntsh.so.11.1:
-            cannot open shared object file: No such file or directory'
-
-        * Error: Watchdog(wd_errors): couldn't execute
-          "/web/example.com/bin/aolserver-errors.pl": permission denied
+        * Add symbolic link in /usr/local/bin/perl (to /usr/bin/perl) so ACS
+          bin scripts work.
 
         * Email is not configured.
 
@@ -25,9 +20,9 @@ Status
 
         * SSL not working (ns module built, just not configured).
 
-        * ecommerce, clickthrough and CRM modules are not installed.
+        * ecommerce module is not installed.
 
-        * The ACS parameter file needs some attention.
+        * The ACS parameter file needs attention.
 
         * Install target is a VM, not a real-live GNU/Linux box.
 

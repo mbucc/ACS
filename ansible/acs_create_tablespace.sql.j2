@@ -3,8 +3,8 @@ WHENEVER SQLERROR EXIT SQL.SQLCODE;
 
 spool create_acs.log
 
--- DROP USER {{ ACS_ORACLE_USER }} CASCADE;
--- DROP TABLESPACE {{ ACS_SERVICE_NAME }} INCLUDING CONTENTS AND DATAFILES;
+DROP USER {{ ACS_ORACLE_USER }} CASCADE;
+DROP TABLESPACE {{ ACS_SERVICE_NAME }} INCLUDING CONTENTS AND DATAFILES;
 
 create  tablespace {{ ACS_SERVICE_NAME }} 
         datafile '{{ ACS_DATA_DIR }}/{{ ACS_SERVICE_NAME }}.dbf' 
@@ -39,7 +39,7 @@ grant   connect
 ;
 
 -- XXX: Hmmm, after switching from resource role to individual grants, this
--- XXX: next statement started throwing errors.  That's not right ...
+-- XXX: next statement started throwing errors.
 -- revoke  unlimited tablespace from {{ ACS_SERVICE_NAME }};
 
 alter user {{ ACS_ORACLE_USER }} quota unlimited on {{ ACS_SERVICE_NAME }};

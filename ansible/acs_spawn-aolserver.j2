@@ -1,0 +1,8 @@
+#!/bin/sh
+
+export ORACLE_HOME={{ ORACLE_HOME }}
+export LD_LIBRARY_PATH=$ORACLE_HOME/lib
+export ORACLE_SID={{ SID }}
+export ORA_NLS11=$ORACLE_HOME/nls/data
+
+{{ AOL_SERVER_PREFIX }}/bin/nsd -i -c {{ AOL_HOME }}/{{ ACS_SERVICE_NAME}}.ini
