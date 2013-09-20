@@ -9,7 +9,7 @@ Status
         * AOLServer 3.5.11
         * Oracle Linux
 
-    TODO:
+    KNOWN ISSUES:
 
         * Search is not working (Oracle Text is installed).
 
@@ -17,16 +17,18 @@ Status
 
         * ecommerce module is not installed.
 
+        * The playbooks are clumsy about idempotency; for example,
+          AOL Server is recompiled every run, which is stupid.
+
         * The ACS parameter file needs some love.
+
+    TODO:
 
         * Install target is a VM, not a real-live GNU/Linux box.
 
         * Provision with Oracle Express, not the full 11.2g.
 
         * Configure system so AOL (and ACS?) man pages are on MANPATH.
-
-        * The playbooks are clumsy about idempotency; for example,
-          AOL Server is recompiled every run, which is stupid.
 
 Setup
 
