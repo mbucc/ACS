@@ -11,8 +11,6 @@ Status
 
     TODO:
 
-        * Email is not configured.
-
         * Search is not working (Oracle Text is installed).
 
         * SSL not working (ns module built, just not configured).
@@ -44,6 +42,8 @@ Setup
           WARNING: If you have ACS data, it may be deleted.
                    (The idempotency of the SQL in the ansible play
                    books is a work in progress.)
+
+    4. If you want email, setup your MTA.
 
 Oracle Licensing
 
