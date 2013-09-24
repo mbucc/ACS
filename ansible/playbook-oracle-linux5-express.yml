@@ -1,0 +1,21 @@
+- hosts: ol5
+  sudo: yes
+  vars_files:
+    - ora_vars.yml
+    - aol_vars.yml
+    - acs_vars.yml
+  tasks:
+
+  - include: ora_setup_oracle_express.yml
+#  - include: ora_create_our_database.yml
+#  - include: ora_ctx.yml
+#  - include: ora_pupbld.yml
+#  - include: aol_install.yml
+#  - include: acs_tablespace.yml
+#  - include: acs_sources.yml
+#  - include: acs_load_geo_data.yml
+#  - include: acs_load_data.yml
+#  - include: acs_enable_cassandracle.yml
+#  - include: acs_setup_oracle_export.yml
+#  - include: acs_setup_service.yml
+#  - include: acs_restart_server.yml
