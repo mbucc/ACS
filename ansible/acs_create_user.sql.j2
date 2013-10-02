@@ -1,0 +1,36 @@
+WHENEVER OSERROR EXIT 9;
+WHENEVER SQLERROR EXIT SQL.SQLCODE;
+
+spool create_acs_user.log
+
+-- DROP USER {{ ACS_ORACLE_USER }} CASCADE;
+
+create  user {{ ACS_ORACLE_USER }} 
+        identified by {{ ACS_ORACLE_PASSWORD }} 
+        default tablespace {{ ACS_SERVICE_NAME }} 
+        temporary tablespace {{ TEMP_TABLESPACE_NAME }}
+        quota unlimited on {{ ACS_SERVICE_NAME }}
+;
+
+grant   connect
+        -- These grants were given by the resource role in 11.2g.  Oracle
+        -- has deprecated this role, so we use the indidual grants.
+        , CREATE CLUSTER
+        , CREATE INDEXTYPE
+        , CREATE OPERATOR
+        , CREATE PROCEDURE
+        , CREATE SEQUENCE
+        , CREATE TABLE
+        , CREATE TRIGGER
+        , CREATE TYPE
+        -- end of grants from resource role.
+        , CREATE VIEW
+        , CREATE SYNONYM
+        , ctxapp          -- free-text searching
+        , query rewrite   -- transform query to use materialized views
+        to {{ ACS_ORACLE_USER }}
+;
+
+spool off
+
+exit;

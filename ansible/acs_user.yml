@@ -8,18 +8,18 @@
 
 - name: Check if Oracle has ACS user.
   command: su - {{ ORACLE_OWNER }}  -c "./is_user_in_oracle.sh {{ ACS_ORACLE_USER }}"
-  register: acs_tablespace_exists
+  register: acs_user_exists
   ignore_errors: True
 
 - name: Create directory to hold acs tablespace files.
   file: path={{ ACS_DATA_DIR }} state=directory owner={{ ORACLE_OWNER }}  group=dba mode=0755
-  when: acs_tablespace_exists|failed
+  when: acs_user_exists|failed
 
 - name: Copy over script to create the database
-  template: src=acs_create_tablespace.sql.j2 dest={{ ORACLE_OWNER_HOME }}/create_acs_tablespace.sql 
+  template: src=acs_create_user.sql.j2 dest={{ ORACLE_OWNER_HOME }}/create_acs_user.sql 
       owner={{ ORACLE_OWNER }}  group={{ ORACLE_OWNER }} 
-  when: acs_tablespace_exists|failed
+  when: acs_user_exists|failed
 
 - name: Run SQL to create database
-  command: su - {{ ORACLE_OWNER }}  -c "sqlplus system/{{ ORA_SYSTEM_PASSWORD }} @create_acs_tablespace.sql" 
-  when: acs_tablespace_exists|failed
+  command: su - {{ ORACLE_OWNER }}  -c "sqlplus system/{{ ORA_SYSTEM_PASSWORD }} @create_acs_user.sql" 
+  when: acs_user_exists|failed
