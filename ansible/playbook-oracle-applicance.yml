@@ -7,6 +7,7 @@
   tasks:
 
 #  - include: ora_delete_orcl_sid.yml
+#  - include: ora_setup_environment.yml
 #  - include: ora_create_our_database.yml
 #  - include: ora_ctx.yml
 #  - include: ora_pupbld.yml

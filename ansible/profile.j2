@@ -1,0 +1,17 @@
+# .bashrc
+
+# Source global definitions
+if [ -f /etc/bashrc ]; then
+	. /etc/bashrc
+fi
+
+export ORACLE_HOME={{ ORACLE_HOME }}
+export ORACLE_SID={{ SID }}
+export PATH=$ORACLE_HOME/bin:$PATH
+export NLS_LANG={{ LANGUAGE }}
+
+set -o vi
+
+/sbin/ifconfig | grep "inet addr"
+
+umask 022

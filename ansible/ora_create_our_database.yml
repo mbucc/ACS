@@ -8,10 +8,6 @@
 - name: Shutdown oracle.
   service: name=oracle state=stopped pattern={{ ORA_PS_MARKER }}
 
-- name: Set up .bashrc for oracle user.
-  template: src=bashrc.j2 dest={{ ORACLE_USER_HOME }}/.bashrc 
-      owner={{ ORACLE_USER }}  group={{ ORACLE_GROUP }} 
-
 - command: /usr/bin/test -f {{ ORA_CONTROL_FILE1 }}
   register: our_database_exists
   ignore_errors: True

@@ -10,7 +10,7 @@ ACS_ORACLE_PASSWORD: oracle
 
 # A tablespace is a logical grouping of physical data files.  Every user has
 # a default table space.
-ACS_DEFAULT_TABLESPACE: acs
+ACS_DEFAULT_TABLESPACE: users
 ACS_TEMP_TABLESPACE: temp
 
 ACS_IP_ADDRESS: 192.168.67.10
