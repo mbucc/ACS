@@ -7,27 +7,17 @@ spool create_acs_user.log
 
 create  user {{ ACS_ORACLE_USER }} 
         identified by {{ ACS_ORACLE_PASSWORD }} 
-        default tablespace {{ ACS_SERVICE_NAME }} 
-        temporary tablespace {{ TEMP_TABLESPACE_NAME }}
-        quota unlimited on {{ ACS_SERVICE_NAME }}
+        default tablespace {{ ACS_DEFAULT_TABLESPACE }} 
+        temporary tablespace {{ ACS_TEMP_TABLESPACE }}
+        quota unlimited on {{ ACS_DEFAULT_TABLESPACE }}
 ;
 
-grant   connect
-        -- These grants were given by the resource role in 11.2g.  Oracle
-        -- has deprecated this role, so we use the indidual grants.
-        , CREATE CLUSTER
-        , CREATE INDEXTYPE
-        , CREATE OPERATOR
-        , CREATE PROCEDURE
-        , CREATE SEQUENCE
-        , CREATE TABLE
-        , CREATE TRIGGER
-        , CREATE TYPE
-        -- end of grants from resource role.
+grant   CONNECT
+        , RESOURCE
         , CREATE VIEW
         , CREATE SYNONYM
-        , ctxapp          -- free-text searching
-        , query rewrite   -- transform query to use materialized views
+        , CTXAPP          -- free-text searching
+        , QUERY REWRITE   -- transform query to use materialized views
         to {{ ACS_ORACLE_USER }}
 ;
 

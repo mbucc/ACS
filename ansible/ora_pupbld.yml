@@ -3,7 +3,7 @@
 # Created: Mon Sep  2 17:41:42 EDT 2013
 
 - name: Copy over SQL to setup Oracle PRODUCT_USER_PROFILE.
-  template: src=ora_pupbld.sql.j2 dest={{ ORACLE_OWNER_HOME }}/pupbld.sql owner={{ ORACLE_OWNER }}  group={{ ORACLE_OWNER }} 
+  template: src=ora_pupbld.sql.j2 dest={{ ORACLE_USER_HOME }}/pupbld.sql owner={{ ORACLE_USER }}  group={{ ORACLE_GROUP }} 
 
 - name: Run SQL to configure Oracle text.
-  command: su - {{ ORACLE_OWNER }}  -c "sqlplus system/{{ ORA_SYSTEM_PASSWORD }} @pupbld" 
+  command: su - {{ ORACLE_USER }}  -c "sqlplus system/{{ ORA_SYSTEM_PASSWORD }} @pupbld" 

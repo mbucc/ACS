@@ -9,8 +9,8 @@
   service: name=oracle state=stopped pattern={{ ORA_PS_MARKER }}
 
 - name: Set up .bashrc for oracle user.
-  template: src=bashrc.j2 dest={{ ORACLE_OWNER_HOME }}/.bashrc 
-      owner={{ ORACLE_OWNER }}  group={{ ORACLE_OWNER }} 
+  template: src=bashrc.j2 dest={{ ORACLE_USER_HOME }}/.bashrc 
+      owner={{ ORACLE_USER }}  group={{ ORACLE_GROUP }} 
 
 - command: /usr/bin/test -f {{ ORA_CONTROL_FILE1 }}
   register: our_database_exists
@@ -18,12 +18,12 @@
 
 - name: Copy over oratab with our SID in it.
   template: src=ora_oratab.j2 dest=/etc/oratab
-      owner={{ ORACLE_OWNER }}  group={{ ORACLE_OWNER }} 
+      owner={{ ORACLE_USER }}  group={{ ORACLE_GROUP }} 
   register: oratab
 
 - name: Copy over initialization paramters for ora11
   template: src=ora_init{{SID}}.ora.j2 dest={{ORACLE_HOME}}/dbs/init{{SID}}.ora
-      owner={{ ORACLE_OWNER }}  group={{ ORACLE_OWNER }} 
+      owner={{ ORACLE_USER }}  group={{ ORACLE_GROUP }} 
   register: initora
 
 - name: Create directory to hold data.
@@ -39,26 +39,26 @@
   when: our_database_exists|failed
 
 - name: Set user.group to oracle.dba on new directories.
-  file: path=$ROOT_DIR state=directory owner={{ ORACLE_OWNER }}  group=dba recurse=yes
+  file: path=$ROOT_DIR state=directory owner={{ ORACLE_USER }}  group=dba recurse=yes
   when: our_database_exists|failed
 
 - name: Create audit file directory.
   file: path={{ ORACLE_BASE }}/admin/{{ SID }}/adump state=directory
-      owner={{ ORACLE_OWNER }}  group={{ ORACLE_OWNER }} 
+      owner={{ ORACLE_USER }}  group={{ ORACLE_GROUP }} 
   when: our_database_exists|failed
 
 - name: Set user.group to oracle.dba on audit file directory.
   file: path={{ ORACLE_BASE }}/admin/{{ SID }} state=directory 
-      owner={{ ORACLE_OWNER }}  group=dba recurse=yes
+      owner={{ ORACLE_USER }}  group=dba recurse=yes
   when: our_database_exists|failed
 
 - name: Copy over script to create the database
-  template: src=ora_create.sql.j2 dest={{ ORACLE_OWNER_HOME }}/create.sql 
-      owner={{ ORACLE_OWNER }}  group={{ ORACLE_OWNER }} 
+  template: src=ora_create.sql.j2 dest={{ ORACLE_USER_HOME }}/create.sql 
+      owner={{ ORACLE_USER }}  group={{ ORACLE_GROUP }} 
   when: our_database_exists|failed
 
 - name: Run SQL to create database
-  command: su - {{ ORACLE_OWNER }}  -c "sqlplus /nolog @create.sql > create.sql.log" 
+  command: su - {{ ORACLE_USER }}  -c "sqlplus /nolog @create.sql > create.sql.log" 
   when: our_database_exists|failed
 
 - name: And start Oracle back up.
