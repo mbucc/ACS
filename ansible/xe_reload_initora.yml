@@ -114,15 +114,19 @@
   lineinfile: dest={{ ORACLE_HOME }}/config/scripts/init.ora 
      regexp="^NLS_DATE_FORMAT.*" 
      line="NLS_DATE_FORMAT=\"YYYY-MM-DD\""
+  register: initora1
 
 - name: Increase open_cursors from 300 to 500.
   lineinfile: dest={{ ORACLE_HOME }}/config/scripts/init.ora 
      regexp="^open_cursors="
      line="open_cursors=500"
+  register: initora2
 
 - name: Copy over SQL to setup Oracle instance settings.
   template: src=xe_reload_initora.sql.j2 dest={{ ORACLE_USER_HOME }}/reload_initora.sql 
     owner={{ ORACLE_USER }} group={{ ORACLE_GROUP }} 
+  when: initora1.changed or initora2.changed
 
 - name: Run SQL to reconfigure Oracle instance settings.
   command: su - {{ ORACLE_USER }} -c "sqlplus /nolog @reload_initora"
+  when: initora1.changed or initora2.changed

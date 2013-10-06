@@ -9,7 +9,11 @@
   - include: ora_setup_oracle_express.yml
   - include: ora_setup_environment.yml
   - include: xe_reload_initora.yml
-#  - include: acs_user.yml
+    #
+    # Now is the time to run acceptance.sql
+    #
+    
+  - include: acs_user.yml
 
 
 # Oracle Text
