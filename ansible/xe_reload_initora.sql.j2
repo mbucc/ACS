@@ -1,0 +1,16 @@
+-- Reload init.ora.
+-- Created: Sat Oct  5 21:42:32 EDT 2013
+
+connect / as sysdba
+
+spool reload_initora.log
+
+shutdown
+
+create spfile from pfile='{{ ORACLE_HOME }}/config/scripts/init.ora';
+
+startup
+
+spool off
+
+exit

@@ -5,10 +5,11 @@ if [ -f /etc/bashrc ]; then
 	. /etc/bashrc
 fi
 
+export ORACLE_BASE={{ ORACLE_BASE }}
 export ORACLE_HOME={{ ORACLE_HOME }}
 export ORACLE_SID={{ SID }}
 export PATH=$ORACLE_HOME/bin:$PATH
-export NLS_LANG={{ LANGUAGE }}
+export LD_LIBRARY_PATH=$ORACLE_HOME/lib
 
 set -o vi
 
