@@ -2,34 +2,35 @@
 # Copy over and extract the ACS sources.
 # Created: Mon Sep  2 15:30:28 EDT 2013
 
-- name: Make sure /web/acs directory does not already exist.
-  file: path={{ AOL_SERVER_WEBROOT }}/acs state=absent
-
-- name: Make sure /web/acs directory does not already exist.
-  file: path={{ AOL_SERVER_WEBROOT }}/{{ ACS_DOMAIN_NAME }} state=absent
-
-#- name: Copy over file that adds Oracle to dynamic linker library path.
-#  template: src=oracle.conf.j2 dest=/etc/ld.so.conf.d/oracle.conf mode=0644
-
-#- name: Rebuild dynamic linker path cache.
-#  command: /sbin/ldconfig
-
 - name: Copy the ACS source tarball to the destination host.
   copy: src=acs-{{ ACS_VERSION }}.tgz dest=/tmp
           owner={{ AOL_SERVER_USER }} group={{ AOL_SERVER_USER }} mode=644
+  register: acs_tarball
+
+- name: Make sure /web/acs directory does not already exist.
+  file: path={{ AOL_SERVER_WEBROOT }}/acs state=absent
+  when: acs_tarball.changed
+
+- name: Make sure /web/acs directory does not already exist.
+  file: path={{ AOL_SERVER_WEBROOT }}/{{ ACS_DOMAIN_NAME }} state=absent
+  when: acs_tarball.changed
 
 - name: Extract the ACS sources.
   command: tar -zxf /tmp/acs-{{ ACS_VERSION }}.tgz -C {{ AOL_SERVER_WEBROOT }}
+  when: acs_tarball.changed
 
 - name: Rename ACS sources to use our domain name.
   command: mv {{ AOL_SERVER_WEBROOT }}/acs {{ AOL_SERVER_WEBROOT }}/{{ ACS_DOMAIN_NAME }}
+  when: acs_tarball.changed
 
 # XXX: figure out what mode to give to files and directories
 - name: Change permissions on extracted file to AOL server user.
   file: path={{ AOL_SERVER_WEBROOT }}/{{ ACS_DOMAIN_NAME }} state=directory
       owner={{ AOL_SERVER_USER }} group={{ WEB_GROUP }}
       recurse=yes
+  when: acs_tarball.changed
 
 - name: Make programs in bin executable.
   file: path={{ AOL_SERVER_WEBROOT }}/{{ ACS_DOMAIN_NAME }}/bin state=directory
       mode=0744 recurse=yes
+  when: acs_tarball.changed
