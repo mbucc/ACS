@@ -1,0 +1,28 @@
+---
+# Start AOL Server on boot and restart if it crashes.
+# Created: Tue Sep 17 21:39:11 EDT 2013
+
+# Done manually, downloaded package from 
+# http://rpm.pbone.net/index.php3/stat/4/idpl/20697182/dir/centos_5/com/perl-suidperl-5.8.8-40.el5_9.i386.rpm.html
+#- name: So we can run the Perl script suid.
+#  yum: name=perl-suidperl 
+
+# mode is 750 so users in the web group can restart server after
+# they change content.
+- name: Copy over kill script.
+  template: src=acs_restart_aolserver.j2
+      dest=/usr/local/bin/restart-aolserver
+      owner=root group={{ WEB_GROUP }}
+      mode=4750
+
+- name: Copy over script that (re)spawns AOLserver.
+  template: src=acs_spawn-aolserver.j2 dest=/sbin/spawn-aolserver
+      owner=root group=wheel
+      mode=0750
+
+- name: Make sure inittab has the respawn line.
+  lineinfile: dest=/etc/inittab regexp="^nsd" 
+     line="nsd:2345:respawn:/sbin/spawn-aolserver"
+
+- name: Tell init to re-read the /etc/inittab.  This will start AOL server
+  command: /sbin/init q

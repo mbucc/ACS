@@ -1,0 +1,27 @@
+---
+# Install Oracle Express.
+# Created: Mon Sep 23 18:39:33 EDT 2013
+
+- name: Copy over the settings file for silent install.
+  template: src=ora_xe.rsp.j2 dest=/tmp/xe.rsp
+  register: xe_config
+
+- name: Copy over RPM.
+  copy: src=oracle-xe-11.2.0-1.0.x86_64.rpm dest=/tmp
+  when: xe_config.changed
+
+- shell: /bin/rpm -qa | /bin/grep oracle-xe
+  register: rpm_missing
+  ignore_errors: True
+
+- name: Uninstall if new config.
+  command: /bin/rpm -e oracle-xe-11.2.0-1.0
+  when: xe_config.changed and not rpm_missing.rc
+
+- name: Install the RPM.
+  command: /bin/rpm -ivh /tmp/oracle-xe-11.2.0-1.0.x86_64.rpm
+  when: rpm_missing.rc or xe_config.changed
+
+- name: Configure Oracle Express.
+  command: /etc/init.d/oracle-xe configure responseFile=/tmp/xe.rsp
+  when: rpm_missing.rc or xe_config.changed

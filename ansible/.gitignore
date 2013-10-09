@@ -1,0 +1,15 @@
+.vagrant
+aolserver-3.3.0.tgz
+aolserver-3.5.0.tgz
+aolserver/
+nsoracle/
+nssha1-0.1/
+aolserver-3.5.11/
+acs_rights.orig
+nsoracle-2.7.tgz
+tcl8.4.20-src.tar.gz
+test.yml
+tk8.4.20-src.tar.gz
+*.tgz
+*.gz
+.*.swp

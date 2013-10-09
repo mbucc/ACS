@@ -385,7 +385,6 @@ ad_proc apm_register_package { { -callback apm_dummy_callback } path } {
 		[list version_name :version_name] \
 		[list summary :summary] \
 		[list description_format :description_format] \
-		[list description :description] \
 		[list release_date :release_date] \
 		[list vendor :vendor] \
 		[list vendor_url :vendor_url]]
@@ -403,6 +402,7 @@ ad_proc apm_register_package { { -callback apm_dummy_callback } path } {
 	    from apm_package_versions 
 	    where version_url = :version_url
 	} ]} {
+	    lappend columns [list description :description]
 	    set column_sql [list]
 	    foreach column $columns {
 		lappend column_sql "[lindex $column 0] = [lindex $column 1]"
@@ -414,6 +414,7 @@ ad_proc apm_register_package { { -callback apm_dummy_callback } path } {
 	    lappend columns [list version_url :version_url]
 	    lappend columns [list enabled_p "'f'"]
 	    lappend columns [list installed_p "'f'"]
+	    lappend columns [list description :description]
 	    set column_name_sql [list]
 	    set column_value_sql [list]
 	    foreach column $columns {

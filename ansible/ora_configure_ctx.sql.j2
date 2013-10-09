@@ -1,0 +1,14 @@
+-- Configure Oracle Text component.  ACS uses this for search.
+-- (The Oracle VirtualBox instance I started with did not have text setup.)
+-- Created: Mon Sep  2 09:09:51 EDT 2013
+
+spool configure_ctx.log
+
+-- @{{ ORACLE_HOME }}/ctx/admin/catnoctx.sql
+-- drop procedure sys.validate_context;
+
+@{{ ORACLE_HOME }}/ctx/admin/catctx.sql {{ ORA_CTXSYS_PASSWORD }} {{ SYSAUX_TABLESPACE_NAME }} {{ TEMP_TABLESPACE_NAME }} NOLOCK
+
+spool off
+
+exit;

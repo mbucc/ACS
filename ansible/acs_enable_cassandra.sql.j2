@@ -1,0 +1,17 @@
+-- Allow ACS to run Oracle monitoring reports.
+-- Created: Sun Sep 15 19:26:40 EDT 2013
+
+WHENEVER OSERROR EXIT 9;
+WHENEVER SQLERROR EXIT SQL.SQLCODE;
+
+spool enable_cassandracle.log
+
+connect / as sysdba
+
+@{{ AOL_SERVER_WEBROOT }}/{{ ACS_DOMAIN_NAME }}/www/doc/sql/cassandracle.sql 
+
+grant ad_cassandracle to {{ ACS_ORACLE_USER }};
+
+commit; 
+
+exit;

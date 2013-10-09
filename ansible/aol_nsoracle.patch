@@ -1,0 +1,24 @@
+--- /tmp/Makefile.old	2013-09-01 09:18:54.000000000 -0700
++++ Makefile	2013-09-01 09:20:58.000000000 -0700
+@@ -45,7 +45,8 @@
+ # Extra libraries
+ #
+ OCI_VERSION=$(shell strings $(ORACLE_HOME)/lib/libclntsh.so | grep "^Version.[0-9]\+\.[0-9]")
+-OCI_MAJOR_VERSION=$(shell echo $(OCI_VERSION) | cut -d ' ' -f2 | cut -d '.' -f1)
++#OCI_MAJOR_VERSION=$(shell echo $(OCI_VERSION) | cut -d ' ' -f2 | cut -d '.' -f1)
++OCI_MAJOR_VERSION=11
+ NS_VERSION=$(shell grep NS_VERSION $(NSHOME)/include/ns.h)
+ 
+ MODLIBS  =  -L$(ORACLE_HOME)/lib -lclntsh \
+@@ -91,9 +92,9 @@
+ 
+ install: all
+ 	$(RM) $(INSTBIN)/$(MOD)
+-	$(INSTALL_SH) $(MOD) $(INSTBIN)/
++	cp $(MOD) $(INSTBIN)/
+ 	$(RM) $(INSTBIN)/$(MODCASS)
+-	$(INSTALL_SH) $(MODCASS) $(INSTBIN)/
++	cp $(MODCASS) $(INSTBIN)/
+ 
+ clean:
+ 	$(RM) $(OBJS) $(MOD) $(OBJSCASS) $(MODCASS)

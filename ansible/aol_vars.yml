@@ -1,0 +1,17 @@
+---
+# AOL Server variables
+AOL_VERSION: 3.5.11
+AOL_TARBALL_BASENAME: aolserver-$AOL_VERSION
+AOL_TARBALL: $AOL_TARBALL_BASENAME-src.tar.gz
+AOL_HOME: /home/aol33
+AOL_SERVER_PREFIX: /usr/local/aolserver
+AOL_SERVER_USER: nsadmin
+AOL_SERVER_WEBROOT: /web
+WEB_GROUP: web
+
+AOL_PID_FILE: $AOL_HOME/log/aolserver.pid
+
+AOL_ORACLEDRIVER_TAG: 2.7
+
+AOL_TCL: tcl8.4.20
+AOL_TCL_TARBALL: $AOL_TCL-src.tar.gz
