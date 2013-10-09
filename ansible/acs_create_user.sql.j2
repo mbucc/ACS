@@ -3,6 +3,13 @@ WHENEVER SQLERROR EXIT SQL.SQLCODE;
 
 spool create_acs_user.log
 
+-- To drop user:
+--      comment out line in /etc/inittab
+--      /sbin/init q
+--      killall nsd
+--      su - oracle
+--      sqlplus system/oracle as sysdba
+-- then run the following command:
 -- DROP USER {{ ACS_ORACLE_USER }} CASCADE;
 
 create  user {{ ACS_ORACLE_USER }} 

@@ -42,7 +42,7 @@ create table survsimp_questions (
 	question_id		integer primary key,
 	survey_id		not null references survsimp_surveys,
 	sort_key		integer not null,
-	question_text		clob not null,
+	question_text		varchar(4000) not null,
 	-- can be 'text', 'shorttext', 'boolean', 'number', 'integer', 'choice'
         abstract_data_type      varchar(30) not null,
 	required_p		char(1) check (required_p in ('t','f')),
@@ -148,7 +148,7 @@ create table survsimp_question_responses (
 	-- if the user picked a canned response
 	choice_id		references survsimp_question_choices,
 	boolean_answer		char(1) check(boolean_answer in ('t','f')),
-	clob_answer		clob,
+	clob_answer		varchar(4000),
 	number_answer		number,
 	varchar_answer		varchar(4000),
 	date_answer		date,
