@@ -5,39 +5,49 @@ Status
 
     Provisions functional system:
         * Arsdigita Community System (version 3.4.10)
-        * Oracle 11.2g
         * AOLServer 3.5.11
-        * Oracle Linux
+        * Oracle Express 11.2g
+        * Oracle Linux 5, 64bit
 
     KNOWN ISSUES:
 
-        * Search is not working (Oracle Text is installed).
+        * Search is not working.
 
-        * SSL not working (ns module built, just not configured).
+        * SSL not working.
 
         * ecommerce module is not installed.
 
-        * The playbooks are clumsy about idempotency; for example,
-          AOL Server is recompiled every run, which is stupid.
+        * The playbooks are clumbsy about idempotency, especially
+          around database stuff.
 
         * The ACS parameter file needs some love.
 
+        * Inserts and updates to a table with a CLOB column is 
+          probably going to fail with an ORA-24816.  So far, I 
+          have fixed surveys and the TCL package management.
+
     TODO:
-
-        * Install target is a VM, not a real-live GNU/Linux box.
-
-        * Provision with Oracle Express, not the full 11.2g.
 
         * Configure system so AOL (and ACS?) man pages are on MANPATH.
 
 Setup
 
-    1. Set up vagrant box and point ansible to the box.
-       http://mbucc.blogspot.com/2013/08/setup-oracle-112g-virtualbox-for-ansible.html
+    1. Install Oracle Linux 5 64bit.
 
-    2. Adjust *_vars.yml files to your liking.
+    2. Install simple json package with yum.
 
-    3. Run: ansible-playbook playbook.yml.
+    3. Get sources:
+
+        a. Download RPM for Oracle Express 11.2 
+           oracle-xe-11.2.0-1.0.x86_64.rpm
+
+        b. Run ./acs_get.sh
+
+        c. Run ./aol_get.sh
+
+    4. Adjust *_vars.yml files to your liking.
+
+    5. Run: ansible-playbook playbook.yml.
 
         $ ansible-playbook -v playbook.yml
 
@@ -45,7 +55,6 @@ Setup
                    (The idempotency of the SQL in the ansible play
                    books is a work in progress.)
 
-    4. If you want email, setup your MTA.
 
 Oracle Licensing
 
