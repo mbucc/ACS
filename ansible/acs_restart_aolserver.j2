@@ -1,0 +1,50 @@
+#!/usr/bin/perl
+## Restarts an AOLserver. Takes as its only argument the name of the server to kill.
+
+## Kills an AOLServer.  Combined with the following line in /etc/inittab:
+##
+##    nss:2345:respawn:/usr/local/aolserver/bin/nsd -i -c /home/aol33/acs.ini
+##
+## which effectively restart the server (inittab respawns).
+##
+## This is a perl script because it needs to run setuid root,
+## and perl has fewer security gotchas than most shells.
+##
+## Make sure that $PIDFILE points to the right location.
+
+
+use strict;
+undef %ENV;
+$ENV{'PATH'} = '/sbin:/bin';
+
+my $PIDFILE = "{{ AOL_PID_FILE }}";
+
+my $pid;
+
+$< = $>; # set realuid to effective uid (root)
+
+# Get the PID of the process to kill.
+
+open(IN,"$PIDFILE") || die "Can't open PID file\n";
+
+while(<IN>) {
+    chomp($_);
+    $pid=$_;
+}
+close(IN) || die "Problem closing PID file\n";
+
+# Remove the PID file.  We have to delete the file to make sure that a subsequent call 
+# to this script will kill some other process.  We delete the file before the process dies
+# because if the service is set to respawn then we may delete the new pid file.
+
+my $cmd ="rm -f $PIDFILE";
+$cmd =~ /^(.*)$/;
+my $untaint_cmd = $1;
+`$untaint_cmd`;
+
+# Issue the kill
+$pid =~ /^(.*)$/;
+my $untaint_pid = $1;
+print "Killing $untaint_pid\n";
+kill 9, $untaint_pid;
+

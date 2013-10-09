@@ -1,0 +1,33 @@
+WHENEVER OSERROR EXIT 9;
+WHENEVER SQLERROR EXIT SQL.SQLCODE;
+
+spool create_acs_user.log
+
+-- To drop user:
+--      comment out line in /etc/inittab
+--      /sbin/init q
+--      killall nsd
+--      su - oracle
+--      sqlplus system/oracle as sysdba
+-- then run the following command:
+-- DROP USER {{ ACS_ORACLE_USER }} CASCADE;
+
+create  user {{ ACS_ORACLE_USER }} 
+        identified by {{ ACS_ORACLE_PASSWORD }} 
+        default tablespace {{ ACS_DEFAULT_TABLESPACE }} 
+        temporary tablespace {{ ACS_TEMP_TABLESPACE }}
+        quota unlimited on {{ ACS_DEFAULT_TABLESPACE }}
+;
+
+grant   CONNECT
+        , RESOURCE
+        , CREATE VIEW
+        , CREATE SYNONYM
+        , CTXAPP          -- free-text searching
+        , QUERY REWRITE   -- transform query to use materialized views
+        to {{ ACS_ORACLE_USER }}
+;
+
+spool off
+
+exit;

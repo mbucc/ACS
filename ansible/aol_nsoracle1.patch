@@ -1,0 +1,20 @@
+--- /tmp/Makefile.a	2013-10-06 15:06:22.000000000 -0400
++++ Makefile	2013-10-06 15:33:40.000000000 -0400
+@@ -44,16 +44,10 @@
+ #
+ # Extra libraries
+ #
+-OCI_VERSION=$(shell strings $(ORACLE_HOME)/lib/libclntsh.so | grep "^Version.[0-9]\+\.[0-9]")
+-#OCI_MAJOR_VERSION=$(shell echo $(OCI_VERSION) | cut -d ' ' -f2 | cut -d '.' -f1)
+ OCI_MAJOR_VERSION=11
+ NS_VERSION=$(shell grep NS_VERSION $(NSHOME)/include/ns.h)
+ 
+-MODLIBS  =  -L$(ORACLE_HOME)/lib -lclntsh \
+-	    -lcore$(OCI_MAJOR_VERSION) \
+-	    -lcommon$(OCI_MAJOR_VERSION) \
+-	    -lgeneric$(OCI_MAJOR_VERSION) \
+-	    -lclient$(OCI_MAJOR_VERSION)
++MODLIBS  =  -L$(ORACLE_HOME)/lib -lclntsh
+ 
+ ifneq (,$(findstring NS_VERSION,$(NS_VERSION)))
+ MODLIBS  +=  -lnsdb

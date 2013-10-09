@@ -1,0 +1,24 @@
+#! /bin/sh -e
+
+if [ "x$1" = "x" ] ; then
+    echo "Usage: $0 <role>" >> /dev/stderr
+    exit 1
+fi
+
+FN=$0.$1.log
+
+cat > check_role.sql << EOF
+spool $FN
+SELECT role FROM dba_roles WHERE UPPER(role) = UPPER('$1');
+spool off
+EXIT;
+EOF
+
+sqlplus system/{{ ORA_SYSTEM_PASSWORD }} @check_role.sql
+! grep "no rows selected" $FN > /dev/null
+RVAL=$?
+
+# Clean up.
+rm -f check_role.sql
+
+exit $RVAL

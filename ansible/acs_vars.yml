@@ -1,0 +1,26 @@
+---
+# ArsDigita variables.
+
+ACS_VERSION: 3.4.10
+
+# The service name is what shows up in tnsnames; e.g., sqlplus acs/acs@xe
+ACS_SERVICE_NAME: xe
+ACS_ORACLE_USER: acs
+ACS_ORACLE_PASSWORD: oracle
+
+# A tablespace is a logical grouping of physical data files.  Every user has
+# a default table space.
+ACS_DEFAULT_TABLESPACE: users
+ACS_TEMP_TABLESPACE: temp
+
+ACS_IP_ADDRESS: 192.168.30.117
+ACS_PORT: 8000
+ACS_DOMAIN_NAME: example.com
+ACS_ADMINISTRATOR_EMAIL: admin@$ACS_DOMAIN_NAME
+ACS_WATCHDOG_EMAIL: admin@$ACS_DOMAIN_NAME
+
+# According to ../www/doc/architecture-install.html, this should
+# be on a different mount point from the Oracle system data files
+# (which live in DATA_DIR, defined in ora_vars.yml).
+ACS_DATA_DIR: $ROOT_DIR/u02/$SID/oradata
+

@@ -1,0 +1,105 @@
+Try and use Ansible to build an ACS 3.0 server
+Created: Tue Aug 20 19:14:30 EDT 2013
+
+Status
+
+    Provisions functional system:
+        * Arsdigita Community System (version 3.4.10)
+        * AOLServer 3.5.11
+        * Oracle Express 11.2g
+        * Oracle Linux 5, 64bit
+
+    KNOWN ISSUES:
+
+        * Search is not working.
+
+        * SSL not working.
+
+        * ecommerce module is not installed.
+
+        * The playbooks are clumbsy about idempotency, especially
+          around database stuff.
+
+        * The ACS parameter file needs some love.
+
+        * Inserts and updates to a table with a CLOB column is 
+          probably going to fail with an ORA-24816.  So far, I 
+          have fixed surveys and the TCL package management.
+
+    TODO:
+
+        * Configure system so AOL (and ACS?) man pages are on MANPATH.
+
+Setup
+
+    1. Install Oracle Linux 5 64bit.
+
+    2. Install simple json package with yum.
+
+    3. Get sources:
+
+        a. Download RPM for Oracle Express 11.2 
+           oracle-xe-11.2.0-1.0.x86_64.rpm
+
+        b. Run ./acs_get.sh
+
+        c. Run ./aol_get.sh
+
+    4. Adjust *_vars.yml files to your liking.
+
+    5. Run: ansible-playbook playbook.yml.
+
+        $ ansible-playbook -v playbook.yml
+
+          WARNING: If you have ACS data, it may be deleted.
+                   (The idempotency of the SQL in the ansible play
+                   books is a work in progress.)
+
+
+Oracle Licensing
+
+    For a web app, you need to buy the per-cpu (Named users is every
+    user, not every application connection.)  The lowest per CPU
+    license is over $1,100.
+
+    So use Oracle Express.  It's free to use in production for one
+    CPU and up to 11GB of user data.  The base ACS install only
+    takes 20MB of user data (0.2% of this quota). Once I hit to 2
+    or 3 GB of user data, I'll look into using PostgreSQL.
+
+
+Links
+
+    http://docs.oracle.com/cd/E11882_01/server.112/e25494/create003.htm
+      Creating an 11.2 Oracle database.
+
+    http://docs.oracle.com/cd/E11882_01/server.112/e25494/create005.htm#i1013946
+      About init.ora.
+
+    http://www.dba-oracle.com/t_remove_database_instance.htm
+      How to delete an Oracle database.
+
+    https://forums.oracle.com/thread/2169244
+      Setting up Oracle Text (Oracle VirtualBox image didn't have it configured).
+
+    http://www.oracle.com/technetwork/products/express-edition/overview/index.html
+      Oracle Express.  Free, for 1 CPU and up to 11 GB of user data.  (The base ACS
+      install is around 20 MB.)
+
+          $ sqlplus /nolog
+          SQL> conn system
+          Enter password:
+          Connected
+          SQL> select owner, tablespace_name, sum( bytes ) / 1024 / 1024 as mb from dba_segments where owner not in ('SYS','SYSTEM') group by owner, tablespace_name;
+
+          OWNER                           TABLESPACE_NAME                       MB
+          ------------------------------ ------------------------------ ----------
+          CTXSYS                         SYSAUX                                3.5
+          OUTLN                          SYSTEM                              .5625
+          ACS                            ACS                               15.9375
+          DBSNMP                         SYSAUX                                 .5
+
+
+    https://edelivery.oracle.com/linux
+    http://public-yum.oracle.com/
+      Oracle Linux.  Considered Ubuntu, but it looked non-trivial to run Oracle there.

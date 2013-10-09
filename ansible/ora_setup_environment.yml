@@ -1,0 +1,4 @@
+---
+- name: Set up .bashrc for oracle user.
+  template: src=profile.j2 dest={{ ORACLE_USER_HOME }}/.profile 
+      owner={{ ORACLE_USER }}  group={{ ORACLE_GROUP }} 

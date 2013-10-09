@@ -1,0 +1,1055 @@
+; AOLserver reads these files when the server starts up and stores
+; parameters in an in-memory hash table.  So you have to restart the
+; server if you want to test a change made to this file.
+
+[ns/server/{{ ACS_SERVICE_NAME }}/acs]
+SystemName={{ DOMAIN_NAME }} Network
+; for legal pages, full corporate entity
+PublisherName={{ DOMAIN_NAME }} Network, Inc.
+; who signs the average user-visible pages
+SystemOwner=webmaster@{{ DOMAIN_NAME }}
+; URL to tell users to go to
+SystemURL=http://{{ DOMAIN_NAME }}
+; who signs the admin pages, e.g., a programmer who can fix/enhance them
+AdminOwner=a-programmer@{{ DOMAIN_NAME }}
+; are admin users allow to write SQL queries
+; (only say yes if they are not likely to crash the server)
+AllowAdminSQLQueries=0
+; stuff we want restricted to SSL (https) (filter patterns)
+; note that this only takes effect if you have an SSL listener configured 
+; on your AOLserver
+RestrictToSSL=/admin*
+RestrictToSSL=/NS/Admin*
+RestrictToSSL=/NS/Db*
+; do we want to restrict the entire server to registered users
+; (the content_sections facility probably could also accomplish this
+;  but not as simply)
+RestrictEntireServerToRegisteredUsersP=0
+; Is this server being used as a staff server?
+; (only used by /pvt/home.tcl and may become legacy)
+StaffServerP=0
+HostAdministrator=somenerd@{{ DOMAIN_NAME }}
+GraphicsSiteAvailableP=0
+; these work for text-only and graphics site
+bgcolor=white
+textcolor=black
+; this is only for the graphics site
+background=/graphics/bg.gif
+; set ReadOnlyP=1 if you're going to wipe your Oracle installation
+ReadOnlyP=0
+; do we expect this to be a site visited by people 
+; from all over the world (in which case we might ask for
+; country rather than state)
+InternationalP=1
+; is it even worth bothering asking for state and zip code?
+SomeAmericanReadersP=1
+; do we allow a persistent cookie?
+; we need this for pulling times out of the database and turning
+; then into ns_times; this is for standard time (don't worry about
+; daylight saving's time, we figure that out by calling ns_localtime)
+; United States Eastern time is -5
+HoursDifferenceFromGMT=-5
+; what two characters do we use for salting ns_crypt
+; (documented at aolserver.com; doesn't matter as long
+; as you don't change this after going live)
+CryptSalt=fb
+; admin user interface may change depending on whether we expect
+; 10, 100, 1000, or 100000 users; we have "small", "medium", "large"
+; as possible values, consistent with Oracle config files
+NumberOfUsers=medium
+; clickthrough and referral admin report defaults
+; change depending on whether 
+; this is a dev site or a 500,000 hit/day live site
+; we have "small", "medium", "large" as possible values
+; we think "medium" = site like photo.net (700,000 hits/day)
+TrafficVolume=medium
+; general comments default approval
+; open means stuff goes live immediately
+; wait means stuff waits for administrator to approve
+; closed means only administrator can post
+DefaultCommentApprovalPolicy=wait
+; general links default approval
+; open means stuff goes live immediately
+; wait means stuff waits for administrator to approve
+; closed means only administrator can post
+DefaultLinkApprovalPolicy=open
+; if set, update last visit cookie according to LastVisitUpdateInterval
+; so that we can support reporting of who's online. This makes last visit
+; times more accurate, but increases system load (because we're also 
+; updating the last_visit column in the users table)
+WhosOnlineP=1
+WhosOnlineDecoration=<a href="/photo/pcd0952/boston-marathon-60.tcl"><img HEIGHT=134 WIDTH=196 src="/photo/pcd0952/boston-marathon-60.1.jpg" ALT="100th Anniversary Boston Marathon (1996)."></a>
+; how many seconds old a last visit cookie must be before we update it
+LastVisitUpdateInterval=600
+
+;stuff having to do with registration and login
+NotifyAdminOfNewRegistrationsP=1
+; where to send those notes (defaults to SystemOwner)
+;NewRegistrationEmailAddress=admin@{{ DOMAIN_NAME }}
+; send confirmation email to user after registration
+EmailRegistrationConfirmationToUserP=0
+; set this to 1 if user does not go live immediately
+RegistrationRequiresApprovalP=0
+; set this to 1 if the user has to receive and email
+; and come back to the site
+RegistrationRequiresEmailVerificationP=0
+; have the system generate a random password instead of the user
+RegistrationProvidesRandomPasswordP=0
+; Encypt Passwords in the database
+EncryptPasswordsInDBP=0
+; Email users forgotten passwords
+EmailForgottenPasswordP=1
+; If so, do you choose a random a password
+; (if you use encrypted password, a random password will always be generated)
+EmailRandomPasswordWhenForgottenP=0
+; if the admin changes the password, should it be mailed to the user
+EmailChangedPasswordP=1
+AllowPersistentLoginP=1
+; if so, do we default to a persistent cookie?
+PersistentLoginDefaultP=1
+; do we keep track of anonymous and logged-in browsers
+; as to last_visit and second_to_last_visit
+LastVisitCookiesEnabledP=1
+; how many seconds old must a last visit cookie be before 
+; we consider this a new visit
+LastVisitExpiration=86400
+; how long will we associated hits from an individual ip
+; as the same user. Hits within this interval will
+; be considered the same session for session tracking.
+LastVisitCacheUpdateInterval=600
+; what tables to stuff when user registers
+;RequiredUserTable=users_preferences
+;RequiredUserTable=users_demographics
+;RequiredUserTable=users_contact
+; do we want to set each cookie on more than one hostname
+; (i.e., is your site a typical "foobar.com" and "www.foobar.com" case)
+NeedCookieChainP=0
+CookieChainFirstHostName={{ DOMAIN_NAME }}
+CookieChainSecondHostName=www.{{ DOMAIN_NAME }}
+; do we have legacy users for whom we created
+; accounts from old bboard postings (keyed by email address)?
+UsersTableContainsConvertedUsersP=0
+; Primarily for WimpyPoint, but may be useful to other modules
+PathToACS=/web/{{ ACS_SERVICE_NAME }}
+; Where is the global directory for such things as file-not-found
+; error messages
+GlobalURLStub=/global
+; for how long can a be session inactive before it times out? (in seconds)
+SessionTimeout=86400
+; how often should we reissue the session_id cookie (to prevent expiration)
+; and update last_hit in the sessions table?
+SessionCookieReissue=600
+; how long after the last hit should we save information in the SessionLifetime
+; table?
+SessionLifetime=176800
+; how many characters long are the tokens used for authentication?
+TokenLength=32
+; how long to cache session information for?
+SessionInfoCacheInterval=600
+; use the old login process where email and password are on separate pages?
+SeparateEmailPasswordPagesP=0
+; log detailed information about security and sessions for which hosts?
+; useful for troubleshooting; remove to log for none
+; LogSecurityMinutia=
+; if a user provides a Host header which isn't this, redirect the user to
+; this particular host. e.g., if {{ ACS_SERVICE_NAME }}.com and www.{{ ACS_SERVICE_NAME }}.com
+; point to the same IP, set this to 1 so cookies will be properly set.
+ForceHostP=1
+
+; stuff having to do with what and how we collect info from users 
+; upon registration and at various stages afterward
+; (for legacy reasons, some of the stuff that should go here is 
+;  actually in the main acs section above)
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/user-info]
+SolicitPortraitP=1
+; Maximum portrait size in bytes. Leave empty for no limitation.
+MaxPortraitBytes=200000
+; if you have ImageMagick configured, try to 
+; producte thumbnails?
+ProduceThumbnailsAutomaticallyP=0
+AcceptablePortraitMIMETypes=image/gif image/jpeg
+
+; stuff having to do with the physical computer on which 
+; this ACS is running.  Some scripts may adjust their behavior
+; according to what operating system or perhaps the machine power
+; (e.g., /admin/static/link-check.tcl will sleep for 1 second 
+; periodically on wimpy machines)
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/machine]
+; probably best to consider any machine with only one CPU as wimpy
+WimpyMachineP=1
+
+; address information for a cluster of load-balanced servers (to enable
+; distributed util_memoize_flushing, for instance).
+[ns/server/acs-staging/acs/server-cluster]
+; is clustering enabled?
+ClusterEnabledP=0
+; which machines can issues requests (e.g., flushing) to the cluster?
+;ClusterAuthorizedIP=209.67.242.*
+; which servers are in the cluster? This server's IP may be included too
+;ClusterPeerIP=209.67.242.171
+;ClusterPeerIP=209.67.242.172
+; log clustering events?
+;EnableLoggingP=1
+
+; stuff having to do with the ArsDigita Community System software
+; itself, e.g., workarounds for bugs
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/acs]
+LogCLOBdmlP=1
+
+; stuff having to do with abstract urls (doc/abstract-url.html)
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/abstract-url]
+; enable abstract url handling?
+EnableAbstractURLsP=1
+; precedence for file extensions, e.g., "tcl,adp,html" means "serve
+; a .tcl file if available, else an .adp file if available, else an
+; .html file if available, else the first file available in alphabetical
+; order". Comma-separated
+ExtensionPrecedence=tcl,adp,html,jpg,gif
+
+; stuff having to do with user groups 
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/ug]
+CacheTimeout=600
+;this will be part of url where groups can access their webpages
+;e.g. if GroupsDirectory=groups and group short name is travel at photo.net
+;then group travel will have it's user pages accessible at photo.net/groups/travel
+;note that this is not the same as the file system directory for the group system files
+GroupsDirectory=groups
+;this sets the part of url needed to access group admin pages 
+;when GroupsDirectory=groups and GroupsAdminDirectory=admin then group admin
+;pages for group with short_name travel will be accessible at photo.net/groups/admin/travel
+;note that this is not the same as the file system directory for the group admin pages
+GroupsAdminDirectory=admin
+
+; general anti-spam stuff, useful system-wide
+; esp. for IP address ranges that we don't like 
+; we want GLOB patterns to feed to [string match ..]
+; and we want a policy decision about whether to pretend
+; to be broken or be explicit that they've been banned
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/antispam]
+FeignFailureP=1
+;IPglob=209.114.173.*
+;IPglob=209.114.172.*
+; to block out one single address
+;IPglob=209.114.172.46
+; we don't allow users to submit HTML containing any of these tags
+NaughtyTag=div
+NaughtyTag=font
+
+; stuff having to do with the user's workspace
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/pvt]
+; WorkspacePageDecoration= an image
+; AlertPageDecoration=<a href="/photo/pcd2388/alex-green-building-21.tcl"><img HEIGHT=198 WIDTH=132 src="/photo/pcd2388/alex-green-building-21.1.jpg" ALT="Alex in front of the Green Building.  Massachusetts Institute of Technology"></a>
+
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/content]
+; do we serve the generated index.tcl page or something else
+; from the file system?
+; SpecialIndexPage=/index.html
+; SiteMap=/site-map.html
+
+; stuff for dealing with static pages 
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/static]
+; this has to be a complete REGEXP with | for or's; \.html?$ will match .htm or .html
+; \.html?$|\.adp$ will pull .adp pages into the table as well.
+IncludeRegexp=\.html?$
+; URL stub to exclude, Tcl GLOB syntax, include leading /
+; used by /admin/static/static-syncer-ns-set.tcl
+ExcludePattern=/pvt/*
+ExcludePattern=/global/*
+ExcludePattern=/graphics/*
+ExcludePattern=/admin/*
+
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/bboard]
+PartialUrlStub=/bboard/
+; SystemName={{ DOMAIN_NAME }} Network Discussion Forums (default)
+; SystemOwner= something different (if desired) from SystemOwner above
+; HostAdministrator=something different from system-wide
+SenderEmail=bboard-robot@{{ DOMAIN_NAME }}
+; IndexPageDecoration=<a href="/photo/pcd0796/downtown-munich-41.tcl"><img HEIGHT=134 WIDTH=196 src="/photo/pcd0796/downtown-munich-41.1.jpg" ALT="Downtown Munich."></a>
+; ActivePageDecoration=<a href="http://photo.net/photo/pcd3609/girls-17.tcl"><img HEIGHT=134 WIDTH=196 src="http://photo.net/photo/pcd3609/girls-17.1.jpg"></a>
+; do we offer users a full-text search box
+ProvideLocalSearchP=1
+; do we use Oracle's Context option (only works if 
+; ProvideLocalSearchP=1)
+UseContext=0
+; do we use standalone PLS search system
+UsePLS=0
+; do we use AltaVista (only works if ProvideLocalSearchP=0
+; and if the site's content is exposed to AltaVista)
+LinktoAltaVista=0
+; anything below this threshold is considered uninteresting
+InterestLevelThreshold=4
+; can a user start a new bboard
+UserCanAddTopicsP=0
+; link bboard permissions to AOLserver user; this is legacy 
+; code for ASME and probably doesn't work
+UseNsPermAuthorizationP=0
+FileUploadingEnabledP=1
+; this path does *not* contain a trailing "/"
+FilePath=/web/foobar/
+; Urgent messages
+UrgentMessageEnabledP=0
+DaysConsideredUrgent=14
+; Enables per-thread email alerts.
+EnableThreadEmailAlerts=1
+
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/news]
+; open means stuff goes live immediately
+; wait means stuff waits for administrator to approve
+; closed means only administrator can post
+ApprovalPolicy=wait
+; how many days a story is live (by default)
+DefaultStoryLife=30
+; When we display news items on a users workspace, what is the maximum 
+; number of items that we display? This lets us display the 10 most
+; recent items easily w/out limiting the number of active stories
+; Leave blank to display all
+DefaultNumberOfStoriesToDisplay=
+; SystemOwner= (defaults to site owner)
+; do we allow users to comment on news
+SolicitCommentsP=1
+CommentApprovalPolicy=wait
+IndexPageDecoration=<a href="http://photo.net/photo/pcd0865/nick-gittes-and-alex-107.tcl"><img HEIGHT=134 WIDTH=196 src="http://photo.net/photo/pcd0865/nick-gittes-and-alex-107.1.jpg" ALT="Nick Gittes and Alex. 1998."></a>
+ItemPageDecoration=<a href="http://photo.net/photo/pcd0305/fountain-mouth-67.tcl"><img HEIGHT=134 WIDTH=196 src="http://photo.net/photo/pcd0305/fountain-mouth-67.1.jpg"></a>
+
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/calendar]
+SystemName=Calendar
+; open means stuff goes live immediately
+; wait means stuff waits for administrator to approve
+; closed means only administrator can post
+ApprovalPolicy=wait
+MaxEventsOnIndexPage=15
+; defaults for users, depends on type of service
+DaysFromPostingToStart=30
+DaysFromStartToEnd=0
+; show an event a few days after it ends?
+DaysFromEndToExpiration=3
+; how many days a story is live (by default)
+; SystemOwner= (defaults to site owner)
+SolicitCommentsP=1
+CommentApprovalPolicy=open
+TitleExample=Ansel Adams show at Getty Center in Los Angeles, March 1-June 15
+; do we ask for country, state, city info?
+EventsHaveLocationsP=1
+
+; for the classified ad system
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/gc]
+; SystemName=
+; SystemOwner=  (defaults to global system owner)
+PartialUrlStub=/gc/
+ProvideLocalSearchP=1
+ProvideEmailAlerts=1
+; send a reminder to people to edit or delete their ads?
+NagAdOwners=1
+HowManyRecentAdsToDisplay=5
+; How many bids an auction must collect to qualify as a "hot" auction.
+HotAuctionThreshold=2
+; some stuff to deal with annoying photo.net abusers
+; don't let people put the word "reduced" in subject line
+DisallowReducedInSubject=1
+DisallowExclamationPointInSubject=1
+DisallowAllUppercase=1
+DisalloweBay=1
+IncludeBannerIdeasP=0
+; IndexPageDecorationTop=<a href="/photo/pcd0795/campo-de-fiori-woman-and-fruit-62.tcl"><img HEIGHT=134 WIDTH=196 src="/photo/pcd0795/campo-de-fiori-woman-and-fruit-62.1.jpg" ALT="The open-air market in the Campo de Fiori (Rome)"></a>
+; IndexPageDecorationSide=<a href="/photo/pcd0795/campo-de-fiori-produce-61.tcl"><img align=right hpspace=10 vspace=5 HEIGHT=198 WIDTH=132 src="/photo/pcd0795/campo-de-fiori-produce-61.1.jpg" ALT="The open-air market in the Campo de Fiori (Rome)"></a>
+; DomainTopDecorationTop=<a href="/photo/pcd0795/campo-de-fiori-woman-and-fruit-62.tcl"><img HEIGHT=134 WIDTH=196 src="/photo/pcd0795/campo-de-fiori-woman-and-fruit-62.1.jpg" ALT="The open-air market in the Campo de Fiori (Rome)"></a>
+; HotAuctionsDecoration=<a href="/photo/pcd1312/money-for-beer-42.tcl"><img HEIGHT=134 WIDTH=196 src="/photo/pcd1312/money-for-beer-42.1.jpg" ALT="Money for beer.  Times Square, 1995."></a>
+; PlaceAdDecoration=<a href="/photo/pcd0222/rolls-royces-16.tcl"><img HEIGHT=134 WIDTH=196 src="/photo/pcd0222/rolls-royces-16.1.jpg" ALT="Rolls Royces.  Getty Center underground garage.  Los Angeles, California."></a>
+; PlaceAd2Decoration=<a href="/photo/pcd0222/rolls-royces-18.tcl"><img HEIGHT=134 WIDTH=196 src="/photo/pcd0222/rolls-royces-18.1.jpg" ALT="Rolls Royces.  Getty Center underground garage.  Los Angeles, California."></a>
+; EditAd2Decoration=<a href="/photo/pcd2488/old-house-59.tcl"><img HEIGHT=134 WIDTH=196 src="/photo/pcd2488/old-house-59.1.jpg"></a>
+; AddAlertDecoration=<a href="/photo/pcd0866/boykin-spaniel-16.tcl"><img HEIGHT=198 WIDTH=132 src="/photo/pcd0866/boykin-spaniel-16.1.jpg" ALT="Boykin Spaniel in Harvard Yard.  Cambridge, MA 1998."></a>
+SolicitCommentsP=1
+CommentApprovalPolicy=open
+
+
+; have the system write PICS headers for naughty pages
+; or directories
+; if EnabledP is 1 you can have as many 
+; NaughtyPatterns as you like; these are fed to 
+; ns_register_filter
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/pics]
+EnabledP=0
+NaughtyPattern=/nudebabes/*
+NaughtyPattern=/doc/*
+; a PICS header has to all be on one line anyway
+Protocol={PICS-1.1 {headers PICS-Label}}
+Label={(PICS-1.1 "http://www.rsac.org/ratingsv01.html" l gen true comment "RSACi North America Server" by "philg@mit.edu" for "http://photo.net/photo/christina/" on "1998.03.13T18:06-0800" r (n 4 s 0 v 0 l 0))}
+
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/contest]
+OfferIndexPageP=1
+ContestAdminOwner=contestprogrammer@{{ DOMAIN_NAME }}
+
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/adserver]
+; the location of the adserver .tcl pages in the file system (typically /adserver/)
+; note the trailing slash; also note that this isn't where ads go
+PartialUrlStub=/adserver/
+DefaultAd=/ads/scorecard.gif
+DefaultTargetUrl=http://www.scorecard.org
+DetailedPerUserLoggingP=0
+
+; the Neighbor to Neighbor service (sort of like bboard;
+; http://photo.net/photo/ is probably the best example of this in use )
+
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/neighbor]
+; SystemName={{ DOMAIN_NAME }} Neighbor to Neighbor Service
+; SystemOwner= something different (if desired) from SystemOwner above
+; HostAdministrator=something different from system-wide
+; if you're only going to run one little category, and
+; for backward compatibility for photo.net
+; this is a category_id referencing the n_to_n_primary_categories
+; table
+DefaultPrimaryCategory=1
+; if someone can't think of more than one; affects links from opc.tcl
+OnlyOnePrimaryCategoryP=0
+; do we offer users a full-text search box
+ProvideLocalSearchP=1
+; do we use Oracle's Context option (only works if 
+; ProvideLocalSearchP=1)
+UseContext=0
+; do we use standalone PLS search system
+UsePLS=0
+; do we use AltaVista (only works if ProvideLocalSearchP=0
+; and if the site's content is exposed to AltaVista)
+LinktoAltaVista=0
+SolicitCommentsP=1
+CommentApprovalPolicy=wait
+NReasonablePostings=100
+
+; the clickthrough module (/tcl/ad-clickthrough.tcl)
+
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/click]
+; CustomREGEXP=/ct/philg(/.+)$
+
+
+; the referer module (/tcl/ad-referer.tcl)
+
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/referer]
+; domains to exclude from referer tracking
+LocalDomain={{ DOMAIN_NAME }}
+LocalDomain=www.{{ DOMAIN_NAME }}
+; if any of these are set, we require at least one to be true
+; (if you don't set these, you'll get lots of referrals from random
+;  local files and "bookmarks"; trust us)
+InclusionGLOB=http://*
+InclusionGLOB=HTTP://*
+
+
+; the data warehouse module
+
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/dw]
+DefaultTable=ad_hoc_query_view
+; SystemName=yourdomain data warehouse
+
+; redirects, separate by vertical bar (we could just do 
+; FROM=TO but that's bad because sometimes we might want to 
+; redirect based on an = char, also we want to spec Inherit
+; or JustOne (whether to do everything beginning with /foo 
+; or just "/foo" exactly)
+; 
+; Another interesting option is Pattern=, which lets you say
+; "redirect  /~philg/whatevercomesnext to /philg/whatevercomesnext"
+; (rather than just redirecting /~philg/* to a fixed location)
+;  
+
+; for the address book
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/addressbook]
+SendBirthdayAlerts=1
+
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/comments]
+; email notifications to author/ad_system_owner
+EmailNewUnansweredQuestion=1
+EmailNewAlternativePerspective=1
+EmailNewRating=1
+EmailEditedUnansweredQuestion=1
+EmailEditedAlternativePerspective=1
+EmailEditedRating=1
+
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/general-comments]
+; Whether or not we accept file uploads for general comments.
+AcceptAttachmentsP=1
+; Maximum attachment size in bytes. Leave empty for no limitation.
+MaxAttachmentSize=5000000
+AdminEditingOptionsInlineP=0
+; Images with widths less than this parameter will be displayed inline.
+InlineImageMaxWidth=512
+; Use titles/one-lines for comments?
+UseTitlesP=1
+
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/general-links]
+; use link clickthroughs?
+ClickthroughP=1
+; allow suggested links from /general-links/index.tcl?
+AllowSuggestionsP=1
+
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/links]
+; email notifications to author/ad_system_owner
+EmailNewLink=1
+EmailEditedLink=1
+; use link clickthroughs?
+GeneralLinksClickthroughP=1
+
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/redirect]
+; Inherit=/from/|/to/
+; JustOne=/randomoldfileonthisbox.html|http://www.otherpersonsserver.com/
+; Pattern=/olddir/|/newdir/
+Pattern=/pvt/address-book|/address-book
+
+; for the /directory module wherein users get to look each other up
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/directory]
+ProvideUserBrowsePageP=1
+UserBrowsePageLimitedToNotNullUrlP=1
+;IndexPageDecoration=<a href="/photo/pcd1641/snowy-owl-1.tcl"><img HEIGHT=134 WIDTH=196 src="/photo/pcd1641/snowy-owl-1.1.jpg" ALT="Snowy Owl."></a>
+;BrowsePageDecoration=<a href="/photo/pcd0741/no-zoo-orangutan-lazing-13.tcl"><img HEIGHT=198 WIDTH=132 src="/photo/pcd0741/no-zoo-orangutan-lazing-13.1.jpg" ALT="Orangutan.  Audubon Zoo.  New Orleans, Louisiana. "></a>
+;SearchResultsDecoration=<a href="/photo/pcd0456/st-peter-crowd-17.tcl"><img HEIGHT=134 WIDTH=196 src="/photo/pcd0456/st-peter-crowd-17.1.jpg"></a>
+
+; for the module that bills members or figures out which are losers
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/member-value]
+EnabledP=0
+UseRealMoneyP=0
+; currency should be a three-char code that CyberCash likes, e.g., "USD"
+Currency=USD
+; if true, check mv_monthly_rates
+ChargeMonthlyP=0
+ClassifiedAdRate=0
+ClassifiedAdMistakeRate=5
+ClassifiedAdSpamRate=25
+QuestionRate=0
+; people who don't look in archives
+QuestionDupeRate=5
+QuestionOffTopicRate=25
+AnswerRate=0
+; deleted because inaccurate
+AnswerWrongRate=5
+AnswerMistakeRate=2
+; we might credit people for a good submission
+CommentRate=-5
+CommentDupeRate=5
+CommentSpamRate=25
+LinkRate=0
+LinkDupeRate=5
+LinkSpamRate=25
+BillingInterval=month
+; wait until next interval if accumulated charges are less
+; than this amount
+BillingMinimum=7.50
+; set this if you want notification of member value charges to go 
+; somewhere other than AdminOwner
+; NotificationEmail=
+; what amount of money do we consider moves a user into the 
+; "expensive" class (bad for the site)
+ExpensiveThreshold=20
+
+; for the Content Tagging Package
+; (PG|R|X)LogP=1 logs the potentially offensive material
+; (PG|R|X)BounceP=1 prevents the offensive material from being posted at all
+; (PG|R|X)BowdlerizeP=1 replaces relevant words with BowdlerizationText
+; Note that in generally, you can't bounce only PG and X, but not R,
+; the scripts find the lowest allowed naughtiness to bounce or log.
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/content-tagging]
+; email address to notify if something needs attention
+; defaults to SystemOwner
+; Administrator=
+; log into naughty_events table 
+PGLogP=0
+RLogP=1
+XLogP=1
+; prevent this level of stuff from being posted at all 
+PGBounceP=0
+RBounceP=0
+XBounceP=1
+; send email to Administrator
+PGNotifyP=0
+RNotifyP=0
+XNotifyP=1
+; bowdlerize text
+PGBowdlerizeP=0
+RBowdlerizeP=1
+XBowdlerizeP=1
+BowdlerizationText=****
+; what do we mask off for unlogged-in users
+DefaultContentMask=0
+CacheTimeout=600
+UserContentMaskCacheTimeout=600
+
+; for the ACS Chat System
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/chat]
+EnabledP=1
+; SystemName=Chat
+; how long to cache the postings to a room (updates force a cache update
+; so this theoretically could be 5 hours or whatever)
+CacheTimeout=120
+; how long will a room's properties (e.g., private group, moderation) be cached
+RoomPropertiesCacheTimeout=600
+UsersCanCreateRoomsP=0
+; set to 1 if you want most recent postings on top; this is the way that 
+; theglobe.com and other familiar chat systems do it (keeps users from 
+; having to scroll to see new msgs)
+MostRecentOnTopP=1
+; do we want to offer users the option of sending private messages?
+PrivateChatEnabledP=0
+; do we offer users a link to a chat room's history?
+ExposeChatHistoryP=1
+; how many messages to display when users choose short medium or long
+NShortMessages=25
+NMediumMessages=50
+NLongMessages=75
+; show a picture at the index page and in individual rooms?
+DefaultDecoration=<a href="http://photo.net/photo/pcd0865/rachel-mouth-3.tcl"><img HEIGHT=134 WIDTH=196 src="http://photo.net/photo/pcd0865/rachel-mouth-3.1.jpg" ALT="Mouth."></a>
+; how often the javascript version should refresh itself
+JavaScriptRefreshInterval=5
+
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/mailing-list]
+IndexPageDecoration=<a href="http://photo.net/photo/pcd0803/cortina-dalmatian-and-mailboxes-33.tcl"><img HEIGHT=198 WIDTH=132 src="http://photo.net/photo/pcd0803/cortina-dalmatian-and-mailboxes-33.1.jpg" ALT="Mailboxes and a Dalmatian, in Cortina"></a>
+
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/sidegraphics]
+EnabledP=1
+/bboard/index.tcl=http://photo.net/photo/pcd0796/linderhof-front-door-23.2.jpg
+
+
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/glossary]
+; open means stuff goes live immediately, user can edit own terms
+; wait means stuff waits for administrator to approve, 
+; only administrator can edit
+; closed means only administrator can post
+ApprovalPolicy=closed
+
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/robot-detection]
+; the URL of the Web Robots DB text file
+WebRobotsDB=http://info.webcrawler.com/mak/projects/robots/active/all.txt
+; which URLs should ad_robot_filter check (uncomment to turn system on)
+; FilterPattern=/members-only-stuff/*.html
+; FilterPattern=/members-only-stuff/*.tcl
+; the URL where robots should be sent
+RedirectURL=/robot-heaven/
+; How frequently (in days) the robots table
+; should be refreshed from the Web Robots DB
+RefreshIntervalDays=30
+
+; stuff for templates, multi-lingualism
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/style]
+; where to find templates, typically /web/{{ ACS_SERVICE_NAME }}/templates
+; (note lack of trailing slash, just like the pageroot)
+; you can override it with this config param
+; TemplateRoot=
+; do we look for language-specific templates, e.g., foobar.en.adp?
+; (and do we offer user interface to help user choose)
+MultiLingualP=0
+; most publishers will want the language of Jesus Christ and the Bible
+; to be the default (i.e., English ("en")), if only because there is so much
+; embedded English UI in subsystems of the ACS
+LanguageSiteDefault=en
+; offer people a language choice without logging in?
+LanguageCookieP=1
+; do we look for plain. and fancy. templates, e.g., foobar.plain.adp?
+; (and do we offer user interface to allow user to choose)
+PlainFancyP=1
+; most publishers will want "fancy" to be preferred (if available)
+PlainFancySiteDefault=fancy
+; offer people a graphics choice without logging in?
+PlainFancyCookieP=1
+
+; for the ticket tracking system
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/ticket]
+; when sending a note to an admin or engineer about a trouble
+; ticket, what reply-to: address to use
+; note that this address must be set up through your mail transfer
+; agent to run a email enqueueing script.
+; See doc/ticket.html for more info on configuring the ticket system.
+; (from /web/{{ ACS_SERVICE_NAME }}/bin/queue-message.pl)
+TicketReplyEmail=support-ticket-robot@{{ DOMAIN_NAME }}
+; The PicklistData specifies additional custom data fields you would like
+; associated with tickets in the database. You can have up to five of these.
+;PicklistData=hardware_model "Hardware Model" picklist_single_select data1 "" "1000 (Merced)" "2500 (Charles)" "5000 (Connecticut)"
+;PicklistData=software_version "Software Version" picklist_single_select data2 "" "FooOS 1.0" "FooOS 1.0-EFT" "FooOS==OS 1.6" "FooOS 2.0"
+PicklistData=build "Build" text data4 25
+; if LinkTicketToUserGroupP = 1, each ticket is assigned to a user group
+; a user must be in the group to see the ticket
+LinkTicketToUserGroupP=0
+; If CustomerCanCreateNewTickets = 1, customers may create new tickets.
+; (A "customer" is any user who is not in the ticket admin group)
+CustomerCanCreateNewTickets=1
+; The menu of ticket severity choices
+SeverityList=low medium serious critical showstopper
+
+
+; to tell the email queue system where to dispatch
+; all of this is based on tags supplied by the mail-transfer agent
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/email-queue]
+; how often to check the queue for new messages
+;QueueSweepInterval=300
+; what to do with a new message
+; format is tag|tcl_proc_to_invoke
+;DispatchPair=ticket-tracker|ticket_process_message
+
+
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/intranet]
+IntranetName=yourdomain Network
+IntranetEnabledP=0
+DisplayVacationsOnCalendar=1
+; the unit of measurement for entering salaries (month or year)
+SalaryPeriodInput=year
+; used to display salary
+SalaryPeriodDisplay=year
+; list of fee types
+FeeTypes="setup" "monthly development" "monthly hosting" "hourly" "stock"
+; Do we want to track hours?
+TrackHours=1
+; what's the url stub? i.e. http://{{ DOMAIN_NAME }}<stub>
+IntranetUrlStub=/intranet
+; Group Types
+IntranetGroupType=intranet
+ProjectGroupShortName=project
+OfficeGroupShortName=office
+CustomerGroupShortName=customer
+PartnerGroupShortName=partner
+ProcedureGroupShortName=procedure
+EmployeeGroupShortName=employee
+AuthorizedUsersGroupShortName=authorized_users
+; What color do we put in the header row of tables?
+TableColorHeader=#e6e6e6
+; What color do we put in the odd numbered rows of tables?
+TableColorOdd=#f4f4f4
+; What color do we put in the even numbered rows of tables?
+TableColorEven=#ffffff
+CommentApprovalPolicy=open
+; If we want to include people who are delinquent with project 
+; reports in our status-report, what user_class_id do we use?
+; Leave blank to skip this part of the status report
+UserClassStatusReportID=
+
+
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/help]
+; Root of the help directory hierarchy, relative to the PageRoot.
+; Same as page root if not set.
+; HelpPageRoot=/help
+
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/fs]
+SystemName=File Storage System
+; optional, defaults to main site owner 
+; SystemOwner=fs-admin@{{ DOMAIN_NAME }}
+DefaultPrivacyP=f
+; do you want to maintain a public tree for site wide documents
+PublicDocumentTreeP=1
+MaxNumberOfBytes=2000000
+HeaderColor=#cccccc
+DatePicture=MM/DD/YY HH24:MI
+FileInfoDisplayFontTag=<font face=arial,helvetica size=-1>
+UseIntermediaP=0
+; Display mappings for file types. 
+; Format is pipe separated list of display string followed by 
+; MIME types. Types can use * and ? as wildcards. 
+; For anything not on the list, the default is to display 
+; the first portion of the MIME type, except in the case of 
+; application/, where the sub-type is displayed. 
+FileTypeMap=Image|image/* 
+FileTypeMap=Word Document|application/msword|application/rtf 
+FileTypeMap=Excel|application/msexcel 
+FileTypeMap=PowerPoint|*powerpoint 
+CommentApprovalPolicy=open
+
+
+; for the ecommerce module
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/ecommerce]
+; set to 1 if you're using the ecommerce module
+EnabledP=0
+WeightUnits=lbs
+Currency=USD
+; this is used on the category browse page (and for subcategories/subsubcategories)
+ProductsToDisplayPerPage=10
+; whether to allow user comments on products
+ProductCommentsAllowP=1
+; whether user comments on products (if allowed) need approval before becoming live
+ProductCommentsNeedApprovalP=1
+; whether the system should calculate additional product relationships
+CalcProductRelationshipsP=0
+; whether users can see what user classes they are in
+UserClassUserViewP=1
+; whether a user can request to be a member of a user class
+UserClassAllowSelfPlacement=1
+; if a user requests to be in a user class, is approval required before that
+; user becomes a member of the user class
+UserClassApproveP=1
+; what percentage of an item's shipping cost should be refunded if an item is returned
+ShippingRefundPercent=0
+; whether to allow express shipping
+ExpressShippingP=1
+; whether to save credit card data (you have to save it if you're going to do manual billing) --
+; if you save it, then your users can reuse their credit card with one click
+SaveCreditCardDataP=1
+; for thumbnails of products, specify either width or height (whichever is
+; more important, and then the other will be determined based on the
+; original image size, keeping aspect ratio constant) -- if both are
+; specified, the width setting will take precedence, and if neither
+; is specified, the thumbnail will be width=100
+ThumbnailWidth=100
+; ThumbnailHeight=100
+; stock status messages
+; o = out of stock, q = ships quickly, 
+; m = ships moderately quickly, s = ships slowly
+StockMessageO=Out of Stock
+StockMessageQ=Usually Ships Within 24 Hours
+StockMessageM=Usually Ships Within 2-3 Days
+StockMessageS=Usually Ships Within 2-4 Weeks
+StockMessageI=In Stock
+; # of days an 'in_basket' order will remain in
+; the system before a cron job expires it
+CartDuration=30
+; whether customers will be able to place orders
+; for items whose available_date has not yet come
+AllowPreOrdersP=1
+; all outgoing email is sent from this address
+CustomerServiceEmailAddress=service@{{ DOMAIN_NAME }}
+; you may or may not wish to have the people recording
+; shipments receive messages like "unable to authorize
+; payment for shipment" -- depending on whether they
+; they're in a position to do anything about the problem
+; (e.g. abort shipment)
+DisplayTransactionMessagesDuringFulfillmentP=1
+; whether to allow users to buy gift certificates
+SellGiftCertificatesP=1
+; minimum gift certificate amount they can buy
+; (this does not impose minimum amount for administrators
+; giving users gift certificates)
+MinGiftCertificateAmount=5
+; maximum gift certificate amount they can buy
+MaxGiftCertificateAmount=300
+; number of months until user-purchased gift certificates
+; expire
+GiftCertificateMonths=12
+; **Everything above this is a publishing decision.**
+; **Everything below this is a technical parameter.**
+; domain of the site -- I know other modules have this, but they
+; might not be installed and this is needed so that I can redirect
+; the shopping cart to https
+LocalDomain={{ DOMAIN_NAME }}
+; the directory that the ecommerce module is in
+EcommerceDirectory=/web/{{ ACS_SERVICE_NAME }}/www/ecommerce/
+; web path to the directory that the ecommerce user files are in
+EcommercePath=/ecommerce/
+; path to Product data directories (where product files like images are kept)
+EcommerceDataDirectory=/web/{{ ACS_SERVICE_NAME }}/data/ecommerce/
+; This path goes on the end of the EcommerceDataDirectory
+ProductDataDirectory=product/
+; Set to 1 if you have a comparison shopping service -- Note: support for
+; multiple retailers does not work yet in Version 1.0 of the Ecommerce
+; Module, so leave it as 0
+MultipleRetailersPerProductP=0
+
+; for the ACS Bookmarks System
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/bm]
+; optional, defaults to main site owner 
+SystemOwner=someguy@{{ DOMAIN_NAME }}
+; main page title
+SystemName=Bookmarks System
+; text decoration for dead links
+DeadDecoration=<i>
+; text decoration for folders
+FolderDecoration=<b>
+; text decoration for bookmarks invisible to the public
+HiddenDecoration=<font color=#bb0000>
+; background color of folders
+FolderBGColor=#f3f3f3
+; background color of files
+BookmarkBGColor=#ffffff
+; size of largest bookmarks file permissible to upload
+MaxNumberOfBytes=2000000
+
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/curriculum]
+EnabledP=0
+; does ad_footer put this in every dynamic page?
+StickInFooterP=1
+; does ad_serve_html_page put this on every static page?
+StickInStaticPagesP=1
+; on which URLs should the system look for/set cookies
+FilterPattern=*.html
+FilterPattern=*.tcl
+BarFontTag=<font size=-1 face="verdana, arial, helvetica">
+HelpAnchorText=<font size=+1 face="verdana, arial, helvetica">?</font>
+; stuff like a background color for the table cells, goes within a TD
+CellExtraTags=bgcolor=#EEEEEE
+
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/crm]
+; how often to update the CRM states
+UpdatePeriodHours=24
+
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/portals]
+Administrator=portaladmin@{{ DOMAIN_NAME }}
+AdministratorName=Portal Administrator
+SystemName=yourdomain portals
+; set to 1 if individual may create their own portals
+AllowUserLevelPortals=1
+; set to 1 if super administrator can add or remove themselves and other super administrators
+SuperAdminCanChangeSuperAdminP=0
+BodyTag=<body bgcolor=white>
+FontTag=<font face=arial,helvetica size=-1>
+; These standardize a prettier table than the browser default
+BeginTable=<table border=0 bgcolor=#006600 cellpadding=1 cellspacing=0 width=100%><tr><td><table border=0 bgcolor=white cellpadding=3 cellspacing=0 width=100%>
+EndTable=</table></td></tr></table>
+HeaderTD=<td bgcolor=#006600><font face=arial,helvetica size=-1 color=#eeeedd><b>
+HeaderBGColor=#006600
+SubHeaderTD=<td bgcolor=#eeeedd><font face=arial,helvetica size=-1><b>
+SubHeaderBGColor=#eeeedd
+NormalTD=<td><font face=arial,helvetica size=-1>
+; For portals with multiple pages, tabs link to the other pages, set this to 1 if you want each tab 
+; to be equal width instead of proportional to the name of the page
+EqualWidthTabsP=0
+MainPublicURL=/portals/
+; number of seconds to memoize a portal page
+CacheTimeout=100
+; browsers will decide the "optimal" column sizes unless you force column widths here:
+;LeftSideWidth=
+;RightSideWidth=
+SpacerImage=/portals/spacer.gif
+PortalExtension=.ptl
+
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/press]
+; maximum number of press items to display on the press coverage page
+DisplayMax=10
+; number of days a press item remains active
+ActiveDays=60
+; do we use clickthrough tracking from the press coverage page?
+ClickthroughP = 1
+
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/monitoring]
+; People to email for alerts
+PersontoNotify={{ ACS_WATCHDOG_EMAIL }}
+; PersontoNotify=nerd2@{{ DOMAIN_NAME }}
+; location of the watchdog perl script
+WatchDogParser=/web/{{ ACS_DOMAIN_NAME }}/bin/aolserver-errors.pl
+; watchdog frequency in minutes
+WatchDogFrequency=15
+
+
+
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/site-wide-search]
+; BounceQueriesTo=http://backup.photo.net
+; BounceResultsTo=http://photo.net
+
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/display]
+;specify the maximum size of a logo
+MaxLogoSize=500000
+
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/custom-sections]
+;specify the maximum size of a binary file that can be uploaded for a content section
+MaxBinaryFileSize=2000000
+
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/download]
+; root directory of the downloadable files
+DownloadRoot=/web/{{ ACS_SERVICE_NAME }}/download/
+
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/wp]
+; Paths to use for serving styles and presentations.
+StyleURL=/wp/style/
+PresentationURL=/wp/display/
+PresentationEditURL=/wp/display-edit/
+AttachURL=/wp/attach/
+SolicitCommentsP=1
+CommentApprovalPolicy=open
+; Path to the unzip program to use for bulk image uploading.
+PathToUnzip=/usr/bin/unzip
+; Is bulk image uploading enabled?
+AllowBulkUploadP=1
+
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/users]
+; all user  web content will be rooted  under  this directory.  This
+; directory will be the root of  all the web content being published
+; by the users of the system.
+ContentRoot=/web/{{ ACS_SERVICE_NAME }}/users/
+; Maximum quota for a 'normal user' (a lesser mortal who  is not the 
+; site wide administrator) of the site in mega-bytes. For example, a 
+; '20' corresponds to 20,971,520 bytes. Values need not be  integer. 
+; Value is overridden for a  particular user  throught existence  of 
+; entry in the users_special_quotas table.
+NormalUserMaxQuota=5
+; Maximum quota for site wide administrators.  Special quotas can be 
+; set by adding rows to  the users_special_quotas table.  This param
+; will be used for a site wide administrator only when he/she doesnt
+; have an entry in the users_special_quotas table.
+PrivelegedUserMaxQuota=20
+; Space taken by a directory (in bytes). We need this so that a user 
+; cannot crash the system by creating millions of directories.  This 
+; will ensure that a directory detracts from his/her quota.
+DirectorySpaceRequirement=2048
+; This determines the default view for displaying files in home-page 
+; administration (maintenance) pages. There are two supported values 
+; for this: tree and normal.
+DefaultView=normal
+; This is the list of files that are served as index  pages. If  all 
+; of these files are nonexistant  in a  directory requested  through 
+; the homepage content server (hp_serve), then the server  generates 
+; a default (personalized) index page for the user. If more than one 
+; of  these files  exist in  the requested  directory, the  filename 
+; which appears earliest in  this list  is given  preference. If  no 
+; filename is provided below then the server always generates  index 
+; pages. In most systems, the index.html, index.htm, and Default.htm 
+; are the  index filenames.  In some  systems home.html  is also  an 
+; index file but generally this is used whenever users want to  give 
+; the world read/browse  access to  their web  directories. In  this 
+; regard,  home.html  should  not be  added to  the candidacy  list. 
+; Finally, it is obvious that if  one of  these files  exist in  the 
+; directory then the web-browser cannot obtain a lisitng of all  the 
+; files in the directory.
+IndexFilenameCandidacyList=index.html index.htm Default.htm
+; what if a site gets really large and the primary purpose is giving 
+; members personal homepages (e.g., if an adopter of ACS decides  to 
+; become "The GeoCities of Brazil")? How do we support this?  First, 
+; users could decide to  join user  groups. Then  the /users/  index 
+; page  would  show  a  summary of  user groups  whose members  have 
+; personal  pages.  This requires  no new  data in  Oracle. This  is 
+; enabled with SubdivisionByGroupP=1 in  the .ini  file. Users  with 
+; homepages and no group affiliation show up in "unaffiliated"  (fun 
+; with  OUTER  JOIN). When  SubdivisionByNeighborhoodP=1, we  either 
+; keep a denormalized  neighborhood_sortkey in  the homepages  table 
+; and flag the "homepages" that are actually neighborhood folders or 
+; have some separate tables holding categorization. (philg).
+SubdivisionByNeighborhoodP=0
+; This parameter will determine whether we'll be showing appropriate
+; options on  the user's workspace or not.  This will also determine
+; whether  this  system  offers  homepages  or not.  In effect, this
+; parameter  determines whether  the homepage facility is enabled or
+; not.  This does not effect the users administration pages, though.
+HomepageEnabledP=1
+
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/spam]
+; Pairs of {email_addr_pattern pseudo-mime-type}
+{% raw %}
+EmailTypes={%@hotmail.com text/html} {%@aol.com text/aol-html}
+{% endraw %}
+DailySpamDirectory=/web/{{ ACS_SERVICE_NAME }}/spam
+RemovalBlurb={-----\nSent through http://{{ DOMAIN_NAME }}\n\n}
+
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/gp]
+; can we give row-level permissions to groups as well?
+GroupPermissionsP=1
+; do we want comment permissions?
+CommentPermissionsP=1
+; do we want to show our user list to people editing permissions?
+ShowUsersP=0
+; do we want to show a Finish button on the edit-page-permissions page?
+ShowFinishButtonP=1
+
+
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/partner]
+; what is the name of the default partner cookie?
+CookieDefault=ad
+; All the variables we want to collect  (Any variables added here
+; must still be manually added to the data model.)
+; Each line of Variable= contains a pipe separated pair of 
+; name_of_column in ad_partner | what to display on the add/edit forms
+Variable=partner_name|Partner Name
+Variable=partner_cookie|Partner Cookie
+Variable=default_font_face|Default Font Face
+Variable=default_font_color|Default Font Color
+Variable=title_font_face|Title Font Face
+Variable=title_font_color|Title Font Color
+
+[ns/server/{{ ACS_SERVICE_NAME }}/acs/pdm]
+; Flag to display the administration menu bar
+MenuOnAdminPagesP=0
+; Flag to display the default menu bar on non-/admin pages
+MenuOnUserPagesP=0
+
+; Local Variables:
+; eval: (auto-save-mode 0)
+; End:
+

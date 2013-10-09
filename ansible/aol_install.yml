@@ -1,0 +1,201 @@
+---
+# Install AOL server.
+# ref: http://www.eveandersson.com/arsdigita/acs-install/aolserver
+
+#---------------------------------------------------------------------------
+#
+#                       U S E R S   A N D   G R O U P S
+#
+#---------------------------------------------------------------------------
+- name: Add nsadmin group
+  group: name={{ AOL_SERVER_USER }} state=present
+
+- name: Add web group
+  group: name={{ WEB_GROUP }} state=present
+
+- name: Create the nsadmin user, which runs AOL Server.
+  user: name={{ AOL_SERVER_USER }} group={{ AOL_SERVER_USER }} groups=dba,{{ WEB_GROUP }} home={{ AOL_HOME }}
+
+- name: Copy over .bashrc for nsadmin user.
+  template: src=bashrc.j2 dest={{ AOL_HOME }}/.bashrc
+      owner={{ AOL_SERVER_USER }} group={{ AOL_SERVER_USER }}
+
+- name: Set user.group on nsadmin home to nsadmin.web.
+  file: path={{ AOL_HOME }} state=directory recurse=yes
+          owner={{ AOL_SERVER_USER }} group={{ WEB_GROUP }} mode=755
+
+- name: Create /web directory, where web server files will live.
+  file: path={{ AOL_SERVER_WEBROOT }} owner={{ AOL_SERVER_USER }} group={{ WEB_GROUP }} mode=755 state=directory
+
+- name: Create directory where compiles AOL Server files will live.
+  file: path=/usr/local/aolserver state=directory
+          owner={{ AOL_SERVER_USER }} group={{ WEB_GROUP }} mode=755
+
+#---------------------------------------------------------------------------
+#
+#                                     T C L
+#
+#---------------------------------------------------------------------------
+
+- name: Copy over TCL source.
+  copy: src={{ AOL_TCL_TARBALL }}
+          dest=/tmp owner={{ AOL_SERVER_USER }} group={{ AOL_SERVER_USER }} mode=644
+  register: tcl_tarball
+
+- name: Clear out build directory.
+  file: path={{ AOL_SERVER_PREFIX }} state=absent
+  when: tcl_tarball.changed
+
+- name: Delete old TCL sources.
+  file: path=/tmp/{{ AOL_TCL }} state=absent
+  when: tcl_tarball.changed
+
+- name: Extract TCL source.
+  command: tar -zxf /tmp/{{ AOL_TCL_TARBALL }} -C /tmp --overwrite
+  when: tcl_tarball.changed
+
+- name: Configure TCL.
+  shell: ./configure --prefix={{ AOL_SERVER_PREFIX }} --enable-threads chdir=/tmp/{{ AOL_TCL }}/unix
+  when: tcl_tarball.changed
+
+- name: Make and install TCL.
+  shell: make && make install chdir=/tmp/{{ AOL_TCL }}/unix
+  when: tcl_tarball.changed
+
+#---------------------------------------------------------------------------
+#
+#                             A O L   S E R V E R
+#
+# TODO: Checking if tarball changed is half-assed idempotency.
+#---------------------------------------------------------------------------
+
+- name: Copy over AOL Server source code.
+  copy: src={{ AOL_TARBALL }} dest=/tmp
+          owner={{ AOL_SERVER_USER }} group={{ AOL_SERVER_USER }} mode=644
+  register: aol_tarball
+
+- name: Delete any old AOL extracted sources we have.
+  file: path=/tmp/{{ AOL_TARBALL_BASENAME }} state=absent
+  when: aol_tarball.changed
+
+- name: Extract AOL Server sources.
+  command: tar -zxf /tmp/{{ AOL_TARBALL }} -C /tmp
+  when: aol_tarball.changed
+
+- name: Copy over patch for "multiple definition of `_init'" linker error.
+  copy: src=aol_fix_duplicate__init.diff
+          dest=/tmp/{{ AOL_TARBALL_BASENAME }} 
+          owner={{ AOL_SERVER_USER }} group={{ AOL_SERVER_USER }} mode=644
+  when: aol_tarball.changed
+
+- name: Apply patch for "multiple definition of `_init'" linker error.
+  shell: /usr/bin/patch -p0 < aol_fix_duplicate__init.diff 
+      chdir=/tmp/{{ AOL_TARBALL_BASENAME }}
+  when: aol_tarball.changed
+
+- name: Configure AOL Server
+  shell: ./configure --with-tcl={{ AOL_SERVER_PREFIX }}/lib --prefix={{ AOL_SERVER_PREFIX }} 
+      chdir=/tmp/{{ AOL_TARBALL_BASENAME }}
+  when: aol_tarball.changed
+
+- name: Make and install AOL Server
+  shell: make install chdir=/tmp/{{ AOL_TARBALL_BASENAME }}
+  when: aol_tarball.changed
+
+- name: Change user.group back to nsadmin.web
+  file: path=/usr/local/aolserver state=directory
+          owner={{ AOL_SERVER_USER }} group={{ WEB_GROUP }} mode=755
+  when: aol_tarball.changed
+
+
+#---------------------------------------------------------------------------
+#
+#                   A O L   S E R V E R   M O D U L E S
+#
+#---------------------------------------------------------------------------
+
+- name: Copy over ns_cache tarball.
+  copy: src=nscache-1.5.tar.gz dest=/tmp
+          owner={{ AOL_SERVER_USER }} group={{ AOL_SERVER_USER }} mode=644
+  when: aol_tarball.changed
+
+- name: Extract ns_cache tarball into
+  command: tar -zxf /tmp/nscache-1.5.tar.gz -C /tmp
+  when: aol_tarball.changed
+
+- name: Make and install nscache
+  shell: make install INST={{ AOL_SERVER_PREFIX }} chdir=/tmp/nscache-1.5
+  when: aol_tarball.changed
+
+- name: Copy over ns_sha1 tarball.
+  copy: src=nssha1-0.1.tar.gz dest=/tmp
+          owner={{ AOL_SERVER_USER }} group={{ AOL_SERVER_USER }} mode=644
+  when: aol_tarball.changed
+
+- name: Extract ns_sha1 tarball into /tmp.
+  command: tar -zxf /tmp/nssha1-0.1.tar.gz -C /tmp
+  when: aol_tarball.changed
+
+- name: Make and install nssha
+  shell: make install INST={{ AOL_SERVER_PREFIX }} chdir=/tmp/nssha1-0.1
+  when: aol_tarball.changed
+
+# TODO: Get SSL working.
+#- name: Copy over ns_openssl tarball.
+#  copy: src=nsopenssl-2.1a.tar.gz dest=/tmp
+#          owner={{ AOL_SERVER_USER }} group={{ AOL_SERVER_USER }} mode=644
+#  when: aol_tarball.changed
+#
+#- name: Extract ns_openssl tarball into
+#  command: tar -zxf /tmp/nsopenssl-2.1a.tar.gz -C /tmp/{{ AOL_TARBALL_BASENAME }}
+#
+#- name: Copy over patch to fix paths to OpenSSL.
+#  copy: src=aol_nsopenssl_build.diff
+#        dest=/tmp/{{ AOL_TARBALL_BASENAME }}/nsopenssl-2.1a
+#        owner={{ AOL_SERVER_USER }} group={{ AOL_SERVER_USER }} mode=644
+#  when: aol_tarball.changed
+#
+#- name: Apply patch to fix paths to OpenSSL.
+#  shell: /usr/bin/patch -p0 < aol_nsopenssl_build.diff
+#        chdir=/tmp/{{ AOL_TARBALL_BASENAME }}/nsopenssl-2.1a
+#  when: aol_tarball.changed
+
+#---------------------------------------------------------------------------
+#
+#               A O L   S E R V E R    O R A C L E   D R I V E R
+#
+#---------------------------------------------------------------------------
+
+- name: Copy over AOL Server Oracle driver source code.
+  copy: src=nsoracle-{{ AOL_ORACLEDRIVER_TAG }}.tgz dest=/tmp
+          owner={{ AOL_SERVER_USER }} group={{ AOL_SERVER_USER }} mode=644
+  register: nsoracle_tarball
+
+- name: Copy over first nsoracle patch.
+  copy: src=aol_nsoracle.patch dest=/tmp/nsoracle
+  register: nsoracle_patch
+
+- name: Copy over second nsoracle patch.
+  copy: src=aol_nsoracle1.patch dest=/tmp/nsoracle
+  register: nsoracle_patch1
+
+- name: Delete old AOL extrated sources.
+  file: path=/tmp/nsoracle state=absent
+  when: nsoracle_tarball.changed or nsoracle_patch.changed or nsoracle_patch1.changed
+
+- name: Extract AOL Oracle driver sources.
+  command: tar -zxf /tmp/nsoracle-{{ AOL_ORACLEDRIVER_TAG }}.tgz -C /tmp
+  when: nsoracle_tarball.changed or nsoracle_patch.changed or nsoracle_patch1.changed
+
+- name: Apply first nsoracle patch.
+  shell: /usr/bin/patch -p0 < aol_nsoracle.patch chdir=/tmp/nsoracle
+  when: nsoracle_tarball.changed or nsoracle_patch.changed or nsoracle_patch1.changed
+
+- name: Apply second nsoracle patch.
+  shell: /usr/bin/patch -p0 < aol_nsoracle1.patch chdir=/tmp/nsoracle
+  when: nsoracle_tarball.changed or nsoracle_patch.changed or nsoracle_patch1.changed
+
+- name: Compile and install Oracle driver for AOL Server.
+  shell: ORACLE_HOME={{ ORACLE_HOME }} make install INST={{ AOL_SERVER_PREFIX }}
+      chdir=/tmp/nsoracle
+  when: nsoracle_tarball.changed or nsoracle_patch.changed or nsoracle_patch1.changed

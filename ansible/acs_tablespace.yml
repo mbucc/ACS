@@ -1,0 +1,25 @@
+---
+# Install the ArsDigita Community System (ACS) and Oracle tablespace.
+# Created: Sun Sep  1 18:53:10 EDT 2013
+
+- name: Copy over shell script that tests if has a user.
+  template: src=is_user_in_oracle.sh.j2 dest={{ ORACLE_USER_HOME }}/is_user_in_oracle.sh
+      owner={{ ORACLE_USER }}  group={{ ORACLE_GROUP }}  mode=755
+
+- name: Check if Oracle has ACS user.
+  command: su - {{ ORACLE_USER }}  -c "./is_user_in_oracle.sh {{ ACS_ORACLE_USER }}"
+  register: acs_tablespace_exists
+  ignore_errors: True
+
+- name: Create directory to hold acs tablespace files.
+  file: path={{ ACS_DATA_DIR }} state=directory owner={{ ORACLE_USER }}  group=dba mode=0755
+  when: acs_tablespace_exists|failed
+
+- name: Copy over script to create the database
+  template: src=acs_create_tablespace.sql.j2 dest={{ ORACLE_USER_HOME }}/create_acs_tablespace.sql 
+      owner={{ ORACLE_USER }}  group={{ ORACLE_GROUP }} 
+  when: acs_tablespace_exists|failed
+
+- name: Run SQL to create database
+  command: su - {{ ORACLE_USER }}  -c "sqlplus system/{{ ORA_SYSTEM_PASSWORD }} @create_acs_tablespace.sql" 
+  when: acs_tablespace_exists|failed

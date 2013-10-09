@@ -1,0 +1,21 @@
+---
+# Configure Oracle Text component.  ACS uses this for full-text search.
+# Created: Mon Sep  2 10:40:15 EDT 2013
+
+- name: Copy over shell script that tests if Oracle Text is configured.
+  template: src=is_user_in_oracle.sh.j2 dest={{ ORACLE_USER_HOME }}/is_user_in_oracle.sh
+      owner={{ ORACLE_USER }}  group={{ ORACLE_GROUP }}  mode=755
+
+- name: Check if CTX is configured and save result.
+  command: su - {{ ORACLE_USER }}  -c "./is_user_in_oracle.sh CTXSYS"
+  register: ctx_configured
+  ignore_errors: True
+
+- name: Copy over SQL to configure Oracle Text component.
+  template: src=ora_configure_ctx.sql.j2 dest={{ ORACLE_USER_HOME }}/configure_ctx.sql 
+      owner={{ ORACLE_USER }}  group={{ ORACLE_GROUP }} 
+  when: ctx_configured|failed
+
+- name: Run SQL to configure Oracle text.
+  command: su - {{ ORACLE_USER }}  -c "sqlplus sys/{{ ORA_SYS_PASSWORD }} as sysdba @configure_ctx" 
+  when: ctx_configured|failed

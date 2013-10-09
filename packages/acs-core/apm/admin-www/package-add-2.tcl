@@ -75,10 +75,10 @@ db_transaction {
 
     db_dml package_version_insert "
     insert into apm_package_versions(version_id, package_id, package_name, version_name, version_url,
-            summary, description_format, description, release_date, 
-            vendor, vendor_url)
+            summary, description_format, release_date,
+            vendor, vendor_url, description)
     values(:version_id, :package_id, :package_name, :version_name, :version_url,
-	   :summary, :description_format, :description, trunc(sysdate), :vendor, :vendor_url)
+	   :summary, :description_format, trunc(sysdate), :vendor, :vendor_url, :description)
     "
 
     # Insert information about the owners.
