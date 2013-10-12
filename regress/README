@@ -1,0 +1,35 @@
+Regression tests.
+Fri Oct 11 22:29:29 EDT 2013
+
+1. Install Watir
+-------------------------------------------------------
+    $ sudo gem install watir-webdriver --no-ri --no-rdoc
+    Password:
+    Fetching: multi_json-1.8.1.gem (100%)
+    Successfully installed multi_json-1.8.1
+    Fetching: rubyzip-0.9.9.gem (100%)
+    Successfully installed rubyzip-0.9.9
+    Fetching: ffi-1.9.0.gem (100%)
+    Building native extensions.  This could take a while...
+    Successfully installed ffi-1.9.0
+    Fetching: childprocess-0.3.9.gem (100%)
+    Successfully installed childprocess-0.3.9
+    Fetching: websocket-1.0.7.gem (100%)
+    Successfully installed websocket-1.0.7
+    Fetching: selenium-webdriver-2.35.1.gem (100%)
+    Successfully installed selenium-webdriver-2.35.1
+    Fetching: watir-webdriver-0.6.4.gem (100%)
+    Successfully installed watir-webdriver-0.6.4
+    Done installing documentation for multi_json, rubyzip, ffi, childprocess,
+    websocket, selenium-webdriver, watir-webdriver (0 sec).
+    7 gems installed
+    $ irb
+    irb(main):001:0> require "watir-webdriver"
+    => true
+    irb(main):002:0> browser = Watir::Browser.new :ff
+    => #<Watir::Browser:0x5b84913ba6b94242 url="about:blank" title="">
+    irb(main):003:0> browser.goto "192.168.30.117:8000"
+    => "http://192.168.30.117:8000/"
+    irb(main):004:0> exit
+
+
