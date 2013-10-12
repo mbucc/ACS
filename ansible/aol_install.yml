@@ -187,6 +187,14 @@
   command: tar -zxf /tmp/nsoracle-{{ AOL_ORACLEDRIVER_TAG }}.tgz -C /tmp
   when: nsoracle_tarball.changed or nsoracle_patch.changed or nsoracle_patch1.changed
 
+- name: Copy over first nsoracle patch.
+  copy: src=aol_nsoracle.patch dest=/tmp/nsoracle
+  when: nsoracle_tarball.changed or nsoracle_patch.changed or nsoracle_patch1.changed
+
+- name: Copy over second nsoracle patch.
+  copy: src=aol_nsoracle1.patch dest=/tmp/nsoracle
+  when: nsoracle_tarball.changed or nsoracle_patch.changed or nsoracle_patch1.changed
+
 - name: Apply first nsoracle patch.
   shell: /usr/bin/patch -p0 < aol_nsoracle.patch chdir=/tmp/nsoracle
   when: nsoracle_tarball.changed or nsoracle_patch.changed or nsoracle_patch1.changed
