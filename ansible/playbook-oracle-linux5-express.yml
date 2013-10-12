@@ -6,9 +6,6 @@
     - acs_vars.yml
   tasks:
 
-# Oracle XE is installed with Oracle Linux 5.
-#  - include: ora_setup_oracle_express.yml
-
   - include: ora_setup_environment.yml
   - include: xe_reload_initora.yml
 
