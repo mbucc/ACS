@@ -21,11 +21,8 @@ TZ={{ TIMEZONE }}
 SERVICE_NAME={{ ACS_SERVICE_NAME }}
 DATABASE_PASSWORD={{ ORA_SYSTEM_PASSWORD }}
 
-# References:
-# http://docs.oracle.com/cd/E11882_01/server.112/e22490/dp_export.htm#i1006259
-# http://docs.oracle.com/cd/E11882_01/server.112/e22490/dp_overview.htm#i1009520
-exportdir={{ ORACLE_HOME }}/rdbms/log/
-
+# The default location with Oracle Express.
+exportdir={{ ORACLE_BASE }}/admin/XE/dpdump/
 
 file=$exportdir/expdat.dmp 
 
