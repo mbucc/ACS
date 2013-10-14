@@ -1,1 +1,34 @@
-playbook-oracle-linux5-express.yml
+- hosts: ol5
+  sudo: yes
+  vars_files:
+    - ora_vars.yml
+    - aol_vars.yml
+    - acs_vars.yml
+  tasks:
+
+  - include: ora_setup_environment.yml
+  - include: xe_reload_initora.yml
+  - include: ora_set_archivelog_mode.yml
+
+  #
+  # Now is a good time to manually run the ACS acceptance.sql.
+  #
+    
+  - include: acs_user.yml
+
+  - include: aol_install.yml
+
+  - include: acs_sources.yml
+  - include: acs_load_geo_data.yml
+  - include: acs_load_data.yml
+
+  - include: acs_enable_cassandracle.yml
+  - include: acs_setup_oracle_export.yml
+  - include: acs_setup_service.yml
+  - include: acs_restart_server.yml
+
+# Oracle Text
+#  - include: ora_ctx.yml
+#  - include: ora_pupbld.yml
+
+
