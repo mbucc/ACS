@@ -1,6 +1,5 @@
 ---
 # AOL Server variables
-AOL_VERSION: 3.5.11
 AOL_TARBALL_BASENAME: aolserver-$AOL_VERSION
 AOL_TARBALL: $AOL_TARBALL_BASENAME-src.tar.gz
 AOL_HOME: /home/aol33

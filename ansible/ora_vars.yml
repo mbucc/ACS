@@ -3,7 +3,6 @@
 
 ORACLE_USER: oracle
 ORACLE_GROUP: dba
-ORACLE_USER_PASSWORD: oracle
 
 ORACLE_USER_HOME: /u01/app/$ORACLE_USER
 ORACLE_BASE: $ORACLE_USER_HOME
@@ -15,7 +14,6 @@ ORA_SYS_PASSWORD: oracle
 ORA_SYSTEM_PASSWORD: oracle
 ORA_CTXSYS_PASSWORD: oracle
 
-ROOT_DIR: /$SID
 DATA_DIR: $ROOT_DIR/u01/app/oracle/oradata/$SID
 REDO_DIR1: $ROOT_DIR/u01/logs/my
 REDO_DIR2: $ROOT_DIR/u02/logs/my
@@ -25,8 +23,6 @@ ORA_CONTROL_FILE2: $DATA_DIR/control2.ctl
 UNDO_TABLESPACE_NAME: undotbs
 TEMP_TABLESPACE_NAME: tempts1
 SYSAUX_TABLESPACE_NAME: sysaux
-
-ORA_PS_MARKER: ora_pmon  # If present in ps listing, Oracle is running.
 
 # Used by export-oracle backup script.
 TIMEZONE: US/Eastern
