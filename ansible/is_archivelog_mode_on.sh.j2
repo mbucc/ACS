@@ -1,0 +1,28 @@
+#! /bin/sh -e
+# Created: Sun Oct 13 15:48:45 EDT 2013
+# Return 0 if ARCHIVELOG mode is on, 1 otherwise.
+
+FN=$0.log
+
+sqlplus system/{{ ORA_SYSTEM_PASSWORD }} > $FN << EOF
+    connect / as sysdba;
+    set head off;
+    set echo off;
+    set trimspool on;
+    set linesize 512;
+    select '$' || log_mode || '$' from v\\$database;
+EOF
+
+mode=$(grep "^\$.*\$" $FN)
+case $mode in
+    \\$ARCHIVELOG\\$)
+        echo "YES"
+    ;;
+    \\$NOARCHIVELOG\\$)
+        echo "NO"
+    ;;
+    *)
+    echo "Unknown database mode $mode" 1>&2
+    exit 1
+    ;;
+esac;

@@ -1,0 +1,42 @@
+#! /bin/sh -e
+# Created: Sun Oct 13 20:13:40 EDT 2013
+# Return 0 if SQL succeeds, 1 otherwise.
+
+FN=$0.log
+SAVEIFS=$IFS
+IFS=$'\n'
+
+sqlplus system/{{ ORA_SYSTEM_PASSWORD }} > $FN << EOF
+    connect / as sysdba;
+    set echo on
+    SHUTDOWN IMMEDIATE
+    STARTUP MOUNT
+    ALTER DATABASE ARCHIVELOG;
+    ALTER DATABASE OPEN;
+    ALTER SYSTEM SET DB_RECOVERY_FILE_DEST_SIZE = 20G;
+EOF
+
+EXPECTED_OUTPUT="
+Database closed.
+Database dismounted.
+ORACLE instance shut down.
+ORACLE instance started.
+Database altered.
+Database altered.
+"
+
+# Check that each expected line is in the log file in the correct order.
+cp $FN t.out
+for line in ${EXPECTED_OUTPUT}; do
+    if grep "$line" t.out > /dev/null; then
+        n=$(grep -m 1 -n "$line" t.out | cut -d : -f 1)
+        n=$((n + 1))
+        tail -n +$n t.out > t0.out
+        mv t0.out t.out
+    else
+        echo "Looks like an error, we didn't find '$line' in '$FN'" 1>&1
+        exit 1
+    fi
+done
+IFS=$SAVEIFS
+rm -f t.out

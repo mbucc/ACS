@@ -1,0 +1,43 @@
+---
+# Turn on ARCHIVELOG mode in Oracle.
+# Created: Sun Oct 13 15:55:04 EDT 2013
+# 
+#   ARCHIVELOG mode is required to do on-line physical backups of Oracle.  A
+#   physical backup is one that backs up the files on disk (as opposed to a
+#   logical backup, which more like mysqldump).
+#
+#   In addition, this mode enables FLASHBACK DATABASE, which we use for unit
+#   testing.  (This is an awesome feature of Oracle, that let's you roll back
+#   Oracle to a prior state.)
+#
+#     *** NOTE *********************************************
+#
+#         When you change the ARCHIVELOG mode setting
+#         for your database, all existing backups become
+#         unusable.
+#
+#     ******************************************************
+#
+#     10,737,418,240
+
+- name: Copy over shell script to check if Oracle is in ARCHIVELOG mode.
+  template: src=is_archivelog_mode_on.sh.j2 
+      dest={{ ORACLE_USER_HOME }}/is_archivelog_mode_on.sh
+      owner={{ ORACLE_USER }}  group={{ ORACLE_GROUP }}  mode=755
+
+- name: Check if Oracle is in ARCHIVELOG mode.
+  command: su - {{ ORACLE_USER }}  -c "./is_archivelog_mode_on.sh"
+  register: ora_archivelog_mode
+
+- name: Copy over shell script to put Oracle in ARCHIVELOG mode.
+  template: src=ora_set_archivelog_mode.sh.j2 
+      dest={{ ORACLE_USER_HOME }}/set_archivelog_mode.sh
+      owner={{ ORACLE_USER }}  group={{ ORACLE_GROUP }}
+      mode=755
+  when: "'NO' in ora_archivelog_mode.stdout"
+
+- name: Run script to put Oracle in ARCHIVELOG mode.
+  command: su - {{ ORACLE_USER }} -c "./set_archivelog_mode.sh"
+  when: "'NO' in ora_archivelog_mode.stdout"
+    
+# XXX: If we change setting, do an immediate backup.

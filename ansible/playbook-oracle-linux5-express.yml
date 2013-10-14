@@ -8,6 +8,7 @@
 
   - include: ora_setup_environment.yml
   - include: xe_reload_initora.yml
+  - include: ora_set_archivelog_mode.yml
 
   #
   # Now is a good time to manually run the ACS acceptance.sql.
