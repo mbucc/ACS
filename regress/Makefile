@@ -17,6 +17,9 @@ all:
 	@echo "*******************************************************"
 	@exit 1
 
+test: 
+	ruby test_user_registration.rb
+
 restore:
 	( \
 	  source ./vars.txt ; \
@@ -49,3 +52,6 @@ oracle_id_rsa.pub:
 	@echo ""
 	@echo "*******************************************************"
 	@exit 1
+
+clean:
+	rm -f vars.txt
