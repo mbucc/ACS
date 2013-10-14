@@ -18,7 +18,6 @@
 #
 #     ******************************************************
 #
-#     10,737,418,240
 
 - name: Copy over shell script to check if Oracle is in ARCHIVELOG mode.
   template: src=is_archivelog_mode_on.sh.j2 
@@ -39,5 +38,3 @@
 - name: Run script to put Oracle in ARCHIVELOG mode.
   command: su - {{ ORACLE_USER }} -c "./set_archivelog_mode.sh"
   when: "'NO' in ora_archivelog_mode.stdout"
-    
-# XXX: If we change setting, do an immediate backup.

@@ -6,6 +6,15 @@ FN=$0.log
 SAVEIFS=$IFS
 IFS=$'\n'
 
+# Default DB_RECOVERY_FILE_DEST_SIZE: 10,737,418,240
+#     To figure out what this size should be, here are some good references:
+
+# * A.1 Backing Up to the Flash Recovery Area: Basic Scenarios (10.2g)
+#   http://docs.oracle.com/cd/B19306_01/backup.102/b14192/bkscenar001.htm#j1027311
+#
+# * Configuring the Fast Recovery Area (11.2g)
+#   http://docs.oracle.com/cd/E11882_01/backup.112/e10642/rcmconfb.htm#i1019160
+#
 sqlplus system/{{ ORA_SYSTEM_PASSWORD }} > $FN << EOF
     connect / as sysdba;
     set echo on
