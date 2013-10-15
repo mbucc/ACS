@@ -15,12 +15,16 @@ IFS=$'\n'
 # * Configuring the Fast Recovery Area (11.2g)
 #   http://docs.oracle.com/cd/E11882_01/backup.112/e10642/rcmconfb.htm#i1019160
 #
+# * Good practical notes on flashback.
+#   http://www.online-database.eu/index.php/administration/52-flashback-database
+#
 sqlplus system/{{ ORA_SYSTEM_PASSWORD }} > $FN << EOF
     connect / as sysdba;
     set echo on
     SHUTDOWN IMMEDIATE
     STARTUP MOUNT
     ALTER DATABASE ARCHIVELOG;
+    ALTER DATABASE FLASHBACK ON;
     ALTER DATABASE OPEN;
     ALTER SYSTEM SET DB_RECOVERY_FILE_DEST_SIZE = 20G;
 EOF
