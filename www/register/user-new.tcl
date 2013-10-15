@@ -38,7 +38,7 @@ append html_text "[ad_header "Register"]
 
 <h2>Register</h2>
 
-as a user of <a href=\"index\">[ad_system_name]</a>
+yourself as a user of <a href=\"index\">[ad_system_name]</a>
 
 <hr>
 

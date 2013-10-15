@@ -5,7 +5,7 @@ require "watir-webdriver"
 browser = Watir::Browser.new :ff
 browser.goto "192.168.30.117:8000/pvt/home"
 
-browser.text_field(:name => 'email').set 'a@b.com'
+browser.text_field(:name => 'email').set 'a0@b.com'
 browser.text_field(:name => 'password').set 'abc'
 
 f = browser.form(:name, "login")
@@ -20,12 +20,12 @@ f1 = browser.form(:action, "user-new-2")
 f1.submit
 
 if browser.text.include? "fname lname's workspace at Network"
-    puts "User account created . . . . . . . PASS"
+    puts "Create user account . . . . . . . . . . PASS"
 else
-    puts "User account created . . . . . . . FAIL"
+    puts "Create user account . . . . . . . . . . FAIL"
 end
 
 #puts browser.url
 #puts browser.title
 
-#browser.close
+browser.close

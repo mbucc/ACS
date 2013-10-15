@@ -5,13 +5,13 @@ all:
 	@echo ""
 	@echo "    2. Run targets in this order:"
 	@echo ""
-	@echo "            setup_sshkey"
-	@echo "            backup"
+	@echo "            sshkeys"
+	@echo "            setup"
 	@echo "            test"
 	@echo ""
-	@echo "    3. When tests pass, run:"
+	@echo "    3. When done, to reset run the targets:"
 	@echo ""
-	@echo "            restore"
+	@echo "            teardown"
 	@echo "            clean"
 	@echo ""
 	@echo "*******************************************************"
@@ -20,24 +20,14 @@ all:
 test: 
 	ruby test_user_registration.rb
 
-restore:
-	( \
-	  source ./vars.txt ; \
-	  ssh -i oracle_id_rsa \
-	  	$$ORACLE_USER@$$ACS_IP_ADDRESS \
-		$$ORACLE_HOME/config/scripts/restore.sh \
-	)
+teardown: vars.txt
+	./teardown.sh
 
-backup:
-	( \
-	  source ./vars.txt ; \
-	  ssh -i oracle_id_rsa \
-	  	$$ORACLE_USER@$$ACS_IP_ADDRESS \
-		$$ORACLE_HOME/config/scripts/backup.sh \
-	)
+setup: vars.txt
+	./setup.sh
 
-setup_sshkey: vars.txt oracle_id_rsa.pub
-	./setup_sshkey.sh vars.txt
+sshkeys: vars.txt oracle_id_rsa.pub
+	./sshkeys.sh vars.txt
 	
 vars.txt: ../ansible/ora_vars.yml ../ansible/acs_vars.yml expand_yml.py
 	python expand_yml.py ../ansible/ora_vars.yml > t.txt
@@ -55,3 +45,5 @@ oracle_id_rsa.pub:
 
 clean:
 	rm -f vars.txt
+	rm -f restore.rman
+	rm -f restore_point.sql
