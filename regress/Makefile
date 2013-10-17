@@ -3,35 +3,44 @@ all:
 	@echo ""
 	@echo "    1. Run ssh-keygen to create oracle_id_rsa[.pub]"
 	@echo ""
-	@echo "    2. Run targets in this order:"
+	@echo "    2. Turn off iptables on target: service iptables stop"
 	@echo ""
-	@echo "            sshkeys"
-	@echo "            setup"
+	@echo "    3. One-time setup."
+	@echo ""
+	@echo "            init"
+	@echo ""
+	@echo "    4. Run tests."
+	@echo ""
 	@echo "            test"
-	@echo ""
-	@echo "    3. When done, to reset run the targets:"
-	@echo ""
-	@echo "            teardown"
-	@echo "            clean"
 	@echo ""
 	@echo "*******************************************************"
 	@exit 1
 
+init:
+	make sshkeys
+	make backup_database_and_set_rollback_point
+
 test: 
 	ruby test_user_registration.rb
-
-teardown: vars.txt
-	./teardown.sh
-
-setup: vars.txt
-	./setup.sh
+	make rollback_database_changes
 
 sshkeys: vars.txt oracle_id_rsa.pub
 	./sshkeys.sh vars.txt
 	
-vars.txt: ../ansible/ora_vars.yml ../ansible/acs_vars.yml expand_yml.py
+backup_database_and_set_rollback_point: vars.txt
+	./backup_database_and_set_rollback_point.sh
+
+rollback_database_changes: vars.txt
+	./rollback_database_changes.sh
+
+vars.txt: \
+		../ansible/ora_vars.yml \
+		../ansible/acs_vars.yml \
+		../ansible/aol_vars.yml \
+		expand_yml.py
 	python expand_yml.py ../ansible/ora_vars.yml > t.txt
 	python expand_yml.py ../ansible/acs_vars.yml >> t.txt
+	python expand_yml.py ../ansible/aol_vars.yml >> t.txt
 	mv t.txt vars.txt
 
 oracle_id_rsa.pub:

@@ -6,16 +6,29 @@ if [ "x$1" = "x" ] ; then
   exit 1
 fi
 
-FN=$1
+source $1
 
-HOST=$(grep  "^ACS_IP_ADDRESS="   $FN | cut -d = -f 2)
-USER=$(grep  "^ORACLE_USER="      $FN | cut -d = -f 2)
-GROUP=$(grep "^ORACLE_GROUP="     $FN | cut -d = -f 2)
-HOME=$(grep  "^ORACLE_USER_HOME=" $FN | cut -d = -f 2)
-
-echo "Creating $HOME/.ssh (if necessary) ..."
-ssh root@${HOST} "(mkdir -p $HOME/.ssh; chown $USER:$GROUP $HOME/.ssh)"
+# Copy SSH key for Oracle user.
+echo "Creating $ORACLE_USER_HOME/.ssh (if necessary) ..."
+ssh \
+  root@${ACS_IP_ADDRESS} \
+  "(mkdir -p $ORACLE_USER_HOME/.ssh; chown $ORACLE_USER:$ORACLE_GROUP $ORACLE_USER_HOME/.ssh)"
 echo "Copying over public key ..."
-scp ./oracle_id_rsa.pub root@${HOST}:$HOME/.ssh/authorized_keys
+scp ./oracle_id_rsa.pub root@${ACS_IP_ADDRESS}:$ORACLE_USER_HOME/.ssh/authorized_keys
 echo "Setting ownership of public key ..."
-ssh root@${HOST} "chown $USER:$GROUP $HOME/.ssh/authorized_keys"
+ssh \
+  root@${ACS_IP_ADDRESS} \
+  "chown $ORACLE_USER:$ORACLE_GROUP $ORACLE_USER_HOME/.ssh/authorized_keys"
+
+# Copy SSH key for AOL Server user (for restart on restoring data).
+echo "Creating $AOL_HOME/.ssh (if necessary) ..."
+ssh \
+  root@${ACS_IP_ADDRESS} \
+  "(mkdir -p $AOL_HOME/.ssh; chown $AOL_SERVER_USER:$WEB_GROUP $AOL_HOME/.ssh)"
+echo "Copying over public key ..."
+scp ./oracle_id_rsa.pub root@${ACS_IP_ADDRESS}:$AOL_HOME/.ssh/authorized_keys
+echo "Setting ownership of public key ..."
+ssh \
+  root@${ACS_IP_ADDRESS} \
+  "chown $AOL_SERVER_USER:$WEB_GROUP $AOL_HOME/.ssh/authorized_keys"
+
