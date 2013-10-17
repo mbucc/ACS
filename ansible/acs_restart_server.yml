@@ -20,6 +20,9 @@
       owner=root group=wheel
       mode=0750
 
+- name: Install perl-suidperl so nsadmin user can restart server.
+  yum: name=perl-suidperl
+
 - name: Make sure inittab has the respawn line.
   lineinfile: dest=/etc/inittab regexp="^nsd" 
      line="nsd:2345:respawn:/sbin/spawn-aolserver"
