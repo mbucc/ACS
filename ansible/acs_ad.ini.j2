@@ -2,16 +2,16 @@
 ; parameters in an in-memory hash table.  So you have to restart the
 ; server if you want to test a change made to this file.
 
-[ns/server/{{ ACS_SERVICE_NAME }}/acs]
-SystemName={{ DOMAIN_NAME }} Network
+[ns/server/yourservername/acs]
+SystemName=yourdomain Network
 ; for legal pages, full corporate entity
-PublisherName={{ DOMAIN_NAME }} Network, Inc.
+PublisherName=Yourdomain Network, Inc.
 ; who signs the average user-visible pages
-SystemOwner=webmaster@{{ DOMAIN_NAME }}
+SystemOwner=webmaster@yourdomain.com
 ; URL to tell users to go to
-SystemURL=http://{{ DOMAIN_NAME }}
+SystemURL=http://yourdomain.com
 ; who signs the admin pages, e.g., a programmer who can fix/enhance them
-AdminOwner=a-programmer@{{ DOMAIN_NAME }}
+AdminOwner=a-programmer@yourdomain.com
 ; are admin users allow to write SQL queries
 ; (only say yes if they are not likely to crash the server)
 AllowAdminSQLQueries=0
@@ -25,10 +25,12 @@ RestrictToSSL=/NS/Db*
 ; (the content_sections facility probably could also accomplish this
 ;  but not as simply)
 RestrictEntireServerToRegisteredUsersP=0
+; Should only admins see error messages?
+RestrictErrorsToAdminsP=0
 ; Is this server being used as a staff server?
 ; (only used by /pvt/home.tcl and may become legacy)
 StaffServerP=0
-HostAdministrator=somenerd@{{ DOMAIN_NAME }}
+HostAdministrator=somenerd@yourdomain.com
 GraphicsSiteAvailableP=0
 ; these work for text-only and graphics site
 bgcolor=white
@@ -81,11 +83,15 @@ WhosOnlineP=1
 WhosOnlineDecoration=<a href="/photo/pcd0952/boston-marathon-60.tcl"><img HEIGHT=134 WIDTH=196 src="/photo/pcd0952/boston-marathon-60.1.jpg" ALT="100th Anniversary Boston Marathon (1996)."></a>
 ; how many seconds old a last visit cookie must be before we update it
 LastVisitUpdateInterval=600
+; What tmp directories are used on this system?
+; Note the leading / character.
+TmpDir=/tmp
+TmpDir=/var/tmp
 
 ;stuff having to do with registration and login
 NotifyAdminOfNewRegistrationsP=1
 ; where to send those notes (defaults to SystemOwner)
-;NewRegistrationEmailAddress=admin@{{ DOMAIN_NAME }}
+;NewRegistrationEmailAddress=admin@yourdomain.com
 ; send confirmation email to user after registration
 EmailRegistrationConfirmationToUserP=0
 ; set this to 1 if user does not go live immediately
@@ -124,13 +130,13 @@ LastVisitCacheUpdateInterval=600
 ; do we want to set each cookie on more than one hostname
 ; (i.e., is your site a typical "foobar.com" and "www.foobar.com" case)
 NeedCookieChainP=0
-CookieChainFirstHostName={{ DOMAIN_NAME }}
-CookieChainSecondHostName=www.{{ DOMAIN_NAME }}
+CookieChainFirstHostName=yourdomain.com
+CookieChainSecondHostName=www.yourdomain.com
 ; do we have legacy users for whom we created
 ; accounts from old bboard postings (keyed by email address)?
 UsersTableContainsConvertedUsersP=0
 ; Primarily for WimpyPoint, but may be useful to other modules
-PathToACS=/web/{{ ACS_SERVICE_NAME }}
+PathToACS=/web/yourservername
 ; Where is the global directory for such things as file-not-found
 ; error messages
 GlobalURLStub=/global
@@ -152,16 +158,26 @@ SeparateEmailPasswordPagesP=0
 ; useful for troubleshooting; remove to log for none
 ; LogSecurityMinutia=
 ; if a user provides a Host header which isn't this, redirect the user to
-; this particular host. e.g., if {{ ACS_SERVICE_NAME }}.com and www.{{ ACS_SERVICE_NAME }}.com
+; this particular host. e.g., if yourservername.com and www.yourservername.com
 ; point to the same IP, set this to 1 so cookies will be properly set.
 ForceHostP=1
+; The directory containing gzip and gunzip executable
+GzipExecutableDirectory=/usr/local/bin
+; Display stack traces on page crashes to everyone or only to admins?
+RestrictErrorsToAdminsP=0
+
+; ArsDigita Package Manager parameters
+[ns/server/yourservername/acs/apm]
+InfoFilePermissionsMode=0775
 
 ; stuff having to do with what and how we collect info from users 
 ; upon registration and at various stages afterward
 ; (for legacy reasons, some of the stuff that should go here is 
 ;  actually in the main acs section above)
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/user-info]
+[ns/server/yourservername/acs/user-info]
 SolicitPortraitP=1
+; Do we ask for pet portraits?
+SolicitPetPortraitsP=1
 ; Maximum portrait size in bytes. Leave empty for no limitation.
 MaxPortraitBytes=200000
 ; if you have ImageMagick configured, try to 
@@ -174,13 +190,13 @@ AcceptablePortraitMIMETypes=image/gif image/jpeg
 ; according to what operating system or perhaps the machine power
 ; (e.g., /admin/static/link-check.tcl will sleep for 1 second 
 ; periodically on wimpy machines)
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/machine]
+[ns/server/yourservername/acs/machine]
 ; probably best to consider any machine with only one CPU as wimpy
 WimpyMachineP=1
 
 ; address information for a cluster of load-balanced servers (to enable
 ; distributed util_memoize_flushing, for instance).
-[ns/server/acs-staging/acs/server-cluster]
+[ns/server/yourservername/acs/server-cluster]
 ; is clustering enabled?
 ClusterEnabledP=0
 ; which machines can issues requests (e.g., flushing) to the cluster?
@@ -188,16 +204,49 @@ ClusterEnabledP=0
 ; which servers are in the cluster? This server's IP may be included too
 ;ClusterPeerIP=209.67.242.171
 ;ClusterPeerIP=209.67.242.172
+; In the list of IPs above, which is the canonical (primary) server?
+; If a port is not listed, we assume port 80.
+;CanonicalServer=209.67.242.171:8082
 ; log clustering events?
 ;EnableLoggingP=1
 
 ; stuff having to do with the ArsDigita Community System software
 ; itself, e.g., workarounds for bugs
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/acs]
+[ns/server/yourservername/acs/acs]
 LogCLOBdmlP=1
 
+[ns/server/yourservername/acs/database]
+; By default, the DB API will use all the pools available to AOLserver. 
+; Moreover, any time it needs a handle, the DB API alone will decide 
+; from which pool to grab the handle. This is bad if some handles 
+; point to a different, non-ACS database or database user.
+;
+; The workaround is to list here the pools that you want the DB API to use. 
+; To use the other pools, currently, you'll have to use the old ns_db API.
+; until we enhance the DB API to let you choose what set of pools you want 
+; to grab a handle from.
+;
+; Specify a line saying AvailablePool=foo for each DB pool that you want the
+; DB API to use. If you don't specify any AvailablePool=foo lines, it'll
+; use all the ones available to AOLserver.
+;
+; AvailablePool=main
+; AvailablePool=subquery
+; AvailablePool=log
+
+[ns/server/yourservername/acs/developer-support]
+; remember information about connections, for developers' benefit?
+EnabledOnStartupP=0
+; remember information about every database request?
+DatabaseEnabledP=0
+; remember information for which client hosts?
+EnabledIPs=*
+; remember this information for how long? sweep how often? (in seconds)
+DataLifetime=900
+DataSweepInterval=900
+
 ; stuff having to do with abstract urls (doc/abstract-url.html)
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/abstract-url]
+[ns/server/yourservername/acs/abstract-url]
 ; enable abstract url handling?
 EnableAbstractURLsP=1
 ; precedence for file extensions, e.g., "tcl,adp,html" means "serve
@@ -207,7 +256,7 @@ EnableAbstractURLsP=1
 ExtensionPrecedence=tcl,adp,html,jpg,gif
 
 ; stuff having to do with user groups 
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/ug]
+[ns/server/yourservername/acs/ug]
 CacheTimeout=600
 ;this will be part of url where groups can access their webpages
 ;e.g. if GroupsDirectory=groups and group short name is travel at photo.net
@@ -225,7 +274,7 @@ GroupsAdminDirectory=admin
 ; we want GLOB patterns to feed to [string match ..]
 ; and we want a policy decision about whether to pretend
 ; to be broken or be explicit that they've been banned
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/antispam]
+[ns/server/yourservername/acs/antispam]
 FeignFailureP=1
 ;IPglob=209.114.173.*
 ;IPglob=209.114.172.*
@@ -234,20 +283,45 @@ FeignFailureP=1
 ; we don't allow users to submit HTML containing any of these tags
 NaughtyTag=div
 NaughtyTag=font
+; The tags that we explicitly allow people to use
+AllowedTag=B
+AllowedTag=I
+AllowedTag=P
+AllowedTag=A
+AllowedTag=LI
+AllowedTag=OL
+AllowedTag=UL
+AllowedTag=EM
+AllowedTag=BR
+AllowedTag=TT
+AllowedTag=STRONG
+AllowedTag=BLOCKQUOTE
+AllowedTag=CODE
+AllowedTag=PRE
+; Tags used the arsdigita spamming module
+AllowedTag=FIRST_NAMES
+AllowedTag=LAST_NAME
+AllowedTag=EMAIL
+AllowedTag=GROUP_NAME
+AllowedURLAttribute=HREF
+AllowedProtocol=http
+AllowedProtocol=https
+AllowedProtocol=ftp
+AllowedProtocol=mailto
 
 ; stuff having to do with the user's workspace
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/pvt]
+[ns/server/yourservername/acs/pvt]
 ; WorkspacePageDecoration= an image
 ; AlertPageDecoration=<a href="/photo/pcd2388/alex-green-building-21.tcl"><img HEIGHT=198 WIDTH=132 src="/photo/pcd2388/alex-green-building-21.1.jpg" ALT="Alex in front of the Green Building.  Massachusetts Institute of Technology"></a>
 
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/content]
+[ns/server/yourservername/acs/content]
 ; do we serve the generated index.tcl page or something else
 ; from the file system?
 ; SpecialIndexPage=/index.html
 ; SiteMap=/site-map.html
 
 ; stuff for dealing with static pages 
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/static]
+[ns/server/yourservername/acs/static]
 ; this has to be a complete REGEXP with | for or's; \.html?$ will match .htm or .html
 ; \.html?$|\.adp$ will pull .adp pages into the table as well.
 IncludeRegexp=\.html?$
@@ -258,12 +332,12 @@ ExcludePattern=/global/*
 ExcludePattern=/graphics/*
 ExcludePattern=/admin/*
 
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/bboard]
+[ns/server/yourservername/acs/bboard]
 PartialUrlStub=/bboard/
-; SystemName={{ DOMAIN_NAME }} Network Discussion Forums (default)
+; SystemName=Yourdomain Network Discussion Forums (default)
 ; SystemOwner= something different (if desired) from SystemOwner above
 ; HostAdministrator=something different from system-wide
-SenderEmail=bboard-robot@{{ DOMAIN_NAME }}
+SenderEmail=bboard-robot@yourdomain.com
 ; IndexPageDecoration=<a href="/photo/pcd0796/downtown-munich-41.tcl"><img HEIGHT=134 WIDTH=196 src="/photo/pcd0796/downtown-munich-41.1.jpg" ALT="Downtown Munich."></a>
 ; ActivePageDecoration=<a href="http://photo.net/photo/pcd3609/girls-17.tcl"><img HEIGHT=134 WIDTH=196 src="http://photo.net/photo/pcd3609/girls-17.1.jpg"></a>
 ; do we offer users a full-text search box
@@ -278,6 +352,8 @@ UsePLS=0
 LinktoAltaVista=0
 ; anything below this threshold is considered uninteresting
 InterestLevelThreshold=4
+; how many messages should a topic have to be considered active
+ActiveLevelThreshold=30
 ; can a user start a new bboard
 UserCanAddTopicsP=0
 ; link bboard permissions to AOLserver user; this is legacy 
@@ -285,14 +361,30 @@ UserCanAddTopicsP=0
 UseNsPermAuthorizationP=0
 FileUploadingEnabledP=1
 ; this path does *not* contain a trailing "/"
-FilePath=/web/foobar/
+FilePath=/web/yourservername/data/bboard
 ; Urgent messages
 UrgentMessageEnabledP=0
 DaysConsideredUrgent=14
 ; Enables per-thread email alerts.
 EnableThreadEmailAlerts=1
+; Enables display of "stop per-thread alert" right on the 
+; fetch-one-message page.
+OfferStopNotificationLinkForThreadEmailAlertsP=0
 
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/news]
+[ns/server/yourservername/acs/bboard/unified]
+; Fully-qualified directory for Forum View icons (no trailing slash)
+; (for highest security, it is best to keep this out of the Web 
+;  server's PageRoot; this would be in case someone managed to 
+;  upload an icon with an extension of .tcl or .adp)
+IconDir=/web/yourservername/data/bboard/unified/icons
+; Are users allowed to upload icons? 0=no 1=yes
+IconUploadAllowedP=0
+; Can users choose their own colors? 0=no 1=yes
+; (as opposed to the site admin deciding which forums are presented in 
+;  which colors)
+UsersChoosePersonalColorsP=0
+
+[ns/server/yourservername/acs/news]
 ; open means stuff goes live immediately
 ; wait means stuff waits for administrator to approve
 ; closed means only administrator can post
@@ -304,6 +396,10 @@ DefaultStoryLife=30
 ; recent items easily w/out limiting the number of active stories
 ; Leave blank to display all
 DefaultNumberOfStoriesToDisplay=
+; When more than this many items are selected for display, 
+; we add a second "Post New" link to the page top.
+; Leave blank to disable.
+MinNumberForTopLink=
 ; SystemOwner= (defaults to site owner)
 ; do we allow users to comment on news
 SolicitCommentsP=1
@@ -311,13 +407,17 @@ CommentApprovalPolicy=wait
 IndexPageDecoration=<a href="http://photo.net/photo/pcd0865/nick-gittes-and-alex-107.tcl"><img HEIGHT=134 WIDTH=196 src="http://photo.net/photo/pcd0865/nick-gittes-and-alex-107.1.jpg" ALT="Nick Gittes and Alex. 1998."></a>
 ItemPageDecoration=<a href="http://photo.net/photo/pcd0305/fountain-mouth-67.tcl"><img HEIGHT=134 WIDTH=196 src="http://photo.net/photo/pcd0305/fountain-mouth-67.1.jpg"></a>
 
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/calendar]
+[ns/server/yourservername/acs/calendar]
 SystemName=Calendar
 ; open means stuff goes live immediately
 ; wait means stuff waits for administrator to approve
 ; closed means only administrator can post
 ApprovalPolicy=wait
 MaxEventsOnIndexPage=15
+; When more than this many items are selected for display, 
+; we add a second "Post New" link to the page top.
+; Leave blank to disable.
+MinNumberForTopLink=
 ; defaults for users, depends on type of service
 DaysFromPostingToStart=30
 DaysFromStartToEnd=0
@@ -332,7 +432,7 @@ TitleExample=Ansel Adams show at Getty Center in Los Angeles, March 1-June 15
 EventsHaveLocationsP=1
 
 ; for the classified ad system
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/gc]
+[ns/server/yourservername/acs/gc]
 ; SystemName=
 ; SystemOwner=  (defaults to global system owner)
 PartialUrlStub=/gc/
@@ -367,7 +467,7 @@ CommentApprovalPolicy=open
 ; if EnabledP is 1 you can have as many 
 ; NaughtyPatterns as you like; these are fed to 
 ; ns_register_filter
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/pics]
+[ns/server/yourservername/acs/pics]
 EnabledP=0
 NaughtyPattern=/nudebabes/*
 NaughtyPattern=/doc/*
@@ -375,11 +475,11 @@ NaughtyPattern=/doc/*
 Protocol={PICS-1.1 {headers PICS-Label}}
 Label={(PICS-1.1 "http://www.rsac.org/ratingsv01.html" l gen true comment "RSACi North America Server" by "philg@mit.edu" for "http://photo.net/photo/christina/" on "1998.03.13T18:06-0800" r (n 4 s 0 v 0 l 0))}
 
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/contest]
+[ns/server/yourservername/acs/contest]
 OfferIndexPageP=1
-ContestAdminOwner=contestprogrammer@{{ DOMAIN_NAME }}
+ContestAdminOwner=contestprogrammer@yourdomain.com
 
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/adserver]
+[ns/server/yourservername/acs/adserver]
 ; the location of the adserver .tcl pages in the file system (typically /adserver/)
 ; note the trailing slash; also note that this isn't where ads go
 PartialUrlStub=/adserver/
@@ -390,8 +490,8 @@ DetailedPerUserLoggingP=0
 ; the Neighbor to Neighbor service (sort of like bboard;
 ; http://photo.net/photo/ is probably the best example of this in use )
 
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/neighbor]
-; SystemName={{ DOMAIN_NAME }} Neighbor to Neighbor Service
+[ns/server/yourservername/acs/neighbor]
+; SystemName=Yourdomain Neighbor to Neighbor Service
 ; SystemOwner= something different (if desired) from SystemOwner above
 ; HostAdministrator=something different from system-wide
 ; if you're only going to run one little category, and
@@ -417,16 +517,16 @@ NReasonablePostings=100
 
 ; the clickthrough module (/tcl/ad-clickthrough.tcl)
 
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/click]
+[ns/server/yourservername/acs/click]
 ; CustomREGEXP=/ct/philg(/.+)$
 
 
 ; the referer module (/tcl/ad-referer.tcl)
 
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/referer]
+[ns/server/yourservername/acs/referer]
 ; domains to exclude from referer tracking
-LocalDomain={{ DOMAIN_NAME }}
-LocalDomain=www.{{ DOMAIN_NAME }}
+LocalDomain=yourdomain.com
+LocalDomain=www.yourdomain.com
 ; if any of these are set, we require at least one to be true
 ; (if you don't set these, you'll get lots of referrals from random
 ;  local files and "bookmarks"; trust us)
@@ -436,7 +536,7 @@ InclusionGLOB=HTTP://*
 
 ; the data warehouse module
 
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/dw]
+[ns/server/yourservername/acs/dw]
 DefaultTable=ad_hoc_query_view
 ; SystemName=yourdomain data warehouse
 
@@ -452,10 +552,10 @@ DefaultTable=ad_hoc_query_view
 ;  
 
 ; for the address book
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/addressbook]
+[ns/server/yourservername/acs/addressbook]
 SendBirthdayAlerts=1
 
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/comments]
+[ns/server/yourservername/acs/comments]
 ; email notifications to author/ad_system_owner
 EmailNewUnansweredQuestion=1
 EmailNewAlternativePerspective=1
@@ -464,7 +564,7 @@ EmailEditedUnansweredQuestion=1
 EmailEditedAlternativePerspective=1
 EmailEditedRating=1
 
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/general-comments]
+[ns/server/yourservername/acs/general-comments]
 ; Whether or not we accept file uploads for general comments.
 AcceptAttachmentsP=1
 ; Maximum attachment size in bytes. Leave empty for no limitation.
@@ -475,27 +575,27 @@ InlineImageMaxWidth=512
 ; Use titles/one-lines for comments?
 UseTitlesP=1
 
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/general-links]
+[ns/server/yourservername/acs/general-links]
 ; use link clickthroughs?
 ClickthroughP=1
 ; allow suggested links from /general-links/index.tcl?
 AllowSuggestionsP=1
 
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/links]
+[ns/server/yourservername/acs/links]
 ; email notifications to author/ad_system_owner
 EmailNewLink=1
 EmailEditedLink=1
 ; use link clickthroughs?
 GeneralLinksClickthroughP=1
 
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/redirect]
+[ns/server/yourservername/acs/redirect]
 ; Inherit=/from/|/to/
 ; JustOne=/randomoldfileonthisbox.html|http://www.otherpersonsserver.com/
 ; Pattern=/olddir/|/newdir/
 Pattern=/pvt/address-book|/address-book
 
 ; for the /directory module wherein users get to look each other up
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/directory]
+[ns/server/yourservername/acs/directory]
 ProvideUserBrowsePageP=1
 UserBrowsePageLimitedToNotNullUrlP=1
 ;IndexPageDecoration=<a href="/photo/pcd1641/snowy-owl-1.tcl"><img HEIGHT=134 WIDTH=196 src="/photo/pcd1641/snowy-owl-1.1.jpg" ALT="Snowy Owl."></a>
@@ -503,7 +603,7 @@ UserBrowsePageLimitedToNotNullUrlP=1
 ;SearchResultsDecoration=<a href="/photo/pcd0456/st-peter-crowd-17.tcl"><img HEIGHT=134 WIDTH=196 src="/photo/pcd0456/st-peter-crowd-17.1.jpg"></a>
 
 ; for the module that bills members or figures out which are losers
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/member-value]
+[ns/server/yourservername/acs/member-value]
 EnabledP=0
 UseRealMoneyP=0
 ; currency should be a three-char code that CyberCash likes, e.g., "USD"
@@ -545,7 +645,7 @@ ExpensiveThreshold=20
 ; (PG|R|X)BowdlerizeP=1 replaces relevant words with BowdlerizationText
 ; Note that in generally, you can't bounce only PG and X, but not R,
 ; the scripts find the lowest allowed naughtiness to bounce or log.
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/content-tagging]
+[ns/server/yourservername/acs/content-tagging]
 ; email address to notify if something needs attention
 ; defaults to SystemOwner
 ; Administrator=
@@ -572,7 +672,7 @@ CacheTimeout=600
 UserContentMaskCacheTimeout=600
 
 ; for the ACS Chat System
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/chat]
+[ns/server/yourservername/acs/chat]
 EnabledP=1
 ; SystemName=Chat
 ; how long to cache the postings to a room (updates force a cache update
@@ -598,22 +698,22 @@ DefaultDecoration=<a href="http://photo.net/photo/pcd0865/rachel-mouth-3.tcl"><i
 ; how often the javascript version should refresh itself
 JavaScriptRefreshInterval=5
 
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/mailing-list]
+[ns/server/yourservername/acs/mailing-list]
 IndexPageDecoration=<a href="http://photo.net/photo/pcd0803/cortina-dalmatian-and-mailboxes-33.tcl"><img HEIGHT=198 WIDTH=132 src="http://photo.net/photo/pcd0803/cortina-dalmatian-and-mailboxes-33.1.jpg" ALT="Mailboxes and a Dalmatian, in Cortina"></a>
 
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/sidegraphics]
+[ns/server/yourservername/acs/sidegraphics]
 EnabledP=1
 /bboard/index.tcl=http://photo.net/photo/pcd0796/linderhof-front-door-23.2.jpg
 
 
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/glossary]
+[ns/server/yourservername/acs/glossary]
 ; open means stuff goes live immediately, user can edit own terms
 ; wait means stuff waits for administrator to approve, 
 ; only administrator can edit
 ; closed means only administrator can post
 ApprovalPolicy=closed
 
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/robot-detection]
+[ns/server/yourservername/acs/robot-detection]
 ; the URL of the Web Robots DB text file
 WebRobotsDB=http://info.webcrawler.com/mak/projects/robots/active/all.txt
 ; which URLs should ad_robot_filter check (uncomment to turn system on)
@@ -626,8 +726,8 @@ RedirectURL=/robot-heaven/
 RefreshIntervalDays=30
 
 ; stuff for templates, multi-lingualism
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/style]
-; where to find templates, typically /web/{{ ACS_SERVICE_NAME }}/templates
+[ns/server/yourservername/acs/style]
+; where to find templates, typically /web/yourservername/templates
 ; (note lack of trailing slash, just like the pageroot)
 ; you can override it with this config param
 ; TemplateRoot=
@@ -649,14 +749,14 @@ PlainFancySiteDefault=fancy
 PlainFancyCookieP=1
 
 ; for the ticket tracking system
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/ticket]
+[ns/server/yourservername/acs/ticket]
 ; when sending a note to an admin or engineer about a trouble
 ; ticket, what reply-to: address to use
 ; note that this address must be set up through your mail transfer
 ; agent to run a email enqueueing script.
 ; See doc/ticket.html for more info on configuring the ticket system.
-; (from /web/{{ ACS_SERVICE_NAME }}/bin/queue-message.pl)
-TicketReplyEmail=support-ticket-robot@{{ DOMAIN_NAME }}
+; (from /web/yourservername/bin/queue-message.pl)
+TicketReplyEmail=support-ticket-robot@yourdomain.com
 ; The PicklistData specifies additional custom data fields you would like
 ; associated with tickets in the database. You can have up to five of these.
 ;PicklistData=hardware_model "Hardware Model" picklist_single_select data1 "" "1000 (Merced)" "2500 (Charles)" "5000 (Connecticut)"
@@ -674,7 +774,7 @@ SeverityList=low medium serious critical showstopper
 
 ; to tell the email queue system where to dispatch
 ; all of this is based on tags supplied by the mail-transfer agent
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/email-queue]
+[ns/server/yourservername/acs/email-queue]
 ; how often to check the queue for new messages
 ;QueueSweepInterval=300
 ; what to do with a new message
@@ -682,9 +782,47 @@ SeverityList=low medium serious critical showstopper
 ;DispatchPair=ticket-tracker|ticket_process_message
 
 
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/intranet]
-IntranetName=yourdomain Network
+[ns/server/yourservername/acs/intranet]
+; Log email sent to groups as correspondance and enable auto-emailing of
+; these correspondance to members of the group
+LogEmailToGroupsP=1
+; Use the intranet filters to restrict access to all bboard topic with a group_id
+EnableIntranetBBoardSecurityFiltersP=1
+; Set to 1 if you want to automatically redirect users to enter project reports
+ForceUsersToEnterProjectReportsP=0
+; If you want users to automatically be redirected to log their hours
+; if they haven't, set this flag to 1
+ForceUsersToLogHoursP=0
+; We have a choice between a "daily" and a "weekly" time entry screen
+TimeEntryScreen=weekly
+; How many results/rows do we show on a page before splitting up into 
+; previous/next links?
+NumberResultsPerPage=50
+; On pages with dimensional sliders, having too many categories leads to 
+; messy navigation. How many text characters do we allow before switching 
+; from text links to a select bar?
+LengthBeforeSelectBar=50
+; If you want to include a default graphic in your
+; intranet header, put the path to that graphic here 
+DefaultGraphic=
+; If you would like to track projects with a
+; survey in the survey module, put the project
+; type and its paired survey
+ProjectReportTypeSurveyNamePair=Client - full service,project_report
+;You may send email notifications of payment
+; changes to members of a specified group
+BillingGroupShortName=receivable
+IntranetName=Intranet
 IntranetEnabledP=0
+; If you want to restrict access to the /shared/community-member.tcl
+; page to users of the intranet only, set KeepSharedInfoPrivate to 1
+KeepSharedInfoPrivate=1
+; Should we enable bboard with the intranet pages? The BBoard
+; module must be scoped or be altered to have a groud_id column first
+BBoardEnabledP=1
+; do we serve the generated /intranet/index.tcl page or something 
+; else from the file system?
+SpecialIndexPage=
 DisplayVacationsOnCalendar=1
 ; the unit of measurement for entering salaries (month or year)
 SalaryPeriodInput=year
@@ -694,7 +832,7 @@ SalaryPeriodDisplay=year
 FeeTypes="setup" "monthly development" "monthly hosting" "hourly" "stock"
 ; Do we want to track hours?
 TrackHours=1
-; what's the url stub? i.e. http://{{ DOMAIN_NAME }}<stub>
+; what's the url stub? i.e. http://www.yourdomain.com<stub>
 IntranetUrlStub=/intranet
 ; Group Types
 IntranetGroupType=intranet
@@ -704,7 +842,9 @@ CustomerGroupShortName=customer
 PartnerGroupShortName=partner
 ProcedureGroupShortName=procedure
 EmployeeGroupShortName=employee
+TeamGroupShortName=team
 AuthorizedUsersGroupShortName=authorized_users
+CustomerPortalName=Customer Portals
 ; What color do we put in the header row of tables?
 TableColorHeader=#e6e6e6
 ; What color do we put in the odd numbered rows of tables?
@@ -718,15 +858,15 @@ CommentApprovalPolicy=open
 UserClassStatusReportID=
 
 
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/help]
+[ns/server/yourservername/acs/help]
 ; Root of the help directory hierarchy, relative to the PageRoot.
 ; Same as page root if not set.
 ; HelpPageRoot=/help
 
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/fs]
+[ns/server/yourservername/acs/fs]
 SystemName=File Storage System
 ; optional, defaults to main site owner 
-; SystemOwner=fs-admin@{{ DOMAIN_NAME }}
+; SystemOwner=fs-admin@yourdomain.com
 DefaultPrivacyP=f
 ; do you want to maintain a public tree for site wide documents
 PublicDocumentTreeP=1
@@ -749,7 +889,7 @@ CommentApprovalPolicy=open
 
 
 ; for the ecommerce module
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/ecommerce]
+[ns/server/yourservername/acs/ecommerce]
 ; set to 1 if you're using the ecommerce module
 EnabledP=0
 WeightUnits=lbs
@@ -776,6 +916,9 @@ ExpressShippingP=1
 ; whether to save credit card data (you have to save it if you're going to do manual billing) --
 ; if you save it, then your users can reuse their credit card with one click
 SaveCreditCardDataP=1
+; whether to use cybercash or not (if cyber cash is off, remember to save credit cards
+; otherwise they may be lost before you actually bill customers)
+UseCyberCashP=1
 ; for thumbnails of products, specify either width or height (whichever is
 ; more important, and then the other will be determined based on the
 ; original image size, keeping aspect ratio constant) -- if both are
@@ -798,7 +941,7 @@ CartDuration=30
 ; for items whose available_date has not yet come
 AllowPreOrdersP=1
 ; all outgoing email is sent from this address
-CustomerServiceEmailAddress=service@{{ DOMAIN_NAME }}
+CustomerServiceEmailAddress=service@yourdomain.com
 ; you may or may not wish to have the people recording
 ; shipments receive messages like "unable to authorize
 ; payment for shipment" -- depending on whether they
@@ -821,24 +964,26 @@ GiftCertificateMonths=12
 ; domain of the site -- I know other modules have this, but they
 ; might not be installed and this is needed so that I can redirect
 ; the shopping cart to https
-LocalDomain={{ DOMAIN_NAME }}
+LocalDomain=yourdomain.com
 ; the directory that the ecommerce module is in
-EcommerceDirectory=/web/{{ ACS_SERVICE_NAME }}/www/ecommerce/
+EcommerceDirectory=/web/yourservername/www/ecommerce/
 ; web path to the directory that the ecommerce user files are in
 EcommercePath=/ecommerce/
 ; path to Product data directories (where product files like images are kept)
-EcommerceDataDirectory=/web/{{ ACS_SERVICE_NAME }}/data/ecommerce/
+EcommerceDataDirectory=/web/yourservername/data/ecommerce/
 ; This path goes on the end of the EcommerceDataDirectory
 ProductDataDirectory=product/
 ; Set to 1 if you have a comparison shopping service -- Note: support for
 ; multiple retailers does not work yet in Version 1.0 of the Ecommerce
 ; Module, so leave it as 0
 MultipleRetailersPerProductP=0
+; Should we ask people of their organization is tax exempt?
+OfferTaxExemptStatusP=0
 
 ; for the ACS Bookmarks System
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/bm]
+[ns/server/yourservername/acs/bm]
 ; optional, defaults to main site owner 
-SystemOwner=someguy@{{ DOMAIN_NAME }}
+SystemOwner=someguy@yourdomain.com
 ; main page title
 SystemName=Bookmarks System
 ; text decoration for dead links
@@ -854,7 +999,7 @@ BookmarkBGColor=#ffffff
 ; size of largest bookmarks file permissible to upload
 MaxNumberOfBytes=2000000
 
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/curriculum]
+[ns/server/yourservername/acs/curriculum]
 EnabledP=0
 ; does ad_footer put this in every dynamic page?
 StickInFooterP=1
@@ -868,12 +1013,12 @@ HelpAnchorText=<font size=+1 face="verdana, arial, helvetica">?</font>
 ; stuff like a background color for the table cells, goes within a TD
 CellExtraTags=bgcolor=#EEEEEE
 
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/crm]
+[ns/server/yourservername/acs/crm]
 ; how often to update the CRM states
 UpdatePeriodHours=24
 
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/portals]
-Administrator=portaladmin@{{ DOMAIN_NAME }}
+[ns/server/yourservername/acs/portals]
+Administrator=portaladmin@yourdomain.com
 AdministratorName=Portal Administrator
 SystemName=yourdomain portals
 ; set to 1 if individual may create their own portals
@@ -902,42 +1047,49 @@ CacheTimeout=100
 SpacerImage=/portals/spacer.gif
 PortalExtension=.ptl
 
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/press]
-; maximum number of press items to display on the press coverage page
+[ns/server/yourservername/acs/press]
+; maximum number of simultaneous press items to display on the press coverage page
 DisplayMax=10
 ; number of days a press item remains active
 ActiveDays=60
 ; do we use clickthrough tracking from the press coverage page?
 ClickthroughP = 1
 
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/monitoring]
+[ns/server/yourservername/acs/monitoring]
 ; People to email for alerts
-PersontoNotify={{ ACS_WATCHDOG_EMAIL }}
-; PersontoNotify=nerd2@{{ DOMAIN_NAME }}
+; PersontoNotify=nerd1@yourdomain.com
+; PersontoNotify=nerd2@yourdomain.com
 ; location of the watchdog perl script
-WatchDogParser=/web/{{ ACS_DOMAIN_NAME }}/bin/aolserver-errors.pl
+WatchDogParser=/web/yourservername/bin/aolserver-errors.pl
 ; watchdog frequency in minutes
-WatchDogFrequency=15
+WatchDogFrequency=9999
+; Where is top located?
+TopLocation=/usr/local/bin/top
+; top-monitoring frequency in minutes
+TopFrequency=9999
+; The minimum load average over a 5 minute period of time
+; before we email persons on the notify list above
+LoadAverageAlertThreshold=2.0
 
 
-
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/site-wide-search]
+[ns/server/yourservername/acs/site-wide-search]
+SiteWideSearchEnabledP=1
 ; BounceQueriesTo=http://backup.photo.net
 ; BounceResultsTo=http://photo.net
 
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/display]
+[ns/server/yourservername/acs/display]
 ;specify the maximum size of a logo
 MaxLogoSize=500000
 
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/custom-sections]
+[ns/server/yourservername/acs/custom-sections]
 ;specify the maximum size of a binary file that can be uploaded for a content section
 MaxBinaryFileSize=2000000
 
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/download]
+[ns/server/yourservername/acs/download]
 ; root directory of the downloadable files
-DownloadRoot=/web/{{ ACS_SERVICE_NAME }}/download/
+DownloadRoot=/web/yourservername/download/
 
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/wp]
+[ns/server/yourservername/acs/wp]
 ; Paths to use for serving styles and presentations.
 StyleURL=/wp/style/
 PresentationURL=/wp/display/
@@ -949,12 +1101,15 @@ CommentApprovalPolicy=open
 PathToUnzip=/usr/bin/unzip
 ; Is bulk image uploading enabled?
 AllowBulkUploadP=1
+; Path to the wget program to use for image downloading.
+PathToWget=/usr/local/bin/wget
 
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/users]
+
+[ns/server/yourservername/acs/users]
 ; all user  web content will be rooted  under  this directory.  This
 ; directory will be the root of  all the web content being published
 ; by the users of the system.
-ContentRoot=/web/{{ ACS_SERVICE_NAME }}/users/
+ContentRoot=/web/yourservername/users/
 ; Maximum quota for a 'normal user' (a lesser mortal who  is not the 
 ; site wide administrator) of the site in mega-bytes. For example, a 
 ; '20' corresponds to 20,971,520 bytes. Values need not be  integer. 
@@ -1010,15 +1165,15 @@ SubdivisionByNeighborhoodP=0
 ; not.  This does not effect the users administration pages, though.
 HomepageEnabledP=1
 
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/spam]
+[ns/server/yourservername/acs/spam]
 ; Pairs of {email_addr_pattern pseudo-mime-type}
-{% raw %}
 EmailTypes={%@hotmail.com text/html} {%@aol.com text/aol-html}
-{% endraw %}
-DailySpamDirectory=/web/{{ ACS_SERVICE_NAME }}/spam
-RemovalBlurb={-----\nSent through http://{{ DOMAIN_NAME }}\n\n}
+DailySpamDirectory=/web/yourservername/spam
+RemovalBlurb={-----\nSent through http://yourdomain.com\n\n}
+; An external helper program to MIME base64-encode a binary file
+Base64EncoderCommand=/web/yourservername/bin/encode64.pl
 
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/gp]
+[ns/server/yourservername/acs/gp]
 ; can we give row-level permissions to groups as well?
 GroupPermissionsP=1
 ; do we want comment permissions?
@@ -1029,7 +1184,7 @@ ShowUsersP=0
 ShowFinishButtonP=1
 
 
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/partner]
+[ns/server/yourservername/acs/partner]
 ; what is the name of the default partner cookie?
 CookieDefault=ad
 ; All the variables we want to collect  (Any variables added here
@@ -1043,13 +1198,138 @@ Variable=default_font_color|Default Font Color
 Variable=title_font_face|Title Font Face
 Variable=title_font_color|Title Font Color
 
-[ns/server/{{ ACS_SERVICE_NAME }}/acs/pdm]
+[ns/server/yourservername/acs/pdm]
 ; Flag to display the administration menu bar
-MenuOnAdminPagesP=0
+MenuOnAdminPagesP=1
 ; Flag to display the default menu bar on non-/admin pages
 MenuOnUserPagesP=0
 
-; Local Variables:
-; eval: (auto-save-mode 0)
-; End:
+; vc (version control) parameters
+[ns/server/yourservername/acs/vc]
+; Location of the CVS repository.  If the repository is on a remote
+; host, you need to make sure that CVS can connect without being
+; prompted for a password.
+CVSROOT=/cvsweb
+; Location of the CVS executable
+CvsPath=/usr/local/bin/cvs
+
+[ns/server/yourservername/acs/ADP]
+; Block users from adding/editing ADP pages with function calls in them?
+; NOTE: Setting this to 0 if you are allowing users to access the file
+; manager or manipulate templates in electronic commerce will effectivly 
+; give them full access to your system and is hence not recommended.
+BlockUserADPFunctionsP=1
+
+
+[ns/server/yourservername/acs/file-manager]
+EnabledP=1
+; use version control?
+VersionControlP=0
+; extensions of files that be can edited/uploaded using file-manager
+; comma-separated list, no spaces
+Extensions=html,htm,jpg,gif
+; directories to ignore
+; comma-separated list, no spaces
+Ignore=admin,CVS
+; directories to manage (relative to www)
+; comma-separated list, no spaces
+ManagedDirectories=acs-examples,ads,graphics
+
+
+[ns/server/yourservername/acs/request-processor]
+; Log lots of timestamped debugging messages?
+DebugP=0
+; URL sections exempt from Host header checks and security/session handling.
+; (can specify an arbitrary number).
+SystemURLSection=SYSTEM
+; cf. /packages/acs-core/security-init.tcl
+; If set to true, the filter that attempts to prevent 
+; malicious SQL in URLs will be defined.
+BlockSqlUrlsP=0
+; Do we want to use DVR's input filters?
+ParanoiaInputFiltersP=0
+; URLs that the request-processor should simply pass on to AOLserver to handle
+; good candidates for these are URLs handled by nscgi.so or nsphp.so
+;LeaveAloneUrl=/cgi-bin/*
+;LeaveAloneUrl=/php/*
+
+[ns/server/yourservername/acs/wap]
+; do we serve the generated /wap/index.tcl page or something 
+; else from the file system?  This should be the FULL PATH relative
+; to page root.
+SpecialIndexPage=/wap/i.wap
+; how long between lookups of the known user agent list?
+WapUserAgentDbRefresh=300
+; where to import user-agents strings from
+WapImportSiteURL=http://wap.colorline.no/wap-faq/useragents.php3
+; what tcl procedure to use to parse the data returned
+; from the page listed above
+WapImportParseProc=wap_import_parse
+; how long between http GET's?
+WapImportRefreshTimeout=120
+; how many characters in the User-Agent string
+; should we compare against?
+WapUAStringCompareLength=4
+; are we doing HTML browser-based debugging?
+WapHTMLDebugMode=0
+; to save typing when logging in
+WapDefaultEmailDomain=yourdomain.com
+
+[ns/server/yourservername/acs/webmail]
+AliasDirectory=/home/nsadmin/qmail/alias/
+; if QueueDirectory is changed, change it in MessageParsers.sqlj as well
+QueueDirectory=/home/nsadmin/qmail/queue/
+
+; Manual System parameters
+[ns/server/yourservername/acs/manuals]
+; SystemName=Yourdomain Network Manuals
+; policies on comments
+SolicitCommentsP=1
+CommentApprovalPolicy=open
+; do we use CVS to manage revisions of the manuals
+UseCvsP=1
+; do we use HTMLDOC to provide printable versions of manuals
+; if so, it should be installed in yourservice/HTMLDOC/
+UseHtmldocP=0
+; if we are generating printable versions, do we bother with PS
+; or just provide PDF
+GeneratePsP=0
+; while providing links to the chapters from each page is nice, the
+; deficiencies of browser rendering means you might not want to use it.
+ListChaptersP=0
+; This variable is only used if we are providing a chapter list.
+; Either choice involves a compromise.  Left is kinda ugly and breaks
+; the flow.  Right looks better but can conflict with tables and images
+; in the text.  Pick your poison.
+ChapterListSide=left
+
+; Request Processor Parameters
+[ns/server/yourservername/acs/rp]
+AutomaticErrorReportingP=1
+ErrorReportURL=http://www.arsdigita.com/sdm/new-ticket
+
+; stuff having to do with general portraits (user or pet)
+[ns/server/yourservername/acs/general-portraits]
+; Maximum portrait size in bytes. Leave empty for no limitation.
+MaxPortraitBytes=200000
+; if you have ImageMagick configured, try to
+; produce thumbnails?
+; 1 means ImageMagick is configured and produce thumbnails automatically
+; 0 means do not produce thumbnail automatically
+ProduceThumbnailsAutomaticallyP=1
+AcceptablePortraitMIMETypes=image/gif image/jpeg
+; thumbnail size
+ThumbnailWidth=200
+ThumbnailHeight=200
+; where is convert located
+; On linux convert is located at /usr/x11R6/bin/convert
+; On Unix, convert is located at /usr/local/bin
+ConvertBinary=/usr/local/bin/convert
+; open means stuff goes live immediately
+; wait means stuff waits for administrator to approve
+; closed means only administrator can post
+CommentApprovalPolicy=open
+; open means portrait goes live immediately
+; wait means portrait wait for administrator to approve
+DefaultUploadApprovalPolicy=open
 
