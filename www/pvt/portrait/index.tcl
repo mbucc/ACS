@@ -76,8 +76,8 @@ if { ![db_0or1row portrait_check {
     <hr>
 
     <p>
-    You won't be able to see your portrait until the site admin approves it (we had some users abuse the privilege of
-    approval-free uploads).
+    You won't be able to see your portrait until the site admin approves it
+    (we've had some abuse of the approval-free uploads).
     </p>
 
     <br>
