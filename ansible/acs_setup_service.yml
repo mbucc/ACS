@@ -3,7 +3,7 @@
 # Created: Thu Sep  5 18:04:53 EDT 2013
 
 - name: Create acs.ini for the ACS.
-  template: src=acs_acs.ini.j2 dest={{ AOL_HOME }}/{{ ACS_SERVICE_NAME }}.ini
+  template: src=acs_acs.ini.j2 dest={{ AOL_HOME }}/{{ ACS_DOMAIN_NAME }}.ini
       owner={{ AOL_SERVER_USER }} group={{ AOL_SERVER_USER }}
       mode=644
 
@@ -13,20 +13,20 @@
       owner={{ AOL_SERVER_USER }} group={{ WEB_GROUP }} mode=755
 
 - name: Create directory for the ACS web app.
-  file: path={{ AOL_SERVER_WEBROOT }}/{{ ACS_SERVICE_NAME }} state=directory
+  file: path={{ AOL_SERVER_WEBROOT }}/{{ ACS_DOMAIN_NAME }} state=directory
       owner={{ AOL_SERVER_USER }} group={{ WEB_GROUP }} mode=755
 
 - name: Create directory for the ACS web files.
-  file: path={{ AOL_SERVER_WEBROOT }}/{{ ACS_SERVICE_NAME }}/web state=directory
+  file: path={{ AOL_SERVER_WEBROOT }}/{{ ACS_DOMAIN_NAME }}/web state=directory
       owner={{ AOL_SERVER_USER }} group={{ WEB_GROUP }} mode=755
 
 - name: Create directory for the ACS web app parameters.
-  file: path={{ AOL_SERVER_WEBROOT }}/{{ ACS_SERVICE_NAME }}/parameters state=directory
+  file: path={{ AOL_SERVER_WEBROOT }}/{{ ACS_DOMAIN_NAME }}/parameters state=directory
       owner={{ AOL_SERVER_USER }} group={{ WEB_GROUP }} mode=755
 
 - name: Copy over site parameters
   template: src=acs_ad.ini.j2 
-      dest={{ AOL_SERVER_WEBROOT }}/{{ ACS_SERVICE_NAME }}/parameters/{{ ACS_SERVICE_NAME }}.ini
+      dest={{ AOL_SERVER_WEBROOT }}/{{ ACS_DOMAIN_NAME }}/parameters/{{ ACS_DOMAIN_NAME }}.ini
       owner={{ AOL_SERVER_USER }} group={{ AOL_SERVER_USER }}
       mode=644
 

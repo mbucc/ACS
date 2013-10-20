@@ -1,0 +1,6 @@
+---
+# Install ImageMagick so we can create thumbnails.
+# Created: Sun Oct 20 15:31:51 EDT 2013
+
+- name: Install ImageMagick so we can create thumbnails.
+  yum: name=ImageMagick

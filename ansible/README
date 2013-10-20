@@ -17,7 +17,7 @@ Status
 
         * ecommerce module is not installed.
 
-        * The playbooks are clumbsy about idempotency, especially
+        * The playbooks are clumsy about idempotency, especially
           around database stuff.
 
         * The ACS parameter file needs some love.
@@ -29,6 +29,8 @@ Status
     TODO:
 
         * Configure system so AOL (and ACS?) man pages are on MANPATH.
+
+        * Fix backup to use Oracle Express backup script.
 
 Setup
 

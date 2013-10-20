@@ -4,7 +4,6 @@
 ACS_VERSION: 3.4.10
 
 # The service name is what shows up in tnsnames; e.g., sqlplus acs/acs@xe
-ACS_SERVICE_NAME: xe
 ACS_ORACLE_USER: acs
 ACS_ORACLE_PASSWORD: oracle
 
