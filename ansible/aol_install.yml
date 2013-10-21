@@ -107,19 +107,6 @@
 #
 #---------------------------------------------------------------------------
 
-- name: Copy over ns_cache tarball.
-  copy: src=nscache-1.5.tar.gz dest=/tmp
-          owner={{ AOL_SERVER_USER }} group={{ AOL_SERVER_USER }} mode=644
-  when: aol_tarball.changed
-
-- name: Extract ns_cache tarball into
-  command: tar -zxf /tmp/nscache-1.5.tar.gz -C /tmp
-  when: aol_tarball.changed
-
-- name: Make and install nscache
-  shell: make install INST={{ AOL_SERVER_PREFIX }} chdir=/tmp/nscache-1.5
-  when: aol_tarball.changed
-
 - name: Copy over ns_sha1 tarball.
   copy: src=nssha1-0.1.tar.gz dest=/tmp
           owner={{ AOL_SERVER_USER }} group={{ AOL_SERVER_USER }} mode=644
