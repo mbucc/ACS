@@ -1,0 +1,51 @@
+#!/usr/bin/perl
+#
+# $Id: ini2tcl,v 1.1 2000/02/26 20:40:47 mayoff Exp $
+#
+# Convert an AOLserver .ini file to a .tcl file.
+
+sub quote {
+    my ($string) = @_;
+    if ($string eq '') {
+      $string = '""';
+    }
+    elsif ($string =~ /["\\{}\[\]\$\s]/) {
+	$string =~ s/["\\\[\]\$]/\\$&/g;
+	$string = "\"$string\"";
+    }
+    return $string;
+}
+
+while (<>) {
+    chomp;
+
+    ($indent) = /^(\s*)/;
+
+    s/^\s*//;
+    s/\s*$//;
+
+    if (/^;(\s*)([^\s=]+)=(.*)/) {
+	my ($space, $name, $value) = ($1, $2, $3);
+	$name = quote($name);
+	$value = quote($value);
+	$_ = "\t#${space}ns_param $name $value";
+    }
+
+    elsif (/^;/) {
+	substr($_, 0, 1) = "\t#";
+    }
+
+    elsif (/^\[(.*)\]/) {
+	my $sectionName = quote($1);
+	$_ = "\nns_section $sectionName\n";
+    }
+
+    elsif (/^([^=]*)=(.*)/) {
+	my ($name, $value) = ($1, $2);
+	$name = quote($name);
+	$value = quote($value);
+	$_ = "\tns_param $name $value";
+    }
+
+    print $indent, $_, "\n";
+}
