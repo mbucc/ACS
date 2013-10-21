@@ -6,7 +6,7 @@ files="
 http://downloads.sourceforge.net/project/aolserver/nssha1/nssha1-0.1/nssha1-0.1.tar.gz
 http://downloads.sourceforge.net/project/aolserver/nscache/nscache-1.5/nscache-1.5.tar.gz
 http://downloads.sourceforge.net/project/aolserver/nsopenssl/nsopenssl-2.1a/nsopenssl-2.1a.tar.gz
-http://downloads.sourceforge.net/project/aolserver/AOLserver/AOLserver-3.5.11/aolserver-3.5.11-src.tar.gz
+http://downloads.sourceforge.net/project/aolserver/AOLserver/4.5.2/aolserver-4.5.2-rc0.tar.gz
 "
 
 for f in $files; do

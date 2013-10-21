@@ -82,28 +82,21 @@
   command: tar -zxf /tmp/{{ AOL_TARBALL }} -C /tmp
   when: aol_tarball.changed
 
-- name: Copy over patch for "multiple definition of `_init'" linker error.
-  copy: src=aol_fix_duplicate__init.diff
-          dest=/tmp/{{ AOL_TARBALL_BASENAME }} 
-          owner={{ AOL_SERVER_USER }} group={{ AOL_SERVER_USER }} mode=644
-  when: aol_tarball.changed
-
-- name: Apply patch for "multiple definition of `_init'" linker error.
-  shell: /usr/bin/patch -p0 < aol_fix_duplicate__init.diff 
-      chdir=/tmp/{{ AOL_TARBALL_BASENAME }}
-  when: aol_tarball.changed
-
 - name: Configure AOL Server
-  shell: ./configure --with-tcl={{ AOL_SERVER_PREFIX }}/lib --prefix={{ AOL_SERVER_PREFIX }} 
+  shell: $AOL_SERVER_PREFIX/bin/tclsh8.4 ./nsconfig.tcl
       chdir=/tmp/{{ AOL_TARBALL_BASENAME }}
   when: aol_tarball.changed
 
-- name: Make and install AOL Server
+- name: Make AOL Server
+  shell: make chdir=/tmp/{{ AOL_TARBALL_BASENAME }}
+  when: aol_tarball.changed
+
+- name: Install AOL Server
   shell: make install chdir=/tmp/{{ AOL_TARBALL_BASENAME }}
   when: aol_tarball.changed
 
 - name: Change user.group back to nsadmin.web
-  file: path=/usr/local/aolserver state=directory
+  file: path={{ AOL_SERVER_PREFIX }} state=directory
           owner={{ AOL_SERVER_USER }} group={{ WEB_GROUP }} mode=755
   when: aol_tarball.changed
 

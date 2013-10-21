@@ -1,7 +1,8 @@
 ---
 # AOL Server variables
-AOL_TARBALL_BASENAME: aolserver-3.5.11
-AOL_TARBALL: $AOL_TARBALL_BASENAME-src.tar.gz
+AOL_TARBALL_BASENAME: aolserver-4.5.2
+
+AOL_TARBALL: $AOL_TARBALL_BASENAME-rc0.tar.gz
 AOL_HOME: /home/aol33
 AOL_SERVER_PREFIX: /usr/local/aolserver
 AOL_SERVER_USER: nsadmin
