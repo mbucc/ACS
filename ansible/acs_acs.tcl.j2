@@ -1,0 +1,165 @@
+
+ns_section ns/db/drivers
+
+	ns_param ora8 nsoracle.so
+
+
+ns_section ns/db/pool/main
+
+	ns_param Driver ora8
+	ns_param Connections 4
+	ns_param DataSource ""
+	ns_param User "{{ ACS_ORACLE_USER }}"
+	ns_param Password "{{ ACS_ORACLE_PASSWORD }}"
+	ns_param Verbose On
+	ns_param ExtendedTableInfo On
+
+
+ns_section ns/db/pool/subquery
+
+	ns_param Driver ora8
+	ns_param Connections 4
+	ns_param DataSource ""
+	ns_param User "{{ ACS_ORACLE_USER }}"
+	ns_param Password "{{ ACS_ORACLE_PASSWORD }}"
+	ns_param Verbose On
+	ns_param ExtendedTableInfo On
+
+
+ns_section ns/db/pool/log
+
+	ns_param Driver ora8
+	ns_param Connections 3
+	ns_param DataSource ""
+	ns_param User "{{ ACS_ORACLE_USER }}"
+	ns_param Password "{{ ACS_ORACLE_PASSWORD }}"
+	ns_param Verbose On
+	ns_param ExtendedTableInfo On
+
+
+ns_section ns/db/pools
+
+	ns_param main main
+	ns_param subquery subquery
+	ns_param log log
+
+
+ns_section ns/parameters
+
+	ns_param User "{{ AOL_SERVER_USER }}"
+	ns_param ServerLog "{{ AOL_HOME }}/log/{{ ACS_DOMAIN_NAME }}-error.log"
+	ns_param Home "{{ AOL_SERVER_PREFIX }}"
+	ns_param StackSize 500000
+	ns_param auxconfigdir "{{ AOL_SERVER_WEBROOT }}/{{ ACS_DOMAIN_NAME }}/parameters"
+	ns_param pidfile "{{ AOL_PID_FILE }}"
+
+
+ns_section ns/threads
+
+	# use more than 1 processor (Solaris)
+	ns_param SystemScope on
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/module/nscache"
+
+	ns_param CacheADP on
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}"
+
+	ns_param PageRoot "{{ AOL_SERVER_WEBROOT }}/{{ ACS_DOMAIN_NAME }}/www"
+	ns_param DirectoryFile "index.tcl, index.adp, index.html, index.htm"
+	ns_param Webmaster "{{ ACS_ADMINISTRATOR_EMAIL }}"
+	ns_param NoticeBgColor #ffffff
+	ns_param EnableTclPages On
+	ns_param NotFoundResponse "{{ AOL_SERVER_WEBROOT }}/{{ ACS_DOMAIN_NAME }}/www/global/file-not-found.html"
+	ns_param ServerBusyResponse "{{ AOL_SERVER_WEBROOT }}/{{ ACS_DOMAIN_NAME }}/www/global/busy.html"
+	ns_param ServerInternalErrorResponse "{{ AOL_SERVER_WEBROOT }}/{{ ACS_DOMAIN_NAME }}/www/global/error.html"
+	ns_param MaxThreads 50
+	ns_param MaxBusyThreads 20
+	ns_param MaxWait 2
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/db"
+
+	ns_param Pools *
+	ns_param DefaultPool main
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/adp"
+
+	ns_param Map /*.adp
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/module/nslog"
+
+	ns_param EnableHostnameLookup Off
+	ns_param File "{{ AOL_HOME }}/log/{{ ACS_DOMAIN_NAME }}.log"
+	ns_param LogCombined On
+	ns_param LogRefer Off
+	ns_param LogUserAgent Off
+	ns_param MaxBackup 5
+	ns_param RollDay *
+	ns_param RollFmt %Y-%m-%d-%H:%M
+	ns_param RollHour 0
+	ns_param RollOnSignal On
+	ns_param RollLog On
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/module/nsperm"
+
+	ns_param model Small
+	ns_param enablehostnamelookup Off
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/module/nssock"
+
+	ns_param timeout 120
+	ns_param Address "{{ ACS_IP_ADDRESS }}"
+	ns_param Hostname "{{ ACS_IP_ADDRESS }}"
+	ns_param Port "{{ ACS_PORT }}"
+
+	# XXX: Read readme.txt in ns_openssl-2.1a tarball.
+	#[ns/server/{{ ACS_DOMAIN_NAME }}/module/nsopenssl]
+	#ns_param Address "{{ ACS_IP_ADDRESS }}"
+	#ns_param Hostname "{{ ACS_IP_ADDRESS }}"
+	#ns_param CertFile "{{ AOL_HOME }}/cert.pem"
+	#ns_param KeyFile "{{ AOL_HOME }}/key.pem"
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/modules"
+
+	ns_param nsperm nsperm.so
+	ns_param nssock nssock.so
+	ns_param nslog nslog.so
+	ns_param nssha1 nssha1.so
+	ns_param nsdb nsdb.so
+	#ns_param nsopenssl nsopenssl.so
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/MimeTypes"
+
+	ns_param Default text/plain
+	ns_param NoExtension text/plain
+	ns_param .pcd image/x-photo-cd
+	ns_param .prc application/x-pilot
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/tcl"
+
+	ns_param Library "{{ AOL_SERVER_WEBROOT }}/{{ ACS_DOMAIN_NAME }}/tcl"
+
+
+ns_section ns/servers
+
+	ns_param "{{ ACS_DOMAIN_NAME }}" "{{ ACS_DOMAIN_NAME }} community system"
+
+
+
+ns_section ns/setup
+
+	ns_param ContinueOnError On
+	ns_param Enabled Off
+	ns_param Port 9879
+
+source {{ AOL_SERVER_WEBROOT }}/{{ ACS_DOMAIN_NAME }}/parameters/{{ ACS_DOMAIN_NAME }}.tcl

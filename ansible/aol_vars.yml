@@ -13,5 +13,6 @@ AOL_PID_FILE: $AOL_HOME/log/aolserver.pid
 
 AOL_ORACLEDRIVER_TAG: 2.7
 
-AOL_TCL: tcl8.4.20
+AOL_TCLSH: tclsh8.6
+AOL_TCL: tcl8.6.1
 AOL_TCL_TARBALL: $AOL_TCL-src.tar.gz

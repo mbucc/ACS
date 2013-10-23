@@ -7,6 +7,7 @@ http://downloads.sourceforge.net/project/aolserver/nssha1/nssha1-0.1/nssha1-0.1.
 http://downloads.sourceforge.net/project/aolserver/nscache/nscache-1.5/nscache-1.5.tar.gz
 http://downloads.sourceforge.net/project/aolserver/nsopenssl/nsopenssl-2.1a/nsopenssl-2.1a.tar.gz
 http://downloads.sourceforge.net/project/aolserver/AOLserver/4.5.2/aolserver-4.5.2-rc0.tar.gz
+https://github.com/aolserver/nssha1/archive/master.zip
 "
 
 for f in $files; do
@@ -15,6 +16,9 @@ for f in $files; do
     echo "curl -L $f > $fn"
     curl -L $f > t.tar.gz
     mv t.tar.gz $fn
+    if [ "$fn" = "master.zip" ] ; then 
+      mv master.zip nssha1-master.zip
+    fi
   else
     echo $fn already downloaded.
   fi
