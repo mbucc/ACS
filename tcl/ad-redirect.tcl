@@ -23,34 +23,33 @@ if !$ad_redirects_installed_p {
     set server_name [ns_info server]
     append config_path "ns/server/" $server_name "/acs/redirect"
     set all_the_redirects [ns_configsection $config_path]
-    ns_log Notice "MKB: commented out the ad_redirects_installed_p ad-redirect.tcl"
-#    ns_log Notice "/tcl/ad-redirect.tcl has found [ns_set size $all_the_redirects] redirects specified in $config_path"
-#    # now we have an ns_set of all the specs
-#    for {set i 0} {$i<[ns_set size $all_the_redirects]} {incr i} {
-#	set key [ns_set key $all_the_redirects $i]
-#	set value [ns_set value $all_the_redirects $i]
-#	set pair [split $value "|"]
-#	set from [lindex $pair 0]
-#	set to [lindex $pair 1]
-#	if { $key == "Inherit" } {
-#	    ns_log Notice "/tcl/ad-redirect.tcl will send anything underneath \"$from\" to \"$to\""
-#	    ad_register_proc GET $from ad_returnredirect $to
-#	} elseif { $key == "JustOne" } {
-#	    ns_log Notice "/tcl/ad-redirect.tcl will send \"$from\" to \"$to\""
-#	    ad_register_proc -noinherit t GET $from ad_returnredirect $to
-#	} elseif { $key == "Pattern" } {
-#	    ns_log Notice "/tcl/ad-redirect.tcl will reconstruct URLs that start with \"$from\" into URLs that start with \"$to\""
-#	    # we have to supply from and to patterns to a helper proc
-#	    ad_register_proc GET $from ad_redirect_pattern $value
-#	} elseif { $key == "PatternPost" } {
-#	    ns_log Notice "/tcl/ad-redirect.tcl will reconstruct forms posted to \"$from\" into URL GETs that start with \"$to\""
-#	    # we have to supply from and to patterns to a helper proc
-#	    ad_register_proc POST $from ad_redirect_pattern $value
-#	    ad_register_proc GET $from ad_redirect_pattern $value
-#	} else {
-#	    ns_log Error "/tcl/ad-redirect.tcl unable to do anything with $key=$value"
-#	}
-#    }
+    ns_log Notice "/tcl/ad-redirect.tcl has found [ns_set size $all_the_redirects] redirects specified in $config_path"
+    # now we have an ns_set of all the specs
+    for {set i 0} {$i<[ns_set size $all_the_redirects]} {incr i} {
+	set key [ns_set key $all_the_redirects $i]
+	set value [ns_set value $all_the_redirects $i]
+	set pair [split $value "|"]
+	set from [lindex $pair 0]
+	set to [lindex $pair 1]
+	if { $key == "Inherit" } {
+	    ns_log Notice "/tcl/ad-redirect.tcl will send anything underneath \"$from\" to \"$to\""
+	    ad_register_proc GET $from ad_returnredirect $to
+	} elseif { $key == "JustOne" } {
+	    ns_log Notice "/tcl/ad-redirect.tcl will send \"$from\" to \"$to\""
+	    ad_register_proc -noinherit t GET $from ad_returnredirect $to
+	} elseif { $key == "Pattern" } {
+	    ns_log Notice "/tcl/ad-redirect.tcl will reconstruct URLs that start with \"$from\" into URLs that start with \"$to\""
+	    # we have to supply from and to patterns to a helper proc
+	    ad_register_proc GET $from ad_redirect_pattern $value
+	} elseif { $key == "PatternPost" } {
+	    ns_log Notice "/tcl/ad-redirect.tcl will reconstruct forms posted to \"$from\" into URL GETs that start with \"$to\""
+	    # we have to supply from and to patterns to a helper proc
+	    ad_register_proc POST $from ad_redirect_pattern $value
+	    ad_register_proc GET $from ad_redirect_pattern $value
+	} else {
+	    ns_log Error "/tcl/ad-redirect.tcl unable to do anything with $key=$value"
+	}
+    }
 }
 
 proc_doc ad_string_replace_once {string pattern replacement} "Replace the first occurrence of PATTERN with REPLACEMENT; return unaltered STRING if PATTERN not found" {
