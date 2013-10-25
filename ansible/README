@@ -32,7 +32,7 @@ Status
 
         * Fix backup to use Oracle Express backup script.
 
-        * AOL Server was consistently a royal pain in the ass.  Take 
+        * AOL Server is consistently a royal pain in the ass.  Take 
           a look at https://bitbucket.org/naviserver/naviserver (in
           particular, http://wiki.tcl.tk/22567).
 
