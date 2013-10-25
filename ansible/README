@@ -36,6 +36,10 @@ Status
           a look at https://bitbucket.org/naviserver/naviserver (in
           particular, http://wiki.tcl.tk/22567).
 
+        * On an Oracle error, a "Report this error" button shows that posts
+          the error to <form action="http://www.arsdigita.com/sdm/new-ticket".
+          Change this to post to {{ ACS_DOMAIN_NAME }}.
+
 Setup
 
     1. Install Oracle Linux 5 64bit.
