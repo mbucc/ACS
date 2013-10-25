@@ -82,28 +82,21 @@
   command: tar -zxf /tmp/{{ AOL_TARBALL }} -C /tmp
   when: aol_tarball.changed
 
-- name: Copy over patch for "multiple definition of `_init'" linker error.
-  copy: src=aol_fix_duplicate__init.diff
-          dest=/tmp/{{ AOL_TARBALL_BASENAME }} 
-          owner={{ AOL_SERVER_USER }} group={{ AOL_SERVER_USER }} mode=644
-  when: aol_tarball.changed
-
-- name: Apply patch for "multiple definition of `_init'" linker error.
-  shell: /usr/bin/patch -p0 < aol_fix_duplicate__init.diff 
-      chdir=/tmp/{{ AOL_TARBALL_BASENAME }}
-  when: aol_tarball.changed
-
 - name: Configure AOL Server
-  shell: ./configure --with-tcl={{ AOL_SERVER_PREFIX }}/lib --prefix={{ AOL_SERVER_PREFIX }} 
+  shell: $AOL_SERVER_PREFIX/bin/{{ AOL_TCLSH }} ./nsconfig.tcl
       chdir=/tmp/{{ AOL_TARBALL_BASENAME }}
   when: aol_tarball.changed
 
-- name: Make and install AOL Server
+- name: Make AOL Server
+  shell: make chdir=/tmp/{{ AOL_TARBALL_BASENAME }}
+  when: aol_tarball.changed
+
+- name: Install AOL Server
   shell: make install chdir=/tmp/{{ AOL_TARBALL_BASENAME }}
   when: aol_tarball.changed
 
 - name: Change user.group back to nsadmin.web
-  file: path=/usr/local/aolserver state=directory
+  file: path={{ AOL_SERVER_PREFIX }} state=directory
           owner={{ AOL_SERVER_USER }} group={{ WEB_GROUP }} mode=755
   when: aol_tarball.changed
 
@@ -114,31 +107,22 @@
 #
 #---------------------------------------------------------------------------
 
-- name: Copy over ns_cache tarball.
-  copy: src=nscache-1.5.tar.gz dest=/tmp
+- name: Copy over ns_sha1 zip file.
+  copy: src=nssha1-master.zip dest=/tmp
           owner={{ AOL_SERVER_USER }} group={{ AOL_SERVER_USER }} mode=644
-  when: aol_tarball.changed
+  register: aol_sha1
 
-- name: Extract ns_cache tarball into
-  command: tar -zxf /tmp/nscache-1.5.tar.gz -C /tmp
-  when: aol_tarball.changed
-
-- name: Make and install nscache
-  shell: make install INST={{ AOL_SERVER_PREFIX }} chdir=/tmp/nscache-1.5
-  when: aol_tarball.changed
-
-- name: Copy over ns_sha1 tarball.
-  copy: src=nssha1-0.1.tar.gz dest=/tmp
-          owner={{ AOL_SERVER_USER }} group={{ AOL_SERVER_USER }} mode=644
-  when: aol_tarball.changed
-
-- name: Extract ns_sha1 tarball into /tmp.
-  command: tar -zxf /tmp/nssha1-0.1.tar.gz -C /tmp
-  when: aol_tarball.changed
+- name: Extract ns_sha1 zipfile into /tmp.
+  command: /usr/bin/unzip /tmp/nssha1-master.zip chdir=/tmp
+  when: aol_sha1.changed
 
 - name: Make and install nssha
-  shell: make install INST={{ AOL_SERVER_PREFIX }} chdir=/tmp/nssha1-0.1
-  when: aol_tarball.changed
+  shell: make AOLSERVER={{ AOL_SERVER_PREFIX }} chdir=/tmp/nssha1-master
+  when: aol_sha1.changed
+
+- name: Make and install nssha
+  shell: make install AOLSERVER={{ AOL_SERVER_PREFIX }} chdir=/tmp/nssha1-master
+  when: aol_sha1.changed
 
 # TODO: Get SSL working.
 #- name: Copy over ns_openssl tarball.
@@ -203,7 +187,12 @@
   shell: /usr/bin/patch -p0 < aol_nsoracle1.patch chdir=/tmp/nsoracle
   when: nsoracle_tarball.changed or nsoracle_patch.changed or nsoracle_patch1.changed
 
-- name: Compile and install Oracle driver for AOL Server.
-  shell: ORACLE_HOME={{ ORACLE_HOME }} make install INST={{ AOL_SERVER_PREFIX }}
+- name: Compile Oracle driver for AOL Server.
+  shell: ORACLE_HOME={{ ORACLE_HOME }} CFLAGS="-DUSE_INTERP_RESULT" make NSHOME={{ AOL_SERVER_PREFIX }} AOLSERVER={{ AOL_SERVER_PREFIX }}
+      chdir=/tmp/nsoracle
+  when: nsoracle_tarball.changed or nsoracle_patch.changed or nsoracle_patch1.changed
+
+- name: Install Oracle driver for AOL Server.
+  shell: ORACLE_HOME={{ ORACLE_HOME }} CFLAGS="-DUSE_INTERP_RESULT" make install NSHOME={{ AOL_SERVER_PREFIX }} AOLSERVER={{ AOL_SERVER_PREFIX }}
       chdir=/tmp/nsoracle
   when: nsoracle_tarball.changed or nsoracle_patch.changed or nsoracle_patch1.changed

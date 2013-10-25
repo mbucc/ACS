@@ -1,0 +1,1481 @@
+	# AOLserver reads these files when the server starts up and stores
+	# parameters in an in-memory hash table.  So you have to restart the
+	# server if you want to test a change made to this file.
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs"
+
+	ns_param SystemName "yourdomain Network"
+	# for legal pages, full corporate entity
+	ns_param PublisherName "Yourdomain Network, Inc."
+	# who signs the average user-visible pages
+	ns_param SystemOwner "webmaster@{{ ACS_DOMAIN_NAME }}"
+	# URL to tell users to go to
+	ns_param SystemURL "http://{{ ACS_DOMAIN_NAME }}"
+	# who signs the admin pages, e.g., a programmer who can fix/enhance them
+	ns_param AdminOwner "a-programmer@{{ ACS_DOMAIN_NAME }}"
+	# are admin users allow to write SQL queries
+	# (only say yes if they are not likely to crash the server)
+	ns_param AllowAdminSQLQueries 0
+	# stuff we want restricted to SSL (https) (filter patterns)
+	# note that this only takes effect if you have an SSL listener configured
+	# on your AOLserver
+	ns_param RestrictToSSL /admin*
+	ns_param RestrictToSSL /NS/Admin*
+	ns_param RestrictToSSL /NS/Db*
+	# do we want to restrict the entire server to registered users
+	# (the content_sections facility probably could also accomplish this
+	#  but not as simply)
+	ns_param RestrictEntireServerToRegisteredUsersP 0
+	# Should only admins see error messages?
+	ns_param RestrictErrorsToAdminsP 0
+	# Is this server being used as a staff server?
+	# (only used by /pvt/home.tcl and may become legacy)
+	ns_param StaffServerP 0
+	ns_param HostAdministrator "somenerd@{{ ACS_DOMAIN_NAME }}"
+	ns_param GraphicsSiteAvailableP 0
+	# these work for text-only and graphics site
+	ns_param bgcolor white
+	ns_param textcolor black
+	# this is only for the graphics site
+	ns_param background /graphics/bg.gif
+	# set ReadOnlyP=1 if you're going to wipe your Oracle installation
+	ns_param ReadOnlyP 0
+	# do we expect this to be a site visited by people
+	# from all over the world (in which case we might ask for
+	# country rather than state)
+	ns_param InternationalP 1
+	# is it even worth bothering asking for state and zip code?
+	ns_param SomeAmericanReadersP 1
+	# do we allow a persistent cookie?
+	# we need this for pulling times out of the database and turning
+	# then into ns_times; this is for standard time (don't worry about
+	# daylight saving's time, we figure that out by calling ns_localtime)
+	# United States Eastern time is -5
+	ns_param HoursDifferenceFromGMT -5
+	# what two characters do we use for salting ns_crypt
+	# (documented at aolserver.com; doesn't matter as long
+	# as you don't change this after going live)
+	ns_param CryptSalt fb
+	# admin user interface may change depending on whether we expect
+	# 10, 100, 1000, or 100000 users; we have "small", "medium", "large"
+	# as possible values, consistent with Oracle config files
+	ns_param NumberOfUsers medium
+	# clickthrough and referral admin report defaults
+	# change depending on whether
+	# this is a dev site or a 500,000 hit/day live site
+	# we have "small", "medium", "large" as possible values
+	# we think "medium" = site like photo.net (700,000 hits/day)
+	ns_param TrafficVolume medium
+	# general comments default approval
+	# open means stuff goes live immediately
+	# wait means stuff waits for administrator to approve
+	# closed means only administrator can post
+	ns_param DefaultCommentApprovalPolicy wait
+	# general links default approval
+	# open means stuff goes live immediately
+	# wait means stuff waits for administrator to approve
+	# closed means only administrator can post
+	ns_param DefaultLinkApprovalPolicy open
+	# if set, update last visit cookie according to LastVisitUpdateInterval
+	# so that we can support reporting of who's online. This makes last visit
+	# times more accurate, but increases system load (because we're also
+	# updating the last_visit column in the users table)
+	ns_param WhosOnlineP 1
+	ns_param WhosOnlineDecoration "<a href=\"/photo/pcd0952/boston-marathon-60.tcl\"><img HEIGHT=134 WIDTH=196 src=\"/photo/pcd0952/boston-marathon-60.1.jpg\" ALT=\"100th Anniversary Boston Marathon (1996).\"></a>"
+	# how many seconds old a last visit cookie must be before we update it
+	ns_param LastVisitUpdateInterval 600
+	# What tmp directories are used on this system?
+	# Note the leading / character.
+	ns_param TmpDir /tmp
+	ns_param TmpDir /var/tmp
+
+	#stuff having to do with registration and login
+	ns_param NotifyAdminOfNewRegistrationsP 1
+	# where to send those notes (defaults to SystemOwner)
+	#ns_param NewRegistrationEmailAddress "admin@{{ ACS_DOMAIN_NAME }}"
+	# send confirmation email to user after registration
+	ns_param EmailRegistrationConfirmationToUserP 0
+	# set this to 1 if user does not go live immediately
+	ns_param RegistrationRequiresApprovalP 0
+	# set this to 1 if the user has to receive and email
+	# and come back to the site
+	ns_param RegistrationRequiresEmailVerificationP 0
+	# have the system generate a random password instead of the user
+	ns_param RegistrationProvidesRandomPasswordP 0
+	# Encypt Passwords in the database
+	ns_param EncryptPasswordsInDBP 0
+	# Email users forgotten passwords
+	ns_param EmailForgottenPasswordP 1
+	# If so, do you choose a random a password
+	# (if you use encrypted password, a random password will always be generated)
+	ns_param EmailRandomPasswordWhenForgottenP 0
+	# if the admin changes the password, should it be mailed to the user
+	ns_param EmailChangedPasswordP 1
+	ns_param AllowPersistentLoginP 1
+	# if so, do we default to a persistent cookie?
+	ns_param PersistentLoginDefaultP 1
+	# do we keep track of anonymous and logged-in browsers
+	# as to last_visit and second_to_last_visit
+	ns_param LastVisitCookiesEnabledP 1
+	# how many seconds old must a last visit cookie be before
+	# we consider this a new visit
+	ns_param LastVisitExpiration 86400
+	# how long will we associated hits from an individual ip
+	# as the same user. Hits within this interval will
+	# be considered the same session for session tracking.
+	ns_param LastVisitCacheUpdateInterval 600
+	# what tables to stuff when user registers
+	#ns_param RequiredUserTable users_preferences
+	#ns_param RequiredUserTable users_demographics
+	#ns_param RequiredUserTable users_contact
+	# do we want to set each cookie on more than one hostname
+	# (i.e., is your site a typical "foobar.com" and "www.foobar.com" case)
+	ns_param NeedCookieChainP 0
+	ns_param CookieChainFirstHostName "{{ ACS_DOMAIN_NAME }}"
+	ns_param CookieChainSecondHostName "www.{{ ACS_DOMAIN_NAME }}"
+	# do we have legacy users for whom we created
+	# accounts from old bboard postings (keyed by email address)?
+	ns_param UsersTableContainsConvertedUsersP 0
+	# Primarily for WimpyPoint, but may be useful to other modules
+	ns_param PathToACS "/web/{{ ACS_DOMAIN_NAME }}"
+	# Where is the global directory for such things as file-not-found
+	# error messages
+	ns_param GlobalURLStub /global
+	# for how long can a be session inactive before it times out? (in seconds)
+	ns_param SessionTimeout 86400
+	# how often should we reissue the session_id cookie (to prevent expiration)
+	# and update last_hit in the sessions table?
+	ns_param SessionCookieReissue 600
+	# how long after the last hit should we save information in the SessionLifetime
+	# table?
+	ns_param SessionLifetime 176800
+	# how many characters long are the tokens used for authentication?
+	ns_param TokenLength 32
+	# how long to cache session information for?
+	ns_param SessionInfoCacheInterval 600
+	# use the old login process where email and password are on separate pages?
+	ns_param SeparateEmailPasswordPagesP 0
+	# log detailed information about security and sessions for which hosts?
+	# useful for troubleshooting; remove to log for none
+	# ns_param LogSecurityMinutia ""
+	# if a user provides a Host header which isn't this, redirect the user to
+	# this particular host. e.g., if {{ ACS_DOMAIN_NAME }}.com and www.{{ ACS_DOMAIN_NAME }}.com
+	# point to the same IP, set this to 1 so cookies will be properly set.
+	ns_param ForceHostP 1
+	# The directory containing gzip and gunzip executable
+	ns_param GzipExecutableDirectory /usr/local/bin
+	# Display stack traces on page crashes to everyone or only to admins?
+	ns_param RestrictErrorsToAdminsP 0
+
+	# ArsDigita Package Manager parameters
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/apm"
+
+	ns_param InfoFilePermissionsMode 0775
+
+	# stuff having to do with what and how we collect info from users
+	# upon registration and at various stages afterward
+	# (for legacy reasons, some of the stuff that should go here is
+	#  actually in the main acs section above)
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/user-info"
+
+	ns_param SolicitPortraitP 1
+	# Do we ask for pet portraits?
+	ns_param SolicitPetPortraitsP 1
+	# Maximum portrait size in bytes. Leave empty for no limitation.
+	ns_param MaxPortraitBytes 200000
+	# if you have ImageMagick configured, try to
+	# producte thumbnails?
+	ns_param ProduceThumbnailsAutomaticallyP 0
+	ns_param AcceptablePortraitMIMETypes "image/gif image/jpeg"
+
+	# stuff having to do with the physical computer on which
+	# this ACS is running.  Some scripts may adjust their behavior
+	# according to what operating system or perhaps the machine power
+	# (e.g., /admin/static/link-check.tcl will sleep for 1 second
+	# periodically on wimpy machines)
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/machine"
+
+	# probably best to consider any machine with only one CPU as wimpy
+	ns_param WimpyMachineP 1
+
+	# address information for a cluster of load-balanced servers (to enable
+	# distributed util_memoize_flushing, for instance).
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/server-cluster"
+
+	# is clustering enabled?
+	ns_param ClusterEnabledP 0
+	# which machines can issues requests (e.g., flushing) to the cluster?
+	#ns_param ClusterAuthorizedIP 209.67.242.*
+	# which servers are in the cluster? This server's IP may be included too
+	#ns_param ClusterPeerIP 209.67.242.171
+	#ns_param ClusterPeerIP 209.67.242.172
+	# In the list of IPs above, which is the canonical (primary) server?
+	# If a port is not listed, we assume port 80.
+	#ns_param CanonicalServer 209.67.242.171:8082
+	# log clustering events?
+	#ns_param EnableLoggingP 1
+
+	# stuff having to do with the ArsDigita Community System software
+	# itself, e.g., workarounds for bugs
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/acs"
+
+	ns_param LogCLOBdmlP 1
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/database"
+
+	# By default, the DB API will use all the pools available to AOLserver.
+	# Moreover, any time it needs a handle, the DB API alone will decide
+	# from which pool to grab the handle. This is bad if some handles
+	# point to a different, non-ACS database or database user.
+	#
+	# The workaround is to list here the pools that you want the DB API to use.
+	# To use the other pools, currently, you'll have to use the old ns_db API.
+	# until we enhance the DB API to let you choose what set of pools you want
+	# to grab a handle from.
+	#
+	# Specify a line saying AvailablePool=foo for each DB pool that you want the
+	# DB API to use. If you don't specify any AvailablePool=foo lines, it'll
+	# use all the ones available to AOLserver.
+	#
+	# ns_param AvailablePool main
+	# ns_param AvailablePool subquery
+	# ns_param AvailablePool log
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/developer-support"
+
+	# remember information about connections, for developers' benefit?
+	ns_param EnabledOnStartupP 0
+	# remember information about every database request?
+	ns_param DatabaseEnabledP 0
+	# remember information for which client hosts?
+	ns_param EnabledIPs *
+	# remember this information for how long? sweep how often? (in seconds)
+	ns_param DataLifetime 900
+	ns_param DataSweepInterval 900
+
+	# stuff having to do with abstract urls (doc/abstract-url.html)
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/abstract-url"
+
+	# enable abstract url handling?
+	ns_param EnableAbstractURLsP 1
+	# precedence for file extensions, e.g., "tcl,adp,html" means "serve
+	# a .tcl file if available, else an .adp file if available, else an
+	# .html file if available, else the first file available in alphabetical
+	# order". Comma-separated
+	ns_param ExtensionPrecedence tcl,adp,html,jpg,gif
+
+	# stuff having to do with user groups
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/ug"
+
+	ns_param CacheTimeout 600
+	#this will be part of url where groups can access their webpages
+	#e.g. if GroupsDirectory=groups and group short name is travel at photo.net
+	#then group travel will have it's user pages accessible at photo.net/groups/travel
+	#note that this is not the same as the file system directory for the group system files
+	ns_param GroupsDirectory groups
+	#this sets the part of url needed to access group admin pages
+	#when GroupsDirectory=groups and GroupsAdminDirectory=admin then group admin
+	#pages for group with short_name travel will be accessible at photo.net/groups/admin/travel
+	#note that this is not the same as the file system directory for the group admin pages
+	ns_param GroupsAdminDirectory admin
+
+	# general anti-spam stuff, useful system-wide
+	# esp. for IP address ranges that we don't like
+	# we want GLOB patterns to feed to [string match ..]
+	# and we want a policy decision about whether to pretend
+	# to be broken or be explicit that they've been banned
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/antispam"
+
+	ns_param FeignFailureP 1
+	#ns_param IPglob 209.114.173.*
+	#ns_param IPglob 209.114.172.*
+	# to block out one single address
+	#ns_param IPglob 209.114.172.46
+	# we don't allow users to submit HTML containing any of these tags
+	ns_param NaughtyTag div
+	ns_param NaughtyTag font
+	# The tags that we explicitly allow people to use
+	ns_param AllowedTag B
+	ns_param AllowedTag I
+	ns_param AllowedTag P
+	ns_param AllowedTag A
+	ns_param AllowedTag LI
+	ns_param AllowedTag OL
+	ns_param AllowedTag UL
+	ns_param AllowedTag EM
+	ns_param AllowedTag BR
+	ns_param AllowedTag TT
+	ns_param AllowedTag STRONG
+	ns_param AllowedTag BLOCKQUOTE
+	ns_param AllowedTag CODE
+	ns_param AllowedTag PRE
+	# Tags used the arsdigita spamming module
+	ns_param AllowedTag FIRST_NAMES
+	ns_param AllowedTag LAST_NAME
+	ns_param AllowedTag EMAIL
+	ns_param AllowedTag GROUP_NAME
+	ns_param AllowedURLAttribute HREF
+	ns_param AllowedProtocol http
+	ns_param AllowedProtocol https
+	ns_param AllowedProtocol ftp
+	ns_param AllowedProtocol mailto
+
+	# stuff having to do with the user's workspace
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/pvt"
+
+	# ns_param WorkspacePageDecoration " an image"
+	# ns_param AlertPageDecoration "<a href=\"/photo/pcd2388/alex-green-building-21.tcl\"><img HEIGHT=198 WIDTH=132 src=\"/photo/pcd2388/alex-green-building-21.1.jpg\" ALT=\"Alex in front of the Green Building.  Massachusetts Institute of Technology\"></a>"
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/content"
+
+	# do we serve the generated index.tcl page or something else
+	# from the file system?
+	# ns_param SpecialIndexPage /index.html
+	# ns_param SiteMap /site-map.html
+
+	# stuff for dealing with static pages
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/static"
+
+	# this has to be a complete REGEXP with | for or's; \.html?$ will match .htm or .html
+	# \.html?$|\.adp$ will pull .adp pages into the table as well.
+	ns_param IncludeRegexp "\\.html?\$"
+	# URL stub to exclude, Tcl GLOB syntax, include leading /
+	# used by /admin/static/static-syncer-ns-set.tcl
+	ns_param ExcludePattern /pvt/*
+	ns_param ExcludePattern /global/*
+	ns_param ExcludePattern /graphics/*
+	ns_param ExcludePattern /admin/*
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/bboard"
+
+	ns_param PartialUrlStub /bboard/
+	# ns_param SystemName "Yourdomain Network Discussion Forums (default)"
+	# ns_param SystemOwner " something different (if desired) from SystemOwner above"
+	# ns_param HostAdministrator "something different from system-wide"
+	ns_param SenderEmail "bboard-robot@{{ ACS_DOMAIN_NAME }}"
+	# ns_param IndexPageDecoration "<a href=\"/photo/pcd0796/downtown-munich-41.tcl\"><img HEIGHT=134 WIDTH=196 src=\"/photo/pcd0796/downtown-munich-41.1.jpg\" ALT=\"Downtown Munich.\"></a>"
+	# ns_param ActivePageDecoration "<a href=\"http://photo.net/photo/pcd3609/girls-17.tcl\"><img HEIGHT=134 WIDTH=196 src=\"http://photo.net/photo/pcd3609/girls-17.1.jpg\"></a>"
+	# do we offer users a full-text search box
+	ns_param ProvideLocalSearchP 1
+	# do we use Oracle's Context option (only works if
+	# ns_param ProvideLocalSearchP 1)
+	ns_param UseContext 0
+	# do we use standalone PLS search system
+	ns_param UsePLS 0
+	# do we use AltaVista (only works if ProvideLocalSearchP=0
+	# and if the site's content is exposed to AltaVista)
+	ns_param LinktoAltaVista 0
+	# anything below this threshold is considered uninteresting
+	ns_param InterestLevelThreshold 4
+	# how many messages should a topic have to be considered active
+	ns_param ActiveLevelThreshold 30
+	# can a user start a new bboard
+	ns_param UserCanAddTopicsP 0
+	# link bboard permissions to AOLserver user; this is legacy
+	# code for ASME and probably doesn't work
+	ns_param UseNsPermAuthorizationP 0
+	ns_param FileUploadingEnabledP 1
+	# this path does *not* contain a trailing "/"
+	ns_param FilePath "/web/{{ ACS_DOMAIN_NAME }}/data/bboard"
+	# Urgent messages
+	ns_param UrgentMessageEnabledP 0
+	ns_param DaysConsideredUrgent 14
+	# Enables per-thread email alerts.
+	ns_param EnableThreadEmailAlerts 1
+	# Enables display of "stop per-thread alert" right on the
+	# fetch-one-message page.
+	ns_param OfferStopNotificationLinkForThreadEmailAlertsP 0
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/bboard/unified"
+
+	# Fully-qualified directory for Forum View icons (no trailing slash)
+	# (for highest security, it is best to keep this out of the Web
+	#  server's PageRoot; this would be in case someone managed to
+	#  upload an icon with an extension of .tcl or .adp)
+	ns_param IconDir "/web/{{ ACS_DOMAIN_NAME }}/data/bboard/unified/icons"
+	# Are users allowed to upload icons? 0=no 1=yes
+	ns_param IconUploadAllowedP 0
+	# Can users choose their own colors? 0=no 1=yes
+	# (as opposed to the site admin deciding which forums are presented in
+	#  which colors)
+	ns_param UsersChoosePersonalColorsP 0
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/news"
+
+	# open means stuff goes live immediately
+	# wait means stuff waits for administrator to approve
+	# closed means only administrator can post
+	ns_param ApprovalPolicy wait
+	# how many days a story is live (by default)
+	ns_param DefaultStoryLife 30
+	# When we display news items on a users workspace, what is the maximum
+	# number of items that we display? This lets us display the 10 most
+	# recent items easily w/out limiting the number of active stories
+	# Leave blank to display all
+	ns_param DefaultNumberOfStoriesToDisplay ""
+	# When more than this many items are selected for display,
+	# we add a second "Post New" link to the page top.
+	# Leave blank to disable.
+	ns_param MinNumberForTopLink ""
+	# ns_param SystemOwner " (defaults to site owner)"
+	# do we allow users to comment on news
+	ns_param SolicitCommentsP 1
+	ns_param CommentApprovalPolicy wait
+	ns_param IndexPageDecoration "<a href=\"http://photo.net/photo/pcd0865/nick-gittes-and-alex-107.tcl\"><img HEIGHT=134 WIDTH=196 src=\"http://photo.net/photo/pcd0865/nick-gittes-and-alex-107.1.jpg\" ALT=\"Nick Gittes and Alex. 1998.\"></a>"
+	ns_param ItemPageDecoration "<a href=\"http://photo.net/photo/pcd0305/fountain-mouth-67.tcl\"><img HEIGHT=134 WIDTH=196 src=\"http://photo.net/photo/pcd0305/fountain-mouth-67.1.jpg\"></a>"
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/calendar"
+
+	ns_param SystemName Calendar
+	# open means stuff goes live immediately
+	# wait means stuff waits for administrator to approve
+	# closed means only administrator can post
+	ns_param ApprovalPolicy wait
+	ns_param MaxEventsOnIndexPage 15
+	# When more than this many items are selected for display,
+	# we add a second "Post New" link to the page top.
+	# Leave blank to disable.
+	ns_param MinNumberForTopLink ""
+	# defaults for users, depends on type of service
+	ns_param DaysFromPostingToStart 30
+	ns_param DaysFromStartToEnd 0
+	# show an event a few days after it ends?
+	ns_param DaysFromEndToExpiration 3
+	# how many days a story is live (by default)
+	# ns_param SystemOwner " (defaults to site owner)"
+	ns_param SolicitCommentsP 1
+	ns_param CommentApprovalPolicy open
+	ns_param TitleExample "Ansel Adams show at Getty Center in Los Angeles, March 1-June 15"
+	# do we ask for country, state, city info?
+	ns_param EventsHaveLocationsP 1
+
+	# for the classified ad system
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/gc"
+
+	# ns_param SystemName ""
+	# ns_param SystemOwner "  (defaults to global system owner)"
+	ns_param PartialUrlStub /gc/
+	ns_param ProvideLocalSearchP 1
+	ns_param ProvideEmailAlerts 1
+	# send a reminder to people to edit or delete their ads?
+	ns_param NagAdOwners 1
+	ns_param HowManyRecentAdsToDisplay 5
+	# How many bids an auction must collect to qualify as a "hot" auction.
+	ns_param HotAuctionThreshold 2
+	# some stuff to deal with annoying photo.net abusers
+	# don't let people put the word "reduced" in subject line
+	ns_param DisallowReducedInSubject 1
+	ns_param DisallowExclamationPointInSubject 1
+	ns_param DisallowAllUppercase 1
+	ns_param DisalloweBay 1
+	ns_param IncludeBannerIdeasP 0
+	# ns_param IndexPageDecorationTop "<a href=\"/photo/pcd0795/campo-de-fiori-woman-and-fruit-62.tcl\"><img HEIGHT=134 WIDTH=196 src=\"/photo/pcd0795/campo-de-fiori-woman-and-fruit-62.1.jpg\" ALT=\"The open-air market in the Campo de Fiori (Rome)\"></a>"
+	# ns_param IndexPageDecorationSide "<a href=\"/photo/pcd0795/campo-de-fiori-produce-61.tcl\"><img align=right hpspace=10 vspace=5 HEIGHT=198 WIDTH=132 src=\"/photo/pcd0795/campo-de-fiori-produce-61.1.jpg\" ALT=\"The open-air market in the Campo de Fiori (Rome)\"></a>"
+	# ns_param DomainTopDecorationTop "<a href=\"/photo/pcd0795/campo-de-fiori-woman-and-fruit-62.tcl\"><img HEIGHT=134 WIDTH=196 src=\"/photo/pcd0795/campo-de-fiori-woman-and-fruit-62.1.jpg\" ALT=\"The open-air market in the Campo de Fiori (Rome)\"></a>"
+	# ns_param HotAuctionsDecoration "<a href=\"/photo/pcd1312/money-for-beer-42.tcl\"><img HEIGHT=134 WIDTH=196 src=\"/photo/pcd1312/money-for-beer-42.1.jpg\" ALT=\"Money for beer.  Times Square, 1995.\"></a>"
+	# ns_param PlaceAdDecoration "<a href=\"/photo/pcd0222/rolls-royces-16.tcl\"><img HEIGHT=134 WIDTH=196 src=\"/photo/pcd0222/rolls-royces-16.1.jpg\" ALT=\"Rolls Royces.  Getty Center underground garage.  Los Angeles, California.\"></a>"
+	# ns_param PlaceAd2Decoration "<a href=\"/photo/pcd0222/rolls-royces-18.tcl\"><img HEIGHT=134 WIDTH=196 src=\"/photo/pcd0222/rolls-royces-18.1.jpg\" ALT=\"Rolls Royces.  Getty Center underground garage.  Los Angeles, California.\"></a>"
+	# ns_param EditAd2Decoration "<a href=\"/photo/pcd2488/old-house-59.tcl\"><img HEIGHT=134 WIDTH=196 src=\"/photo/pcd2488/old-house-59.1.jpg\"></a>"
+	# ns_param AddAlertDecoration "<a href=\"/photo/pcd0866/boykin-spaniel-16.tcl\"><img HEIGHT=198 WIDTH=132 src=\"/photo/pcd0866/boykin-spaniel-16.1.jpg\" ALT=\"Boykin Spaniel in Harvard Yard.  Cambridge, MA 1998.\"></a>"
+	ns_param SolicitCommentsP 1
+	ns_param CommentApprovalPolicy open
+
+
+	# have the system write PICS headers for naughty pages
+	# or directories
+	# if EnabledP is 1 you can have as many
+	# NaughtyPatterns as you like; these are fed to
+	# ns_register_filter
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/pics"
+
+	ns_param EnabledP 0
+	ns_param NaughtyPattern /nudebabes/*
+	ns_param NaughtyPattern /doc/*
+	# a PICS header has to all be on one line anyway
+	ns_param Protocol "{PICS-1.1 {headers PICS-Label}}"
+	ns_param Label "{(PICS-1.1 \"http://www.rsac.org/ratingsv01.html\" l gen true comment \"RSACi North America Server\" by \"philg@mit.edu\" for \"http://photo.net/photo/christina/\" on \"1998.03.13T18:06-0800\" r (n 4 s 0 v 0 l 0))}"
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/contest"
+
+	ns_param OfferIndexPageP 1
+	ns_param ContestAdminOwner "contestprogrammer@{{ ACS_DOMAIN_NAME }}"
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/adserver"
+
+	# the location of the adserver .tcl pages in the file system (typically /adserver/)
+	# note the trailing slash; also note that this isn't where ads go
+	ns_param PartialUrlStub /adserver/
+	ns_param DefaultAd /ads/scorecard.gif
+	ns_param DefaultTargetUrl http://www.scorecard.org
+	ns_param DetailedPerUserLoggingP 0
+
+	# the Neighbor to Neighbor service (sort of like bboard;
+	# http://photo.net/photo/ is probably the best example of this in use )
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/neighbor"
+
+	# ns_param SystemName "Yourdomain Neighbor to Neighbor Service"
+	# ns_param SystemOwner " something different (if desired) from SystemOwner above"
+	# ns_param HostAdministrator "something different from system-wide"
+	# if you're only going to run one little category, and
+	# for backward compatibility for photo.net
+	# this is a category_id referencing the n_to_n_primary_categories
+	# table
+	ns_param DefaultPrimaryCategory 1
+	# if someone can't think of more than one; affects links from opc.tcl
+	ns_param OnlyOnePrimaryCategoryP 0
+	# do we offer users a full-text search box
+	ns_param ProvideLocalSearchP 1
+	# do we use Oracle's Context option (only works if
+	# ns_param ProvideLocalSearchP 1)
+	ns_param UseContext 0
+	# do we use standalone PLS search system
+	ns_param UsePLS 0
+	# do we use AltaVista (only works if ProvideLocalSearchP=0
+	# and if the site's content is exposed to AltaVista)
+	ns_param LinktoAltaVista 0
+	ns_param SolicitCommentsP 1
+	ns_param CommentApprovalPolicy wait
+	ns_param NReasonablePostings 100
+
+	# the clickthrough module (/tcl/ad-clickthrough.tcl)
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/click"
+
+	# ns_param CustomREGEXP "/ct/philg(/.+)\$"
+
+
+	# the referer module (/tcl/ad-referer.tcl)
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/referer"
+
+	# domains to exclude from referer tracking
+	ns_param LocalDomain "{{ ACS_DOMAIN_NAME }}"
+	ns_param LocalDomain "www.{{ ACS_DOMAIN_NAME }}"
+	# if any of these are set, we require at least one to be true
+	# (if you don't set these, you'll get lots of referrals from random
+	#  local files and "bookmarks"; trust us)
+	ns_param InclusionGLOB http://*
+	ns_param InclusionGLOB HTTP://*
+
+
+	# the data warehouse module
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/dw"
+
+	ns_param DefaultTable ad_hoc_query_view
+	# ns_param SystemName "yourdomain data warehouse"
+
+	# redirects, separate by vertical bar (we could just do
+	# ns_param FROM "TO but that's bad because sometimes we might want to"
+	# redirect based on an = char, also we want to spec Inherit
+	# or JustOne (whether to do everything beginning with /foo
+	# or just "/foo" exactly)
+	#
+	# Another interesting option is Pattern=, which lets you say
+	# "redirect  /~philg/whatevercomesnext to /philg/whatevercomesnext"
+	# (rather than just redirecting /~philg/* to a fixed location)
+	#
+
+	# for the address book
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/addressbook"
+
+	ns_param SendBirthdayAlerts 1
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/comments"
+
+	# email notifications to author/ad_system_owner
+	ns_param EmailNewUnansweredQuestion 1
+	ns_param EmailNewAlternativePerspective 1
+	ns_param EmailNewRating 1
+	ns_param EmailEditedUnansweredQuestion 1
+	ns_param EmailEditedAlternativePerspective 1
+	ns_param EmailEditedRating 1
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/general-comments"
+
+	# Whether or not we accept file uploads for general comments.
+	ns_param AcceptAttachmentsP 1
+	# Maximum attachment size in bytes. Leave empty for no limitation.
+	ns_param MaxAttachmentSize 5000000
+	ns_param AdminEditingOptionsInlineP 0
+	# Images with widths less than this parameter will be displayed inline.
+	ns_param InlineImageMaxWidth 512
+	# Use titles/one-lines for comments?
+	ns_param UseTitlesP 1
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/general-links"
+
+	# use link clickthroughs?
+	ns_param ClickthroughP 1
+	# allow suggested links from /general-links/index.tcl?
+	ns_param AllowSuggestionsP 1
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/links"
+
+	# email notifications to author/ad_system_owner
+	ns_param EmailNewLink 1
+	ns_param EmailEditedLink 1
+	# use link clickthroughs?
+	ns_param GeneralLinksClickthroughP 1
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/redirect"
+
+	# ns_param Inherit /from/|/to/
+	# ns_param JustOne /randomoldfileonthisbox.html|http://www.otherpersonsserver.com/
+	# ns_param Pattern /olddir/|/newdir/
+	ns_param Pattern /pvt/address-book|/address-book
+
+	# for the /directory module wherein users get to look each other up
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/directory"
+
+	ns_param ProvideUserBrowsePageP 1
+	ns_param UserBrowsePageLimitedToNotNullUrlP 1
+	#ns_param IndexPageDecoration "<a href=\"/photo/pcd1641/snowy-owl-1.tcl\"><img HEIGHT=134 WIDTH=196 src=\"/photo/pcd1641/snowy-owl-1.1.jpg\" ALT=\"Snowy Owl.\"></a>"
+	#ns_param BrowsePageDecoration "<a href=\"/photo/pcd0741/no-zoo-orangutan-lazing-13.tcl\"><img HEIGHT=198 WIDTH=132 src=\"/photo/pcd0741/no-zoo-orangutan-lazing-13.1.jpg\" ALT=\"Orangutan.  Audubon Zoo.  New Orleans, Louisiana. \"></a>"
+	#ns_param SearchResultsDecoration "<a href=\"/photo/pcd0456/st-peter-crowd-17.tcl\"><img HEIGHT=134 WIDTH=196 src=\"/photo/pcd0456/st-peter-crowd-17.1.jpg\"></a>"
+
+	# for the module that bills members or figures out which are losers
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/member-value"
+
+	ns_param EnabledP 0
+	ns_param UseRealMoneyP 0
+	# currency should be a three-char code that CyberCash likes, e.g., "USD"
+	ns_param Currency USD
+	# if true, check mv_monthly_rates
+	ns_param ChargeMonthlyP 0
+	ns_param ClassifiedAdRate 0
+	ns_param ClassifiedAdMistakeRate 5
+	ns_param ClassifiedAdSpamRate 25
+	ns_param QuestionRate 0
+	# people who don't look in archives
+	ns_param QuestionDupeRate 5
+	ns_param QuestionOffTopicRate 25
+	ns_param AnswerRate 0
+	# deleted because inaccurate
+	ns_param AnswerWrongRate 5
+	ns_param AnswerMistakeRate 2
+	# we might credit people for a good submission
+	ns_param CommentRate -5
+	ns_param CommentDupeRate 5
+	ns_param CommentSpamRate 25
+	ns_param LinkRate 0
+	ns_param LinkDupeRate 5
+	ns_param LinkSpamRate 25
+	ns_param BillingInterval month
+	# wait until next interval if accumulated charges are less
+	# than this amount
+	ns_param BillingMinimum 7.50
+	# set this if you want notification of member value charges to go
+	# somewhere other than AdminOwner
+	# ns_param NotificationEmail ""
+	# what amount of money do we consider moves a user into the
+	# "expensive" class (bad for the site)
+	ns_param ExpensiveThreshold 20
+
+	# for the Content Tagging Package
+	# ns_param (PG|R|X)LogP "1 logs the potentially offensive material"
+	# ns_param (PG|R|X)BounceP "1 prevents the offensive material from being posted at all"
+	# ns_param (PG|R|X)BowdlerizeP "1 replaces relevant words with BowdlerizationText"
+	# Note that in generally, you can't bounce only PG and X, but not R,
+	# the scripts find the lowest allowed naughtiness to bounce or log.
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/content-tagging"
+
+	# email address to notify if something needs attention
+	# defaults to SystemOwner
+	# ns_param Administrator ""
+	# log into naughty_events table
+	ns_param PGLogP 0
+	ns_param RLogP 1
+	ns_param XLogP 1
+	# prevent this level of stuff from being posted at all
+	ns_param PGBounceP 0
+	ns_param RBounceP 0
+	ns_param XBounceP 1
+	# send email to Administrator
+	ns_param PGNotifyP 0
+	ns_param RNotifyP 0
+	ns_param XNotifyP 1
+	# bowdlerize text
+	ns_param PGBowdlerizeP 0
+	ns_param RBowdlerizeP 1
+	ns_param XBowdlerizeP 1
+	ns_param BowdlerizationText ****
+	# what do we mask off for unlogged-in users
+	ns_param DefaultContentMask 0
+	ns_param CacheTimeout 600
+	ns_param UserContentMaskCacheTimeout 600
+
+	# for the ACS Chat System
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/chat"
+
+	ns_param EnabledP 1
+	# ns_param SystemName Chat
+	# how long to cache the postings to a room (updates force a cache update
+	# so this theoretically could be 5 hours or whatever)
+	ns_param CacheTimeout 120
+	# how long will a room's properties (e.g., private group, moderation) be cached
+	ns_param RoomPropertiesCacheTimeout 600
+	ns_param UsersCanCreateRoomsP 0
+	# set to 1 if you want most recent postings on top; this is the way that
+	# theglobe.com and other familiar chat systems do it (keeps users from
+	# having to scroll to see new msgs)
+	ns_param MostRecentOnTopP 1
+	# do we want to offer users the option of sending private messages?
+	ns_param PrivateChatEnabledP 0
+	# do we offer users a link to a chat room's history?
+	ns_param ExposeChatHistoryP 1
+	# how many messages to display when users choose short medium or long
+	ns_param NShortMessages 25
+	ns_param NMediumMessages 50
+	ns_param NLongMessages 75
+	# show a picture at the index page and in individual rooms?
+	ns_param DefaultDecoration "<a href=\"http://photo.net/photo/pcd0865/rachel-mouth-3.tcl\"><img HEIGHT=134 WIDTH=196 src=\"http://photo.net/photo/pcd0865/rachel-mouth-3.1.jpg\" ALT=\"Mouth.\"></a>"
+	# how often the javascript version should refresh itself
+	ns_param JavaScriptRefreshInterval 5
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/mailing-list"
+
+	ns_param IndexPageDecoration "<a href=\"http://photo.net/photo/pcd0803/cortina-dalmatian-and-mailboxes-33.tcl\"><img HEIGHT=198 WIDTH=132 src=\"http://photo.net/photo/pcd0803/cortina-dalmatian-and-mailboxes-33.1.jpg\" ALT=\"Mailboxes and a Dalmatian, in Cortina\"></a>"
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/sidegraphics"
+
+	ns_param EnabledP 1
+	ns_param /bboard/index.tcl http://photo.net/photo/pcd0796/linderhof-front-door-23.2.jpg
+
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/glossary"
+
+	# open means stuff goes live immediately, user can edit own terms
+	# wait means stuff waits for administrator to approve,
+	# only administrator can edit
+	# closed means only administrator can post
+	ns_param ApprovalPolicy closed
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/robot-detection"
+
+	# the URL of the Web Robots DB text file
+	ns_param WebRobotsDB http://info.webcrawler.com/mak/projects/robots/active/all.txt
+	# which URLs should ad_robot_filter check (uncomment to turn system on)
+	# ns_param FilterPattern /members-only-stuff/*.html
+	# ns_param FilterPattern /members-only-stuff/*.tcl
+	# the URL where robots should be sent
+	ns_param RedirectURL /robot-heaven/
+	# How frequently (in days) the robots table
+	# should be refreshed from the Web Robots DB
+	ns_param RefreshIntervalDays 30
+
+	# stuff for templates, multi-lingualism
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/style"
+
+	# where to find templates, typically /web/{{ ACS_DOMAIN_NAME }}/templates
+	# (note lack of trailing slash, just like the pageroot)
+	# you can override it with this config param
+	# ns_param TemplateRoot ""
+	# do we look for language-specific templates, e.g., foobar.en.adp?
+	# (and do we offer user interface to help user choose)
+	ns_param MultiLingualP 0
+	# most publishers will want the language of Jesus Christ and the Bible
+	# to be the default (i.e., English ("en")), if only because there is so much
+	# embedded English UI in subsystems of the ACS
+	ns_param LanguageSiteDefault en
+	# offer people a language choice without logging in?
+	ns_param LanguageCookieP 1
+	# do we look for plain. and fancy. templates, e.g., foobar.plain.adp?
+	# (and do we offer user interface to allow user to choose)
+	ns_param PlainFancyP 1
+	# most publishers will want "fancy" to be preferred (if available)
+	ns_param PlainFancySiteDefault fancy
+	# offer people a graphics choice without logging in?
+	ns_param PlainFancyCookieP 1
+
+	# for the ticket tracking system
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/ticket"
+
+	# when sending a note to an admin or engineer about a trouble
+	# ticket, what reply-to: address to use
+	# note that this address must be set up through your mail transfer
+	# agent to run a email enqueueing script.
+	# See doc/ticket.html for more info on configuring the ticket system.
+	# (from /web/{{ ACS_DOMAIN_NAME }}/bin/queue-message.pl)
+	ns_param TicketReplyEmail "support-ticket-robot@{{ ACS_DOMAIN_NAME }}"
+	# The PicklistData specifies additional custom data fields you would like
+	# associated with tickets in the database. You can have up to five of these.
+	#ns_param PicklistData "hardware_model \"Hardware Model\" picklist_single_select data1 \"\" \"1000 (Merced)\" \"2500 (Charles)\" \"5000 (Connecticut)\""
+	#ns_param PicklistData "software_version \"Software Version\" picklist_single_select data2 \"\" \"FooOS 1.0\" \"FooOS 1.0-EFT\" \"FooOS==OS 1.6\" \"FooOS 2.0\""
+	ns_param PicklistData "build \"Build\" text data4 25"
+	# if LinkTicketToUserGroupP = 1, each ticket is assigned to a user group
+	# a user must be in the group to see the ticket
+	ns_param LinkTicketToUserGroupP 0
+	# If CustomerCanCreateNewTickets = 1, customers may create new tickets.
+	# (A "customer" is any user who is not in the ticket admin group)
+	ns_param CustomerCanCreateNewTickets 1
+	# The menu of ticket severity choices
+	ns_param SeverityList "low medium serious critical showstopper"
+
+
+	# to tell the email queue system where to dispatch
+	# all of this is based on tags supplied by the mail-transfer agent
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/email-queue"
+
+	# how often to check the queue for new messages
+	#ns_param QueueSweepInterval 300
+	# what to do with a new message
+	# format is tag|tcl_proc_to_invoke
+	#ns_param DispatchPair ticket-tracker|ticket_process_message
+
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/intranet"
+
+	# Log email sent to groups as correspondance and enable auto-emailing of
+	# these correspondance to members of the group
+	ns_param LogEmailToGroupsP 1
+	# Use the intranet filters to restrict access to all bboard topic with a group_id
+	ns_param EnableIntranetBBoardSecurityFiltersP 1
+	# Set to 1 if you want to automatically redirect users to enter project reports
+	ns_param ForceUsersToEnterProjectReportsP 0
+	# If you want users to automatically be redirected to log their hours
+	# if they haven't, set this flag to 1
+	ns_param ForceUsersToLogHoursP 0
+	# We have a choice between a "daily" and a "weekly" time entry screen
+	ns_param TimeEntryScreen weekly
+	# How many results/rows do we show on a page before splitting up into
+	# previous/next links?
+	ns_param NumberResultsPerPage 50
+	# On pages with dimensional sliders, having too many categories leads to
+	# messy navigation. How many text characters do we allow before switching
+	# from text links to a select bar?
+	ns_param LengthBeforeSelectBar 50
+	# If you want to include a default graphic in your
+	# intranet header, put the path to that graphic here
+	ns_param DefaultGraphic ""
+	# If you would like to track projects with a
+	# survey in the survey module, put the project
+	# type and its paired survey
+	ns_param ProjectReportTypeSurveyNamePair "Client - full service,project_report"
+	#You may send email notifications of payment
+	# changes to members of a specified group
+	ns_param BillingGroupShortName receivable
+	ns_param IntranetName Intranet
+	ns_param IntranetEnabledP 0
+	# If you want to restrict access to the /shared/community-member.tcl
+	# page to users of the intranet only, set KeepSharedInfoPrivate to 1
+	ns_param KeepSharedInfoPrivate 1
+	# Should we enable bboard with the intranet pages? The BBoard
+	# module must be scoped or be altered to have a groud_id column first
+	ns_param BBoardEnabledP 1
+	# do we serve the generated /intranet/index.tcl page or something
+	# else from the file system?
+	ns_param SpecialIndexPage ""
+	ns_param DisplayVacationsOnCalendar 1
+	# the unit of measurement for entering salaries (month or year)
+	ns_param SalaryPeriodInput year
+	# used to display salary
+	ns_param SalaryPeriodDisplay year
+	# list of fee types
+	ns_param FeeTypes "\"setup\" \"monthly development\" \"monthly hosting\" \"hourly\" \"stock\""
+	# Do we want to track hours?
+	ns_param TrackHours 1
+	# what's the url stub? i.e. http://www.{{ ACS_DOMAIN_NAME }}<stub>
+	ns_param IntranetUrlStub /intranet
+	# Group Types
+	ns_param IntranetGroupType intranet
+	ns_param ProjectGroupShortName project
+	ns_param OfficeGroupShortName office
+	ns_param CustomerGroupShortName customer
+	ns_param PartnerGroupShortName partner
+	ns_param ProcedureGroupShortName procedure
+	ns_param EmployeeGroupShortName employee
+	ns_param TeamGroupShortName team
+	ns_param AuthorizedUsersGroupShortName authorized_users
+	ns_param CustomerPortalName "Customer Portals"
+	# What color do we put in the header row of tables?
+	ns_param TableColorHeader #e6e6e6
+	# What color do we put in the odd numbered rows of tables?
+	ns_param TableColorOdd #f4f4f4
+	# What color do we put in the even numbered rows of tables?
+	ns_param TableColorEven #ffffff
+	ns_param CommentApprovalPolicy open
+	# If we want to include people who are delinquent with project
+	# reports in our status-report, what user_class_id do we use?
+	# Leave blank to skip this part of the status report
+	ns_param UserClassStatusReportID ""
+
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/help"
+
+	# Root of the help directory hierarchy, relative to the PageRoot.
+	# Same as page root if not set.
+	# ns_param HelpPageRoot /help
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/fs"
+
+	ns_param SystemName "File Storage System"
+	# optional, defaults to main site owner
+	# ns_param SystemOwner "fs-admin@{{ ACS_DOMAIN_NAME }}"
+	ns_param DefaultPrivacyP f
+	# do you want to maintain a public tree for site wide documents
+	ns_param PublicDocumentTreeP 1
+	ns_param MaxNumberOfBytes 2000000
+	ns_param HeaderColor #cccccc
+	ns_param DatePicture "MM/DD/YY HH24:MI"
+	ns_param FileInfoDisplayFontTag "<font face=arial,helvetica size=-1>"
+	ns_param UseIntermediaP 0
+	# Display mappings for file types.
+	# Format is pipe separated list of display string followed by
+	# MIME types. Types can use * and ? as wildcards.
+	# For anything not on the list, the default is to display
+	# the first portion of the MIME type, except in the case of
+	# application/, where the sub-type is displayed.
+	ns_param FileTypeMap Image|image/*
+	ns_param FileTypeMap "Word Document|application/msword|application/rtf"
+	ns_param FileTypeMap Excel|application/msexcel
+	ns_param FileTypeMap PowerPoint|*powerpoint
+	ns_param CommentApprovalPolicy open
+
+
+	# for the ecommerce module
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/ecommerce"
+
+	# set to 1 if you're using the ecommerce module
+	ns_param EnabledP 0
+	ns_param WeightUnits lbs
+	ns_param Currency USD
+	# this is used on the category browse page (and for subcategories/subsubcategories)
+	ns_param ProductsToDisplayPerPage 10
+	# whether to allow user comments on products
+	ns_param ProductCommentsAllowP 1
+	# whether user comments on products (if allowed) need approval before becoming live
+	ns_param ProductCommentsNeedApprovalP 1
+	# whether the system should calculate additional product relationships
+	ns_param CalcProductRelationshipsP 0
+	# whether users can see what user classes they are in
+	ns_param UserClassUserViewP 1
+	# whether a user can request to be a member of a user class
+	ns_param UserClassAllowSelfPlacement 1
+	# if a user requests to be in a user class, is approval required before that
+	# user becomes a member of the user class
+	ns_param UserClassApproveP 1
+	# what percentage of an item's shipping cost should be refunded if an item is returned
+	ns_param ShippingRefundPercent 0
+	# whether to allow express shipping
+	ns_param ExpressShippingP 1
+	# whether to save credit card data (you have to save it if you're going to do manual billing) --
+	# if you save it, then your users can reuse their credit card with one click
+	ns_param SaveCreditCardDataP 1
+	# whether to use cybercash or not (if cyber cash is off, remember to save credit cards
+	# otherwise they may be lost before you actually bill customers)
+	ns_param UseCyberCashP 1
+	# for thumbnails of products, specify either width or height (whichever is
+	# more important, and then the other will be determined based on the
+	# original image size, keeping aspect ratio constant) -- if both are
+	# specified, the width setting will take precedence, and if neither
+	# is specified, the thumbnail will be width=100
+	ns_param ThumbnailWidth 100
+	# ns_param ThumbnailHeight 100
+	# stock status messages
+	# o = out of stock, q = ships quickly,
+	# m = ships moderately quickly, s = ships slowly
+	ns_param StockMessageO "Out of Stock"
+	ns_param StockMessageQ "Usually Ships Within 24 Hours"
+	ns_param StockMessageM "Usually Ships Within 2-3 Days"
+	ns_param StockMessageS "Usually Ships Within 2-4 Weeks"
+	ns_param StockMessageI "In Stock"
+	# # of days an 'in_basket' order will remain in
+	# the system before a cron job expires it
+	ns_param CartDuration 30
+	# whether customers will be able to place orders
+	# for items whose available_date has not yet come
+	ns_param AllowPreOrdersP 1
+	# all outgoing email is sent from this address
+	ns_param CustomerServiceEmailAddress "service@{{ ACS_DOMAIN_NAME }}"
+	# you may or may not wish to have the people recording
+	# shipments receive messages like "unable to authorize
+	# payment for shipment" -- depending on whether they
+	# they're in a position to do anything about the problem
+	# (e.g. abort shipment)
+	ns_param DisplayTransactionMessagesDuringFulfillmentP 1
+	# whether to allow users to buy gift certificates
+	ns_param SellGiftCertificatesP 1
+	# minimum gift certificate amount they can buy
+	# (this does not impose minimum amount for administrators
+	# giving users gift certificates)
+	ns_param MinGiftCertificateAmount 5
+	# maximum gift certificate amount they can buy
+	ns_param MaxGiftCertificateAmount 300
+	# number of months until user-purchased gift certificates
+	# expire
+	ns_param GiftCertificateMonths 12
+	# **Everything above this is a publishing decision.**
+	# **Everything below this is a technical parameter.**
+	# domain of the site -- I know other modules have this, but they
+	# might not be installed and this is needed so that I can redirect
+	# the shopping cart to https
+	ns_param LocalDomain "{{ ACS_DOMAIN_NAME }}"
+	# the directory that the ecommerce module is in
+	ns_param EcommerceDirectory "/web/{{ ACS_DOMAIN_NAME }}/www/ecommerce/"
+	# web path to the directory that the ecommerce user files are in
+	ns_param EcommercePath /ecommerce/
+	# path to Product data directories (where product files like images are kept)
+	ns_param EcommerceDataDirectory "/web/{{ ACS_DOMAIN_NAME }}/data/ecommerce/"
+	# This path goes on the end of the EcommerceDataDirectory
+	ns_param ProductDataDirectory product/
+	# Set to 1 if you have a comparison shopping service -- Note: support for
+	# multiple retailers does not work yet in Version 1.0 of the Ecommerce
+	# Module, so leave it as 0
+	ns_param MultipleRetailersPerProductP 0
+	# Should we ask people of their organization is tax exempt?
+	ns_param OfferTaxExemptStatusP 0
+
+	# for the ACS Bookmarks System
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/bm"
+
+	# optional, defaults to main site owner
+	ns_param SystemOwner "someguy@{{ ACS_DOMAIN_NAME }}"
+	# main page title
+	ns_param SystemName "Bookmarks System"
+	# text decoration for dead links
+	ns_param DeadDecoration <i>
+	# text decoration for folders
+	ns_param FolderDecoration <b>
+	# text decoration for bookmarks invisible to the public
+	ns_param HiddenDecoration "<font color=#bb0000>"
+	# background color of folders
+	ns_param FolderBGColor #f3f3f3
+	# background color of files
+	ns_param BookmarkBGColor #ffffff
+	# size of largest bookmarks file permissible to upload
+	ns_param MaxNumberOfBytes 2000000
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/curriculum"
+
+	ns_param EnabledP 0
+	# does ad_footer put this in every dynamic page?
+	ns_param StickInFooterP 1
+	# does ad_serve_html_page put this on every static page?
+	ns_param StickInStaticPagesP 1
+	# on which URLs should the system look for/set cookies
+	ns_param FilterPattern *.html
+	ns_param FilterPattern *.tcl
+	ns_param BarFontTag "<font size=-1 face=\"verdana, arial, helvetica\">"
+	ns_param HelpAnchorText "<font size=+1 face=\"verdana, arial, helvetica\">?</font>"
+	# stuff like a background color for the table cells, goes within a TD
+	ns_param CellExtraTags bgcolor=#EEEEEE
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/crm"
+
+	# how often to update the CRM states
+	ns_param UpdatePeriodHours 24
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/portals"
+
+	ns_param Administrator "portaladmin@{{ ACS_DOMAIN_NAME }}"
+	ns_param AdministratorName "Portal Administrator"
+	ns_param SystemName "yourdomain portals"
+	# set to 1 if individual may create their own portals
+	ns_param AllowUserLevelPortals 1
+	# set to 1 if super administrator can add or remove themselves and other super administrators
+	ns_param SuperAdminCanChangeSuperAdminP 0
+	ns_param BodyTag "<body bgcolor=white>"
+	ns_param FontTag "<font face=arial,helvetica size=-1>"
+	# These standardize a prettier table than the browser default
+	ns_param BeginTable "<table border=0 bgcolor=#006600 cellpadding=1 cellspacing=0 width=100%><tr><td><table border=0 bgcolor=white cellpadding=3 cellspacing=0 width=100%>"
+	ns_param EndTable </table></td></tr></table>
+	ns_param HeaderTD "<td bgcolor=#006600><font face=arial,helvetica size=-1 color=#eeeedd><b>"
+	ns_param HeaderBGColor #006600
+	ns_param SubHeaderTD "<td bgcolor=#eeeedd><font face=arial,helvetica size=-1><b>"
+	ns_param SubHeaderBGColor #eeeedd
+	ns_param NormalTD "<td><font face=arial,helvetica size=-1>"
+	# For portals with multiple pages, tabs link to the other pages, set this to 1 if you want each tab
+	# to be equal width instead of proportional to the name of the page
+	ns_param EqualWidthTabsP 0
+	ns_param MainPublicURL /portals/
+	# number of seconds to memoize a portal page
+	ns_param CacheTimeout 100
+	# browsers will decide the "optimal" column sizes unless you force column widths here:
+	#ns_param LeftSideWidth ""
+	#ns_param RightSideWidth ""
+	ns_param SpacerImage /portals/spacer.gif
+	ns_param PortalExtension .ptl
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/press"
+
+	# maximum number of simultaneous press items to display on the press coverage page
+	ns_param DisplayMax 10
+	# number of days a press item remains active
+	ns_param ActiveDays 60
+	# do we use clickthrough tracking from the press coverage page?
+	ns_param "ClickthroughP " " 1"
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/monitoring"
+
+	# People to email for alerts
+	# ns_param PersontoNotify "nerd1@{{ ACS_DOMAIN_NAME }}"
+	# ns_param PersontoNotify "nerd2@{{ ACS_DOMAIN_NAME }}"
+	# location of the watchdog perl script
+	ns_param WatchDogParser "/web/{{ ACS_DOMAIN_NAME }}/bin/aolserver-errors.pl"
+	# watchdog frequency in minutes
+	ns_param WatchDogFrequency 9999
+	# Where is top located?
+	ns_param TopLocation /usr/local/bin/top
+	# top-monitoring frequency in minutes
+	ns_param TopFrequency 9999
+	# The minimum load average over a 5 minute period of time
+	# before we email persons on the notify list above
+	ns_param LoadAverageAlertThreshold 2.0
+
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/site-wide-search"
+
+	ns_param SiteWideSearchEnabledP 1
+	# ns_param BounceQueriesTo http://backup.photo.net
+	# ns_param BounceResultsTo http://photo.net
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/display"
+
+	#specify the maximum size of a logo
+	ns_param MaxLogoSize 500000
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/custom-sections"
+
+	#specify the maximum size of a binary file that can be uploaded for a content section
+	ns_param MaxBinaryFileSize 2000000
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/download"
+
+	# root directory of the downloadable files
+	ns_param DownloadRoot "/web/{{ ACS_DOMAIN_NAME }}/download/"
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/wp"
+
+	# Paths to use for serving styles and presentations.
+	ns_param StyleURL /wp/style/
+	ns_param PresentationURL /wp/display/
+	ns_param PresentationEditURL /wp/display-edit/
+	ns_param AttachURL /wp/attach/
+	ns_param SolicitCommentsP 1
+	ns_param CommentApprovalPolicy open
+	# Path to the unzip program to use for bulk image uploading.
+	ns_param PathToUnzip /usr/bin/unzip
+	# Is bulk image uploading enabled?
+	ns_param AllowBulkUploadP 1
+	# Path to the wget program to use for image downloading.
+	ns_param PathToWget /usr/local/bin/wget
+
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/users"
+
+	# all user  web content will be rooted  under  this directory.  This
+	# directory will be the root of  all the web content being published
+	# by the users of the system.
+	ns_param ContentRoot "/web/{{ ACS_DOMAIN_NAME }}/users/"
+	# Maximum quota for a 'normal user' (a lesser mortal who  is not the
+	# site wide administrator) of the site in mega-bytes. For example, a
+	# '20' corresponds to 20,971,520 bytes. Values need not be  integer.
+	# Value is overridden for a  particular user  throught existence  of
+	# entry in the users_special_quotas table.
+	ns_param NormalUserMaxQuota 5
+	# Maximum quota for site wide administrators.  Special quotas can be
+	# set by adding rows to  the users_special_quotas table.  This param
+	# will be used for a site wide administrator only when he/she doesnt
+	# have an entry in the users_special_quotas table.
+	ns_param PrivelegedUserMaxQuota 20
+	# Space taken by a directory (in bytes). We need this so that a user
+	# cannot crash the system by creating millions of directories.  This
+	# will ensure that a directory detracts from his/her quota.
+	ns_param DirectorySpaceRequirement 2048
+	# This determines the default view for displaying files in home-page
+	# administration (maintenance) pages. There are two supported values
+	# for this: tree and normal.
+	ns_param DefaultView normal
+	# This is the list of files that are served as index  pages. If  all
+	# of these files are nonexistant  in a  directory requested  through
+	# the homepage content server (hp_serve), then the server  generates
+	# a default (personalized) index page for the user. If more than one
+	# of  these files  exist in  the requested  directory, the  filename
+	# which appears earliest in  this list  is given  preference. If  no
+	# filename is provided below then the server always generates  index
+	# pages. In most systems, the index.html, index.htm, and Default.htm
+	# are the  index filenames.  In some  systems home.html  is also  an
+	# index file but generally this is used whenever users want to  give
+	# the world read/browse  access to  their web  directories. In  this
+	# regard,  home.html  should  not be  added to  the candidacy  list.
+	# Finally, it is obvious that if  one of  these files  exist in  the
+	# directory then the web-browser cannot obtain a lisitng of all  the
+	# files in the directory.
+	ns_param IndexFilenameCandidacyList "index.html index.htm Default.htm"
+	# what if a site gets really large and the primary purpose is giving
+	# members personal homepages (e.g., if an adopter of ACS decides  to
+	# become "The GeoCities of Brazil")? How do we support this?  First,
+	# users could decide to  join user  groups. Then  the /users/  index
+	# page  would  show  a  summary of  user groups  whose members  have
+	# personal  pages.  This requires  no new  data in  Oracle. This  is
+	# enabled with SubdivisionByGroupP=1 in  the .ini  file. Users  with
+	# homepages and no group affiliation show up in "unaffiliated"  (fun
+	# with  OUTER  JOIN). When  SubdivisionByNeighborhoodP=1, we  either
+	# keep a denormalized  neighborhood_sortkey in  the homepages  table
+	# and flag the "homepages" that are actually neighborhood folders or
+	# have some separate tables holding categorization. (philg).
+	ns_param SubdivisionByNeighborhoodP 0
+	# This parameter will determine whether we'll be showing appropriate
+	# options on  the user's workspace or not.  This will also determine
+	# whether  this  system  offers  homepages  or not.  In effect, this
+	# parameter  determines whether  the homepage facility is enabled or
+	# not.  This does not effect the users administration pages, though.
+	ns_param HomepageEnabledP 1
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/spam"
+
+	# Pairs of {email_addr_pattern pseudo-mime-type}
+{% raw %}
+	ns_param EmailTypes "{%@hotmail.com text/html} {%@aol.com text/aol-html}"
+{% endraw %}
+	ns_param DailySpamDirectory "/web/{{ ACS_DOMAIN_NAME }}/spam"
+	ns_param RemovalBlurb "{-----\\nSent through http://{{ ACS_DOMAIN_NAME }}\\n\\n}"
+	# An external helper program to MIME base64-encode a binary file
+	ns_param Base64EncoderCommand "/web/{{ ACS_DOMAIN_NAME }}/bin/encode64.pl"
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/gp"
+
+	# can we give row-level permissions to groups as well?
+	ns_param GroupPermissionsP 1
+	# do we want comment permissions?
+	ns_param CommentPermissionsP 1
+	# do we want to show our user list to people editing permissions?
+	ns_param ShowUsersP 0
+	# do we want to show a Finish button on the edit-page-permissions page?
+	ns_param ShowFinishButtonP 1
+
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/partner"
+
+	# what is the name of the default partner cookie?
+	ns_param CookieDefault ad
+	# All the variables we want to collect  (Any variables added here
+	# must still be manually added to the data model.)
+	# Each line of Variable= contains a pipe separated pair of
+	# name_of_column in ad_partner | what to display on the add/edit forms
+	ns_param Variable "partner_name|Partner Name"
+	ns_param Variable "partner_cookie|Partner Cookie"
+	ns_param Variable "default_font_face|Default Font Face"
+	ns_param Variable "default_font_color|Default Font Color"
+	ns_param Variable "title_font_face|Title Font Face"
+	ns_param Variable "title_font_color|Title Font Color"
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/pdm"
+
+	# Flag to display the administration menu bar
+	ns_param MenuOnAdminPagesP 1
+	# Flag to display the default menu bar on non-/admin pages
+	ns_param MenuOnUserPagesP 0
+
+	# vc (version control) parameters
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/vc"
+
+	# Location of the CVS repository.  If the repository is on a remote
+	# host, you need to make sure that CVS can connect without being
+	# prompted for a password.
+	ns_param CVSROOT /cvsweb
+	# Location of the CVS executable
+	ns_param CvsPath /usr/local/bin/cvs
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/ADP"
+
+	# Block users from adding/editing ADP pages with function calls in them?
+	# NOTE: Setting this to 0 if you are allowing users to access the file
+	# manager or manipulate templates in electronic commerce will effectivly
+	# give them full access to your system and is hence not recommended.
+	ns_param BlockUserADPFunctionsP 1
+
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/file-manager"
+
+	ns_param EnabledP 1
+	# use version control?
+	ns_param VersionControlP 0
+	# extensions of files that be can edited/uploaded using file-manager
+	# comma-separated list, no spaces
+	ns_param Extensions html,htm,jpg,gif
+	# directories to ignore
+	# comma-separated list, no spaces
+	ns_param Ignore admin,CVS
+	# directories to manage (relative to www)
+	# comma-separated list, no spaces
+	ns_param ManagedDirectories acs-examples,ads,graphics
+
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/request-processor"
+
+	# Log lots of timestamped debugging messages?
+	ns_param DebugP 0
+	# URL sections exempt from Host header checks and security/session handling.
+	# (can specify an arbitrary number).
+	ns_param SystemURLSection SYSTEM
+	# cf. /packages/acs-core/security-init.tcl
+	# If set to true, the filter that attempts to prevent
+	# malicious SQL in URLs will be defined.
+	ns_param BlockSqlUrlsP 0
+	# Do we want to use DVR's input filters?
+	ns_param ParanoiaInputFiltersP 0
+	# URLs that the request-processor should simply pass on to AOLserver to handle
+	# good candidates for these are URLs handled by nscgi.so or nsphp.so
+	#ns_param LeaveAloneUrl /cgi-bin/*
+	#ns_param LeaveAloneUrl /php/*
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/wap"
+
+	# do we serve the generated /wap/index.tcl page or something
+	# else from the file system?  This should be the FULL PATH relative
+	# to page root.
+	ns_param SpecialIndexPage /wap/i.wap
+	# how long between lookups of the known user agent list?
+	ns_param WapUserAgentDbRefresh 300
+	# where to import user-agents strings from
+	ns_param WapImportSiteURL http://wap.colorline.no/wap-faq/useragents.php3
+	# what tcl procedure to use to parse the data returned
+	# from the page listed above
+	ns_param WapImportParseProc wap_import_parse
+	# how long between http GET's?
+	ns_param WapImportRefreshTimeout 120
+	# how many characters in the User-Agent string
+	# should we compare against?
+	ns_param WapUAStringCompareLength 4
+	# are we doing HTML browser-based debugging?
+	ns_param WapHTMLDebugMode 0
+	# to save typing when logging in
+	ns_param WapDefaultEmailDomain "{{ ACS_DOMAIN_NAME }}"
+
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/webmail"
+
+	ns_param AliasDirectory /home/nsadmin/qmail/alias/
+	# if QueueDirectory is changed, change it in MessageParsers.sqlj as well
+	ns_param QueueDirectory /home/nsadmin/qmail/queue/
+
+	# Manual System parameters
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/manuals"
+
+	# ns_param SystemName "Yourdomain Network Manuals"
+	# policies on comments
+	ns_param SolicitCommentsP 1
+	ns_param CommentApprovalPolicy open
+	# do we use CVS to manage revisions of the manuals
+	ns_param UseCvsP 1
+	# do we use HTMLDOC to provide printable versions of manuals
+	# if so, it should be installed in yourservice/HTMLDOC/
+	ns_param UseHtmldocP 0
+	# if we are generating printable versions, do we bother with PS
+	# or just provide PDF
+	ns_param GeneratePsP 0
+	# while providing links to the chapters from each page is nice, the
+	# deficiencies of browser rendering means you might not want to use it.
+	ns_param ListChaptersP 0
+	# This variable is only used if we are providing a chapter list.
+	# Either choice involves a compromise.  Left is kinda ugly and breaks
+	# the flow.  Right looks better but can conflict with tables and images
+	# in the text.  Pick your poison.
+	ns_param ChapterListSide left
+
+	# Request Processor Parameters
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/rp"
+
+	ns_param AutomaticErrorReportingP 1
+	ns_param ErrorReportURL http://www.arsdigita.com/sdm/new-ticket
+
+	# stuff having to do with general portraits (user or pet)
+
+ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/general-portraits"
+
+	# Maximum portrait size in bytes. Leave empty for no limitation.
+	ns_param MaxPortraitBytes 200000
+	# if you have ImageMagick configured, try to
+	# produce thumbnails?
+	# 1 means ImageMagick is configured and produce thumbnails automatically
+	# 0 means do not produce thumbnail automatically
+	ns_param ProduceThumbnailsAutomaticallyP 1
+	ns_param AcceptablePortraitMIMETypes "image/gif image/jpeg"
+	# thumbnail size
+	ns_param ThumbnailWidth 200
+	ns_param ThumbnailHeight 200
+	# where is convert located
+	# On linux convert is located at /usr/x11R6/bin/convert
+	# On Unix, convert is located at /usr/local/bin
+	ns_param ConvertBinary /usr/bin/convert
+	# open means stuff goes live immediately
+	# wait means stuff waits for administrator to approve
+	# closed means only administrator can post
+	ns_param CommentApprovalPolicy open
+	# open means portrait goes live immediately
+	# wait means portrait wait for administrator to approve
+	ns_param DefaultUploadApprovalPolicy open
+
