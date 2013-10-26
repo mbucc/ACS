@@ -58,4 +58,5 @@ create table pdm_menu_items (
 	url			varchar(500),
 	-- don't show certain elements to people who haven't registered
 	requires_registration_p char(1) default 'f' check (requires_registration_p in ('t','f'))
+  , CONSTRAINT constraint_name UNIQUE (menu_id, sort_key, label)
 );
