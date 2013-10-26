@@ -506,6 +506,12 @@ ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/gc"
 	ns_param CommentApprovalPolicy open
 
 
+# --------------------------------------------------
+# This header is no longer supported (as of 10/26/2013, when I checked the
+# rsac.org URL below.  Remove this section and related code.  -- MKB
+# --------------------------------------------------
+
+
 	# have the system write PICS headers for naughty pages
 	# or directories
 	# if EnabledP is 1 you can have as many
@@ -521,6 +527,7 @@ ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/pics"
 	ns_param Protocol "{PICS-1.1 {headers PICS-Label}}"
 	ns_param Label "{(PICS-1.1 \"http://www.rsac.org/ratingsv01.html\" l gen true comment \"RSACi North America Server\" by \"philg@mit.edu\" for \"http://photo.net/photo/christina/\" on \"1998.03.13T18:06-0800\" r (n 4 s 0 v 0 l 0))}"
 
+# --------------------------------------------------
 
 ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/contest"
 
