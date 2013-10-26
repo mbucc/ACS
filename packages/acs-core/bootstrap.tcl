@@ -141,4 +141,37 @@ if { ![nsv_exists ad_security request] } {
     return
 }
 
+
+# Behavior of ns_startcontent changed in 4.5 in a way that caused the
+# ACS to stop serving images.
+#
+# Fix from http://panoptic.com/wiki/aolserver/Ns_startcontent
+#
+if {[ns_info version] >= 4.5} {
+   catch {rename ns_startcontent {}}
+   proc ns_startcontent {args} {
+   #
+   # Re-implement ns_startcontent in Tcl in AOLserver 4.5
+   # because the -type option no longer falls back to
+   # server's default encoding like it did in 4.0.
+   # Luckily, in 4.5, ns_adp_mimetype now just
+   # calls Ns_ConnSetType() which still does
+   # and works outside of adps
+   #
+       if {[llength $args]} {
+           switch [string range [lindex $args 0] 1 end] {
+               charset {
+                   ns_conn encoding [ns_encodingforcharset [lindex $args 1]]
+               }
+               type {
+                   ns_adp_mimetype [lindex $args 1]
+               }
+           }
+       }
+       # NaviServer removed write_encoded
+       catch {ns_conn write_encoded 1}
+       return ""
+   }
+ }
+
 ns_log "Notice" "Done loading ACS."
