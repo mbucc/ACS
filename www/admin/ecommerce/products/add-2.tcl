@@ -184,7 +184,8 @@ if { [info exists upload_file] && ![string compare $upload_file ""] == 0 } {
 
     set perm_thumbnail_filename "$full_dirname/product-thumbnail.jpg"
 
-    if [catch {exec /usr/local/bin/convert -geometry $convert_dimensions $perm_filename $perm_thumbnail_filename } ] {
+    set rc [ad_image_geometry $convert_dimensions $perm_filename $perm_thumbnail_filename]
+    if [lindex rc 0] } {
 	# It's missing some of the .so files
 	ad_return_complaint 1 "You don't have the necessary .so files to do image thumbnail creation.  Please either don't upload a picture or find the correct .so files"
     }

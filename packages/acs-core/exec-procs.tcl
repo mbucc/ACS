@@ -7,9 +7,10 @@ ad_library {
 }
 
 
-proc_doc -public ad_image_geometry { width height infile outfile } {
+proc_doc -public ad_image_geometry { wxh infile outfile } {
 
     Resize the image at infile and write the new version to outfile.
+    The wxh argument has the form "widthxheight"
 
     Returns the list [rval emsg].  If rval is non-zero, it's an error
     and the error string will be in emsg.  If zero, the image was
@@ -17,7 +18,7 @@ proc_doc -public ad_image_geometry { width height infile outfile } {
 
 } {
     set bin [ad_parameter ConvertBinary "general-portraits"]
-    set rval [catch {exec $bin -geometry "${width}x${height}" $infile $outfile} emsg opts]
+    set rval [catch {exec $bin -geometry $wxh $infile $outfile} emsg opts]
     if { $rval } {
         if { $rval == 1 } {
             #

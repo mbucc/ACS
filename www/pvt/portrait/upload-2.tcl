@@ -111,8 +111,7 @@ if { ![empty_string_p $portrait_original_width] && \
    set portrait_thumbnail_height $thumbnail_height
 } else {
    set thumbnail_pic ${tmpfile}_thumb 
-   set rc [ad_image_geometry ${thumbnail_width} ${thumbnail_height} $tmpfile $thumbnail_pic]
-   ns_log Notice "MKB: rc=$rc"
+   set rc [ad_image_geometry "${thumbnail_width}x${thumbnail_height}" $tmpfile $thumbnail_pic]
    if { [lindex $rc 0] } {
         ad_return_complaint 1 "You don't have the necessary .so files to do image thumbnail creation.  
                                Please either don't upload a picture or find the correct .so files. <li> [lindex $rc 1]"
@@ -140,7 +139,7 @@ if { ![empty_string_p $portrait_original_width] && \
    # to the exact size of the thumbnail
    if { ![empty_string_p $portrait_thumbnail_width] && ![empty_string_p $portrait_thumbnail_height] &&
          ([expr $portrait_thumbnail_width / $thumbnail_width] > 2 || [expr $portrait_thumbnail_height / $thumbnail_height] > 2) } {
-      set rc [ad_image_geometry ${thumbnail_width} ${thumbnail_height} $tmpfile $thumbnail_pic]
+      set rc [ad_image_geometry "${thumbnail_width}x${thumbnail_height}" $tmpfile $thumbnail_pic]
       if { [lindex [lindex $rc 0] } {
          ad_return_complaint 1 "You don't have the necessary .so files to do image thumbnail creation.
                                Please either don't upload a picture or find the correct .so files. <li> [lindex $rc 1]"
