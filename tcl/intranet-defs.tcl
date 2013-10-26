@@ -1372,6 +1372,8 @@ are doing in the site.
 	ad_return_error "Error" "User doesn't exist"
 	ad_script_abort
     }
+    # Above query clears user_id. -- MKB
+    set user_id $user_id_copy
     # get the user portrait
     set portrait_p [db_0or1row portrait_info "
        select portrait_id,
