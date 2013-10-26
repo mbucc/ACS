@@ -168,7 +168,12 @@ if { [exists_and_not_null upload_file] } {
 
     set perm_thumbnail_filename "$full_dirname/product-thumbnail.jpg"
 
-    exec /usr/local/bin/convert -geometry $convert_dimensions $perm_filename $perm_thumbnail_filename
+    set rc [ad_image_geometry "${thumbnail_width}x${thumbnail_height}" $tmpfile $thumbnail_pic]
+    # MKB: Added, before there was no error handling.
+    if { [lindex $fc 0] } {
+        ad_return_complaint 1 "You don't have the necessary .so files to do image thumbnail creation.
+                               <li> [lindex $rc 1]"
+    }
 }
 
 set linked_thumbnail [ec_linked_thumbnail_if_it_exists $dirname]
