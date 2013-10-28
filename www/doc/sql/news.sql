@@ -30,7 +30,7 @@ create table news_items (
 	news_item_id		integer primary key,
 	newsgroup_id		references newsgroups not null,
 	title			varchar(200) not null,
-	body			clob not null,
+	body			varchar(4000) not null,
 	-- is the body in HTML or plain text (the default)
 	html_p			char(1) default 'f' check(html_p in ('t','f')),
 	approval_state		varchar(15) default 'unexamined' check(approval_state in ('unexamined','approved', 'disapproved')),
