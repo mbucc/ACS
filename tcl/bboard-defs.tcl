@@ -144,37 +144,18 @@ proc bboard_complete_backlink {topic_id topic presentation_type {include_partial
 }
 
 proc bboard_header {title} {
-    return "<html>
-<head>
-<title>$title</title>
-</head>
-<body bgcolor=[ad_parameter bgcolor "" "white"] text=[ad_parameter textcolor "" "white"]>
-"
+    return [ad_header "" "$title"]
 }
 
 proc bboard_footer {} {
     uplevel {
-	global sidegraphic_displayed_p
 	if [info exists maintainer_email] {
 	    # we're looking at a particular forum
-	    set signature_address $maintainer_email
+	    set sig $maintainer_email
 	} else {
-	    set signature_address [bboard_system_owner]
+	    set sig [bboard_system_owner]
 	}
-	if { [info exists sidegraphic_displayed_p] && $sidegraphic_displayed_p } {
-	    # we put in a BR CLEAR=RIGHT so that the signature will clear any side graphic
-	    # from the ad-sidegraphic.tcl package
-	    set extra_br "<br clear=right>"
-	} else {
-	    set extra_br ""
-	}
-	return "
-$extra_br
-<hr>
-<a href=\"mailto:$signature_address\"><address>$signature_address</address></a>
-</body>
-</html>
-"
+        return [ad_footer "$sig"]
     } 
 }
 

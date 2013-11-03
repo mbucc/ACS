@@ -47,11 +47,7 @@ $about_link
  \]"
 }
 
-append page_content "<html>
-<head>
-<title>Administer $topic by Question</title>
-</head>
-<body bgcolor=[ad_parameter bgcolor "" "white"] text=[ad_parameter textcolor "" "black"]>
+append page_content "[ad_header "" "Topic Not "Administer $topic by Question"]
 
 <h2>Administer $topic</h2>
 

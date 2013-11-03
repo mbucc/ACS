@@ -94,12 +94,7 @@ db_transaction {
 
 
 
-doc_return  200 text/html "<html>
-<head>
-<title>Success</title>
-</head>
-
-<body bgcolor=[ad_parameter bgcolor "" "white"] text=[ad_parameter textcolor "" "black"]>
+doc_return  200 text/html "[ad_header "" "Success"]
 <h2>Success</h2>
 
 <hr>

@@ -50,11 +50,7 @@ switch $presentation_type {
 #    usgeospatial { set usgeospatial_checked " CHECKED" }
 
 
-append doc_body "<html>
-<head>
-<title>BBoard Admin for $topic</title>
-</head>
-<body bgcolor=[ad_parameter bgcolor "" "white"] text=[ad_parameter textcolor "" "black"]>
+append doc_body [ad_header "" "BBoard Admin for $topic"]
 
 <h2>Administration for \"$topic\"</h2>
 

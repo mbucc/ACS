@@ -21,12 +21,8 @@ set update_sql [lindex $update_sql_and_bind_vars 0]
 set bind_vars [lindex $update_sql_and_bind_vars 1]
 
 if [catch {db_dml topic_categorization_update $update_sql -bind $bind_vars} errmsg] {
-    doc_return  200 text/html "<html>
-<head>
-<title>Topic Not Updated</title>
-</head>
+    doc_return  200 text/html "[ad_header "" "Topic Not Updated"]
 
-<body bgcolor=[ad_parameter bgcolor "" "white"] text=[ad_parameter textcolor "" "black"]>
 <h2>Topic Not Updated</h2>
 
 <hr>

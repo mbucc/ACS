@@ -60,12 +60,6 @@ proc ad_host_administrator {} {
     return [ad_parameter HostAdministrator]
 }
 
-# set to return 1 if there is a graphics site
-
-proc ad_graphics_site_available_p {} {
-    return [ad_parameter GraphicsSiteAvailableP]
-}
-
 # this is the main name of the Web service that you're offering
 # on top of the Arsdigita Web Publishing System
 
@@ -152,24 +146,18 @@ ad_proc ad_header_with_extra_stuff {
 } {
     This is the version of the ad_header that accepts extra stuff for the document head and pre-page content html
 } {
+
     set html "<html>
 <head>
 $extra_stuff_for_document_head
 <meta name=\"viewport\" content=\"initial-scale=1.0,width=device-width\" />
+<link rel=\"stylesheet\" type=\"text/css\" href=\"[ad_parameter PathToStyleSheet acs "/acs.css"]\" />
 <title>$page_title</title>
 </head>
 "
 
+    set attr_list []
     array set attrs [list]
-
-    if { [info exists prefer_text_only_p] && $prefer_text_only_p == "f" && [ad_graphics_site_available_p] } {
-        set attrs(bgcolor) [ad_parameter bgcolor "" "white"]
-	set attrs(background) [ad_parameter background "" "/graphics/bg.gif"]
-	set attrs(text) [ad_parameter textcolor "" "black"]
-    } else {
-	set attrs(bgcolor) [ad_parameter bgcolor "" "white"]
-	set attrs(text) [ad_parameter textcolor "" "black"]
-    }
 
     if { ![empty_string_p $focus] } {
 	set attrs(onLoad) "javascript:document.${focus}.focus()"

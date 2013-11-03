@@ -33,12 +33,7 @@ ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs"
 	# (only used by /pvt/home.tcl and may become legacy)
 	ns_param StaffServerP 0
 	ns_param HostAdministrator "somenerd@{{ ACS_DOMAIN_NAME }}"
-	ns_param GraphicsSiteAvailableP 0
-	# these work for text-only and graphics site
-	ns_param bgcolor white
-	ns_param textcolor black
-	# this is only for the graphics site
-	ns_param background /graphics/bg.gif
+        ns_param PathToStyleSheet /acs.css
 	# set ReadOnlyP=1 if you're going to wipe your Oracle installation
 	ns_param ReadOnlyP 0
 	# do we expect this to be a site visited by people
@@ -821,6 +816,7 @@ ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/robot-detection"
 	# stuff for templates, multi-lingualism
 
 ns_section "ns/server/{{ ACS_DOMAIN_NAME }}/acs/style"
+
 
 	# where to find templates, typically /web/{{ ACS_DOMAIN_NAME }}/templates
 	# (note lack of trailing slash, just like the pageroot)

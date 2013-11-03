@@ -86,11 +86,7 @@ switch $days_since_posted {
 } 
 
 
-doc_return  200 text/html "<html>
-<head>
-<title>$one_line</title>
-</head>
-<body bgcolor=[ad_parameter bgcolor "" "white"] text=[ad_parameter textcolor "" "black"]>
+doc_return  200 text/html "[ad_header "" "$one_line"]
 <base target=\"link_from_a_message\">
 
 \[

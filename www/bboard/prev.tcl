@@ -34,11 +34,7 @@ order by sort_key desc" {
 
     # no msg to return
 
-    doc_return  200 text/html "<html>
-<head>
-<title>End of BBoard</title>
-</head>
-<body bgcolor=[ad_parameter bgcolor "" "white"] text=[ad_parameter textcolor "" "black"]>
+    doc_return  200 text/html "[ad_header "" "No Previous Message"]
 
 <h3>No Previous Message</h3>
 

@@ -18,11 +18,7 @@ if {[bboard_admin_authorization] == -1} {
 	return}
 
 
-append doc_body "<html>
-<head>
-<title>Participants in $topic forum</title>
-</head>
-<body bgcolor=[ad_parameter bgcolor "" "white"] text=[ad_parameter textcolor "" "black"]>
+append doc_body "[ad_header "" "Participants in $topic forum"]
 
 <h2>Participants in $topic forum</h2>
 

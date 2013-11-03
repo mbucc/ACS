@@ -36,18 +36,13 @@ order by sort_key" {
 
     # no msg to return
 
-    doc_return  200 text/html "<html>
-    <head>
-    <title>End of BBoard</title>
-    </head>
-    <body bgcolor=[ad_parameter bgcolor "" "white"] text=[ad_parameter textcolor "" "black"]>
+    doc_return  200 text/html "[ad_header "" "End of BBoard"]
     
     <h3>No Next Message</h3>
     
     You've read the last message in the <a target=_top href=\"main-frame?[export_url_vars topic topic_id]\">$topic</a> BBoard.
     
-    </body>
-    </html>
+    [bboard_footer]
     "
 
     set do_returnredirect 0

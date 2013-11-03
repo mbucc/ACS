@@ -32,11 +32,7 @@ if [catch {
     }   
 } errmsg] {
 
-	doc_return  200 text/html "<html>
-<head>
-<title>Database Update Failed</title>
-</head>
-<body bgcolor=[ad_parameter bgcolor "" "white"] text=[ad_parameter textcolor "" "black"]>
+	doc_return  200 text/html "[ad_header "" "Database Update Failed"]
 
 <h3>Database Update Failed</h3>
 Error trying to update the database.  Email to [bboard_system_owner] please.  Here was the message:

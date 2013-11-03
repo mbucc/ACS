@@ -56,11 +56,7 @@ it was edited or deleted."
 set message_to_user [ns_set get $selection message_to_user]
 set creation_comment [ns_set get $selection creation_comment]
 
-append page_content "<html>
-<head>
-<title>Edit Bozo Pattern \"$the_regexp\" in $topic</title>
-</head>
-<body bgcolor=[ad_parameter bgcolor "" "white"] text=[ad_parameter textcolor "" "black"]>
+append page_content "[ad_header "" "Edit Bozo Pattern \"$the_regexp\" in $topic"]
 
 <h2>Edit Bozo Pattern \"$the_regexp\"</h2>
 

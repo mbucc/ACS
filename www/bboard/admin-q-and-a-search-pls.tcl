@@ -21,11 +21,7 @@ if {[bboard_admin_authorization] == -1} {
     return
 }
 
-append page_content "<html>
-<head>
-<title>Search Results</title>
-</head>
-<body bgcolor=[ad_parameter bgcolor "" "white"] text=[ad_parameter textcolor "" "black"]>
+append page_content [ad_header "" "Search Results"]
 
 <h2>Messages matching \"$query_string\"</h2>
 

@@ -43,11 +43,7 @@ $pre_post_caveat
     set search_option "$pre_post_caveat"
 }
 
-set page_content "<html>
-<head>
-<title>Post New Message</title>
-</head>
-<body bgcolor=[ad_parameter bgcolor "" "white"] text=[ad_parameter textcolor "" "black"]>
+set page_content "[ad_header "" "Post a New Message"]
 
 <h3>Post a New Message</h3>
 
