@@ -155,6 +155,7 @@ ad_proc ad_header_with_extra_stuff {
     set html "<html>
 <head>
 $extra_stuff_for_document_head
+<meta name=\"viewport\" content=\"initial-scale=1.0,width=device-width\" />
 <title>$page_title</title>
 </head>
 "
@@ -178,6 +179,8 @@ $extra_stuff_for_document_head
 	lappend attr_list "$attr=\"$attrs($attr)\""
     }
     append html "<body [join $attr_list]>\n"
+    append html "<article>\n"
+    append html "<section>\n"
 
     append html $pre_content_html
     return $html
@@ -211,6 +214,8 @@ $curriculum_bar
 <hr>
 $ds_link
 <a href=\"mailto:$signatory\"><address>$signatory</address></a>
+</section>
+</article>
 </body>
 </html>"
 }
