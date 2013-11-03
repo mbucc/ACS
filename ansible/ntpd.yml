@@ -1,0 +1,4 @@
+---
+- name: Make sure the clock stay up to date.
+  service: name=ntpd enabled=yes state=started
+
