@@ -6,21 +6,27 @@ load 'utils.rb'
 require "watir-webdriver"
 browser = Watir::Browser.new :ff
 
-#usera = user('amy@example.com', 'pwda', 'Amy', 'Adams')
-#userb = user('bob@example.com', 'pwdb', 'Bob', 'McAdoo')
-#
-#add_user(browser, usera)
-#logout(browser)
-#
-#add_user(browser, userb)
-#logout(browser)
-#
-#news1 = news('title1')
-#news2 = news('title2', 15)
-#news3 = news('title3')
-#
-#add_news(browser, usera, news1)
-#add_news(browser, userb, news2)
-#add_news(browser, usera, news3)
+articles_n = 10
+comments_n = 25
 
-add_news_comment(browser, usera, news2, comment())
+users = [
+	user('amy@example.com'   , 'pwda', 'Amy'   , 'Adams'),
+	user('bob@example.com'   , 'pwdb', 'Bob'   , 'McAdoo'),
+	user('chris@example.com' , 'pwdc', 'Chris' , 'Everett'),
+	user('dennis@example.com', 'pwdd', 'Dennis', 'Rodman'),
+	user('eric@example.com'  , 'pwde', 'Eric'  , 'Idle')
+]
+
+news = Array.new
+articles_n.times do
+	news.push news()
+end
+
+comments = Array.new
+comments_n.times do
+	comments.push comment()
+end
+
+users.each    { |x| add_user(browser, x) }
+news.each     { |x| add_news(browser, users[rand(0..users.length-1)], x) }
+comments.each { |x| add_news_comment(browser, users[rand(0..users.length-1)], news[rand(0..news.length-1)], x) }
