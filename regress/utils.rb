@@ -27,6 +27,12 @@ def news(title, paragraphs_n = 5)
 	}
 end
 
+def comment(paragraphs_n = 1)
+	return {
+		:body => octo_ipsum(paragraphs_n)
+	}
+end
+
 # log(true, "My Test", 40)
 #       --> "My Test . . . . . . . . . . . . . . PASS"
 def log(pass, name, width = 78)
@@ -98,6 +104,40 @@ def add_news(browser, user, news)
 	browser.goto $HOST + "/news"
 
 	browser.link(:text, "suggest an item").click
+
+	submit_login_form(browser, user)
+
+	# Submit the story.
+	browser.text_field(:name => 'title').set news[:title]
+	browser.text_field(:name => 'body').set news[:body]
+	f1 = browser.form(:action, "post-new-2")
+	f1.submit
+
+	# Confirm the submission.
+	f1 = browser.form(:action, "post-new-3")
+	f1.submit
+
+	# Logout of user that submitted story.
+	logout(browser)
+
+	# Have admin approve the story.
+	submit_login_form(browser, $admin_user)
+	wait_then_click(browser, "Site-Wide Administration")
+	wait_then_click(browser, "all")
+	wait_then_click(browser, news[:title])
+	wait_then_click(browser, "Approve")
+	logout(browser)
+end
+
+# Add a comment to a news story.
+def add_comment(browser, user, news, comment)
+
+	browser.goto $HOST + "/news"
+
+	browser.link(:text, news[:title]).click
+	wait_then_click(browser, "Add a comment")
+	login(browser, user)
+
 
 	submit_login_form(browser, user)
 

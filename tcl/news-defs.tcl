@@ -175,7 +175,7 @@ $content_intro ...
 "
             }
 	    site_admin { 
-		append result_items "<li>comment from <a href=\"/users/one?user_id=$comment_user_id\">$commenter_name</a> on <a href=\"/admin/news/item?news_item_id=$news_item_id\">$title</a>:
+		append result_items "<li>comment from <a href=\"/admin/users/one?user_id=$comment_user_id\">$commenter_name</a> on <a href=\"/admin/news/item?news_item_id=$news_item_id\">$title</a>:
 <blockquote>
 $content_intro ...
 </blockquote>
