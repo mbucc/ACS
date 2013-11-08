@@ -4,7 +4,7 @@ def octo_ipsum(paragraphs_n = 1)
 	future_action = [
 		'Deep dive into',
 		'Plunge beneath',
-		'Explore the dephts of',
+		'Explore the depths of',
 		'Cast off into',
 		'Jump overboard into',
 		'Set a course to',
@@ -12,34 +12,35 @@ def octo_ipsum(paragraphs_n = 1)
 		'Bail out of',
 		'Learn the ropes in',
 		'Whistle for the wind in',
-		'Fall foul of'
+		'Fall afoul of'
 		]
 	past_action = [
 		'deep dove into',
 		'plunged beneath',
-		'explored the dephts of',
+		'explored the depths of',
 		'cast off into',
 		'jumped overboard into',
 		'set a course to',
 		'set adrift on',
 		'bail out of',
-		'learned the ropes in',
+		'learned the ropes of',
 		'whistled for the wind in',
 		'fell foul of'
 		]
 	adjectives = [ 
-		'wattertight',
+		'watertight',
 		'seaworthy and broad in the beam',
 		'unforgiving',
-		'relentless and uncahrted',
+		'relentless and uncharted',
 		'cold and wet',
 		'high and dry'
 		]
 	nouns = [
 		'ship yards of the sea',
-		'deap blue sea','Davy Jone\'s Locker',
+		'deep blue sea',
+		'Davy Jone\'s Locker',
 		'beachcomber\'s saloon',
-		'current of fierce watters'
+		'current of fierce waters'
 		]
 	misc = [
 		'with all hands on deck.',
