@@ -56,7 +56,7 @@ if {$exception_count > 0} {
 }
 
 if [catch { db_dml news_item_update "update news_items
-set title = :title, body=empty_clob(),
+set title = :title, body='',
 html_p = :html_p, release_date = :release_date,
 expiration_date = :expiration_date
 where news_item_id = :news_item_id

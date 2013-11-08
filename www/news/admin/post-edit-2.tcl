@@ -71,7 +71,7 @@ if {$exception_count > 0} {
 
 set update_sql "update news_items
    set title = :title, 
-       body = empty_clob(), 
+       body = '', 
        html_p = :html_p,
        release_date= :release_date,
        approval_state = 'approved',

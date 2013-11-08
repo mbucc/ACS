@@ -124,7 +124,7 @@ set form_setid [ns_set create]
 ns_set put $form_setid dp.news_items.news_item_id.int $news_item_id
 ns_set put $form_setid dp.news_items.newsgroup_id.int $newsgroup_id
 ns_set put $form_setid dp.news_items.title $title
-ns_set put $form_setid dp.news_items.body.clob $body
+ns_set put $form_setid dp.news_items.body $body
 ns_set put $form_setid dp.news_items.html_p $html_p
 ns_set put $form_setid dp.news_items.approval_state $approval_state
 ns_set put $form_setid dp.news_items.approval_date.expr sysdate

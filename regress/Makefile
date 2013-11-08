@@ -2,17 +2,34 @@
 all:
 	@echo "*******************************************************"
 	@echo ""
+	@echo "    0. Create key for root in ../id_rsa"
+	@echo ""
 	@echo "    1. Run ssh-keygen to create oracle_id_rsa[.pub]"
 	@echo ""
 	@echo "    2. Turn off iptables on target: service iptables stop"
 	@echo ""
-	@echo "    3. One-time setup."
+	@echo "    3. Copy over SSH keys for nsadmin and oracle user and"
+	@echo "       create rollback point in database.  One time only."
 	@echo ""
-	@echo "            init"
+	@echo "            $$ make init"
 	@echo ""
 	@echo "    4. Run tests."
 	@echo ""
-	@echo "            test"
+	@echo "            $$ make test"
+	@echo ""
+	@echo ""
+	@echo "Alternatively, "
+	@echo ""
+	@echo "    Create some users, news articles and comments:"
+	@echo ""
+	@echo "            $$ make newsdata"
+	@echo ""
+	@echo ""
+	@echo "    Rollback all database to rollback point set in init"
+	@echo ""
+	@echo "            $$ make rollback"
+	@echo ""
+	@echo ""
 	@echo ""
 	@echo "*******************************************************"
 	@exit 1
@@ -31,7 +48,7 @@ sshkeys: vars.txt oracle_id_rsa.pub
 backup_database_and_set_rollback_point: vars.txt
 	./backup_database_and_set_rollback_point.sh
 
-rollback_database_changes: vars.txt
+rollback: vars.txt
 	./rollback_database_changes.sh
 
 vars.txt: \

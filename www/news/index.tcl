@@ -102,11 +102,11 @@ if { !$archive_p } {
 
 set counter 0
 db_foreach news_item_get $query {
-    if {counter > 0} {
+    if {$counter > 0} {
         append news_html "</section>"
         append news_html "<section>"
     }
-    incr counter 
+    incr $counter 
     append news_html "<li>[util_AnsiDatetoPrettyDate $release_date]: "
 
     # let's consider displaying the text right here, but
