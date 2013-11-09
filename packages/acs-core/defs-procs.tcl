@@ -152,6 +152,7 @@ ad_proc ad_header_with_extra_stuff {
 $extra_stuff_for_document_head
 <meta name=\"viewport\" content=\"initial-scale=1.0,width=device-width\" />
 <link rel=\"stylesheet\" type=\"text/css\" href=\"[ad_parameter PathToStyleSheet acs "/acs.css"]\" />
+<script type=\"text/javascript\" src=\"[ad_parameter PathToJavaScript acs "/acs.js"]\"></script>
 <title>$page_title</title>
 </head>
 "
