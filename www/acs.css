@@ -2,3 +2,13 @@ body {
   background-color:white;
   color:black;
 }
+
+header img {
+	float:left;
+	margin-right: 5px;
+}
+
+header {
+	overflow: auto;
+	width: 100%
+}

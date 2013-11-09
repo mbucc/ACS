@@ -382,11 +382,11 @@ proc_doc ad_get_user_info {} {Sets first_name, last_name, email in the environme
 
 # for pages that have optional decoration
 
-proc_doc ad_decorate_top {simple_headline potential_decoration} "Use this for pages that might or might not have an image defined in ad.ini; if the second argument isn't the empty string, ad_decorate_top will make a one-row table for the top of the page" {
+proc_doc ad_decorate_top {simple_headline potential_decoration} "Use this for pages that might or might not have an image defined in ad.ini; if the second argument isn't the empty string, ad_decorate_top will prefix the simple headline with the decoration, wrapped in a div with class decoration." {
     if [empty_string_p $potential_decoration] {
-	return $simple_headline
+	return "<header>$simple_headline</header>"
     } else {
-	return "<table cellspacing=10><tr><td>$potential_decoration<td>$simple_headline</tr></table>"
+	return "<header>$potential_decoration $simple_headline</header>"
     }
 }
 
