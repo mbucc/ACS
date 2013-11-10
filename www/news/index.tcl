@@ -102,10 +102,6 @@ if { !$archive_p } {
 
 set counter 0
 db_foreach news_item_get $query {
-    if {$counter > 0} {
-        append news_html "</section>"
-        append news_html "<section>"
-    }
     incr $counter 
     append news_html "<li>[util_AnsiDatetoPrettyDate $release_date]: "
 
@@ -148,10 +144,7 @@ if { ![empty_string_p $min_number] && $counter >= $min_number } {
 
 append page_content "
 $news_html
-</section>
-<section>
 <p>[post_new_link]
-</section>
 </ul>
 
 "
@@ -166,7 +159,6 @@ if { !$archive_p } {
 
 
 append page_content "[ad_scope_footer]"
-
 
 
 doc_return  200 text/html $page_content

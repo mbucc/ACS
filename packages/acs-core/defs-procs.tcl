@@ -168,8 +168,6 @@ $extra_stuff_for_document_head
 	lappend attr_list "$attr=\"$attrs($attr)\""
     }
     append html "<body [join $attr_list]>\n"
-    append html "<article>\n"
-    append html "<section>\n"
 
     append html $pre_content_html
     return $html
@@ -205,8 +203,6 @@ $curriculum_bar
 $ds_link
 <a href=\"mailto:$signatory\"><address>$signatory</address></a>
 </footer>
-</section>
-</article>
 </body>
 </html>"
 }
