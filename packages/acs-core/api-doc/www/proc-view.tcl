@@ -11,7 +11,7 @@ doc_body_append "
 [ad_header $proc]
 <h2>$proc</h2>
 
-[ad_context_bar_ws_or_index [list "" "API Browser"] $proc]
+[ad_context_bar_ws_or_index [list "/doc/procs" "API Browser"] $proc]
 
 <hr>
 

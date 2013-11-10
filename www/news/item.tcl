@@ -56,11 +56,11 @@ append page_content "[ad_scope_header $title]"
 
 if { $scope=="public" } {
     append page_content "
-    [ad_decorate_top "<h2>$title</h2> [ad_context_bar_ws_or_index [list "" "News"] "One Item"]" [ad_parameter ItemPageDecoration news]]"
+    [ad_decorate_top "<h2>$title</h2> [ad_context_bar_ws_or_index [list "index.tcl?[export_url_scope_vars]" "News"] "One Item"]" [ad_parameter ItemPageDecoration news]]"
 } else {
     append page_content "
     [ad_scope_page_title $title]
-    [ad_scope_context_bar_ws_or_index [list "" "News"] "One Item"]
+    [ad_scope_context_bar_ws_or_index [list "index.tcl?[export_url_scope_vars]" "News"] "One Item"]
     "
 }
 

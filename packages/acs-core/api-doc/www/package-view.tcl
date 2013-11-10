@@ -44,7 +44,7 @@ set dimensional_list {
 doc_body_append "
 [ad_header $title]
 <h2>$title</h2>
-[ad_context_bar_ws_or_index [list "" "API Browser"] $title]
+[ad_context_bar_ws_or_index [list "/api-doc/" "API Browser"] $title]
 <hr>
 
 <center>

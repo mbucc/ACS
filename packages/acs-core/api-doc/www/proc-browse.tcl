@@ -15,7 +15,7 @@ ad_page_contract {
 } 
 
 doc_set_property title "$type Procedures"
-doc_set_property navbar [list [list "" "API Browser"] "Browse Procedures"]
+doc_set_property navbar [list [list "/api-doc/" "API Browser"] "Browse Procedures"]
 doc_set_property author "tnight@mit.edu"
 
 set dimensional {
