@@ -151,8 +151,8 @@ ad_proc ad_header_with_extra_stuff {
 <head>
 $extra_stuff_for_document_head
 <meta name=\"viewport\" content=\"initial-scale=1.0,width=device-width\" />
-<link rel=\"stylesheet\" type=\"text/css\" href=\"[ad_parameter PathToStyleSheet acs "/acs.css"]\" />
-<script type=\"text/javascript\" src=\"[ad_parameter PathToJavaScript acs "/acs.js"]\"></script>
+<link rel=\"stylesheet\" type=\"text/css\" href=\"[ad_parameter PathToStyleSheet {} /static/acs.css]\" />
+<script type=\"text/javascript\" src=\"[ad_parameter PathToJavaScript {} /static/acs.js]\"></script>
 <title>$page_title</title>
 </head>
 "
@@ -198,11 +198,13 @@ proc_doc ad_footer {{signatory ""} {suppress_curriculum_bar_p 0}} "writes a hori
 	set ds_link ""
     }
     return "
+<footer>
 $extra_br
 $curriculum_bar
 <hr>
 $ds_link
 <a href=\"mailto:$signatory\"><address>$signatory</address></a>
+</footer>
 </section>
 </article>
 </body>
