@@ -56,39 +56,76 @@ var acs = {
 		return rval;
 	}
 
-        // How many pixels will given HTML require when rendered?  Counts
-	// everything except the margin.  Example (in browser console):
-	//
-	//     > acs.markupsize(document.body.innerHTML)
-	//     Object {x: 463, y: 547}
-	//
-	, markupsize: function(html) {
-		var
-			div = document.createElement('div')
-			, x = 0
-			, y = 0
-			, b = document.body
-			, bodyVerticalMargins = Math.max(
-				16
-				, this.pxtoi(this.getStyle(b, "margin-top"))
-					+ this.pxtoi(this.getStyle(b, "margin-bottom"))
-				)
-			;
-		div.setAttribute('class', 'textDimensionCalculation');
-		div.innerHTML = html;
+	, tryIEScroll: function(called, ready) {
+		if (called) return
+		try {
+			document.documentElement.doScroll("left")
+			ready()
+		} catch(e) {
+			setTimeout(tryScroll, 10)
+		}
+	}
 
-		document.body.appendChild(div);
+	// DOM ready means the document is created.  (Images may still be downloading.)
+	// This is a cross-browser version from:
+	// http://javascript.info/tutorial/onload-ondomcontentloaded
+	, bindReady: function(handler) {
 
-		// Returns the height of the visible area for an
-		// object, in pixels. The value contains the height
-		// with the padding, scrollBar, and the border, but
-		// does not include the margin.
-		// ref: http://help.dottoro.com/ljuxqbfx.php
-		x = div.offsetWidth;
-		y = div.offsetHeight + bodyVerticalMargins;
+		var called = false
 
-		//div.parentNode.removeChild(div);
+		function ready() {
+			if (called) return
+			called = true
+			handler()
+		}
 
-		return {x:x, y:y};
+		if ( document.addEventListener ) { // native event
+			document.addEventListener( "DOMContentLoaded", ready, false )
+		} else if ( document.attachEvent ) {  // IE
+
+			try {
+				var isFrame = window.frameElement != null
+			} catch(e) {}
+
+			// IE, the document is not inside a frame
+			if ( document.documentElement.doScroll && !isFrame )
+				tryScroll(called, ready);
+
+			// IE, the document is inside a frame
+			document.attachEvent("onreadystatechange", function(){
+				if ( document.readyState === "complete" ) {
+					ready()
+				}
+			})
+		}
+
+		// Old browsers
+		if (window.addEventListener)
+			window.addEventListener('load', ready, false)
+		else if (window.attachEvent)
+			window.attachEvent('onload', ready)
+		else {
+			var fn = window.onload // very old browser, copy old onload
+			window.onload = function() { // replace by new onload and call the old one
+				fn && fn()
+				ready()
+			}
+		}
+	}
+
+	, dumpheight: function() {
+		var b = document.body;
+
+		console.log("body margin-top   : " + acs.pxtoi(acs.getStyle(b, "margin-top")));
+		console.log("body margin-bottom: " + acs.pxtoi(acs.getStyle(b, "margin-bottom")));
+		console.log("body              : " + b.getBoundingClientRect().height);
+		console.log("header            : " + b.getElementsByTagName('header')[0].getBoundingClientRect().height);
+	}
+
+	, init: function() {
+		acs.bindReady(acs.dumpheight);
 	}
 };
+
+acs.init();
+
