@@ -88,7 +88,6 @@ if { $scope=="public" } {
 }
 
 append page_content "
-<hr>
 [ad_scope_navbar]
 </header>
 

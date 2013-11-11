@@ -199,7 +199,6 @@ proc_doc ad_footer {{signatory ""} {suppress_curriculum_bar_p 0}} "writes a hori
 <footer>
 $extra_br
 $curriculum_bar
-<hr>
 $ds_link
 <a href=\"mailto:$signatory\"><address>$signatory</address></a>
 </footer>

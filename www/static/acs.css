@@ -11,7 +11,16 @@ header img {
 
 header {
 	overflow: auto;
-	width: 100%
+	width: 100%;
+	border-bottom: solid grey 1px;
+	padding-bottom: 8px;
+	margin-bottom: 5px;
+}
+
+footer {
+	margin-top: 8px;
+	padding-top: 8px;
+	border-top: solid grey 1px;
 }
 
 blockquote {

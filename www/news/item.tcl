@@ -52,7 +52,7 @@ if { [empty_string_p $title] && [empty_string_p $body] } {
 db_release_unused_handles
 
 
-append page_content "[ad_scope_header $title]"
+append page_content "<header>[ad_scope_header $title]"
 
 if { $scope=="public" } {
     append page_content "
@@ -65,8 +65,8 @@ if { $scope=="public" } {
 }
 
 append page_content "
-<hr>
 [ad_scope_navbar]
+</header>
 
 <blockquote>
 [util_maybe_convert_to_html $body $html_p]
