@@ -72,7 +72,9 @@ append page_content "
 [util_maybe_convert_to_html $body $html_p]
 </blockquote>
 
+<p>
 Contributed by <a href=\"/shared/community-member?[export_url_vars]&user_id=$creation_user\">$first_names $last_name</a>.
+</p>
 
 [ad_general_comments_list $news_item_id news_items $title news]
 
