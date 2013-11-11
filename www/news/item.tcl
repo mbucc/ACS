@@ -52,10 +52,11 @@ if { [empty_string_p $title] && [empty_string_p $body] } {
 db_release_unused_handles
 
 
-append page_content "<header>[ad_scope_header $title]"
+append page_content "[ad_scope_header $title]"
 
 if { $scope=="public" } {
     append page_content "
+    <header>
     [ad_decorate_top "<h2>$title</h2> [ad_context_bar_ws_or_index [list "index.tcl?[export_url_scope_vars]" "News"] "One Item"]" [ad_parameter ItemPageDecoration news]]"
 } else {
     append page_content "
