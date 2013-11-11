@@ -5,9 +5,10 @@
 
 "use strict";
 
-var acs = {
+var acs = (function() {
+
 	// From http://stackoverflow.com/questions/3437786.
-	canvassize: function() {
+	function canvassize() {
 		var 	w = window
 		    	, d = document
 			, e = d.documentElement
@@ -16,7 +17,7 @@ var acs = {
 			, y = w.innerHeight|| e.clientHeight|| g.clientHeight
 			;
 		return {x: x, y: y};
-	}
+	};
 
 	// Return the value of the style for the given element.
 	// For example,
@@ -24,7 +25,7 @@ var acs = {
 	// 	> acs.getStyle(document.body, "margin-top")
 	// 	"20px"
 	//
-	, getStyle: function(element, style) {
+	function getStyle(element, style) {
 		var y = null;
 		if (element.currentStyle)
 			y = element.currentStyle[style];
@@ -34,13 +35,13 @@ var acs = {
 				.getComputedStyle(element, null)
 				.getPropertyValue(style);
 		return y;
-	}
+	};
 
 	// "20px" --> 20
 	// "20"   --> 20
 	// "20em" --> 0
 	// "20%"  --> 0
-	, pxtoi: function(val) {
+	function pxtoi(val) {
 		var
 			patterns = [
 				/^\d+px$/i
@@ -54,9 +55,9 @@ var acs = {
 					rval = parseInt(val);
 		}
 		return rval;
-	}
+	};
 
-	, tryIEScroll: function(called, ready) {
+	function tryIEScroll(called, ready) {
 		if (called) return
 		try {
 			document.documentElement.doScroll("left")
@@ -69,7 +70,7 @@ var acs = {
 	// DOM ready means the document is created.  (Images may still be downloading.)
 	// This is a cross-browser version from:
 	// http://javascript.info/tutorial/onload-ondomcontentloaded
-	, bindReady: function(handler) {
+	function bindReady(handler) {
 
 		var called = false
 
@@ -113,19 +114,20 @@ var acs = {
 		}
 	}
 
-	, dumpheight: function() {
+	function dumpheights() {
 		var b = document.body;
 
-		console.log("body margin-top   : " + acs.pxtoi(acs.getStyle(b, "margin-top")));
-		console.log("body margin-bottom: " + acs.pxtoi(acs.getStyle(b, "margin-bottom")));
+		console.log("body margin-top   : " + pxtoi(getStyle(b, "margin-top")));
+		console.log("body margin-bottom: " + pxtoi(getStyle(b, "margin-bottom")));
 		console.log("body              : " + b.getBoundingClientRect().height);
 		console.log("header            : " + b.getElementsByTagName('header')[0].getBoundingClientRect().height);
+	};
+
+	function init() {
+		bindReady(dumpheights);
 	}
 
-	, init: function() {
-		acs.bindReady(acs.dumpheight);
-	}
-};
+	return {init: init};
+})();
 
 acs.init();
-
