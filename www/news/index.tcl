@@ -8,10 +8,10 @@ ad_page_contract {
     @creation-date March 8, 2000
     @cvs-id index.tcl,v 3.7.2.11 2000/09/22 01:38:56 kevin Exp
 
-    Note: if page is accessed through /groups pages then group_id and 
-    group_vars_set are already set up in the environment by the 
+    Note: if page is accessed through /groups pages then group_id and
+    group_vars_set are already set up in the environment by the
     ug_serve_section. group_vars_set contains group related variables
-    (group_id, group_name, group_short_name, group_admin_email, 
+    (group_id, group_name, group_short_name, group_admin_email,
     group_public_url, group_admin_url, group_public_root_url,
     group_admin_root_url, group_type_url_p, group_context_bar_list and
     group_navbar_list)
@@ -59,6 +59,21 @@ ad_scope_authorize $scope all group_member none
 
 append page_content "[ad_scope_header $page_title]"
 
+# I'm not sure how best to wrap all page headers in a <header> tag.
+# For example, the news index page is built below using four different
+# methods:
+#
+# 	for public scope
+# 		ad_decorate_top
+# 		ad_scope_navbar
+#
+# 	for group scope
+# 		ad_scope_page_title
+# 		ad_scope_context_bar_ws_or_index
+# 		ad_scope_navbar
+#
+
+append page_content "<header>"
 if { $scope=="public" } {
     append page_content "
     [ad_decorate_top "<h2>$page_title</h2>[ad_scope_context_bar_ws_or_index "News"]" \
@@ -74,8 +89,11 @@ if { $scope=="public" } {
 append page_content "
 <hr>
 [ad_scope_navbar]
+</header>
+
 <ul>
 "
+
 
 
 # Create a clause for returning the postings for relevant groups
@@ -102,19 +120,21 @@ if { !$archive_p } {
 
 set counter 0
 db_foreach news_item_get $query {
-    incr $counter 
+    incr counter
     append news_html "<li>[util_AnsiDatetoPrettyDate $release_date]: "
 
     # let's consider displaying the text right here, but
-    # only if there aren't any comments 
+    # only if there aren't any comments and the news article is short.
     set n_comments [db_string news_commentcount_get "
     select count(*)
-    from general_comments 
-    where on_what_id = :news_item_id 
+    from general_comments
+    where on_what_id = :news_item_id
     and on_which_table = 'news_items'"]
 
-    if { !$archive_p && $counter <= 3 && [string length $body] < 300 && $n_comments == 0 } {
-	append news_html "<blockquote>\n[util_maybe_convert_to_html $body $html_p]"
+    #if { !$archive_p && $counter <= 3 && [string length $body] < 300 && $n_comments == 0 }
+
+    if { !$archive_p && [string length $body] < 300 && $n_comments == 0 } {
+	append news_html "$title<blockquote>\n[util_maybe_convert_to_html $body $html_p]"
 	if [ad_parameter SolicitCommentsP news 1] {
 	    set url_args_set [ns_set create url_args_set]
 	    ns_set put $url_args_set on_which_table news_items
@@ -153,7 +173,7 @@ if { !$archive_p } {
     append page_content "If you're looking for an old news article, check
 <a href=\"?archive_p=1\">the archives</a>."
 } else {
-    append page_content "You can 
+    append page_content "You can
 <a href=\"\">return to current messages</a> now."
 }
 
