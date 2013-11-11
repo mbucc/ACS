@@ -92,7 +92,6 @@ append page_content "
 [ad_scope_navbar]
 </header>
 
-<ul>
 "
 
 
@@ -120,6 +119,7 @@ if { !$archive_p } {
 
 
 set counter 0
+set news_html "<ul>\n"
 db_foreach news_item_get $query {
     incr counter
     append news_html "<li>[util_AnsiDatetoPrettyDate $release_date]: "
