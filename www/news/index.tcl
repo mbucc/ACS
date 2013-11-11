@@ -46,11 +46,12 @@ if { $archive_p } {
     set page_title "News"
 }
 
+# Only used in this method.
 proc post_new_link {} {
     if { [ad_parameter ApprovalPolicy news] == "open"} {
-	return "<li><p><a href=\"post-new?[export_url_vars]\">post an item</a></p>"
+	return "<p><a href=\"post-new?[export_url_vars]\">post an item</a></p>"
     } elseif { [ad_parameter ApprovalPolicy news] == "wait"} {
-	return "<li><p><a href=\"post-new?[export_url_vars]\">suggest an item</a></p>"
+	return "<p><a href=\"post-new?[export_url_vars]\">suggest an item</a></p>"
     }
 }
 
@@ -156,7 +157,7 @@ if { $counter == 0 } {
     append news_html "no items found"
 }
 
-# If there are lots of news, we add the Post News link to the top, too.
+# If there is a lot of news, we add the Post News link to the top, too.
 set min_number [ad_parameter MinNumberForTopLink news]
 if { ![empty_string_p $min_number] && $counter >= $min_number } {
     append page_content "[post_new_link]"
@@ -164,9 +165,10 @@ if { ![empty_string_p $min_number] && $counter >= $min_number } {
 
 append page_content "
 $news_html
-<p>[post_new_link]
 </ul>
+[post_new_link]
 
+<p>
 "
 
 if { !$archive_p } {
@@ -178,7 +180,7 @@ if { !$archive_p } {
 }
 
 
-append page_content "[ad_scope_footer]"
+append page_content "</p>[ad_scope_footer]"
 
 
 doc_return  200 text/html $page_content
