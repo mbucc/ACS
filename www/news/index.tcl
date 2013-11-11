@@ -175,8 +175,7 @@ if { !$archive_p } {
     append page_content "If you're looking for an old news article, check
 <a href=\"?archive_p=1\">the archives</a>."
 } else {
-    append page_content "You can
-<a href=\"\">return to current messages</a> now."
+    append page_content "You can <a href=\"/news/\">return to current news</a> now."
 }
 
 
