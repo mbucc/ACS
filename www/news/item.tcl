@@ -3,19 +3,19 @@
 
 ad_page_contract {
     news item page
-    
+
     @author jkoontz@arsdigita.com
     @creation-date March 8, 2000
     @cvs-id item.tcl,v 3.5.2.9 2000/09/22 01:38:57 kevin Exp
-    
-    Note: if page is accessed through /groups pages then group_id and 
-    group_vars_set are already set up in the environment by the 
+
+    Note: if page is accessed through /groups pages then group_id and
+    group_vars_set are already set up in the environment by the
     ug_serve_section. group_vars_set contains group related variables
-    (group_id, group_name, group_short_name, group_admin_email, 
+    (group_id, group_name, group_short_name, group_admin_email,
     group_public_url, group_admin_url, group_public_root_url,
     group_admin_root_url, group_type_url_p, group_context_bar_list and
     group_navbar_list)
-} { 
+} {
     news_item_id:integer,notnull
     scope:optional
     user_id:integer,optional
@@ -38,7 +38,7 @@ if { [exists_and_not_null news_id] && ![exists_and_not_null news_item_id] } {
 set user_id [ad_scope_authorize $scope all all all]
 
 db_0or1row news_item_get "
-select title, body, html_p, 
+select title, body, html_p,
        n.approval_state, release_date, expiration_date,
        creation_user, creation_date, first_names, last_name
 from news_items n, users u
