@@ -26,13 +26,3 @@ footer {
 blockquote {
 	margin: 1.5625% 6.25%;
 }
-
-.textDimensionCalculation {
-	position: absolute;
-	visibility: hidden;
-	margin: 0 !important;
-	padding: 0 !important;
-	border: 0 !important;
-	height: auto;
-	width: auto;
-}
