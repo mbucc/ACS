@@ -70,7 +70,7 @@ append page_content "
 </header>
 
 <blockquote>
-[util_maybe_convert_to_html $body $html_p]
+[ad_convert_to_html -html_p $html_p $body]
 </blockquote>
 
 <p>

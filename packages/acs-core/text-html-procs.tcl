@@ -32,7 +32,7 @@ ad_proc -public ad_text_to_html {
 	# We start by putting a space in front so our URL/email highlighting will work
 	# for URLs/emails right in the beginning of the text.
 	set text " $text"
-	
+
 	# if something is " http://" or " https://"
 	# we assume it is a link to an outside source. 
 	
@@ -63,9 +63,9 @@ ad_proc -public ad_text_to_html {
     # turn CRLFCRLF into <P>
     if { [regsub -all "\015\012\015\012" $text "<p>" text] == 0 } {
 	# try LFLF
-	if { [regsub -all "\012\012" $text "<p><p>" text] == 0 } {
+	if { [regsub -all "\012\012" $text "<p>" text] == 0 } {
 		# try CRCR
-	    regsub -all "\015\015" $text "<p><p>" text
+	    regsub -all "\015\015" $text "<p>" text
 	}
     }
     
@@ -78,6 +78,17 @@ ad_proc -public ad_text_to_html {
 	set text [string trimleft $text]
     }
 
+    # Start text off with a paragraph tag so we can format text consistently
+    # by styling a <p> tag.  Otherwise, we get this:
+    #
+    # 	<blockquote>
+    # 		First para.
+    # 		<p>
+    # 		Second para.
+    # 	</blockquote>
+    #
+    set text "<p>$text"
+	
     return $text
 }
 
