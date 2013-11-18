@@ -23,7 +23,7 @@
   command: mv {{ AOL_SERVER_WEBROOT }}/acs {{ AOL_SERVER_WEBROOT }}/{{ ACS_DOMAIN_NAME }}
   when: acs_tarball.changed
 
-# XXX: figure out what mode to give to files and directories
+# XXX: Confirm mode for files and directories in web server root
 - name: Change permissions on extracted file to AOL server user.
   file: path={{ AOL_SERVER_WEBROOT }}/{{ ACS_DOMAIN_NAME }} state=directory
       owner={{ AOL_SERVER_USER }} group={{ WEB_GROUP }}
@@ -33,4 +33,9 @@
 - name: Make programs in bin executable.
   file: path={{ AOL_SERVER_WEBROOT }}/{{ ACS_DOMAIN_NAME }}/bin state=directory
       mode=0744 recurse=yes
+  when: acs_tarball.changed
+
+- name: Make minify script executable.
+  file: path={{ AOL_SERVER_WEBROOT }}/{{ ACS_DOMAIN_NAME }}/minify.sh 
+      mode=0755
   when: acs_tarball.changed

@@ -1,11 +1,17 @@
 /*
  * Javascript routines for the Arsdigita Community System.
- * Created on Sun Nov 10 08:32:57 EST 2013 by Mark Bucciarelli <mkbucc@gmail.com>
+ * Created on Sun Nov 10 08:32:57 EST 2013
+ * by Mark Bucciarelli <mkbucc@gmail.com>
  */
 
 "use strict";
 
 var acs = (function() {
+
+	function canvasheight() {
+		return canvassize().y;
+	};
+
 
 	// From http://stackoverflow.com/questions/3437786.
 	function canvassize() {
@@ -19,44 +25,6 @@ var acs = (function() {
 		return {x: x, y: y};
 	};
 
-	// Return the value of the style for the given element.
-	// For example,
-	//
-	// 	> acs.getStyle(document.body, "margin-top")
-	// 	"20px"
-	//
-	function getStyle(element, style) {
-		var y = null;
-		if (element.currentStyle)
-			y = element.currentStyle[style];
-		else if (window.getComputedStyle)
-			y = document
-				.defaultView
-				.getComputedStyle(element, null)
-				.getPropertyValue(style);
-		return y;
-	};
-
-	// "20px" --> 20
-	// "20"   --> 20
-	// "20em" --> 0
-	// "20%"  --> 0
-	function pxtoi(val) {
-		var
-			patterns = [
-				/^\d+px$/i
-				, /^\d+$/
-				]
-			, rval = 0
-			;
-		if (val) {
-			for (var i = 0; i < patterns.length && rval == 0; i++)
-				if (patterns[i].test(val))
-					rval = parseInt(val);
-		}
-		return rval;
-	};
-
 	function tryIEScroll(called, ready) {
 		if (called) return
 		try {
@@ -67,8 +35,8 @@ var acs = (function() {
 		}
 	}
 
-	// DOM ready means the document is created.  (Images may still be downloading.)
-	// This is a cross-browser version from:
+	// DOM ready means the document is created.  (Images may
+	// still be downloading.) This cross-browser version is from:
 	// http://javascript.info/tutorial/onload-ondomcontentloaded
 	function bindReady(handler) {
 
@@ -81,7 +49,12 @@ var acs = (function() {
 		}
 
 		if ( document.addEventListener ) { // native event
-			document.addEventListener( "DOMContentLoaded", ready, false )
+			document
+				.addEventListener(
+					"DOMContentLoaded"
+					, ready
+					, false
+					);
 		} else if ( document.attachEvent ) {  // IE
 
 			try {
@@ -106,25 +79,104 @@ var acs = (function() {
 		else if (window.attachEvent)
 			window.attachEvent('onload', ready)
 		else {
-			var fn = window.onload // very old browser, copy old onload
-			window.onload = function() { // replace by new onload and call the old one
+			// very old browser, copy old onload
+			var fn = window.onload
+			window.onload = function() {
+				// replace by new onload and call the old one
 				fn && fn()
 				ready()
 			}
 		}
 	}
 
-	function dumpheights() {
-		var b = document.body;
+	function bespokifyDOM() {
 
-		console.log("body margin-top   : " + pxtoi(getStyle(b, "margin-top")));
-		console.log("body margin-bottom: " + pxtoi(getStyle(b, "margin-bottom")));
-		console.log("body              : " + b.getBoundingClientRect().height);
-		console.log("header            : " + b.getElementsByTagName('header')[0].getBoundingClientRect().height);
+		var 
+			slop = .025  // allow for some error in page heights.
+			, b = document.body
+			, bodyheight = pagination.height(b)
+			;
+
+		// If page fits as is, we're all done.
+		if (canvasheight() >= bodyheight * (1.0 - slop))
+			return;
+
+		var header_el = getHeader("h2");
+
+		var
+			el = document.body.firstElementChild
+			, eltmp
+			, canvas_y = canvasheight() * (1.0 - slop)
+			, y = 0
+			, page_y = 0
+			, page_i = 0
+			, in_blockquote = false
+			;
+
+		console.log("canvas_y = " + canvas_y);
+
+		m = state_machine(page_height_px);
+		el = document.body.firstChild;
+		while (el) {
+			m.state.process(el);
+			el = el.nextSibling;
+		}
+		//this.body.innerHtml = m.state.body.innerHtml;
+
+		/*
+		while (el) {
+			// Blockquotes can be really long (e.g., the entire
+			// news item appears in a block quote), so we want to
+			// break inside blockquote.
+			if (el.nodeName.toUpperCase() == "BLOCKQUOTE") {
+				console.log("** entering BLOCKQUOTE");
+				el = el.firstElementChild;
+				in_blockquote = true;
+			}
+			y = el.getBoundingClientRect().height + topmargin(el);
+			if (need_pagebreak(el, page_y, canvas_y)) {
+				console.log("    break @ " + page_y);
+				console.log("-------------------------");
+				if (page_fits(
+					y
+					, canvas_y
+					, header_el
+					, page_i
+					))
+				{
+					page_y = 0;
+				}
+				else
+					alert("XXX: stub.");
+			}
+			page_y = page_y + y;
+			console.log(y + ":" + el.nodeName);
+			eltmp = el.nextElementSibling;
+			if (eltmp) {
+				el = eltmp;
+			}
+			else {
+				if (in_blockquote) {
+					console.log("** exiting BLOCKQUOTE");
+					el = el
+						.parentElement
+						.nextElementSibling;
+					in_blockquote = false;
+				}
+				else {
+					el = eltmp;
+				}
+			}
+		}
+		if (page_y > 0) {
+			console.log("    end last @ = " + page_y);
+			console.log("-------------------------");
+		}
+		*/
 	};
 
 	function init() {
-		bindReady(dumpheights);
+		bindReady(bespokifyDOM);
 	}
 
 	return {init: init};

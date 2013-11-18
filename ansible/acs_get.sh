@@ -21,6 +21,7 @@ www
 
 FILES="
 readme.txt
+minify.sh
 "
 
 if [ ! -f acs-${VERS}.tgz ]; then 

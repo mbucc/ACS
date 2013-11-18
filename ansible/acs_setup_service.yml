@@ -30,5 +30,8 @@
       owner={{ AOL_SERVER_USER }} group={{ AOL_SERVER_USER }}
       mode=644
 
+- name: Consolidate and compress JavaScript and update parameter file.
+  shell: (cd {{ AOL_SERVER_WEBROOT }}/{{ ACS_DOMAIN_NAME }} ; ./minify.sh)
+
 - name: Create symlink to perl in /usr/local/bin so ACS scripts work.
   file: src=/usr/bin/perl dest=/usr/local/bin/perl owner=root group=root state=link
