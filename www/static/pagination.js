@@ -12,8 +12,7 @@ var pagination = (function () {
 	
 	// process_input_function = function(machine, input);
 	function state(name, process_input_fcn) {
-		this.name = name;
-		this.process = process_input_fcn;
+		return {name: name, process: process_fcn};
 	}
 
 	var idle = state("idle", function(machine, input) {
