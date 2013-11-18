@@ -18,11 +18,15 @@ done
 
 FN=acs-$(md5sum $TMPFN | awk '{print $1}').js
 
-if [ ! -f $DIR/$FN ] ; then
-	cp $TMPFN $DIR/$FN
-fi
+cp $TMPFN $DIR/$FN
+PFN=$(find parameters -name "*.tcl" | xargs grep -l "acs\(\-[^.]\+\)\?\.js")
+cp "$PFN" "$PFN.$(date +%F_%H-%M-%S)"
+cat "$PFN" | sed "s;acs\(\-[^.]\+\)\?\.js;$FN;" > mkb.tcl
+mv mkb.tcl "$PFN"
 
-for f in $(find parameters -type f) ; do
-	cat "$f" | sed "s;acs\.js;$FN;" > mkb.tcl
-	mv mkb.tcl "$f"
-done
+if grep $FN $PFN > /dev/null ; then
+        echo $0 succeeded.
+else
+        echo $0 ERROR, $FN not in $PFN >&2
+        exit 1
+fi
