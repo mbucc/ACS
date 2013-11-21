@@ -101,78 +101,23 @@ var acs = (function() {
 		if (canvasheight() >= bodyheight * (1.0 - slop))
 			return;
 
-		var header_el = getHeader("h2");
-
 		var
-			el = document.body.firstElementChild
-			, eltmp
-			, canvas_y = canvasheight() * (1.0 - slop)
-			, y = 0
-			, page_y = 0
-			, page_i = 0
+			el = null
 			, in_blockquote = false
+			, canvas_y = canvasheight() * (1.0 - slop)
+			, m = pagination.state_machine
 			;
 
+		m.init(canvas_y, pagination.IdleState);
 		console.log("canvas_y = " + canvas_y);
 
-		m = state_machine(page_height_px);
-		el = document.body.firstChild;
-		while (el) {
-			m.state.process(el);
-			el = el.nextSibling;
-		}
-		//this.body.innerHtml = m.state.body.innerHtml;
-
-		/*
-		while (el) {
-			// Blockquotes can be really long (e.g., the entire
-			// news item appears in a block quote), so we want to
-			// break inside blockquote.
-			if (el.nodeName.toUpperCase() == "BLOCKQUOTE") {
-				console.log("** entering BLOCKQUOTE");
-				el = el.firstElementChild;
-				in_blockquote = true;
-			}
-			y = el.getBoundingClientRect().height + topmargin(el);
-			if (need_pagebreak(el, page_y, canvas_y)) {
-				console.log("    break @ " + page_y);
-				console.log("-------------------------");
-				if (page_fits(
-					y
-					, canvas_y
-					, header_el
-					, page_i
-					))
-				{
-					page_y = 0;
-				}
-				else
-					alert("XXX: stub.");
-			}
-			page_y = page_y + y;
-			console.log(y + ":" + el.nodeName);
-			eltmp = el.nextElementSibling;
-			if (eltmp) {
-				el = eltmp;
-			}
-			else {
-				if (in_blockquote) {
-					console.log("** exiting BLOCKQUOTE");
-					el = el
-						.parentElement
-						.nextElementSibling;
-					in_blockquote = false;
-				}
-				else {
-					el = eltmp;
-				}
-			}
-		}
-		if (page_y > 0) {
-			console.log("    end last @ = " + page_y);
-			console.log("-------------------------");
-		}
-		*/
+		do  {
+			// Pass null's through.  They mark the end of
+			// stream (e.g., inside a blockquote or page).
+			el = el ? el.nextSibling : document.body.firstChild;
+			m.current_state.process(m, el);
+		} while (el);
+		b.innerHTML = m.buffer.innerHTML;
 	};
 
 	function init() {

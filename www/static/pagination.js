@@ -1,7 +1,10 @@
+
 // State Machine that handles pagination.
 // Created on Thu Nov 14 20:05:35 EST 2013
 // by Mark Bucciarelli <mkbucc@gmail.com>
 "use strict";
+
+
 var pagination = (function () {
 
 	//--------------------------------------------------------------------
@@ -11,22 +14,23 @@ var pagination = (function () {
 	//--------------------------------------------------------------------
 	
 	// process_input_function = function(machine, input);
-	function state(name, process_input_fcn) {
-		return {name: name, process: process_fcn};
+	function state_template(name, process_input_fcn) {
+		return {name: name, process: process_input_fcn};
 	}
 
-	var idle = state("idle", function(machine, input) {
-		state.current = inpage;
+	var idle = state_template("idle", function(machine, input) {
+		machine.current_state = inpage;
 	});
 
-	var inpage = state("inpage", function(machine, input) {
+	var inpage = state_template("inpage", function(machine, input) {
 		if (!input) {
-			machine.state = idle;
+			machine.finish_page();
+			machine.current_state = idle;
 		}
 		else {
 			// All other inputs keep us in the same state name.
-			if (machine.height + height(input) > machine.size) {
-				machine.add_break();
+			if (machine.pageheight + height(input) > machine.maxheight) {
+				machine.finish_page();
 			}
 			machine.add(input);
 		}
@@ -90,7 +94,10 @@ var pagination = (function () {
 	//   http://andybudd.com/archives/2003/11/no_margin_for_error/
 	//   http://reference.sitepoint.com/css/collapsingmargins
 	function height(el) {
-		return el.getBoundingClientRect().height + topmargin(el);
+		var h = 0;
+		if (el.nodeType != Node.TEXT_NODE)
+			h = el.getBoundingClientRect().height + topmargin(el);
+		return h;
 	}
 
 	// Returns that element inside the <header> section.
@@ -105,50 +112,53 @@ var pagination = (function () {
 
 	//--------------------------------------------------------------------
 	//
-        //                     S T A T E   M A C H I N E 
+	//                     S T A T E   M A C H I N E 
 	//
-	// Usage example:
-	//
-	//	var page_height_px = 500;
-	// 	m = state_machine(page_height_px);
-	// 	el = document.body.firstElementChild;
-	// 	while (el)
-	// 		m.state.process(el);
-	// 	this.body.innerHtml = m.state.body.innerHtml;
 	//--------------------------------------------------------------------
 
-	function state_machine(the_maxheight) {
-		this.stack = [];
-		this.pageheight = 0;
-		this.maxheight = the_maxheight;
-		this.state = idle;
-		this.dump_fnc = page_dump_fcn;
-		this.body = null;
-		this.page = null;
-		this.page_n = 0;
+	var state_machine = (function() {
 
-		function add(el) {
+		var 
+			maxheight
+			, stack = []
+			, pageheight = 0
+			, current_state
+			, buffer = null
+			, page = null
+			, page_n = 0
+			;
+
+		var _init = function(the_maxheight, initial_state) {
+			this.maxheight = the_maxheight;
+			this.current_state = initial_state;
+			this.pageheight = 0;
+			page_n = 0;
+			stack = []
+		};
+
+		var _add = function(el) {
 			stack.push(el);
-			pageheight = pageheight + height(el)
-		}
+			this.pageheight = this.pageheight + height(el);
+		};
 
-		function newpage() {
-			this.page_n = this.page_n + 1;
+		var _new_page = function() {
+			page_n = page_n + 1;
 			var p = document.createElement('div');
 			p.className = "pagebreak";
 			return p;
-		}
+		};
 
-		function add_break() {
-			if (body == null) {
-				body = document.createElement('div');
-				page = newpage();
+		var _finish_page = function() {
+			if (this.buffer == null) {
+				this.buffer = document.createElement('div');
+				page = _new_page();
 			}
 
-			console.log("-------------------- START PAGE "  +
-				this.page_n);
+			console.log("-------------------- START PAGE "  + page_n);
+			console.log("     pageheight: " + this.pageheight);
+			console.log("      maxheight: " + this.maxheight);
 
-			body.appendChild(page);
+			this.buffer.appendChild(page);
 
 			var n = stack.length;
 			for (var i = 0; i < n; i++) {
@@ -158,14 +168,25 @@ var pagination = (function () {
 			console.log("-------------------- END   PAGE\n");
 
 			stack = [];
-			pageheight = 0;
+			this.pageheight = 0;
 
-			page = newpage();
-		}
-	}
+			page = _new_page();
+		};
+
+		return {
+			init: _init
+			, add: _add
+			, finish_page: _finish_page
+			, current_state: current_state
+			, maxheight: maxheight
+			, pageheight: pageheight
+			, buffer: buffer
+		};
+	})();
 
 	return {
 		state_machine: state_machine
 		, height: height
+		, IdleState: idle
 	};
 })();
