@@ -91,33 +91,33 @@ var acs = (function() {
 
 	function bespokifyDOM() {
 
-		var 
-			slop = .025  // allow for some error in page heights.
-			, b = document.body
-			, bodyheight = pagination.height(b)
-			;
+		var bodyheight = pagination.height(document.body);
 
 		// If page fits as is, we're all done.
 		if (canvasheight() >= bodyheight * (1.0 - slop))
 			return;
 
 		var
-			el = null
-			, in_blockquote = false
+			el
+			, slop = .025  // allow for some error in page heights.
 			, canvas_y = canvasheight() * (1.0 - slop)
-			, m = pagination.state_machine
+			, m = pagination.state_machine(canvas_y)
 			;
 
-		m.init(canvas_y, pagination.IdleState);
-		console.log("canvas_y = " + canvas_y);
+		var loop_i = 0;
+		el = document.body.firstChild;
+		while (el && loop_i < 5000) {
+			loop_i += 1;
+			el = m.process(m, el);
+		};
+		m.finish_page();
 
-		do  {
-			// Pass null's through.  They mark the end of
-			// stream (e.g., inside a blockquote or page).
-			el = el ? el.nextSibling : document.body.firstChild;
-			m.current_state.process(m, el);
-		} while (el);
-		b.innerHTML = m.buffer.innerHTML;
+		if (el)
+			// XXX: send error message back to server.
+			alert("Error");
+
+		document.body.innerHTML = m.html();
+
 	};
 
 	function init() {
