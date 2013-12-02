@@ -1,8 +1,7 @@
-// State Machine that handles pagination.
+// Dynamically paginate body for reveal.js navigation.
 // Created on Thu Nov 14 20:05:35 EST 2013
 // by Mark Bucciarelli <mkbucc@gmail.com>
 "use strict";
-
 
 var paginate = (function () {
 
@@ -103,21 +102,26 @@ var paginate = (function () {
 			, page_n = 0
 			, buffer = document.createElement('div')
 			, page = null
+			, loop_limit = 100	// max # of slides
 			;
 
-
-		// When you move an element from one parent to another, it is
-		// automatically removed from the previous parent, and what
-		// was it's sibling is now promoted to first child.
+		// Move page contents from <body> to a buffer.
 		for (var el = b.firstChild; el; el = b.firstChild)
 			buffer.appendChild(el);
 
+		var reveal = document.createElement('div');
+		reveal.className = "reveal";
+		b.appendChild(reveal);
+
+		var slides = document.createElement('div');
+		slides.className = "slides";
+		reveal.appendChild(slides);
+
 		console.log("canvas_px = " + canvas_px);
-		while (buffer.childNodes.length > 0) {
-			page = document.createElement('div');
-			page.className = "pagebreak";
+		while (buffer.childNodes.length > 0 && page_n < loop_limit) {
+			page = document.createElement('section');
 			page_n += 1;
-			b.appendChild(page);
+			slides.appendChild(page);
 
 			add_until_full(page, page, buffer, canvas_px);
 
@@ -126,6 +130,30 @@ var paginate = (function () {
 
 			console.log("page " + page_n + ": " + page.offsetHeight);
 		}
+
+		if (page_n >= loop_limit)
+			// XXX: Post error to the server.
+			;
+
+		// Full list of configuration options available here:
+		// https://github.com/hakimel/reveal.js#configuration
+		Reveal.initialize({
+			controls: true,
+			progress: true,
+			history: true,
+			center: true,
+
+			theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+			transition: Reveal.getQueryHash().transition || 'default', // default/cube/page/concave/zoom/linear/fade/none
+
+			// Parallax scrolling
+			// parallaxBackgroundImage: 'https://s3.amazonaws.com/hakim-static/reveal-js/reveal-parallax-1.jpg',
+			// parallaxBackgroundSize: '2100px 900px',
+
+			// Optional libraries used to extend on reveal.js
+			dependencies: []
+		});
+
 	};
 
 
