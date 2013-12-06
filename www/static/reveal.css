@@ -91,6 +91,7 @@ body {
  * VIEW FRAGMENTS
  *********************************************/
 
+/*
 .reveal .slides section .fragment {
 	opacity: 0;
 
@@ -214,7 +215,7 @@ body {
 .reveal .slides section .fragment.highlight-current-blue.current-fragment {
 	color: #1b91ff;
 }
-
+*/
 
 /*********************************************
  * DEFAULT ELEMENT STYLES
@@ -468,6 +469,7 @@ body {
  * PROGRESS BAR
  *********************************************/
 
+/*
 .reveal .progress {
 	position: fixed;
 	display: none;
@@ -496,11 +498,13 @@ body {
 		     -o-transition: width 800ms cubic-bezier(0.260, 0.860, 0.440, 0.985);
 		        transition: width 800ms cubic-bezier(0.260, 0.860, 0.440, 0.985);
 	}
+*/
 
 /*********************************************
  * SLIDE NUMBER
  *********************************************/
 
+/*
 .reveal .slide-number {
 	position: fixed;
 	display: block;
@@ -510,6 +514,7 @@ body {
 	z-index: 31;
 	font-size: 12px;
 }
+*/
 
 /*********************************************
  * SLIDES
@@ -557,7 +562,7 @@ body {
 
 .reveal .slides>section,
 .reveal .slides>section>section {
-	display: none;
+	//display: none;
 	position: absolute;
 	width: 100%;
 	padding: 20px 0px;
@@ -1841,15 +1846,17 @@ body {
  * SPEAKER NOTES
  *********************************************/
 
+/*
 .reveal aside.notes {
 	display: none;
 }
-
+*/
 
 /*********************************************
  * ZOOM PLUGIN
  *********************************************/
 
+/*
 .zoomed .reveal *,
 .zoomed .reveal *:before,
 .zoomed .reveal *:after {
@@ -1876,5 +1883,6 @@ body {
 .zoomed .reveal .roll span:after {
 	visibility: hidden;
 }
+*/
 
 
