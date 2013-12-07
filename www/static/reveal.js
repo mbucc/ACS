@@ -194,9 +194,6 @@ var Reveal = (function(){
 			return;
 		}
 
-		// Force a layout when the whole page, incl fonts, has loaded
-		//window.addEventListener( 'load', layout, false );
-
 		var query = Reveal.getQueryHash();
 
 		// Do not accept new dependencies via query config to avoid
@@ -1020,128 +1017,6 @@ var Reveal = (function(){
 	}
 
 	/**
-	 * Applies JavaScript-controlled layout rules to the
-	 * presentation.
-	 */
-	function layout() {
-
-		return;
-
-		if( dom.wrapper && !isPrintingPDF() ) {
-
-			// Available space to scale within
-			var availableWidth = dom.wrapper.offsetWidth,
-				availableHeight = dom.wrapper.offsetHeight;
-
-			// Reduce available space by margin
-			availableWidth -= ( availableHeight * config.margin );
-			availableHeight -= ( availableHeight * config.margin );
-
-			// Dimensions of the content
-			var slideWidth = config.width,
-				slideHeight = config.height,
-				slidePadding = 20; // TODO Dig this out of DOM
-
-			// Layout the contents of the slides
-			layoutSlideContents( config.width, config.height, slidePadding );
-
-			// Slide width may be a percentage of available width
-			if( typeof slideWidth === 'string' && /%$/.test( slideWidth ) ) {
-				slideWidth = parseInt( slideWidth, 10 ) / 100 * availableWidth;
-			}
-
-			// Slide height may be a percentage of available height
-			if( typeof slideHeight === 'string' && /%$/.test( slideHeight ) ) {
-				slideHeight = parseInt( slideHeight, 10 ) / 100 * availableHeight;
-			}
-
-			dom.slides.style.width = slideWidth + 'px';
-			dom.slides.style.height = slideHeight + 'px';
-
-			// Determine scale of content to fit within available space
-			scale = Math.min( availableWidth / slideWidth, availableHeight / slideHeight );
-
-			// Respect max/min scale settings
-			scale = Math.max( scale, config.minScale );
-			scale = Math.min( scale, config.maxScale );
-
-			// Prefer applying scale via zoom since Chrome blurs scaled content
-			// with nested transforms
-			if( typeof dom.slides.style.zoom !== 'undefined' && !navigator.userAgent.match( /(iphone|ipod|ipad|android)/gi ) ) {
-				dom.slides.style.zoom = scale;
-			}
-			// Apply scale transform as a fallback
-			else {
-				transformElement( dom.slides, 'translate(-50%, -50%) scale('+ scale +') translate(50%, 50%)' );
-			}
-
-			// Select all slides, vertical and horizontal
-			var slides = toArray( document.querySelectorAll( SLIDES_SELECTOR ) );
-
-			for( var i = 0, len = slides.length; i < len; i++ ) {
-				var slide = slides[ i ];
-
-				// Don't bother updating invisible slides
-				if( slide.style.display === 'none' ) {
-					continue;
-				}
-
-				if( config.center || slide.classList.contains( 'center' ) ) {
-					// Vertical stacks are not centred since their section
-					// children will be
-					if( slide.classList.contains( 'stack' ) ) {
-						slide.style.top = 0;
-					}
-					else {
-						slide.style.top = Math.max( - ( getAbsoluteHeight( slide ) / 2 ) - slidePadding, -slideHeight / 2 ) + 'px';
-					}
-				}
-				else {
-					slide.style.top = '';
-				}
-
-			}
-
-			updateProgress();
-			updateParallax();
-
-		}
-
-	}
-
-	/**
-	 * Applies layout logic to the contents of all slides in
-	 * the presentation.
-	 */
-	function layoutSlideContents( width, height, padding ) {
-
-		// Handle sizing of elements with the 'stretch' class
-		toArray( dom.slides.querySelectorAll( 'section > .stretch' ) ).forEach( function( element ) {
-
-			// Determine how much vertical space we can use
-			var remainingHeight = getRemainingHeight( element, ( height - ( padding * 2 ) ) );
-
-			// Consider the aspect ratio of media elements
-			if( /(img|video)/gi.test( element.nodeName ) ) {
-				var nw = element.naturalWidth || element.videoWidth,
-					nh = element.naturalHeight || element.videoHeight;
-
-				var es = Math.min( width / nw, remainingHeight / nh );
-
-				element.style.width = ( nw * es ) + 'px';
-				element.style.height = ( nh * es ) + 'px';
-
-			}
-			else {
-				element.style.width = width + 'px';
-				element.style.height = remainingHeight + 'px';
-			}
-
-		} );
-
-	}
-
-	/**
 	 * Stores the vertical index of a stack so that the same
 	 * vertical slide can be selected when navigating to and
 	 * from the stack.
@@ -1248,8 +1123,6 @@ var Reveal = (function(){
 				}
 
 				updateSlidesVisibility();
-
-				//layout();
 
 				if( !wasActive ) {
 					// Notify observers of the overview showing
@@ -1483,8 +1356,6 @@ var Reveal = (function(){
 		// Update the visibility of slides now that the indices have changed
 		updateSlidesVisibility();
 
-		//layout();
-
 		// Apply the new state
 		stateLoop: for( var i = 0, len = state.length; i < len; i++ ) {
 			// Check if this state existed on the previous slide. If it
@@ -1592,9 +1463,6 @@ var Reveal = (function(){
 		// Subscribe to input
 		removeEventListeners();
 		addEventListeners();
-
-		// Force a layout to make sure the current config is accounted for
-		//layout();
 
 		// Reflect the current autoSlide value
 		autoSlide = config.autoSlide;
@@ -2974,9 +2842,7 @@ var Reveal = (function(){
 	 * Handler for the window level 'resize' event.
 	 */
 	function onWindowResize( event ) {
-
-		//layout();
-
+		;
 	}
 
 	/**
@@ -3261,9 +3127,6 @@ var Reveal = (function(){
 		navigateDown: navigateDown,
 		navigatePrev: navigatePrev,
 		navigateNext: navigateNext,
-
-		// Forces an update in slide layout
-		layout: layout,
 
 		// Returns an object with the available routes as booleans (left/right/top/bottom)
 		availableRoutes: availableRoutes,
