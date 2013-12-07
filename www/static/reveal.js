@@ -195,7 +195,7 @@ var Reveal = (function(){
 		}
 
 		// Force a layout when the whole page, incl fonts, has loaded
-		window.addEventListener( 'load', layout, false );
+		//window.addEventListener( 'load', layout, false );
 
 		var query = Reveal.getQueryHash();
 
@@ -1025,6 +1025,8 @@ var Reveal = (function(){
 	 */
 	function layout() {
 
+		return;
+
 		if( dom.wrapper && !isPrintingPDF() ) {
 
 			// Available space to scale within
@@ -1247,7 +1249,7 @@ var Reveal = (function(){
 
 				updateSlidesVisibility();
 
-				layout();
+				//layout();
 
 				if( !wasActive ) {
 					// Notify observers of the overview showing
@@ -1481,7 +1483,7 @@ var Reveal = (function(){
 		// Update the visibility of slides now that the indices have changed
 		updateSlidesVisibility();
 
-		layout();
+		//layout();
 
 		// Apply the new state
 		stateLoop: for( var i = 0, len = state.length; i < len; i++ ) {
@@ -1592,7 +1594,7 @@ var Reveal = (function(){
 		addEventListeners();
 
 		// Force a layout to make sure the current config is accounted for
-		layout();
+		//layout();
 
 		// Reflect the current autoSlide value
 		autoSlide = config.autoSlide;
@@ -2973,7 +2975,7 @@ var Reveal = (function(){
 	 */
 	function onWindowResize( event ) {
 
-		layout();
+		//layout();
 
 	}
 
