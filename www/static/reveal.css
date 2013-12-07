@@ -1555,29 +1555,6 @@ body {
 
 
 /*********************************************
- * PLAYBACK COMPONENT
- *********************************************/
-
-.reveal .playback {
-	position: fixed;
-	left: 15px;
-	bottom: 15px;
-	z-index: 30;
-	cursor: pointer;
-
-	-webkit-transition: all 400ms ease;
-	   -moz-transition: all 400ms ease;
-	    -ms-transition: all 400ms ease;
-	        transition: all 400ms ease;
-}
-
-.reveal.overview .playback {
-	opacity: 0;
-	visibility: hidden;
-}
-
-
-/*********************************************
  * ROLLING LINKS
  *********************************************/
 
@@ -1659,49 +1636,3 @@ body {
 	    -ms-transform: translate3d( 0px, 110%, 0px ) rotateX( -90deg );
 	        transform: translate3d( 0px, 110%, 0px ) rotateX( -90deg );
 }
-
-
-/*********************************************
- * SPEAKER NOTES
- *********************************************/
-
-/*
-.reveal aside.notes {
-	display: none;
-}
-*/
-
-/*********************************************
- * ZOOM PLUGIN
- *********************************************/
-
-/*
-.zoomed .reveal *,
-.zoomed .reveal *:before,
-.zoomed .reveal *:after {
-	-webkit-transform: none !important;
-	   -moz-transform: none !important;
-	    -ms-transform: none !important;
-	        transform: none !important;
-
-	-webkit-backface-visibility: visible !important;
-	   -moz-backface-visibility: visible !important;
-	    -ms-backface-visibility: visible !important;
-	        backface-visibility: visible !important;
-}
-
-.zoomed .reveal .progress,
-.zoomed .reveal .controls {
-	opacity: 0;
-}
-
-.zoomed .reveal .roll span {
-	background: none;
-}
-
-.zoomed .reveal .roll span:after {
-	visibility: hidden;
-}
-*/
-
-
