@@ -32,9 +32,6 @@ var Reveal = (function(){
 			// Display controls in the bottom right corner
 			controls: true,
 
-			// Display a presentation progress bar
-			progress: true,
-
 			// Display the page number of the current slide
 			slideNumber: false,
 
@@ -360,10 +357,6 @@ var Reveal = (function(){
 		// Background element
 		dom.background = createSingletonNode( dom.wrapper, 'div', 'backgrounds', null );
 
-		// Progress bar
-		dom.progress = createSingletonNode( dom.wrapper, 'div', 'progress', '<span></span>' );
-		dom.progressbar = dom.progress.querySelector( 'span' );
-
 		// Arrow controls
 		createSingletonNode( dom.wrapper, 'aside', 'controls',
 			'<div class="navigate-left"></div>' +
@@ -546,7 +539,6 @@ var Reveal = (function(){
 		dom.wrapper.setAttribute( 'data-background-transition', config.backgroundTransition );
 
 		dom.controls.style.display = config.controls ? 'block' : 'none';
-		dom.progress.style.display = config.progress ? 'block' : 'none';
 
 		if( config.rtl ) {
 			dom.wrapper.classList.add( 'rtl' );
@@ -645,10 +637,6 @@ var Reveal = (function(){
 			document.addEventListener( 'keydown', onDocumentKeyDown, false );
 		}
 
-		if( config.progress && dom.progress ) {
-			dom.progress.addEventListener( 'click', onProgressClicked, false );
-		}
-
 		if( config.focusBodyOnPageVisiblityChange ) {
 			var visibilityChange;
 
@@ -697,10 +685,6 @@ var Reveal = (function(){
 			dom.wrapper.removeEventListener( 'MSPointerDown', onPointerDown, false );
 			dom.wrapper.removeEventListener( 'MSPointerMove', onPointerMove, false );
 			dom.wrapper.removeEventListener( 'MSPointerUp', onPointerUp, false );
-		}
-
-		if ( config.progress && dom.progress ) {
-			dom.progress.removeEventListener( 'click', onProgressClicked, false );
 		}
 
 		[ 'touchstart', 'click' ].forEach( function( eventName ) {
@@ -1441,7 +1425,6 @@ var Reveal = (function(){
 		}
 
 		updateControls();
-		updateProgress();
 		updateBackground();
 		updateParallax();
 		updateSlideNumber();
@@ -1476,7 +1459,6 @@ var Reveal = (function(){
 		sortAllFragments();
 
 		updateControls();
-		updateProgress();
 		updateBackground( true );
 		updateSlideNumber();
 
@@ -1679,55 +1661,6 @@ var Reveal = (function(){
 
 				}
 			}
-
-		}
-
-	}
-
-	/**
-	 * Updates the progress bar to reflect the current slide.
-	 */
-	function updateProgress() {
-
-		// Update progress if enabled
-		if( config.progress && dom.progress ) {
-
-			var horizontalSlides = toArray( document.querySelectorAll( HORIZONTAL_SLIDES_SELECTOR ) );
-
-			// The number of past and total slides
-			var totalCount = document.querySelectorAll( SLIDES_SELECTOR + ':not(.stack)' ).length;
-			var pastCount = 0;
-
-			// Step through all slides and count the past ones
-			mainLoop: for( var i = 0; i < horizontalSlides.length; i++ ) {
-
-				var horizontalSlide = horizontalSlides[i];
-				var verticalSlides = toArray( horizontalSlide.querySelectorAll( 'section' ) );
-
-				for( var j = 0; j < verticalSlides.length; j++ ) {
-
-					// Stop as soon as we arrive at the present
-					if( verticalSlides[j].classList.contains( 'present' ) ) {
-						break mainLoop;
-					}
-
-					pastCount++;
-
-				}
-
-				// Stop as soon as we arrive at the present
-				if( horizontalSlide.classList.contains( 'present' ) ) {
-					break;
-				}
-
-				// Don't count the wrapping section for vertical slides
-				if( horizontalSlide.classList.contains( 'stack' ) === false ) {
-					pastCount++;
-				}
-
-			}
-
-			dom.progressbar.style.width = ( pastCount / ( totalCount - 1 ) ) * window.innerWidth + 'px';
 
 		}
 
@@ -2801,25 +2734,6 @@ var Reveal = (function(){
 	}
 
 	/**
-	 * Clicking on the progress bar results in a navigation to the
-	 * closest approximate horizontal slide using this equation:
-	 *
-	 * ( clickX / presentationWidth ) * numberOfSlides
-	 */
-	function onProgressClicked( event ) {
-
-		onUserInput( event );
-
-		event.preventDefault();
-
-		var slidesTotal = toArray( document.querySelectorAll( HORIZONTAL_SLIDES_SELECTOR ) ).length;
-		var slideIndex = Math.floor( ( event.clientX / dom.wrapper.offsetWidth ) * slidesTotal );
-
-		slide( slideIndex );
-
-	}
-
-	/**
 	 * Event handler for navigation control buttons.
 	 */
 	function onNavigateLeftClicked( event ) { event.preventDefault(); onUserInput(); navigateLeft(); }
@@ -2929,170 +2843,6 @@ var Reveal = (function(){
 		}
 
 	}
-
-
-	// --------------------------------------------------------------------//
-	// ------------------------ PLAYBACK COMPONENT ------------------------//
-	// --------------------------------------------------------------------//
-
-
-	/**
-	 * Constructor for the playback component, which displays
-	 * play/pause/progress controls.
-	 *
-	 * @param {HTMLElement} container The component will append
-	 * itself to this
-	 * @param {Function} progressCheck A method which will be
-	 * called frequently to get the current progress on a range
-	 * of 0-1
-	 */
-	function Playback( container, progressCheck ) {
-
-		// Cosmetics
-		this.diameter = 50;
-		this.thickness = 3;
-
-		// Flags if we are currently playing
-		this.playing = false;
-
-		// Current progress on a 0-1 range
-		this.progress = 0;
-
-		// Used to loop the animation smoothly
-		this.progressOffset = 1;
-
-		this.container = container;
-		this.progressCheck = progressCheck;
-
-		this.canvas = document.createElement( 'canvas' );
-		this.canvas.className = 'playback';
-		this.canvas.width = this.diameter;
-		this.canvas.height = this.diameter;
-		this.context = this.canvas.getContext( '2d' );
-
-		this.container.appendChild( this.canvas );
-
-		this.render();
-
-	}
-
-	Playback.prototype.setPlaying = function( value ) {
-
-		var wasPlaying = this.playing;
-
-		this.playing = value;
-
-		// Start repainting if we weren't already
-		if( !wasPlaying && this.playing ) {
-			this.animate();
-		}
-		else {
-			this.render();
-		}
-
-	};
-
-	Playback.prototype.animate = function() {
-
-		var progressBefore = this.progress;
-
-		this.progress = this.progressCheck();
-
-		// When we loop, offset the progress so that it eases
-		// smoothly rather than immediately resetting
-		if( progressBefore > 0.8 && this.progress < 0.2 ) {
-			this.progressOffset = this.progress;
-		}
-
-		this.render();
-
-		if( this.playing ) {
-			features.requestAnimationFrameMethod.call( window, this.animate.bind( this ) );
-		}
-
-	};
-
-	/**
-	 * Renders the current progress and playback state.
-	 */
-	Playback.prototype.render = function() {
-
-		var progress = this.playing ? this.progress : 0,
-			radius = ( this.diameter / 2 ) - this.thickness,
-			x = this.diameter / 2,
-			y = this.diameter / 2,
-			iconSize = 14;
-
-		// Ease towards 1
-		this.progressOffset += ( 1 - this.progressOffset ) * 0.1;
-
-		var endAngle = ( - Math.PI / 2 ) + ( progress * ( Math.PI * 2 ) );
-		var startAngle = ( - Math.PI / 2 ) + ( this.progressOffset * ( Math.PI * 2 ) );
-
-		this.context.save();
-		this.context.clearRect( 0, 0, this.diameter, this.diameter );
-
-		// Solid background color
-		this.context.beginPath();
-		this.context.arc( x, y, radius + 2, 0, Math.PI * 2, false );
-		this.context.fillStyle = 'rgba( 0, 0, 0, 0.4 )';
-		this.context.fill();
-
-		// Draw progress track
-		this.context.beginPath();
-		this.context.arc( x, y, radius, 0, Math.PI * 2, false );
-		this.context.lineWidth = this.thickness;
-		this.context.strokeStyle = '#666';
-		this.context.stroke();
-
-		if( this.playing ) {
-			// Draw progress on top of track
-			this.context.beginPath();
-			this.context.arc( x, y, radius, startAngle, endAngle, false );
-			this.context.lineWidth = this.thickness;
-			this.context.strokeStyle = '#fff';
-			this.context.stroke();
-		}
-
-		this.context.translate( x - ( iconSize / 2 ), y - ( iconSize / 2 ) );
-
-		// Draw play/pause icons
-		if( this.playing ) {
-			this.context.fillStyle = '#fff';
-			this.context.fillRect( 0, 0, iconSize / 2 - 2, iconSize );
-			this.context.fillRect( iconSize / 2 + 2, 0, iconSize / 2 - 2, iconSize );
-		}
-		else {
-			this.context.beginPath();
-			this.context.translate( 2, 0 );
-			this.context.moveTo( 0, 0 );
-			this.context.lineTo( iconSize - 2, iconSize / 2 );
-			this.context.lineTo( 0, iconSize );
-			this.context.fillStyle = '#fff';
-			this.context.fill();
-		}
-
-		this.context.restore();
-
-	};
-
-	Playback.prototype.on = function( type, listener ) {
-		this.canvas.addEventListener( type, listener, false );
-	};
-
-	Playback.prototype.off = function( type, listener ) {
-		this.canvas.removeEventListener( type, listener, false );
-	};
-
-	Playback.prototype.destroy = function() {
-
-		this.playing = false;
-
-		if( this.canvas.parentNode ) {
-			this.container.removeChild( this.canvas );
-		}
-
-	};
 
 
 	// --------------------------------------------------------------------//
