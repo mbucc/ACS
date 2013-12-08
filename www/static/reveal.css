@@ -169,7 +169,7 @@ body {
 .reveal blockquote {
 	display: block;
 	position: relative;
-	width: 70%;
+	width: 85%;
 	margin: 5px auto;
 	padding: 5px;
 
@@ -341,7 +341,8 @@ body {
 
 .reveal {
 	position: relative;
-	width: 100%;
+	width: 90%;
+	margin: 0 auto;
 	height: 100%;
 
 	-ms-touch-action: none;
